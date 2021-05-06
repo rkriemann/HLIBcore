@@ -1,0 +1,111 @@
+#ifndef __HLIB_CONFIG_HH
+#define __HLIB_CONFIG_HH
+/*
+ * Project     : HLib
+ * File        : hlib-config.h
+ * Description : configuration settings
+ * Author      : Ronald Kriemann
+ * Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+ */
+
+/* HLIBpro namespace override */
+#define  HLIB                    HLIB
+
+/* prefix all HLIBpro types/functions (except constants) */
+#define  HLIBPF( name )          hlib_##name
+
+/*
+ * set to 1 if the following libraries are available and
+ * set to 0 otherwise 
+ */
+
+#define USE_TBB                  @USE_TBB@
+#define USE_ZLIB                 @USE_ZLIB@
+#define USE_METIS                @USE_METIS@
+#define USE_SCOTCH               @USE_SCOTCH@
+#define USE_CHACO                @USE_CHACO@
+#define USE_MONGOOSE             @USE_MONGOOSE@
+#define USE_FFTW3                0
+#define USE_GSL                  @USE_GSL@
+#define USE_CAIRO                0
+#define USE_HDF5                 @USE_HDF5@
+#define USE_AMDLIBM              @USE_AMDLIBM@
+#define USE_ACML                 @USE_ACML@
+#define USE_SVML                 @USE_SVML@
+#define USE_LIBMVEC              @USE_LIBMVEC@
+#define USE_MKL                  @USE_MKL@
+#define USE_MKL_SEQ              @USE_MKL_SEQ@
+#define USE_VAMPIRTRACE          0
+#define USE_LIC_CHECK            @USE_LIC_CHECK@
+
+/*
+ * set to 1 if the following functions are available and
+ * set to 0 otherwise 
+ */
+
+#define HAS_CLOCKGETTIME         @HAS_CLOCKGETTIME@
+#define HAS_GETTIMEOFDAY         @HAS_GETTIMEOFDAY@
+#define HAS_GETTICKCOUNT         @HAS_GETTICKCOUNT@
+#define HAS_GETPROCESSTIMES      @HAS_GETPROCESSTIMES@
+#define HAS_LOCALTIME_R          @HAS_LOCALTIME_R@
+#define HAS_GETRUSAGE            @HAS_GETRUSAGE@
+#define HAS_LWPINFO              @HAS_LWPINFO@
+
+#define HAS_GETPAGESIZE          0 /* @HAS_GETPAGESIZE@ */
+#define HAS_MMAP                 0 /* @HAS_MMAP@ */
+
+#define HAS_STRERROR_R           @HAS_STRERROR_R@
+#define HAS_BACKTRACE            @HAS_BACKTRACE@
+#define HAS_CXXDEMANGLE          @HAS_CXXDEMANGLE@
+
+#define HAS_UNORDERED_MAP        0
+#define HAS_BOOST_UNORDERED_MAP  1
+#define HAS_BOOST_IOSTREAMS      @HAS_BOOST_IOSTREAMS@
+
+#define HAS_GEJSV                @HAS_GEJSV@
+#define HAS_GESVJ                @HAS_GESVJ@
+#define HAS_SINCOS               @HAS_SINCOS@
+#define HAS_GEQP3_TRUNC          0
+
+#define HAS_ILP64                @HAS_ILP64@
+
+#define HAS_CPUID                @HAS_CPUID@
+#define HAS_SSE3                 @HAS_SSE3@
+#define HAS_AVX                  @HAS_AVX@
+#define HAS_AVX2                 @HAS_AVX2@
+#define HAS_MIC                  @HAS_MIC@
+#define HAS_AVX512F              @HAS_AVX512F@
+#define HAS_VSX                  @HAS_VSX@
+#define HAS_NEON                 @HAS_NEON@
+
+/*
+ * set to 1 to activate various features or change
+ * behaviour of algorithms
+ */
+
+/* activate to enable additional debugging features */
+#define HLIB_DEBUG               @HLIB_DEBUG@
+
+/* activate argument tests in inline functions of BLAS module
+ * (also activated by HLIB_DEBUG) */
+#define HLIB_BLAS_TESTS          0
+
+/* activate to enable single precision arithmetics */
+#define HLIB_SINGLE_PREC         @HLIB_SINGLE_PREC@
+
+/* activate to enable flop counting */
+#define HLIB_COUNT_FLOPS         0
+
+/* activate to enable old TBB functions */
+#define HAS_TBB_DEPRECATED       0
+
+/*
+ * define type of network environment
+ *   1 : sequential
+ *   2 : MPI library
+ *   3 : shared memory
+ */
+
+#define HLIB_NET_TYPE            @NET_TYPE@
+
+#endif

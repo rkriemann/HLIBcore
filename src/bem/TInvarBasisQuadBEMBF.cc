@@ -1,0 +1,377 @@
+//
+// Project     : HLib
+// File        : TBEMBF.cc
+// Description : classes for bilinearforms in BEM-applications
+// Author      : Ronald Kriemann
+// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+//
+
+#include <set>
+
+#include "unordered_map.hh"
+
+#include "hpro/base/error.hh"
+#include "hpro/base/config.hh"
+
+#include "hpro/bem/TQuadBEMBF.hh"
+
+namespace HLIB
+{
+
+using namespace std;
+
+namespace B = BLAS;
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//
+// TInvarBasisQuadBEMBF
+//
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+template < typename T_ansatzsp, typename T_testsp, typename T_val >
+TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_val >::TInvarBasisQuadBEMBF ( const T_ansatzsp *  aansatzsp,
+                                                                            const T_testsp *    atestsp,
+                                                                            const uint          aorder,
+                                                                            const bool          dist_ada )
+        : TQuadBEMBF< T_ansatzsp, T_testsp, T_val >( aansatzsp, atestsp, aorder, dist_ada )
+{
+    //
+    // compute ansatz and test function values at quadrature points for
+    // all local basis functions in unit triangle
+    //
+
+    compute_basis_func();
+}
+
+//////////////////////////////////////
+//
+// evaluate basis functions
+//
+
+//
+// compute ansatz and test basis functions for all quadrature points
+//
+template < typename T_ansatzsp, typename T_testsp, typename T_val >
+void
+TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_val >::compute_basis_func ()
+{
+    const size_t  n_ansatz_tri_bases = this->ansatz_space()->n_unit_bases();
+    
+    _ansatz_val.resize( n_ansatz_tri_bases );
+
+    for ( uint  nbasis = 0; nbasis < n_ansatz_tri_bases; ++nbasis )
+    {
+        _ansatz_val[ nbasis ].resize( 4 );
+        
+        for ( uint  ncommon = 0; ncommon < 4; ++ncommon )
+        {
+            _ansatz_val[ nbasis ][ ncommon ].resize( this->_quad_order+1 );
+            
+            for ( uint  order = 1; order <= this->_quad_order; ++order )
+            {
+                const tripair_quad_rule_t * rule        = this->quad_rule( ncommon, order );
+                const size_t                npts        = rule->npts;
+                const size_t                padded_npts = CFG::Mach::simd_padded_size< ansatz_value_t >( npts );
+                size_t                      i           = 0;
+                
+                _ansatz_val[ nbasis ][ ncommon ][ order ].resize( padded_npts );
+
+                for ( ; i < npts; ++i )
+                {
+                    const ansatz_value_t  val = this->ansatz_space()->eval_basis_unit( nbasis,
+                                                                                       rule->pts1[i].x(),
+                                                                                       rule->pts1[i].y() );
+                    
+                    _ansatz_val[ nbasis ][ ncommon ][ order ][ i ] = val;
+                }// for
+
+                // zero padding
+                for ( ; i < padded_npts; ++i )
+                    _ansatz_val[ nbasis ][ ncommon ][ order ][ i ] = ansatz_value_t(0);
+            }// for
+        }// for
+    }// for
+    
+    const size_t  n_test_tri_bases = this->test_space()->n_unit_bases();
+
+    _test_val.resize( n_test_tri_bases );
+    
+    for ( uint  nbasis = 0; nbasis < n_test_tri_bases; ++nbasis )
+    {
+        _test_val[ nbasis ].resize( 4 );
+        
+        for ( uint  ncommon = 0; ncommon < 4; ++ncommon )
+        {
+            _test_val[ nbasis ][ ncommon ].resize( this->_quad_order+1 );
+            
+            for ( uint  order = 1; order <= this->_quad_order; ++order )
+            {
+                const tripair_quad_rule_t * rule        = this->quad_rule( ncommon, order );
+                const size_t                npts        = rule->npts;
+                const size_t                padded_npts = CFG::Mach::simd_padded_size< test_value_t >( npts );
+                size_t                      i           = 0;
+                
+                _test_val[ nbasis ][ ncommon ][ order ].resize( padded_npts );
+                
+                for ( ; i < npts; ++i )
+                {
+                    const test_value_t  val = this->test_space()->eval_basis_unit( nbasis,
+                                                                                   rule->pts2[i].x(),
+                                                                                   rule->pts2[i].y() );
+                    
+                    _test_val[ nbasis ][ ncommon ][ order ][ i ] = val;
+                }// for
+
+                // zero padding
+                for ( ; i < padded_npts; ++i )
+                    _test_val[ nbasis ][ ncommon ][ order ][ i ] = test_value_t(0);
+            }// for
+        }// for
+    }// for
+}
+    
+//////////////////////////////////////
+//
+// evaluate bilinearform
+//
+
+//
+// evaluate subblock defined by \a row_ind × \a col_ind; the indices
+// in \a row_ind and \a col_ind can be arbitrary, e.g. must not be
+// contiguous
+//
+template < typename T_ansatzsp, typename T_testsp, typename T_val >
+void
+TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_val >::eval  ( const vector< idx_t > &  row_ind,
+                                                             const vector< idx_t > &  col_ind,
+                                                             BLAS::Matrix< T_val > &  values ) const
+{
+    //
+    // local types for storing triangle sets and for
+    // mapping indices to position in \a values
+    //
+    
+    using  real_t    = typename real_type< value_t >::type_t;
+    using  tri_set_t = set< idx_t >;
+    using  val_map_t = std::unordered_map< idx_t, idx_t >;
+
+    //
+    // store position of all indices in <rowind> and <colind>
+    // for indirect access of <values>
+    //
+    
+    const size_t  nrows = row_ind.size();
+    const size_t  ncols = col_ind.size();
+    val_map_t     rowmap, colmap;
+
+    for ( size_t  i = 0; i < nrows; ++i )
+        rowmap[ row_ind[i] ] = idx_t( i );
+
+    for ( size_t  i = 0; i < ncols; ++i )
+        colmap[ col_ind[i] ] = idx_t( i );
+    
+    //
+    // collect all triangles in support of ansatz functions
+    //
+
+    const ansatzsp_t *  ansatz_sp   = this->ansatz_space();
+    const TGrid *       ansatz_grid = ansatz_sp->grid();
+    tri_set_t           ansatz_triangles;
+
+    for ( size_t  i = 0; i < nrows; ++i )
+    {
+        for ( auto  tri_idx : ansatz_sp->support( row_ind[i] ) )
+            ansatz_triangles.insert( tri_idx );
+    }// for
+
+    //
+    // collect all triangles in support of test functions
+    //
+
+    const testsp_t *   test_sp   = this->test_space();
+    const TGrid *      test_grid = test_sp->grid();
+    tri_set_t          test_triangles;
+    
+    for ( size_t  i = 0; i < ncols; ++i )
+    {
+        for ( auto  tri_idx : test_sp->support( col_ind[i] ) )
+            test_triangles.insert( tri_idx );
+    }// for
+
+    //
+    // loop over each pair of triangles in ansatz and test space
+    // and integrate kernel function
+    //
+
+    vector< value_t >  kernel_values;
+
+    B::fill( value_t(0), values );
+
+    for ( const auto  tri0idx : ansatz_triangles )
+    {
+        TGrid::triangle_t  tri0 = ansatz_grid->triangle( tri0idx );
+        const real_t       J0   = real_t( ansatz_grid->tri_size( tri0idx ) );
+        
+        for ( const auto  tri1idx : test_triangles )
+        {
+            TGrid::triangle_t  tri1 = test_grid->triangle( tri1idx );
+            const real_t       J1   = real_t( test_sp->grid()->tri_size( tri1idx ) );
+        
+            //
+            // decide about relative position of triangles, choose quadrature points
+            // and determine points of triangles s.t. order is as expected
+            //
+
+            const tripair_quad_rule_t * rule    = nullptr;
+            uint                        ncommon = this->reorder_common( tri0.vtx, tri1.vtx );
+            uint                        torder  = this->_quad_order;
+
+            if ( ncommon == 0 )
+                torder = this->adjust_order( tri0.vtx, tri1.vtx, torder );
+            
+            rule = this->quad_rule( ncommon, torder );
+    
+            if ( rule == nullptr )
+                HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+            //
+            // compute kernel at quadrature points
+            //
+
+            const size_t  npts        = rule->npts;
+            const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+
+            if ( kernel_values.size() < padded_npts )
+                kernel_values.resize( padded_npts );
+                
+            this->eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kernel_values );
+            
+            //
+            // compute final result for each basis function by combining
+            // kernel values with precomputed basis function values
+            //
+
+            for ( auto  idx0 : ansatz_sp->triangle_indices( tri0idx ) )
+            {
+                // exclude indices not in <rowind>
+                if ( rowmap.find( idx0 ) == rowmap.end() )
+                    continue;
+
+                const idx_t  pos0     = rowmap[ idx0 ];
+                const auto   phi0_val = ansatz_val( idx0, tri0, ncommon, torder );
+                
+                for ( auto  idx1 : test_sp->triangle_indices( tri1idx ) )
+                {
+                    // exclude indices not in <colind>
+                    if ( colmap.find( idx1 ) == colmap.end() )
+                        continue;
+                
+                    const idx_t  pos1     = colmap[ idx1 ];
+                    const auto   phi1_val = test_val( idx1, tri1, ncommon, torder );
+                    value_t      value    = value_t(0);
+
+                    for ( size_t  iv = 0; iv < npts; ++iv )
+                        value += ( real_t( rule->w[iv] ) * (*phi0_val)[ iv ] * (*phi1_val)[ iv ] ) * kernel_values[ iv ];
+
+                    values( pos0, pos1 ) += value * J0 * J1;
+                }// for
+            }// for
+        }// for
+    }// for
+}
+
+//
+// specialisation for constant basis functions: it is more efficient to
+// handle this case per index instead of per triangle as in the general
+// implementation below
+// (only for real case; in complex case it is slower?)
+//
+template <>
+void
+TInvarBasisQuadBEMBF< TConstFnSpace, TConstFnSpace, real >::eval  ( const vector< idx_t > &    row_ind,
+                                                                    const vector< idx_t > &    col_ind,
+                                                                    BLAS::Matrix< value_t > &  values ) const
+{
+    const size_t        nrows     = row_ind.size();
+    const size_t        ncols     = col_ind.size();
+    const ansatzsp_t *  ansatz_sp = this->ansatz_space();
+    const testsp_t *    test_sp   = this->test_space();
+        
+    //
+    // compute integral over support triangle pair for each (i,j)
+    //
+                
+    vector< value_t >  kernel_values;
+    
+    for ( size_t  col = 0; col < ncols; col++ )
+    {
+        const idx_t        j       = col_ind[ col ];
+        const idx_t        tri1idx = *(test_sp->support(j).begin());
+        const real         J1      = real( test_sp->grid()->tri_size( tri1idx ) );
+        TGrid::triangle_t  tri1    = test_sp->grid()->triangle( tri1idx );
+        
+        for ( size_t  row = 0; row < nrows; row++ )
+        {
+            const idx_t        i       = row_ind[ row ];
+            const idx_t        tri0idx = *(ansatz_sp->support(i).begin());
+            const real         J0      = real( ansatz_sp->grid()->tri_size( tri0idx ) );
+            TGrid::triangle_t  tri0    = ansatz_sp->grid()->triangle( tri0idx );
+        
+            //
+            // decide about relative position of triangles, choose quadrature points
+            // and determine points of triangles s.t. order is as expected
+            //
+
+            const tripair_quad_rule_t * rule    = nullptr;
+            uint                        ncommon = reorder_common( tri0.vtx, tri1.vtx );
+            uint                        torder  = this->_quad_order;
+
+            if ( this->_quad_dist_adaptive && ( ncommon == 0 ))
+                torder = adjust_order( tri0.vtx, tri1.vtx, torder );
+                
+            rule = quad_rule( ncommon, torder );
+                
+            if ( rule == nullptr )
+                HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+            //
+            // compute kernel at quadrature points
+            //
+
+            value_t       value       = value_t(0);
+            const size_t  npts        = rule->npts;
+            const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+
+            if ( kernel_values.size() < padded_npts )
+                kernel_values.resize( padded_npts );
+            
+            eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kernel_values );
+            
+            for ( size_t  iv = 0; iv < npts; ++iv )
+                value += value_t( rule->w[iv] ) * kernel_values[ iv ];
+
+            values( idx_t( row ), idx_t( col ) ) = J0 * J1 * value;
+        }// for
+    }// for
+}
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//
+// explicit template instatiation
+//
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+template class TInvarBasisQuadBEMBF< TConstFnSpace,  TConstFnSpace,  real >;
+template class TInvarBasisQuadBEMBF< TConstFnSpace,  TConstFnSpace,  complex >;
+template class TInvarBasisQuadBEMBF< TConstFnSpace,  TLinearFnSpace, real >;
+template class TInvarBasisQuadBEMBF< TConstFnSpace,  TLinearFnSpace, complex >;
+template class TInvarBasisQuadBEMBF< TLinearFnSpace, TConstFnSpace,  real >;
+template class TInvarBasisQuadBEMBF< TLinearFnSpace, TConstFnSpace,  complex >;
+template class TInvarBasisQuadBEMBF< TLinearFnSpace, TLinearFnSpace, real >;
+template class TInvarBasisQuadBEMBF< TLinearFnSpace, TLinearFnSpace, complex >;
+
+}// namespace
