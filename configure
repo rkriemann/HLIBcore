@@ -87,8 +87,7 @@ compenv  = { 'LIBNAME'      : 'hpro',
              # libraries
              #
 
-             'LAPACK_SRC'   : 'LOCAL',
-             'LAPACK_URL'   : 'http://www.netlib.org/lapack/lapack.tgz',
+             'LAPACK_SRC'   : 'IGNORE',
              'LAPACK_LIB'   : '-llapack -lblas',
              'LAPACK_BASE'  : '',
 
@@ -160,13 +159,6 @@ compenv  = { 'LIBNAME'      : 'hpro',
 
              'VAMPIRTRACE'  : 'no',
 
-             'JEMALLOC'       : 'check',
-             'JEMALLOCDIR'    : '',
-             'JEMALLOCLFLAGS' : '@JEMALLOCDIR@/lib/libjemalloc.a -lpthread -ldl',
-
-             'LIC_OBJ'      : '',
-             'LIC_LFLAGS'   : '',
-             
              #
              # functions and features
              #
@@ -367,7 +359,6 @@ def usage ( status ):
     print( '' )
     print( '    --with-cpuflags[=path]     use cpuflags to determine CFLAGS/CXXFLAGS (default = off)' )
     print( '    --lapack=LFLAGS            linking flags for LAPACK' )
-    print( '    --download-lapack[=URL]    download, compile and use LAPACK provided by URL (default = NETLIB)' )
     print( '    --with-mkl=dir             set installation directory of Intel MKL' )
     print( '      --mkl-cflags             flags to compile with Intel MKL' )
     print( '      --mkl-lflags             flags to link with Intel MKL' )
@@ -399,9 +390,6 @@ def usage ( status ):
     print( '      --amdlibm-lflags=lflags  flags to link with AMDLIBM' )
     print( '    --with-acml[=dir]          turn on/off usage of ACML with optional prefix "dir"' )
     print( '      --acml-lflags=lflags     flags to link with ACML' )
-    print( '    --with-jemalloc[=dir]      turn on/off usage of JEMALLOC with optional prefix "dir"' )
-    print( '      --jemalloc-lflags=lflags flags to link with JEMALLOC' )
-    print( '    --with-licobj=LFLAGS       linking flags for license object files' )
     
     sys.exit( status )
 
@@ -501,15 +489,6 @@ def parse_cmdline ( args, env ):
                                  [ '--with-vtrace',     'none',     None ],
                                  [ '--without-vtrace',  'none',     None ],
 
-                                 [ '--with-jemalloc',    'optional', env['JEMALLOCDIR'] ],
-                                 [ '--without-jemalloc', 'none',     None ],
-                                 [ '--jemalloc-lflags',  'required', env['JEMALLOCLFLAGS'] ],
-
-                                 [ '--with-licobj',     'required', env['LIC_OBJ'] ],
-                                 [ '--without-licobj',  'none',     None ],
-                                 [ '--licobj-lflags',   'required', env['LIC_LFLAGS'] ],
-
-                                 [ '--download-lapack', 'optional', env['LAPACK_URL'] ],
                                  [ '--lapack',          'required', env['LAPACK_LIB'] ],
 
                                  [ '--with-mkl',        'optional', env['MKLDIR'] ],
@@ -705,27 +684,6 @@ def parse_cmdline ( args, env ):
             env['ACMLLFLAGS'] = arg
 
 
-        elif opt in ( '--with-jemalloc' ):
-            env['JEMALLOC']    = 'yes'
-            env['JEMALLOCDIR'] = arg
-        elif opt in ( '--without-jemalloc' ):
-            env['JEMALLOC'] = 'no'
-        elif opt in ( '--jemalloc-lflags' ):
-            env['JEMALLOCLFLAGS'] = arg
-
-
-        elif opt in ( '--with-licobj' ):
-            env['LIC_OBJ']  = arg
-        elif opt in ( '--without-licobj' ):
-            env['LIC_OBJ']  = ''
-        elif opt in ( '--licobj-lflags' ):
-            env['LIC_LFLAGS']  = arg
-
-
-        elif opt in ( '--download-lapack' ):
-            env['LAPACK_URL']  = arg
-            env['LAPACK_LIB']  = ''
-            env['LAPACK_SRC']  = 'DOWNLOAD'
         elif opt in ( '--lapack' ):
             env['LAPACK_LIB']  = arg
             env['LAPACK_SRC']  = 'LOCAL'
@@ -733,6 +691,7 @@ def parse_cmdline ( args, env ):
             
         elif opt in ( '--with-mkl' ):
             env['MKLDIR'] = arg
+            env['MKL']    = 'check'
         elif opt in ( '--without-mkl' ):
             env['MKL']    = 'no'
         elif opt in ( '--mkl-cflags' ):
@@ -874,17 +833,6 @@ def print_env ( env ):
             print_bold( 'ACMLLFLAGS', env['ACMLLFLAGS'] )
         else :
             print_bold( 'ACML', 'yes', env['ACMLLFLAGS'] )
-
-    if env['JEMALLOC'] == 'yes':
-        if verbose > 1:
-            print_bold( 'JEMALLOC', 'yes' )
-            print_bold( 'JEMALLOCDIR',    env['JEMALLOCDIR'] )
-            print_bold( 'JEMALLOCLFLAGS', env['JEMALLOCLFLAGS'] )
-        else :
-            print_bold( 'JEMALLOC', 'yes', env['JEMALLOCLFLAGS'] )
-
-    if env['LIC_OBJ'] != '':
-        print_bold( 'LICENSE', env['LIC_OBJ'] )
 
 #
 # return first line of output of given program
@@ -1292,93 +1240,6 @@ def pkgconfig ( prog, args ):
                     sys.stdout.write( line )
         raise PkgConfigError
     
-###############################################################
-###############################################################
-##
-## functions for retrieving LAPACK
-##
-###############################################################
-###############################################################
-
-#
-# test, if LAPACK is available, e.g. already downloaded
-#
-def test_lapack ( basedir ) :
-
-    for dir in ( 'SRC', 'BLAS', os.path.join( 'BLAS', 'SRC' ), 'INSTALL' ) :
-        if not os.path.isdir( os.path.join( basedir, dir ) ) :
-            print( 'LAPACK not available: no directory "' + dir + '"' )
-            sys.exit( 1 );
-            
-    for file in ( 'dgesvd.f', 'zgesvd.f', 'dgeev.f', 'zgeev.f', 'dorgqr.f', 'zungqr.f' ) :
-        file = os.path.isfile( os.path.join( basedir, 'SRC', file ) )
-        if not file :
-            print( 'LAPACK not available: no file "' + file + '"' )
-            sys.exit( 1 );
-        
-    for file in ( 'dgemv.f', 'zgemv.f', 'dgemm.f', 'zgemm.f' ) :
-        file = os.path.isfile( os.path.join( basedir, 'BLAS', 'SRC', file ) )
-        if not file :
-            print( 'LAPACK not available: no file "' + file + '"' )
-            sys.exit( 1 );
-        
-    for file in ( 'dlamch.f', 'slamch.f', 'lsame.f' ) :
-        file = os.path.isfile( os.path.join( basedir, 'INSTALL', file ) )
-        if not file :
-            print( 'LAPACK not available: no file "' + file + '"' )
-            sys.exit( 1 );
-
-#
-# retrieve and unpack lapack source
-#
-def get_lapack ( url, compenv ) :
-
-    def lapack_source ( tar, base ) :
-        for tarinfo in tar:
-            if tarinfo.isreg() :
-                dir = os.path.dirname( tarinfo.name ) 
-                if ( dir in ( os.path.join( base, 'SRC' ),
-                              os.path.join( base, 'BLAS', 'SRC' ), 
-                              os.path.join( base, 'INSTALL' ) )  and
-                     os.path.splitext( tarinfo.name )[1] == '.f' ) :
-                    yield tarinfo
-
-
-    try :
-
-        print_unbuf( 'preparing ' + bold( '%-19s' % 'LAPACK' ) + ' : ' )
-
-        path = ''
-        if os.path.isfile( url ) :
-            path = url
-        else : 
-            path = os.path.join( contribdir, os.path.basename( url ) )
-
-            if not os.path.isfile( path ) :
-                print_unbuf( 'downloading "' + url + '", ' )
-                req  = urllib.urlopen( url )
-                local_file = open( path, 'wb' )
-                local_file.write( req.read() )
-                local_file.close()
-            
-
-        print_unbuf( 'extracting "' + path + '"' )
-        tar = tarfile.open( path )
-        for tarinfo in tar:
-            if tarinfo.isdir() and compenv['LAPACK_BASE'] == '' :
-                compenv['LAPACK_BASE'] = tarinfo.name
-                break
-
-        tar.extractall( members = lapack_source( tar, compenv['LAPACK_BASE'] ),
-                        path    = contribdir )
-        tar.close()
-
-        print( ' ' + tmsg['success'] )
-
-    except Exception as e:
-        print( str( e ) )
-        sys.exit( 1 )
-
 ###############################################################
 ###############################################################
 ##
@@ -2647,22 +2508,6 @@ def test_environment ( env ):
         else:
             env['ACML'] = 'yes'
 
-    if compenv['JEMALLOC'] == 'yes' or compenv['JEMALLOC'] == 'check':
-        lflags = compenv['JEMALLOCLFLAGS']
-
-        if not check_lib( 'jemalloc', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + lflags ):
-            env['JEMALLOC'] = 'check'
-        else:
-            env['JEMALLOC'] = 'yes'
-
-    if compenv['LIC_OBJ'] != '':
-        lflags = compenv['LIC_OBJ'] + ' ' + compenv['LIC_LFLAGS']
-
-        if not check_lib( 'LIC_OBJ', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + lflags ):
-            print( 'License check failed to compile !!!' )
-            print( '(Used ' + bold( lflags ) + ')' )
-            sys.exit( 1 )
-
     #
     # for SSE, AVX and MIC check first for compiler flags and then for
     # builtin support
@@ -2866,16 +2711,6 @@ def main ( compenv ):
     parse_cmdline( cargs, compenv )
 
     #
-    # download LAPACK if required
-    #
-
-    if compenv['LAPACK_SRC'] == 'DOWNLOAD' :
-        get_lapack( compenv['LAPACK_URL'], compenv )
-        test_lapack( os.path.join( contribdir, compenv['LAPACK_BASE'] ) )
-        compenv['LAPACK_LIB'] = os.path.join( contribdir, 'liblapack.a' ) + ' ' + \
-            detect_fortran_libs( compenv['FC'] )
-
-    #
     # test programs, libraries and functions
     #
 
@@ -2934,9 +2769,6 @@ def main ( compenv ):
 
     if compenv['MKL'] == 'yes' :
         compenv['CXXFLAGS'] += ' ' + compenv['MKLCFLAGS']
-
-    if compenv['JEMALLOC'] == 'yes' :
-        if compenv['JEMALLOCLFLAGS'] != '' : compenv['LFLAGS']   += ' ' + compenv['JEMALLOCLFLAGS']
 
     #
     # replace all @variables
@@ -2997,9 +2829,6 @@ def main ( compenv ):
                   'ACML', 'MKL', 'MKL_SEQ' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
-
-    if compenv['LIC_OBJ'] != '' : compenv['USE_LIC_CHECK'] = '1'
-    else :                        compenv['USE_LIC_CHECK'] = '0'
 
     # convert BSP type to numerical value for preprocessor
     if compenv['NET_TYPE'] == 'SEQ' : compenv['NET_TYPE'] = '1' 

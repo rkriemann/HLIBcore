@@ -20,21 +20,6 @@
 #include "hpro/base/error.hh"
 #include "hpro/base/System.hh"
 
-#if USE_LIC_CHECK == 1
-
-//
-// define interface for licensing functions
-//
-extern "C" {
-int checkout_license ( const char * feature,
-                       const char * version,
-                       const int    nlicenses );
-
-int checkin_license  ();
-}
-
-#endif  // USE_LIC_CHECK
-
 namespace HLIB
 {
 
@@ -390,8 +375,6 @@ get_local_variables ()
 namespace
 {
 
-bool          HAS_LICENSE        = false; // was license found
-
 const uint    HLIB_MAJOR_VERSION = 2;
 const uint    HLIB_MINOR_VERSION = 9;
 const char *  HLIB_VERSION       = "2.9";
@@ -416,20 +399,6 @@ namespace CFG
 void
 init ()
 {
-    //
-    // check for license
-    //
-
-#if USE_LIC_CHECK == 1
-
-    if ( checkout_license( "HLIBpro", HLIB_VERSION, 1 ) != 0 )
-        HERROR( ERR_LICENSE, "(CFG) init", "" );
-
-#endif
-
-    // valid license found
-    HAS_LICENSE = true;
-
     //
     // read config from config file
     //
@@ -555,17 +524,6 @@ init ()
 void
 done ()
 {
-    //
-    // release license
-    //
-
-    HAS_LICENSE = false;
-
-#if USE_LIC_CHECK == 1
-
-    checkin_license();
-
-#endif
 }
 
 //
@@ -1058,23 +1016,6 @@ term_charset_t  charset_mode      = auto_charset;
 bool            permute_save      = true;
 
 }// namespace IO
-
-
-////////////////////////////////////////////////
-//
-// license management
-//
-////////////////////////////////////////////////
-    
-//
-// check if license for given feature is available
-//
-void
-has_license ( const uint )
-{
-    if ( ! HAS_LICENSE )
-        HERROR( ERR_LICENSE, "", "no valid license available" );
-}
 
 }// namespace CFG
 

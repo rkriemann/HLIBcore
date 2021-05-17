@@ -19,8 +19,6 @@ Import( 'sse3_env' )
 Import( 'vsx_env' )
 Import( 'neon_env' )
 Import( 'mic_env' )
-Import( 'lic_obj' )
-Import( 'lic_lflags' )
 
 env    = hlibpro_env.Clone()
 sse3   = sse3_env.Clone()
@@ -209,18 +207,9 @@ for file in [ 'acoustic', 'laplace', 'helmholtz', 'maxwell', 'exp' ] :
 #
 
 if env['shared']:
-    if lic_obj != '' :              
-        env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1 # otherwise .a and .so can not be mixed
-        sources.append( lic_obj )   # license obj. is expected to be file/static library
-        if lic_lflags != '' :
-            env.MergeFlags( lic_lflags )
-        
     hlibpro = env.SharedLibrary( 'hpro', sources + mach_obj )
 
 elif env['static']:
-    if lic_obj != '':
-        sources.append( lic_obj )   # license obj. is expected to be file/static library
-
     hlibpro = env.StaticLibrary( 'hpro', sources + mach_obj )
 
 #

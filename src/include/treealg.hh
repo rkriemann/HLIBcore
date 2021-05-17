@@ -8,6 +8,8 @@
 // Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
 //
 
+#include <hpro/base/basetypes.hh>
+
 #include "list.hh"
 
 namespace HLIB

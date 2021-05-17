@@ -36,7 +36,6 @@
 #define USE_MKL                  @USE_MKL@
 #define USE_MKL_SEQ              @USE_MKL_SEQ@
 #define USE_VAMPIRTRACE          0
-#define USE_LIC_CHECK            @USE_LIC_CHECK@
 
 /*
  * set to 1 if the following functions are available and

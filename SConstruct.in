@@ -52,10 +52,6 @@ mongoose        = '@MONGOOSE@'
 mongoose_cflags = '@MONGOOSECFLAGS@'
 mongoose_lflags = '@MONGOOSELFLAGS@'
 
-fftw3         = '@FFTW3@'
-fftw3_cflags  = '@FFTW3CFLAGS@'
-fftw3_lflags  = '@FFTW3LFLAGS@'
-
 gsl           = '@GSL@'
 gsl_cflags    = '@GSLCFLAGS@'
 gsl_lflags    = '@GSLLFLAGS@'
@@ -69,10 +65,6 @@ hdf5_cflags   = '@HDF5CFLAGS@'
 hdf5_lflags   = '@HDF5LFLAGS@'
 
 cxxlibs       = '@CXXLIBS@'
-
-# handling of license object files
-lic_obj       = '@LIC_OBJ@'
-lic_lflags    = '@LIC_LFLAGS@'
 
 # indicate, that CPU is X86 compatible and compiler supports SSE/AVX
 has_cpuid     = ('@HAS_CPUID@' == '1')
@@ -98,10 +90,6 @@ Help( """
 Type
   'scons'            to build HLIBpro.
   'scons options'    to get help on command line build parameters.
-  'scons install'    to install HLIBpro in the chosen directory.
-  'scons doc'        to create documentation for HLIBpro.
-  'scons distclean'  to remove HLIBpro and all files created during compilation.
-  'scons dist'       to create tar archive of HLIBpro.
 """ )
 
 ############################################################
@@ -193,18 +181,12 @@ if base_env['static']:
     base_env['shared'] = 0
 
 hlibpro_env = base_env.Clone()
-noopt_env   = base_env.Clone()
-doc_env     = base_env.Clone()
 
 if system == 'Windows' or system == 'Darwin' :
     hlibpro_env.MergeFlags( lflags )
 
-# add downloaded LAPACK or given LAPACK
-if lapack == 'DOWNLOAD':
-    if system == 'Windows':
-        hlibpro_env.Append( LIBPATH = [ '#lapack' ] )
-        hlibpro_env.Append( LIBS    = [ 'lapack' ] )
-else:
+# add LAPACK
+if lapack != 'IGNORE':
     # not yet handled by SCons
     if re.findall( 'sunperf', lapack ) != []:
         if system == 'Windows':
@@ -249,13 +231,6 @@ if mongoose == 'yes':
     else:
         hlibpro_env.MergeFlags( mongoose_cflags )
 
-# add FFTW3
-if fftw3 == 'yes':
-    if system == 'Windows':
-        hlibpro_env.MergeFlags( fftw3_cflags + ' ' + fftw3_lflags )
-    else:
-        hlibpro_env.MergeFlags( fftw3_cflags )
-
 # add GSL
 if gsl == 'yes':
     if system == 'Windows':
@@ -269,15 +244,6 @@ if hdf5 == 'yes':
         hlibpro_env.MergeFlags( hdf5_cflags + ' ' + hdf5_lflags )
     else:
         hlibpro_env.MergeFlags( hdf5_cflags )
-
-# no optimisation in noopt
-noopt_env.Replace( FORTRANFLAGS = fcflags )
-
-if base_env['profile']:
-    noopt_env.Append( FORTRANFLAGS = profile )
-
-if base_env['debug']:
-    noopt_env.Append( FORTRANFLAGS = debug )
 
 # create special environment for various instruction sets
 sse3_env   = hlibpro_env.Clone()
@@ -305,13 +271,6 @@ Export( 'avx512_env' )
 Export( 'vsx_env' )
 Export( 'neon_env' )
 Export( 'mic_env' )
-
-Export( 'noopt_env' )
-Export( 'doc_env' )
-Export( 'lic_obj' )
-Export( 'lic_lflags' )
-Export( 'lapack_base' )
-Export( 'lapack' )
 
 #
 # save options
@@ -353,76 +312,4 @@ def show_options ( target, source, env ):
 
 options_cmd = base_env.Command( 'phony-target-options', None, show_options )
 base_env.Alias( 'options', options_cmd )
-
-############################################################
-#
-# Target: dist
-#
-
-#
-# collect distribution files
-#
-def collect_dist_files ():
-    """collect all files for distribution tar file"""
-
-    dist_files = [ 'configure', 
-                   'SConstruct.in',
-                   'bin/cpuflags', 
-                   'bin/hlib-config.in' ]
-    
-    includeext   = [ '.h', '.hh', '.c', '.cc', '.in' ]
-    excludefiles = [ 'hlib-config', 'hlib-config.h' ]
-    excludedirs  = [ '.arch-ids' ]
-
-    #
-    # search for source files
-    #
-    
-    for dir in [ 'src', 'include' ]:
-        # include SConscript file
-        if os.path.exists( '%s/SConscript' % dir ):
-            dist_files.append( '%s/SConscript' % dir )
-                           
-        for root, dirs, files in os.walk( dir ):
-                               
-            #
-            # include all files with suffix in <includeext> 
-            # but not in <excludefiles>
-            #
-            for file in files:
-                if file not in excludefiles:
-                    ext = os.path.splitext( file )
-                    if ext[1] in includeext:
-                        dist_files.append( os.path.join( root, file ) )
-                        
-            #
-            # exclude directories in <excludedirs>
-            #
-            for dir in excludedirs:
-                if dir in dirs:
-                    dirs.remove( dir )
-                    
-    return dist_files
-
-#
-# actual command
-#
-def make_dist ( target, source, env ):
-    """scons dist target"""
-
-    import tarfile
-
-    libname = ( 'hlibpro-%s' % version )
-    tarname = ( '%s.tgz'     % libname )
-
-    print( " TAR    ", tarname )
-
-    dist_files = collect_dist_files()
-    tar = tarfile.open( tarname, 'w:gz' )
-    for file in dist_files:
-        tar.add( file, '%s/%s' % ( libname, file ) )
-    tar.close()
-
-dist_cmd = base_env.Command( 'phony-target-dist', None, make_dist )
-base_env.Alias( 'dist', dist_cmd )
 
