@@ -149,7 +149,7 @@ sincos  ( const float  f,
 {
     #if USE_SVML == 1
         
-    ::sincos( f, & s, & c );
+    ::sincosf( f, & s, & c );
         
     #elif USE_AMDLIBM == 1
         

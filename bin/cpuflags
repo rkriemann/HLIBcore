@@ -100,7 +100,7 @@ sub usage
     print "    -V, --version        : print version number\n";
     print "\n";
     print "  Supported systems and compilers:\n";
-    print "    Linux   : gcc-2/../10, icc-5/../19, clang-3..10, pgi, PathScale 2, Sun Studio 10/11\n";
+    print "    Linux   : gcc-2/../10, icc-5/../19, clang-3..12, pgi, PathScale 2, Sun Studio 10/11\n";
     print "    Solaris : gcc-2/../4, Sun Studio 10/11, SunCC-5, KaiCC\n";
     print "    AIX     : gcc, xlC\n";
     print "    IRIX    : gcc, mipscc\n";
@@ -656,7 +656,7 @@ sub get_cflags
                 elsif ( /itanium2/ )      { $cflags = " "; }
             }
         }
-        elsif ( $compiler =~ /clang-([5-9]|10).*/ )
+        elsif ( $compiler =~ /clang-([5-9]|10|11|12).*/ )
         {
             for ( $cpu )
             {

@@ -121,7 +121,7 @@ compenv  = { 'LIBNAME'      : 'hpro',
 
              'MONGOOSE'       : 'check',
              'MONGOOSEDIR'    : '',
-             'MONGOOSECFLAGS' : '-I@MONGOOSEDIR@/include',
+             'MONGOOSECFLAGS' : '-I@MONGOOSEDIR@/include -I@MONGOOSEDIR@/include/suitesparse',
              'MONGOOSELFLAGS' : '-L@MONGOOSEDIR@/lib -lmongoose',
              
              'GSL'          : 'check',
@@ -765,7 +765,7 @@ def print_env ( env ):
             print_bold( 'ZLIBCFLAGS', env['ZLIBCFLAGS'] )
             print_bold( 'ZLIBLFLAGS', env['ZLIBLFLAGS'] )
         else :
-            print_bold( 'ZLIB', 'yes', env['ZLIBCFLAGS'] + env['ZLIBLFLAGS'] )
+            print_bold( 'ZLIB', 'yes', env['ZLIBCFLAGS'] + ' ' + env['ZLIBLFLAGS'] )
 
     if env['METIS'] == 'yes':
         if verbose > 1:
@@ -774,7 +774,7 @@ def print_env ( env ):
             print_bold( 'METISCFLAGS', env['METISCFLAGS'] )
             print_bold( 'METISLFLAGS', env['METISLFLAGS'] )
         else :
-            print_bold( 'METIS', 'yes', env['METISCFLAGS'] + env['METISLFLAGS'] )
+            print_bold( 'METIS', 'yes', env['METISCFLAGS'] + ' ' + env['METISLFLAGS'] )
 
     if env['SCOTCH'] == 'yes':
         if verbose > 1:
@@ -783,7 +783,7 @@ def print_env ( env ):
             print_bold( 'SCOTCHCFLAGS', env['SCOTCHCFLAGS'] )
             print_bold( 'SCOTCHLFLAGS', env['SCOTCHLFLAGS'] )
         else :
-            print_bold( 'Scotch', 'yes', env['SCOTCHCFLAGS'] + env['SCOTCHLFLAGS'] )
+            print_bold( 'Scotch', 'yes', env['SCOTCHCFLAGS'] + ' ' + env['SCOTCHLFLAGS'] )
 
     if env['CHACO'] == 'yes':
         if verbose > 1:
@@ -800,7 +800,7 @@ def print_env ( env ):
             print_bold( 'MONGOOSECFLAGS', env['MONGOOSECFLAGS'] )
             print_bold( 'MONGOOSELFLAGS', env['MONGOOSELFLAGS'] )
         else :
-            print_bold( 'MONGOOSE', 'yes', env['MONGOOSECFLAGS'] + env['MONGOOSELFLAGS'] )
+            print_bold( 'MONGOOSE', 'yes', env['MONGOOSECFLAGS'] + ' ' + env['MONGOOSELFLAGS'] )
 
     if env['GSL'] == 'yes':
         if verbose > 1:
@@ -808,7 +808,7 @@ def print_env ( env ):
             print_bold( 'GSLCFLAGS', env['GSLCFLAGS'] )
             print_bold( 'GSLLFLAGS', env['GSLLFLAGS'] )
         else :
-            print_bold( 'GSL', 'yes', env['GSLCFLAGS'] + env['GSLLFLAGS'] )
+            print_bold( 'GSL', 'yes', env['GSLCFLAGS'] + ' ' + env['GSLLFLAGS'] )
 
     if env['HDF5'] == 'yes':
         if verbose > 1:
@@ -816,7 +816,7 @@ def print_env ( env ):
             print_bold( 'HDF5CFLAGS', env['HDF5CFLAGS'] )
             print_bold( 'HDF5LFLAGS', env['HDF5LFLAGS'] )
         else :
-            print_bold( 'HDF5', 'yes', env['HDF5CFLAGS'] + env['HDF5LFLAGS'] )
+            print_bold( 'HDF5', 'yes', env['HDF5CFLAGS'] + ' ' + env['HDF5LFLAGS'] )
 
     if env['AMDLIBM'] == 'yes':
         if verbose > 1:
@@ -2513,14 +2513,14 @@ def test_environment ( env ):
     # builtin support
     #
 
-    for ( func, name, compflag, execute ) in [ ( 'HAS_CPUID',   'cpuid',   '',          True  ),
-                                               ( 'HAS_SSE3',    'SSE3',    '-msse3',    False ),
-                                               ( 'HAS_AVX',     'AVX',     '-mavx',     False ),
-                                               ( 'HAS_AVX2',    'AVX2',    '-mavx2',    False ),
-                                               ( 'HAS_MIC',     'MIC',     '-mmic',     False ),
-                                               ( 'HAS_AVX512F', 'AVX512F', '-mavx512f', False ),
-                                               ( 'HAS_VSX',     'VSX',     '-mvsx',     False ),
-                                               ( 'HAS_NEON',    'NEON',    '',          False )
+    for ( func, name, compflag, execute ) in [ ( 'HAS_CPUID',   'cpuid',   '',                                           True  ),
+                                               ( 'HAS_SSE3',    'SSE3',    '-march=westmere -msse3',                     False ),
+                                               ( 'HAS_AVX',     'AVX',     '-march=sandybridge -mavx',                   False ),
+                                               ( 'HAS_AVX2',    'AVX2',    '-march=haswell -mavx2',                      False ),
+                                               ( 'HAS_MIC',     'MIC',     '-mmic',                                      False ),
+                                               ( 'HAS_AVX512F', 'AVX512F', '-march=skylake-avx512 -mavx512f -mavx512cd', False ),
+                                               ( 'HAS_VSX',     'VSX',     '-mvsx',                                      False ),
+                                               ( 'HAS_NEON',    'NEON',    '',                                           False )
                                       ] :
         if compenv[ func ] == 'yes' or compenv[ func ] == 'check':
             flags = compenv['CXXFLAGS'] + ' ' + compenv['LFLAGS'] + ' ' + compflag
