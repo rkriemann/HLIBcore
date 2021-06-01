@@ -1102,63 +1102,47 @@ max_usage ()
 // return string containing pretty printed memory usage
 //
 std::string
-to_string ()
+to_string ( const uint  base )
 {
-    return to_string( usage() );
+    return to_string( usage(), base );
 }
 
 //
 // convert given number of bytes to human readable format
 //
 std::string
-to_string ( const size_t byteval )
+to_string ( const size_t byteval,
+            const uint   base )
 {
     ostringstream  str;
-    size_t         bytes = byteval;
-            
-    if ( bytes < 1024 )
-        str << bytes << " B";
-    else if ( bytes < 1024*1024 )
-    {
-        size_t  kb;
-
-        kb    = bytes / (1024);
-        bytes = size_t( ((double(bytes) / double(1024)) - double(kb)) * 100.0 );
-
-        str << kb;
-                
-        if ( bytes < 10 ) str << ".0";
-        else              str << '.' ;
-
-        str << bytes << " kB";
-    }// if
-    else if ( bytes < 1024*1024*1024 )
-    {
-        size_t  mb, kb;
-
-        mb = bytes / (1024*1024);
-        kb = size_t( ((double(bytes) / double(1024*1024)) - double(mb)) * 100.0 );
-
-        str << mb;
-                
-        if ( kb < 10 ) str << ".0";
-        else           str << '.' ;
-
-        str << kb << " MB";
-    }// if
+    size_t         bytes     = byteval;
+    const char *   units10[] = { "B", "kB", "MB", "GB", "TB", "PB", "EB" };
+    const char *   units2[]  = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
+    const char **  units     = ( base == 10 ? units10 : units2 );
+    const size_t   mult      = ( base == 10 ? 1000 : 1024 );
+    
+    if ( bytes < mult )
+        str << bytes << ' ' << units[0];
     else
     {
-        size_t  gb, mb;
+        size_t  ofs = mult;
+        uint    idx = 1;
+            
+        while (( bytes > ofs * mult ) && ( idx < 6 ))
+        {
+            ofs *= mult;
+            ++idx;
+        }// while
+        
+        const size_t  uval = bytes / (ofs);
+        const size_t  lval = size_t( ((double(bytes) / double(ofs)) - double(uval)) * 100.0 );
 
-        gb = bytes / (1024*1024*1024);
-        mb = size_t( ((double(bytes) / double(1024*1024*1024)) - double(gb)) * 100.0 );
-
-        str << gb;
+        str << uval;
                 
-        if ( mb < 10 ) str << ".0";
-        else           str << '.';
+        if ( lval < 10 ) str << ".0";
+        else             str << '.' ;
 
-        str << mb << " GB";
+        str << lval << ' ' << units[idx];
     }// else
 
     return str.str();

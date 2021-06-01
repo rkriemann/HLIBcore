@@ -475,13 +475,16 @@ size_t       max_usage ();
 
 //
 // return string containing pretty printed current memory usage
+// with base <base> (base = 2 or 10, e.g. MiB vs MB)
 //
-std::string  to_string ();
+std::string  to_string ( const uint   base = 10 );
 
 //
 // convert given number of bytes to human readable format
+// with base <base> (base = 2 or 10, e.g. MiB vs MB)
 //
-std::string  to_string ( const size_t bytes );
+std::string  to_string ( const size_t bytes,
+                         const uint   base = 10 );
 
 //
 // wrapper around malloc for statistics (only for debugging)
