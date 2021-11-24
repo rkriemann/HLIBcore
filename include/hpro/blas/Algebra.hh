@@ -1037,6 +1037,9 @@ prod ( const T1    alpha,
     HASSERT_BLAS( A.nrows() == C.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
     HASSERT_BLAS( B.ncols() == C.ncols(), ERR_MAT_SIZE, "(BLAS) prod", "" );
     HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
+    HASSERT_BLAS( A.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
+    HASSERT_BLAS( B.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
+    HASSERT_BLAS( C.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
     
     MKL_SEQ_START;
     
@@ -1108,6 +1111,8 @@ prod ( const T1    alpha,
        const T3 &  B )
 {
     HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
+    HASSERT_BLAS( A.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
+    HASSERT_BLAS( B.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
     
     using  value_t = T1;
 

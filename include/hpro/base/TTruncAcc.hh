@@ -125,6 +125,13 @@ public:
         return *this;
     }
 
+    //! return accuracy description for individual subblock
+    virtual const TTruncAcc    acc ( const TIndexSet &  /* rowis */,
+                                     const TIndexSet &  /* colis */ ) const
+    {
+        return *this;
+    }
+
     //! abbreviation via () operator
     const TTruncAcc &  operator () ( const TBlockCluster *  bc ) const
     {
@@ -137,6 +144,13 @@ public:
         return acc( M );
     }
     
+    //! return accuracy description for individual submatrix
+    const TTruncAcc    operator () ( const TIndexSet &  rowis,
+                                     const TIndexSet &  colis ) const
+    {
+        return acc( rowis, colis );
+    }
+
     // explicit virtual destructor
     virtual ~TTruncAcc () {}
     
@@ -311,6 +325,10 @@ public:
     //! return accuracy description for individual subblock defined by matrix
     virtual const TTruncAcc &  acc ( const TMatrix *        M  ) const;
     
+    //! return accuracy description for individual subblock
+    virtual const TTruncAcc    acc ( const TIndexSet &      rowis,
+                                     const TIndexSet &      colis ) const;
+
     /////////////////////////////////////////////////
     //
     // access accuracy data

@@ -188,6 +188,13 @@ TBlockTruncAcc::acc ( const TMatrix *  M ) const
                     TIndexSet( col_ofs, col_ofs + idx_t(M->cols()) - 1 ) );
 }
 
+const TTruncAcc
+TBlockTruncAcc::acc ( const TIndexSet &  rowis,
+                      const TIndexSet &  colis ) const
+{
+    return get_acc( rowis, colis );
+}
+
 //
 // local block accuracy method
 //

@@ -96,7 +96,7 @@ public:
 
     //! copy constructor for other matrix types
     template < typename T_matrix >
-    Matrix ( const T_matrix & M )
+    Matrix ( const T_matrix &  M )
             : MemBlock<value_t>()
             , _length{ 0, 0 }
             , _stride{ 0, 0 }
@@ -139,6 +139,42 @@ public:
                 _stride[1] = r2.stride() * M.col_stride();
             
                 super_t::init( M.data() + r1.first() * M.row_stride() + r2.first() * M.col_stride() );
+                break;
+
+            case copy_value :
+                super_t::alloc_wo_value( _length[0] * _length[1] );
+                _stride[0] = 1;
+                _stride[1] = _length[0];
+
+                for ( idx_t j = 0; j < idx_t( _length[1] ); j++ )
+                    for ( idx_t i = 0; i < idx_t( _length[0] ); i++ )
+                        (*this)(i,j) = M( r1.first() + i * idx_t( r1.stride() ),
+                                          r2.first() + j * idx_t( r2.stride() ) );
+                break;
+        }// switch
+    }
+
+    //! special version for matrix views as above version leads to infinite loop
+    //! only copy_value is supported!
+    template < typename T_matrix >
+    Matrix ( const MatrixBase< T_matrix > &  M,
+             const Range &        ar1,
+             const Range &        ar2,
+             const copy_policy_t  p = copy_reference )
+            : MemBlock<value_t>()
+            , _length{ 0, 0 }
+            , _stride{ 0, 0 }
+    {
+        const Range  r1( ar1 == Range::all ? M.row_range() : ar1 );
+        const Range  r2( ar2 == Range::all ? M.col_range() : ar2 );
+        
+        _length[0] = r1.size() / r1.stride();
+        _length[1] = r2.size() / r2.stride();
+
+        switch ( p )
+        {
+            case copy_reference :
+                HERROR( ERR_NOT_IMPL, "(Matrix) ctor", "copy_reference not supported" );
                 break;
 
             case copy_value :

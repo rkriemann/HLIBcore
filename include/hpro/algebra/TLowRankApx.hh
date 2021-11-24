@@ -69,8 +69,10 @@ public:
 
     //! build low rank matrix for block cluster \a bct with
     //! rank defined by accuracy \a acc
-    virtual TMatrix * build ( const TBlockCluster *   bct,
-                              const TTruncAcc &       acc ) const
+    virtual
+    std::unique_ptr< TMatrix >
+    build ( const TBlockCluster *   bct,
+            const TTruncAcc &       acc ) const
     {
         if ( bct == nullptr )
             HERROR( ERR_ARG, "(TLowRankApx) build", "block cluster is null" );
@@ -83,8 +85,10 @@ public:
 
     //! build low rank matrix for block index set \a bis with
     //! rank defined by accuracy \a acc
-    virtual TMatrix * build ( const TBlockIndexSet &  bis,
-                              const TTruncAcc &       acc ) const = 0;
+    virtual
+    std::unique_ptr< TMatrix >
+    build ( const TBlockIndexSet &  bis,
+            const TTruncAcc &       acc ) const = 0;
 
     //! indicate if algorithm provides statistics
     virtual bool  has_statistics () const { return false; }
@@ -117,12 +121,12 @@ public:
     //
 
     //! return low rank matrix of rank 0
-    virtual TMatrix * build ( const TBlockIndexSet &  bis,
-                              const TTruncAcc &       /* acc */ ) const
+    virtual
+    std::unique_ptr< TMatrix >
+    build ( const TBlockIndexSet &  bis,
+            const TTruncAcc &       /* acc */ ) const
     {
-        auto  R = std::make_unique< TRkMatrix >( bis.row_is(), bis.col_is() );
-        
-        return R.release();
+        return std::make_unique< TRkMatrix >( bis.row_is(), bis.col_is() );
     }
 
     using TLowRankApx::build;
@@ -176,8 +180,10 @@ public:
 
     //! build low rank matrix for block index set \a bis with
     //! rank defined by accuracy \a acc
-    virtual TMatrix * build ( const TBlockIndexSet &  bis,
-                              const TTruncAcc &       acc ) const
+    virtual
+    std::unique_ptr< TMatrix >
+    build ( const TBlockIndexSet &  bis,
+            const TTruncAcc &       acc ) const
     {
         auto  D = std::make_unique< TDenseMatrix >( bis.row_is(), bis.col_is() );
 
@@ -185,7 +191,7 @@ public:
 
         _coeff_fn->eval( bis.row_is(), bis.col_is(), blas_mat< T >( D.get() ).data() );
 
-        return D.release();
+        return D;
     }
         
     using TLowRankApx::build;
