@@ -1403,6 +1403,78 @@ h5_write ( H5File *             file,
         HERROR( ERR_MAT_TYPE, "(THDF5MatrixIO) h5_write", M->typestr() );
 }
 
+template < typename value_t >
+const BLAS::Matrix< value_t >
+h5_read_dense ( H5File *             file,
+                const std::string &  mname )
+{
+    if ( is_complex_type< value_t >::value )
+        HERROR( ERR_CONSISTENCY, "", "" );
+
+    auto  data_name = std::string( "" );
+    auto  iter_op   = [] ( H5::H5Object &      loc,
+                           const std::string   attr_name,
+                           const H5O_info_t *  oinfo, 
+                           void *              operator_data ) -> int
+    {
+        std::string *  dname = static_cast< std::string * >( operator_data );
+        
+        // if ( mname != "" )
+        // {
+        //     // use given matrix name if in file
+        //     if ( mname == attr_name )
+        //         *dname = attr_name;
+        // }// if
+        // else
+        if ( attr_name != "." )
+        {
+            // use first name encountered
+            if ( *dname == "" )
+                *dname = attr_name;
+            else
+            {
+                // reset if not expected value
+                if (( attr_name != *dname + "/type" ) &&
+                    ( attr_name != *dname + "/value" ))
+                    *dname = "";
+            }// else
+        }// if
+            
+        // std::cout << attr_name << std::endl;
+        
+        return 0;
+    };
+    
+    file->visit( H5_INDEX_NAME, H5_ITER_INC, iter_op, & data_name, 0 );
+
+    // std::cout << "data : " << data_name << std::endl;
+    
+    auto  dataset    = file->openDataSet( data_name + "/value" );
+    auto  type_class = dataset.getTypeClass();
+
+    // if ( type_class == H5T_FLOAT )
+    //     std::cout << "double" << std::endl;
+    // else
+    //     std::cout << type_class << std::endl;
+
+    auto  dataspace = dataset.getSpace();
+    auto  ndims     = dataspace.getSimpleExtentNdims();
+    auto  dims      = std::vector< hsize_t >( ndims );
+    
+    dataspace.getSimpleExtentDims( dims.data() );
+
+    if ( ndims != 2 )
+        std::cout << "not a matrix" << std::endl;
+                                                
+    // std::cout << dims[0] << " × " << dims[1] << std::endl;
+
+    auto  M = BLAS::Matrix< value_t >( dims[0], dims[1] );
+
+    dataset.read( M.data(), PredType::NATIVE_DOUBLE );
+    
+    return  M;
+}
+
 }// namespace anonymous
 
 #endif
@@ -1508,10 +1580,25 @@ THDF5MatrixIO::write ( const BLAS::Matrix< complex > &  ,
 //
 // read and return matrix from file \a fname
 //
+#if USE_HDF5 == 1
 std::unique_ptr< TMatrix >
-THDF5MatrixIO::read  ( const std::string & ) const
+THDF5MatrixIO::read  ( const std::string &  filename ) const
 {
-    HERROR( ERR_NOT_IMPL, "", "" );
+    try
+    {
+        H5File  file( filename, H5F_ACC_RDONLY );
+
+        auto  M = h5_read_dense< real >( & file, "" );
+
+        return std::make_unique< TDenseMatrix >( is( 0, M.nrows()-1 ), is( 0, M.ncols()-1 ), std::move( M ) );
+    }// try
+    catch( FileIException &      error ) { error.printErrorStack(); }
+    catch( DataSetIException &   error ) { error.printErrorStack(); }
+    catch( DataSpaceIException & error ) { error.printErrorStack(); }
+    catch( DataTypeIException &  error ) { error.printErrorStack(); }
+
+    return std::unique_ptr< TMatrix >();
 }
+#endif
 
 }// namespace HLIB
