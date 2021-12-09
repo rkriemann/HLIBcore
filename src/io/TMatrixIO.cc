@@ -1687,6 +1687,7 @@ THDF5MatrixIO::read  ( const std::string &  filename ) const
     return std::unique_ptr< TMatrix >();
 }
 #else
+std::unique_ptr< TMatrix >
 THDF5MatrixIO::read  ( const std::string &  ) const
 {
     HERROR( ERR_NOHDF5, "(THDF5MatrixIO) read", "" );
