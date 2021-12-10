@@ -181,7 +181,7 @@ public:
     bool    is_fixed_prec  () const { return ! is_fixed_rank(); }
 
     //! return true if accuracy is "exact"
-    bool    is_exact       () const { return ! is_fixed_rank() && (_rel_eps == 0.0); }
+    bool    is_exact       () const { return ! is_fixed_rank() && (_rel_eps == 0.0) && (_abs_eps == 0.0); }
 
     //! set maximal rank in truncation
     void    set_max_rank   ( const int  k )
