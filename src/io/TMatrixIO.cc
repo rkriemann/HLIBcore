@@ -1492,12 +1492,19 @@ visit_func ( hid_t               /* loc_id */,
             if ( *dname == "" )
                 *dname = oname;
         }// if
-        else if (( *dname != "" ) && ( info->type == H5O_TYPE_DATASET ))
+        else if ( info->type == H5O_TYPE_DATASET )
         {
-            // reset if not expected value
-            if (( oname != *dname + "/type" ) &&
-                ( oname != *dname + "/value" ))
-                *dname = "";
+            if ( *dname != "" )
+            {
+                if ( oname == *dname + "/value" )     // actual dataset
+                    *dname = *dname + "/value";
+                else if ( oname != *dname + "/type" ) // just type info
+                    *dname = "";
+            }// if
+            else
+            {
+                *dname = oname;                       // directly use dataset
+            }// else
         }// if
         
         // switch ( info->type )
@@ -1539,7 +1546,7 @@ h5_read_dense_c ( hid_t                file,
     if ( data_name == "" )
         return BLAS::Matrix< value_t >( 0, 0 );
 
-    data_name = data_name + "/value";
+    // data_name = data_name + "/value";
     
     auto  dataset   = H5Dopen( file, data_name.c_str(), H5P_DEFAULT );
     auto  dataspace = H5Dget_space( dataset );
