@@ -22,8 +22,8 @@ syntax: regexp
 ^.*\.log
 
 ^SConstruct$
-^bin/hlib-config$
-^include/hlib-config\.h$
+^bin/hpro-config$
+^include/hpro/config\.h$
 
 # gtags files
 ^(GPATH|GRTAGS|GSYMS|GTAGS)$
