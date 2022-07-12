@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TConstEdgeFnSpace.cc
 // Description : implements function space for constant normal linear tangential (CN/LT) edge elements
 // Author      : Ronald Kriemann, Jonas Ballani
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/packed.hh"
 
 #include "hpro/bem/TConstEdgeFnSpace.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ TConstEdgeFnSpace::eval_basis ( const idx_t                     i,
 //
 // scaling factor for basis function i on triangle tri = +/-0.5 * |e|/|tri|
 //
-real
+double
 TConstEdgeFnSpace::scaling_factor_basis ( const idx_t  i,
                                           const idx_t  tri ) const
 {
@@ -255,9 +255,9 @@ TConstEdgeFnSpace::scaling_factor_basis ( const idx_t  i,
     const double  tri_size    = 0.5 * _grid->tri_size( tri );
 
     if ( _supp_list[ _supp_list_ptr[i] ] == tri )          // positive triangle
-        return real( 0.5 * edge_length / tri_size );
+        return double( 0.5 * edge_length / tri_size );
     else if ( _supp_list[ _supp_list_ptr[i] + 1 ] == tri ) // negative triangle
-        return real( -0.5 * edge_length / tri_size );
+        return double( -0.5 * edge_length / tri_size );
 
     return 0;
 }
@@ -529,4 +529,4 @@ TConstEdgeFnSpace::construct ()
     }// for
 }
 
-}// namespace
+}// namespace Hpro

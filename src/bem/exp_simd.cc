@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : expsimd.cc
 // Description : exponential kernel using SIMD functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #if !defined(SIMD_ISA)
@@ -16,7 +16,7 @@
 
 #include "hpro/bem/TExpBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -29,19 +29,19 @@ using std::vector;
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-exp_simd ( const TGrid::triangle_t &    tri0,
-           const TGrid::triangle_t &    tri1,
-           const tripair_quad_rule_t *  rule,
-           vector< real > &             values,
-           const T_ansatzsp *           ansatz_sp,
-           const T_testsp *             test_sp )
+exp_simd ( const TGrid::triangle_t &                             tri0,
+           const TGrid::triangle_t &                             tri1,
+           const tripair_quad_rule_t< real_type_t< value_t > > * rule,
+           vector< value_t > &                                   values,
+           const T_ansatzsp *                                    ansatz_sp,
+           const T_testsp *                                      test_sp )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
 
     const size_t   VECTOR_SIZE = vpacked::vector_size;
     
@@ -125,7 +125,7 @@ exp_simd ( const TGrid::triangle_t &    tri0,
         // store( mul( x, exp( sub( vZERO, sqrt( dot ) ) ) ), res );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[i+j] = real(res[j]);
+            values[i+j] = value_t(res[j]);
     }// for
 }
 
@@ -137,15 +137,15 @@ exp_simd ( const TGrid::triangle_t &    tri0,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-template < typename T_packed >
+template < typename value_t,
+           typename T_packed >
 void
-exp_eval_dx_simd ( const tri_quad_rule_t &  quad_rule,
-                   const T3Point            vx[3],
-                   const T3Point &          vy,
-                   vector< real > &         values )
+exp_eval_dx_simd ( const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
+                   const T3Point                                     vx[3],
+                   const T3Point &                                   vy,
+                   vector< value_t > &                               values )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
 
     const size_t   VECTOR_SIZE = vpacked::vector_size;
     const vpacked  vONE(  value_t(1) );
@@ -190,7 +190,7 @@ exp_eval_dx_simd ( const tri_quad_rule_t &  quad_rule,
         store( vexp, res );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = real( res[j] );
+            values[ k+j ] = value_t( res[j] );
     }// for
 }
 
@@ -202,29 +202,39 @@ exp_eval_dx_simd ( const tri_quad_rule_t &  quad_rule,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-#define  INST_EXP_SIMD( T_ansatzsp, T_testsp )                          \
+#define  INST_EXP_SIMD( type, T_ansatzsp, T_testsp )                    \
     template void                                                       \
-    exp_simd< T_ansatzsp, T_testsp, packed< real, SIMD_ISA > > (        \
-        const TGrid::triangle_t &   tri0,                               \
-        const TGrid::triangle_t &   tri1,                               \
-        const tripair_quad_rule_t * rule,                               \
-        vector< real > &            values,                             \
-        const T_ansatzsp *          ansatz_sp,                          \
-        const T_testsp *            test_sp );
+    exp_simd< type, T_ansatzsp, T_testsp, packed< type, SIMD_ISA > > (   \
+        const TGrid::triangle_t &           tri0, \
+        const TGrid::triangle_t &           tri1, \
+        const tripair_quad_rule_t< real_type_t< type > > * rule, \
+        vector< type > &                    values, \
+        const T_ansatzsp *                  ansatz_sp, \
+        const T_testsp *                    test_sp );
 
-INST_EXP_SIMD( TConstFnSpace,  TConstFnSpace )
-INST_EXP_SIMD( TLinearFnSpace, TConstFnSpace )
-INST_EXP_SIMD( TConstFnSpace,  TLinearFnSpace )
-INST_EXP_SIMD( TLinearFnSpace, TLinearFnSpace )
+#define INST_EXP_ALL( type )                                        \
+    INST_EXP_SIMD( type, TConstFnSpace< type >,  TConstFnSpace< type > ) \
+    INST_EXP_SIMD( type, TLinearFnSpace< type >, TConstFnSpace< type > )  \
+    INST_EXP_SIMD( type, TConstFnSpace< type >,  TLinearFnSpace< type > ) \
+    INST_EXP_SIMD( type, TLinearFnSpace< type >, TLinearFnSpace< type > )
+
+INST_EXP_ALL( float )
+INST_EXP_ALL( double )
 
 template
 void
-exp_eval_dx_simd< packed< real, SIMD_ISA > > ( const tri_quad_rule_t &   quad_rule,
-                                               const T3Point             vx[3],
-                                               const T3Point &           vy,
-                                               vector< real > &          values );
+exp_eval_dx_simd< float, packed< float, SIMD_ISA > > ( const tri_quad_rule_t< float > &  quad_rule,
+                                                       const T3Point                     vx[3],
+                                                       const T3Point &                   vy,
+                                                       vector< float > &                 values );
+template
+void
+exp_eval_dx_simd< double, packed< double, SIMD_ISA > > ( const tri_quad_rule_t< double > &  quad_rule,
+                                                         const T3Point                      vx[3],
+                                                         const T3Point &                    vy,
+                                                         vector< double > &                 values );
 
-}// namespace HLIB
+}// namespace Hpro
 
 // Local Variables:
 // mode: c++

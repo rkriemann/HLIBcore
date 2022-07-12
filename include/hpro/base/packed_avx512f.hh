@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_AVX512F_HH
-#define __HLIB_PACKED_AVX512F_HH
+#ifndef __HPRO_PACKED_AVX512F_HH
+#define __HPRO_PACKED_AVX512F_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_avx512f.hh
 // Description : datatype for packed (vector) operations using AVX512F
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ extern "C" __m512d  _ZGVeN8v_sin    ( __m512d  x );
 extern "C" __m512d  _ZGVeN8v_cos    ( __m512d  x );
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 template <>
@@ -510,8 +510,8 @@ struct packed< double, ISA_AVX512F >
              const value_t   h ) : x( _mm512_setr_pd( a, b, c, d, e, f, g, h ) ) {}
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif // __AVX512F__
 
-#endif // __HLIB_PACKED_AVX512F_HH
+#endif // __HPRO_PACKED_AVX512F_HH

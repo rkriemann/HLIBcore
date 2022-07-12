@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TScalarVector.cc
 // Description : class for a vector of scalar type
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -15,7 +15,7 @@
 
 #include "hpro/vector/TScalarVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // namespace abbr.
@@ -37,33 +37,14 @@ namespace B = BLAS;
 //
 // set size of vector
 //
+template < typename value_t >
 void
-TScalarVector::set_size ( const size_t  n )
+TScalarVector< value_t >::set_size ( const size_t  n )
 {
     if ( n != _size )
     {
-        if ( is_complex() )
-        {
-            if ( n == 0 )
-            {
-                _cvec = B::Vector< complex >();
-            }// if
-            else
-            {
-                _cvec = B::Vector< complex >( n );
-            }// else
-        }// if
-        else
-        {
-            if ( n == 0 )
-            {
-                _rvec = B::Vector< real >();
-            }// if
-            else
-            {
-                _rvec = B::Vector< real >( n );
-            }// else
-        }// else
+        if ( n == 0 ) _vec = B::Vector< value_t >();
+        else          _vec = B::Vector< value_t >( n );
 
         _size = n;
 
@@ -72,50 +53,13 @@ TScalarVector::set_size ( const size_t  n )
 }
 
 //
-// switch between real and complex values
-//
-void
-TScalarVector::to_real ()
-{
-    if ( ! is_complex() || ( _size == 0 ))
-        return;
-
-    for ( idx_t  i = 0; i < idx_t(_size); i++ )
-    {
-        if ( std::imag( _cvec(i) ) != 0.0 )
-            HERROR( ERR_COMPLEX, "(TScalarVector) to_real", "vector has imaginary part" );
-    }// for
-
-    _rvec = B::Vector< real >( _size );
-
-    for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        _rvec(i) = std::real( _cvec(i) );
-
-    _cvec = B::Vector< complex >();
-}
-
-void
-TScalarVector::to_complex ()
-{
-    if ( is_complex() || ( _size == 0 ))
-        return;
-
-    _cvec = B::Vector< complex >( _size );
-
-    for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        _cvec(i) = _rvec(i);
-
-    _rvec = B::Vector< real >();
-}
-    
-//
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TScalarVector::byte_size () const
+TScalarVector< value_t >::byte_size () const
 {
-    return TVector::byte_size() + sizeof(size_t) + sizeof(B::Vector<real>) + sizeof(B::Vector<complex>) +
-        (is_complex() ? sizeof(complex) * size() : sizeof(real) * size());
+    return TVector< value_t >::byte_size() + sizeof(size_t) + sizeof(B::Vector<value_t>) + sizeof(value_t) * size();
 }
 
 //////////////////////////////////////////////////
@@ -126,97 +70,88 @@ TScalarVector::byte_size () const
 //
 // fill with constant
 //
+template < typename value_t >
 void
-TScalarVector::fill ( const real f )
+TScalarVector< value_t >::fill ( const value_t  f )
 {
-    if ( is_complex() ) B::fill( complex(f), _cvec );
-    else                B::fill( f, _rvec );
+    B::fill( f, _vec );
 }
 
 //
 // fill with random numbers (but prevent zero entries)
 //
+template <>
 void
-TScalarVector::fill_rand ( const uint seed )
+TScalarVector< float >::fill_rand ( const uint seed )
 {
     TRNG  rng( seed );
 
-    if ( is_complex() )
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        {
-            complex  f;
-            
-            do
-            {
-                f = complex( real(rng( 1000.0 ) - 500.0),
-                             real(rng( 1000.0 ) - 500.0) );
-            } while ( f == complex(0) );
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        _vec(i) = float( rng( 1000.0 ) - 500.0 );
+}
+    
+template <>
+void
+TScalarVector< double >::fill_rand ( const uint seed )
+{
+    TRNG  rng( seed );
 
-            _cvec(i) = f;
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        {
-            real  f;
-            
-            do
-            {
-                f = real(rng( 1000.0 ) - 500.0);
-            } while ( f == real(0) );
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        _vec(i) = double( rng( 1000.0 ) - 500.0 );
+}
 
-            _rvec(i) = f;
-        }// for
-    }// else
+template <>
+void
+TScalarVector< std::complex< float > >::fill_rand ( const uint seed )
+{
+    TRNG  rng( seed );
+
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        _vec(i) = std::complex< float >( rng( 1000.0 ) - 500.0, rng( 1000.0 ) - 500.0 );
+}
+    
+template <>
+void
+TScalarVector< std::complex< double > >::fill_rand ( const uint seed )
+{
+    TRNG  rng( seed );
+
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        _vec(i) = std::complex< double >( rng( 1000.0 ) - 500.0, rng( 1000.0 ) - 500.0 );
 }
 
 //
 // this = a * this
 //
+template < typename value_t >
 void
-TScalarVector::scale ( const real f )
+TScalarVector< value_t >::scale ( const value_t  f )
 {
-    if ( f == real(0) )
-        fill( real(0) );
-    else
-    {
-        if ( is_complex() ) B::scale( complex(f), _cvec );
-        else                B::scale( f, _rvec );
-    }// else
+    if ( f == value_t(0) ) fill( value_t(0) );
+    else                   B::scale( f, _vec );
 }
 
 //
 // this = x
 //
+template < typename value_t >
 void
-TScalarVector::assign ( const real f, const TVector * x )
+TScalarVector< value_t >::assign ( const value_t  f,
+                                   const TVector< value_t >* x )
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) assign", "vector is nullptr" );
     
     if ( IS_TYPE( x, TScalarVector ) )
     {
-        const TScalarVector *  sx = cptrcast( x, TScalarVector );
+        const auto  sx = cptrcast( x, TScalarVector< value_t >);
         
-        set_complex( x->is_complex() );
         set_is( sx->is() );
 
-        if ( is_complex() )
-        {
-            B::copy( sx->_cvec, _cvec );
+        B::copy( sx->_vec, _vec );
 
-            if ( f != complex(1) )
-                scale( f );
-        }// if
-        else
-        {
-            B::copy( sx->_rvec, _rvec );
-
-            if ( f != real(1) )
-                scale( f );
-        }// else
+        if ( f != value_t(1) )
+            scale( f );
     }// if
     else
         HERROR( ERR_VEC_TYPE, "(TScalarVector) assign", x->typestr() );
@@ -225,30 +160,30 @@ TScalarVector::assign ( const real f, const TVector * x )
 //
 // return euclidean norm
 //
-real
-TScalarVector::norm2 () const
+template < typename value_t >
+real_type_t< value_t >
+TScalarVector< value_t >::norm2 () const
 {
-    if ( is_complex() ) return real(B::norm2( _cvec ));
-    else                return real(B::norm2( _rvec ));
+    return B::norm2( _vec );
 }
 
 //
 // return infimum norm
 //
-real
-TScalarVector::norm_inf () const
+template < typename value_t >
+real_type_t< value_t >
+TScalarVector< value_t >::norm_inf () const
 {
-    if ( is_complex() )
-        return Math::abs( _cvec( B::max_idx( _cvec ) ) );
-    else
-        return Math::abs( _rvec( B::max_idx( _rvec ) ) );
+    return Math::abs( _vec( B::max_idx( _vec ) ) );
 }   
 
 //
 // this = this + a * x
 //
+template < typename value_t >
 void
-TScalarVector::axpy ( const real f, const TVector * x )
+TScalarVector< value_t >::axpy ( const value_t               f,
+                                 const TVector< value_t > *  x )
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) axpy", "vector is nullptr" );
@@ -256,256 +191,90 @@ TScalarVector::axpy ( const real f, const TVector * x )
     if ( ! IS_TYPE( x, TScalarVector ) )
         HERROR( ERR_VEC_TYPE, "(TScalarVector) axpy", x->typestr() );
 
-    const TScalarVector * sx = cptrcast( x, TScalarVector );
+    const auto  sx = cptrcast( x, TScalarVector< value_t >);
 
     if ( size() != sx->size() )
         HERROR( ERR_VEC_SIZE, "(TScalarVector) axpy", "x has wrong size" );
     
-    if ( is_complex() != x->is_complex() )
-        HERROR( ERR_COMPLEX, "(TScalarVector) axpy", "can not mix real and complex" );
-
-    if ( x->is_complex() ) B::add( complex(f), sx->_cvec, _cvec );
-    else                   B::add( f, sx->_rvec, _rvec );
+    B::add( f, sx->_vec, _vec );
 }
 
 //
 // this = this + x (multi-thread safe version, x may be sub vector)
 //
+template < typename value_t >
 void
-TScalarVector::add_sub_mt ( const TScalarVector &  x )
+TScalarVector< value_t >::add_sub_mt ( const TScalarVector< value_t > &  x )
 {
     HERROR( ERR_NOT_IMPL, "", "" );
     
-    if ( ! x.is().is_subset_of( is() ) )
+    if ( ! x.is().is_subset_of( this->is() ) )
         HERROR( ERR_INDEXSET, "(TScalarVector) add_sub_mt", "given vector is not a sub-vector" );
     
-    if ( is_complex() != x.is_complex() )
-        HERROR( ERR_COMPLEX, "(TScalarVector) add_sub_mt", "can not mix real and complex" );
-
     const TIndexSet  is_x( x.is() );
-    const TIndexSet  is_y( is() );
+    const TIndexSet  is_y( this->is() );
     const idx_t      ofs_loc_glo = is_x.first() - is_y.first();
     idx_t            start_idx   = ofs_loc_glo;
     idx_t            chunk       = start_idx / SCALAR_CHUNK_SIZE;
     const idx_t      last_idx    = is_x.last() - is_y.first();
     idx_t            end_idx     = std::min< idx_t >( (chunk+1) * SCALAR_CHUNK_SIZE - 1, last_idx );
     
-    if ( is_complex() )
+    while ( start_idx <= end_idx )
     {
-        while ( start_idx <= end_idx )
-        {
-            const B::Range        is_chunk( start_idx, end_idx );
-            B::Vector< complex >  y_chunk( blas_cvec(), is_chunk );
-            B::Vector< complex >  x_chunk( x.blas_cvec(), is_chunk - ofs_loc_glo );
+        const B::Range        is_chunk( start_idx, end_idx );
+        B::Vector< value_t >  y_chunk( blas_vec(), is_chunk );
+        B::Vector< value_t >  x_chunk( x.blas_vec(), is_chunk - ofs_loc_glo );
 
-            {
-                // lock_t  lock( _mutices[ chunk ] );
+        {
+            // lock_t  lock( _mutices[ chunk ] );
                 
-                B::add( complex(1), x_chunk, y_chunk );
-            }
+            B::add( value_t(1), x_chunk, y_chunk );
+        }
 
-            ++chunk;
-            start_idx = end_idx + 1;
-            end_idx   = std::min< idx_t >( end_idx + SCALAR_CHUNK_SIZE, last_idx );
-        }// while
-    }// if
-    else
-    {
-        while ( start_idx <= end_idx )
-        {
-            const B::Range     is_chunk( start_idx, end_idx );
-            B::Vector< real >  y_chunk( blas_rvec(), is_chunk );
-            B::Vector< real >  x_chunk( x.blas_rvec(), is_chunk - ofs_loc_glo );
-
-            {
-                // lock_t  lock( _mutices[ chunk ] );
-                
-                B::add( real(1), x_chunk, y_chunk );
-            }
-
-            ++chunk;
-            start_idx = end_idx + 1;
-            end_idx   = std::min< idx_t >( end_idx + SCALAR_CHUNK_SIZE, last_idx );
-        }// while
-    }// else
-}
-
-//////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
-//
-// fill with constant
-//
-void
-TScalarVector::cfill ( const complex & f )
-{
-    if ( std::imag(f) != real(0) )
-        set_complex( true );
-    
-    if ( is_complex() ) B::fill( f, _cvec );
-    else                B::fill( std::real(f), _rvec );
-}
-
-//
-// this = a * this
-//
-void
-TScalarVector::cscale ( const complex & f )
-{
-    if ( f == complex(0) )
-        fill( real(0) );
-    else
-    {
-        if ( is_complex() )
-            B::scale( f, _cvec );
-        else
-        {
-            if ( f.imag() == real(0) ) 
-                B::scale( std::real(f), _rvec );
-            else
-            {
-                set_complex( true );
-                B::scale( f, _cvec );
-            }// else
-        }// else
-    }// else
-}
-
-//
-// this = f * x
-//
-void
-TScalarVector::cassign ( const complex & f, const TVector * x )
-{
-    if ( x == nullptr )
-        HERROR( ERR_ARG, "(TScalarVector) cassign", "vector is nullptr" );
-    
-    if ( IS_TYPE( x, TScalarVector ) )
-    {
-        const TScalarVector *  sx = cptrcast( x, TScalarVector );
-        
-        set_complex( x->is_complex() || ( f.imag() != real(0) ));
-        set_is( sx->is() );
-
-        if ( x->is_complex() )
-        {
-            B::copy( sx->_cvec, _cvec );
-            
-            if ( f != complex(1) )
-                cscale( f );
-        }// if
-        else
-        {
-            if ( is_complex() )
-                HERROR( ERR_COMPLEX, "(TScalarVector) cassign", "can not mix real and complex" );
-            else
-            {
-                B::copy( sx->_rvec, _rvec );
-
-                if ( f != real(1) )
-                    scale( std::real(f) );
-            }// else
-        }// else
-    }// if
-    else
-        HERROR( ERR_VEC_TYPE, "(TScalarVector) cassign", x->typestr() );
+        ++chunk;
+        start_idx = end_idx + 1;
+        end_idx   = std::min< idx_t >( end_idx + SCALAR_CHUNK_SIZE, last_idx );
+    }// while
 }
 
 //
 // return inner product ( this^H * x )
 //
-complex
-TScalarVector::dot ( const TVector * x ) const
+template < typename value_t >
+value_t
+TScalarVector< value_t >::dot ( const TVector< value_t >* x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) dot", "vector is nullptr" );
     
     if ( IS_TYPE( x, TScalarVector ) )
     {
-        if ( x->is_complex() )
-        {
-            if ( is_complex() )
-                return B::dot( _cvec, cptrcast( x, TScalarVector )->_cvec );
-            else
-                HERROR( ERR_COMPLEX, "(TScalarVector) dot", "can not mix real and complex" );
-        }// if
-        else
-        {
-            if ( is_complex() )
-                HERROR( ERR_COMPLEX, "(TScalarVector) dot", "can not mix real and complex" );
-            else
-                return real(B::dot( _rvec, cptrcast( x, TScalarVector )->_rvec ));
-        }// else
+        return B::dot( _vec, cptrcast( x, TScalarVector< value_t >)->_vec );
     }// if
     else
         HERROR( ERR_VEC_TYPE, "(TScalarVector) dot", x->typestr() );
     
-    return complex(0);
+    return value_t(0);
 }
 
 //
 // return inner product ( this^T * x )
 //
-complex
-TScalarVector::dotu ( const TVector * x ) const
+template < typename value_t >
+value_t
+TScalarVector< value_t >::dotu ( const TVector< value_t >* x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) dotu", "vector is nullptr" );
     
     if ( IS_TYPE( x, TScalarVector ) )
     {
-        if ( x->is_complex() )
-        {
-            if ( is_complex() )
-                return B::dotu( _cvec, cptrcast( x, TScalarVector )->_cvec );
-            else
-                HERROR( ERR_COMPLEX, "(TScalarVector) dot", "can not mix real and complex" );
-        }// if
-        else
-        {
-            if ( is_complex() )
-                HERROR( ERR_COMPLEX, "(TScalarVector) dot", "can not mix real and complex" );
-            else
-                return real(B::dotu( _rvec, cptrcast( x, TScalarVector )->_rvec ));
-        }// else
+        return B::dotu( _vec, cptrcast( x, TScalarVector< value_t >)->_vec );
     }// if
     else
         HERROR( ERR_VEC_TYPE, "(TScalarVector) dotu", x->typestr() );
     
-    return complex(0);
-}
-
-//
-// this = this + a * x
-//
-void
-TScalarVector::caxpy ( const complex & f, const TVector * x )
-{
-    if ( x == nullptr )
-        HERROR( ERR_ARG, "(TScalarVector) caxpy", "vector is nullptr" );
-    
-    if ( ! IS_TYPE( x, TScalarVector ) )
-        HERROR( ERR_VEC_TYPE, "(TScalarVector) caxpy", x->typestr() );
-
-    const TScalarVector * sx = cptrcast( x, TScalarVector );
-
-    if ( size() != sx->size() )
-        HERROR( ERR_VEC_SIZE, "(TScalarVector) caxpy", "x has wrong size" );
-    
-    if ( x->is_complex() || ( f.imag() != real(0) ))
-        set_complex( true );
-    
-    if ( x->is_complex() )
-        B::add( f, sx->_cvec, _cvec );
-    else
-    {
-        if ( is_complex() )
-            HERROR( ERR_COMPLEX, "(TScalarVector) cassign", "can not mix real and complex" );
-        else
-            B::add( std::real(f), sx->_rvec, _rvec );
-    }// else
+    return value_t(0);
 }
 
 //////////////////////////////////////////////////
@@ -516,68 +285,38 @@ TScalarVector::caxpy ( const complex & f, const TVector * x )
 //
 // create vector restricted to real/imaginary part of coefficients
 //
+template < typename value_t >
 auto
-TScalarVector::restrict_re () const -> std::unique_ptr< TVector >
+TScalarVector< value_t >::restrict_re () const -> std::unique_ptr< TVector< real_type_t< value_t > > >
 {
-    auto  v = create();
-    auto  t = ptrcast( v.get(), TScalarVector );
+    auto  v = std::make_unique< TScalarVector< real_type_t< value_t > > >( this->is() );
 
-    t->set_is( is() );
-
-    if ( is_complex() )
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = std::real( _cvec(i) );
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = _rvec(i);
-    }// else
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        v->set_entry( i, std::real( _vec(i) ) );
 
     return v;
 }
 
+template < typename value_t >
 auto
-TScalarVector::restrict_im () const -> std::unique_ptr< TVector >
+TScalarVector< value_t >::restrict_im () const -> std::unique_ptr< TVector< real_type_t< value_t > > >
 {
-    auto  v = create();
-    auto  t = ptrcast( v.get(), TScalarVector );
+    auto  v = std::make_unique< TScalarVector< real_type_t< value_t > > >( this->is() );
 
-    t->set_is( is() );
-
-    if ( is_complex() )
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = imag( _cvec(i) );
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = real(0);
-    }// else
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        v->set_entry( i, std::imag( _vec(i) ) );
 
     return v;
 }
 
+template < typename value_t >
 auto
-TScalarVector::restrict_abs () const -> std::unique_ptr< TVector >
+TScalarVector< value_t >::restrict_abs () const -> std::unique_ptr< TVector< real_type_t< value_t > > >
 {
-    auto  v = create();
-    auto  t = ptrcast( v.get(), TScalarVector );
+    auto  v = std::make_unique< TScalarVector< real_type_t< value_t > > >( this->is() );
 
-    t->set_is( is() );
-
-    if ( is_complex() )
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = abs( _cvec(i) );
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-            t->_rvec(i) = real(0);
-    }// else
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
+        v->set_entry( i, std::abs( _vec(i) ) );
 
     return v;
 }
@@ -585,55 +324,37 @@ TScalarVector::restrict_abs () const -> std::unique_ptr< TVector >
 //
 // copy from C array \a v
 //
+template < typename value_t >
 void 
-TScalarVector::copy_from ( const real *  v )
+TScalarVector< value_t >::copy_from ( const value_t *  v )
 {
     if ( v == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) copy_from", "array is nullptr" );
 
-    if ( is_complex() )
-    { 
-        for ( idx_t  i = 0; i < idx_t(_cvec.length()); ++i )
-        {
-            _cvec(i) = v[i];
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_rvec.length()); ++i )
-        {
-            _rvec(i) = v[i];
-        }// for
-    }// else
+    for ( idx_t  i = 0; i < idx_t(_vec.length()); ++i )
+        _vec(i) = v[i];
 }
 
 //
 // copy to C array \a v
 //
+template < typename value_t >
 void 
-TScalarVector::copy_to ( real *  v )
+TScalarVector< value_t >::copy_to ( value_t *  v )
 {
     if ( v == nullptr )
         HERROR( ERR_ARG, "(TScalarVector) copy_to", "array is nullptr" );
 
-    if ( is_complex() )
-    { 
-        HERROR( ERR_REAL_CMPLX, "(TScalarVector) copy_to", "vector is complex valued" );
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_rvec.length()); ++i )
-        {
-            v[i] = _rvec(i);
-        }// for
-    }// else
+    for ( idx_t  i = 0; i < idx_t(_vec.length()); ++i )
+        v[i] = _vec(i);
 }
 
 //
 // permute entries according to \a perm
 //
+template < typename value_t >
 void
-TScalarVector::permute ( const TPermutation &  perm )
+TScalarVector< value_t >::permute ( const TPermutation &  perm )
 {
     perm.permute( this );
 }
@@ -641,30 +362,20 @@ TScalarVector::permute ( const TPermutation &  perm )
 //
 // stream output
 //
+template < typename value_t >
 void
-TScalarVector::print ( const uint offset ) const
+TScalarVector< value_t >::print ( const uint offset ) const
 {
     for ( uint i = 0; i < offset; i++ )
         std::cout << ' ';
 
-    std::cout << typestr() << " ( ";
+    std::cout << this->typestr() << " ( ";
 
-    if ( is_complex() )
+    for ( idx_t  i = 0; i < idx_t(_size); i++ )
     {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        {
-            if ( i > 0 ) std::cout << ", ";
-            std::cout << this->centry(i);
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(_size); i++ )
-        {
-            if ( i > 0 ) std::cout << ", ";
-            std::cout << this->entry(i);
-        }// for
-    }// else
+        if ( i > 0 ) std::cout << ", ";
+        std::cout << this->entry(i);
+    }// for
 
     std::cout << " )" << std::endl;
 }
@@ -672,67 +383,56 @@ TScalarVector::print ( const uint offset ) const
 //
 // serialisation
 //
-
+template < typename value_t >
 void
-TScalarVector::read  ( TByteStream & s )
+TScalarVector< value_t >::read  ( TByteStream & s )
 {
-    TVector::read( s );
+    TVector< value_t >::read( s );
 
     size_t  vec_size;
     
     s.get( vec_size );
-
     set_size( vec_size );
 
-    if ( is_complex() )
-        s.get( blas_cvec().data(), sizeof(complex) * _size );
-    else
-        s.get( blas_rvec().data(), sizeof(real) * _size );
+    s.get( blas_vec().data(), sizeof(value_t) * _size );
 }
 
+template < typename value_t >
 void
-TScalarVector::write ( TByteStream & s ) const
+TScalarVector< value_t >::write ( TByteStream & s ) const
 {
-    TVector::write( s );
+    TVector< value_t >::write( s );
     
     s.put( _size );
-    
-    if ( is_complex() )
-        s.put( blas_cvec().data(), sizeof(complex) * _size );
-    else
-        s.put( blas_rvec().data(), sizeof(real) * _size );
+    s.put( blas_vec().data(), sizeof(value_t) * _size );
 }
 
 //
 // returns size of object in bytestream
 //
+template < typename value_t >
 size_t
-TScalarVector::bs_size () const
+TScalarVector< value_t >::bs_size () const
 {
-    return TVector::bs_size() + sizeof(_size) +
-        (is_complex() ? (sizeof(complex) * _size) : (sizeof(real) * _size));
+    return TVector< value_t >::bs_size() + sizeof(_size) + sizeof(value_t) * _size;
 }
 
 //
 // pointwise summation between all vectors in \a ps
 //
+template < typename value_t >
 void
-TScalarVector::sum ( const TProcSet & ps )
+TScalarVector< value_t >::sum ( const TProcSet &  ps )
 {
-    if ( is_complex() )
-    {
-        B::Vector< complex >  t( _cvec.length() );
+    B::Vector< value_t >  t( _vec.length() );
 
-        NET::reduce_all( ps, _cvec.data(), t.data(), _cvec.length(), NET::OP_SUM );
-        B::copy( t, _cvec );
-    }// if
-    else
-    {
-        B::Vector< real >  t( _rvec.length() );
-
-        NET::reduce_all( ps, _rvec.data(), t.data(), _rvec.length(), NET::OP_SUM );
-        B::copy( t, _rvec );
-    }// else
+    NET::reduce_all( ps, _vec.data(), t.data(), _vec.length(), NET::OP_SUM );
+    B::copy( t, _vec );
 }
 
-}// namespace
+template class TScalarVector< float >;
+template class TScalarVector< double >;
+template class TScalarVector< std::complex< float > >;
+template class TScalarVector< std::complex< double > >;
+
+}// namespace Hpro

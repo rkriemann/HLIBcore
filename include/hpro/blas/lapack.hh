@@ -1,20 +1,22 @@
-#ifndef __HLIB_BLAS_LAPACK_HH
-#define __HLIB_BLAS_LAPACK_HH
+#ifndef __HPRO_BLAS_LAPACK_HH
+#define __HPRO_BLAS_LAPACK_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : lapack.hh
 // Description : definition of LAPACK functions in c-format
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <atomic>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 // prevents issues with Windows build environment and dot-wrappers
 #if USE_MKL == 1
+namespace MKL {
 #include <mkl_cblas.h>
+}
 #endif
 
 #include "hpro/base/traits.hh"
@@ -22,7 +24,7 @@
 
 #include "hpro/blas/flops.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -34,8 +36,8 @@ namespace BLAS
 
 extern std::atomic< std::uint64_t >  FLOPS;
 
-#if HLIB_COUNT_FLOPS == 1
-#  define ADD_FLOPS( n )  HLIB::BLAS::FLOPS += (n)
+#if HPRO_COUNT_FLOPS == 1
+#  define ADD_FLOPS( n )  Hpro::BLAS::FLOPS += (n)
 #else
 #  define ADD_FLOPS( n )
 #endif
@@ -1945,7 +1947,7 @@ namespace BLAS
 //
 // *laset
 //
-#define HLIB_LASET_FUNC( type, func )                                  \
+#define HPRO_LASET_FUNC( type, func )                                  \
     inline void laset ( const char       uplo,                         \
                         const blas_int_t m,                            \
                         const blas_int_t n,                            \
@@ -1955,17 +1957,17 @@ namespace BLAS
                         const blas_int_t lda ) {                       \
         func( & uplo, & m, & n, & alpha, & beta, A, & lda ); }
 
-HLIB_LASET_FUNC( float,                  slaset_ )
-HLIB_LASET_FUNC( double,                 dlaset_ )
-HLIB_LASET_FUNC( std::complex< float >,  claset_ )
-HLIB_LASET_FUNC( std::complex< double >, zlaset_ )
+HPRO_LASET_FUNC( float,                  slaset_ )
+HPRO_LASET_FUNC( double,                 dlaset_ )
+HPRO_LASET_FUNC( std::complex< float >,  claset_ )
+HPRO_LASET_FUNC( std::complex< double >, zlaset_ )
 
-#undef HLIB_LASET_FUNC
+#undef HPRO_LASET_FUNC
 
 //
 // *lacpy
 //
-#define HLIB_LACPY_FUNC( type, func )                       \
+#define HPRO_LACPY_FUNC( type, func )                       \
     inline void lacpy ( const char       uplo,              \
                         const blas_int_t m,                 \
                         const blas_int_t n,                 \
@@ -1975,73 +1977,73 @@ HLIB_LASET_FUNC( std::complex< double >, zlaset_ )
                         const blas_int_t ldb ) {            \
         func( & uplo, & m, & n, A, & lda, B, & ldb ); }
 
-HLIB_LACPY_FUNC( float,             slacpy_ )
-HLIB_LACPY_FUNC( double,            dlacpy_ )
-HLIB_LACPY_FUNC( std::complex< float >,  clacpy_ )
-HLIB_LACPY_FUNC( std::complex< double >, zlacpy_ )
+HPRO_LACPY_FUNC( float,             slacpy_ )
+HPRO_LACPY_FUNC( double,            dlacpy_ )
+HPRO_LACPY_FUNC( std::complex< float >,  clacpy_ )
+HPRO_LACPY_FUNC( std::complex< double >, zlacpy_ )
 
-#undef HLIB_LACPY_FUNC
+#undef HPRO_LACPY_FUNC
 
 //
 // *scal
 //
-#define HLIB_SCAL_FUNC( type, func )                                    \
+#define HPRO_SCAL_FUNC( type, func )                                    \
     inline void scal ( const blas_int_t n,                              \
                        const type       alpha,                          \
                        type *           x,                              \
                        const blas_int_t incx )                          \
         { func( & n, & alpha, x, & incx ); }
 
-HLIB_SCAL_FUNC( float,                  sscal_ )
-HLIB_SCAL_FUNC( double,                 dscal_ )
-HLIB_SCAL_FUNC( std::complex< float >,  cscal_ )
-HLIB_SCAL_FUNC( std::complex< double >, zscal_ )
+HPRO_SCAL_FUNC( float,                  sscal_ )
+HPRO_SCAL_FUNC( double,                 dscal_ )
+HPRO_SCAL_FUNC( std::complex< float >,  cscal_ )
+HPRO_SCAL_FUNC( std::complex< double >, zscal_ )
 
 //
 // *copy
 //
-#define HLIB_COPY_FUNC( type, func )                                    \
+#define HPRO_COPY_FUNC( type, func )                                    \
     inline void copy ( const blas_int_t n, const type * x,              \
                        const blas_int_t incx,                           \
                        type * y, const blas_int_t incy )                \
     { func( & n, x, & incx, y, & incy ); }
                                                        
-HLIB_COPY_FUNC( float,                  scopy_ )
-HLIB_COPY_FUNC( double,                 dcopy_ )
-HLIB_COPY_FUNC( std::complex< float >,  ccopy_ )
-HLIB_COPY_FUNC( std::complex< double >, zcopy_ )
+HPRO_COPY_FUNC( float,                  scopy_ )
+HPRO_COPY_FUNC( double,                 dcopy_ )
+HPRO_COPY_FUNC( std::complex< float >,  ccopy_ )
+HPRO_COPY_FUNC( std::complex< double >, zcopy_ )
 
 //
 // *swap
 //
-#define HLIB_SWAP_FUNC( type, func )                                    \
+#define HPRO_SWAP_FUNC( type, func )                                    \
     inline  void swap ( const blas_int_t n, type * x,                   \
                         const blas_int_t incx,                          \
                         type * y, const blas_int_t incy )               \
         { func( & n, x, & incx, y, & incy ); }
                                                        
-HLIB_SWAP_FUNC( float,                  sswap_ )
-HLIB_SWAP_FUNC( double,                 dswap_ )
-HLIB_SWAP_FUNC( std::complex< float >,  cswap_ )
-HLIB_SWAP_FUNC( std::complex< double >, zswap_ )
+HPRO_SWAP_FUNC( float,                  sswap_ )
+HPRO_SWAP_FUNC( double,                 dswap_ )
+HPRO_SWAP_FUNC( std::complex< float >,  cswap_ )
+HPRO_SWAP_FUNC( std::complex< double >, zswap_ )
 
 //
 // i*amax
 //
-#define HLIB_MAX_IDX_FUNC( type, func )                                 \
+#define HPRO_MAX_IDX_FUNC( type, func )                                 \
     inline blas_int_t max_idx ( const blas_int_t n,                     \
                                 type * x, const blas_int_t incx )       \
     { return func( & n, x, & incx ); }
                                                        
-HLIB_MAX_IDX_FUNC( float,                  isamax_ )
-HLIB_MAX_IDX_FUNC( double,                 idamax_ )
-HLIB_MAX_IDX_FUNC( std::complex< float >,  icamax_ )
-HLIB_MAX_IDX_FUNC( std::complex< double >, izamax_ )
+HPRO_MAX_IDX_FUNC( float,                  isamax_ )
+HPRO_MAX_IDX_FUNC( double,                 idamax_ )
+HPRO_MAX_IDX_FUNC( std::complex< float >,  icamax_ )
+HPRO_MAX_IDX_FUNC( std::complex< double >, izamax_ )
 
 //
 // *axpy
 //
-#define HLIB_AXPY_FUNC( type, func, flops )                             \
+#define HPRO_AXPY_FUNC( type, func, flops )                             \
     inline void axpy ( const blas_int_t n,                              \
                        const type alpha, const type * x,                \
                        const blas_int_t incx,                           \
@@ -2051,10 +2053,10 @@ HLIB_MAX_IDX_FUNC( std::complex< double >, izamax_ )
         func( & n, & alpha, x, & incx, y, & incy );                     \
     }
 
-HLIB_AXPY_FUNC( float,                  saxpy_, SAXPY )
-HLIB_AXPY_FUNC( double,                 daxpy_, DAXPY )
-HLIB_AXPY_FUNC( std::complex< float >,  caxpy_, CAXPY )
-HLIB_AXPY_FUNC( std::complex< double >, zaxpy_, ZAXPY )
+HPRO_AXPY_FUNC( float,                  saxpy_, SAXPY )
+HPRO_AXPY_FUNC( double,                 daxpy_, DAXPY )
+HPRO_AXPY_FUNC( std::complex< float >,  caxpy_, CAXPY )
+HPRO_AXPY_FUNC( std::complex< double >, zaxpy_, ZAXPY )
 
 //
 // *dot(c)
@@ -2091,7 +2093,7 @@ dot ( const blas_int_t  n,
     
     #if USE_MKL == 1
 
-    cblas_cdotc_sub( n, x, incx, y, incy, & res );
+    MKL::cblas_cdotc_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2114,7 +2116,7 @@ dot ( const blas_int_t  n,
     
     #if USE_MKL == 1
 
-    cblas_zdotc_sub( n, x, incx, y, incy, & res );
+    MKL::cblas_zdotc_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2162,7 +2164,7 @@ dotu ( const blas_int_t  n,
     
     #if USE_MKL == 1
 
-    cblas_cdotu_sub( n, x, incx, y, incy, & res );
+    MKL::cblas_cdotu_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2185,7 +2187,7 @@ dotu ( const blas_int_t  n,
     
     #if USE_MKL == 1
 
-    cblas_zdotu_sub( n, x, incx, y, incy, & res );
+    MKL::cblas_zdotu_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2199,7 +2201,7 @@ dotu ( const blas_int_t  n,
 //
 // *norm2
 //
-#define HLIB_NORM2_FUNC( type, func, flops )                            \
+#define HPRO_NORM2_FUNC( type, func, flops )                            \
     inline typename real_type< type >::type_t                           \
     norm2 ( const blas_int_t n, const type * x, const blas_int_t incx ) \
     {                                                                   \
@@ -2207,15 +2209,15 @@ dotu ( const blas_int_t  n,
         return func( & n, x, & incx );                                  \
     }
 
-HLIB_NORM2_FUNC( float,                  snrm2_,  SDOT )
-HLIB_NORM2_FUNC( double,                 dnrm2_,  DDOT )
-HLIB_NORM2_FUNC( std::complex< float >,  scnrm2_, CDOT )
-HLIB_NORM2_FUNC( std::complex< double >, dznrm2_, ZDOT )
+HPRO_NORM2_FUNC( float,                  snrm2_,  SDOT )
+HPRO_NORM2_FUNC( double,                 dnrm2_,  DDOT )
+HPRO_NORM2_FUNC( std::complex< float >,  scnrm2_, CDOT )
+HPRO_NORM2_FUNC( std::complex< double >, dznrm2_, ZDOT )
 
 //
 // *ger
 //
-#define HLIB_GER_FUNC( type, func, flops )                              \
+#define HPRO_GER_FUNC( type, func, flops )                              \
     inline                                                              \
     void ger ( const blas_int_t n, const blas_int_t m, const type alpha, \
                const type * x, const blas_int_t incx,                   \
@@ -2226,15 +2228,15 @@ HLIB_NORM2_FUNC( std::complex< double >, dznrm2_, ZDOT )
         func( & n, & m, & alpha, x, & incx, y, & incy, A, & ldA );      \
     }
 
-HLIB_GER_FUNC( float,                  sger_,  SGER )
-HLIB_GER_FUNC( double,                 dger_ , DGER )
-HLIB_GER_FUNC( std::complex< float >,  cgerc_, CGER )
-HLIB_GER_FUNC( std::complex< double >, zgerc_, ZGER )
+HPRO_GER_FUNC( float,                  sger_,  SGER )
+HPRO_GER_FUNC( double,                 dger_ , DGER )
+HPRO_GER_FUNC( std::complex< float >,  cgerc_, CGER )
+HPRO_GER_FUNC( std::complex< double >, zgerc_, ZGER )
 
 //
 // *geru
 //
-#define HLIB_GERU_FUNC( type, func, flops )                             \
+#define HPRO_GERU_FUNC( type, func, flops )                             \
     inline                                                              \
     void geru ( const blas_int_t n, const blas_int_t m, const type alpha, \
                const type * x, const blas_int_t incx,                   \
@@ -2245,15 +2247,15 @@ HLIB_GER_FUNC( std::complex< double >, zgerc_, ZGER )
         func( & n, & m, & alpha, x, & incx, y, & incy, A, & ldA );      \
     }
 
-HLIB_GERU_FUNC( float,                  sger_,  SGER )
-HLIB_GERU_FUNC( double,                 dger_,  DGER )
-HLIB_GERU_FUNC( std::complex< float >,  cgeru_, CGER )
-HLIB_GERU_FUNC( std::complex< double >, zgeru_, ZGER )
+HPRO_GERU_FUNC( float,                  sger_,  SGER )
+HPRO_GERU_FUNC( double,                 dger_,  DGER )
+HPRO_GERU_FUNC( std::complex< float >,  cgeru_, CGER )
+HPRO_GERU_FUNC( std::complex< double >, zgeru_, ZGER )
 
 //
 // *gemv
 //
-#define HLIB_GEMV_FUNC( type, func, flops )                             \
+#define HPRO_GEMV_FUNC( type, func, flops )                             \
     inline                                                              \
     void gemv ( const char trans, const blas_int_t n, const blas_int_t m, const type alpha, \
                 const type * A, const blas_int_t ldA,                   \
@@ -2265,15 +2267,15 @@ HLIB_GERU_FUNC( std::complex< double >, zgeru_, ZGER )
             ltrans = 'T';                                               \
         func( & ltrans, & n, & m, & alpha, A, & ldA, x, & incx, & beta, y, & incy ); }
 
-HLIB_GEMV_FUNC( float,                  sgemv_, SGEMV )
-HLIB_GEMV_FUNC( double,                 dgemv_, DGEMV )
-HLIB_GEMV_FUNC( std::complex< float >,  cgemv_, CGEMV )
-HLIB_GEMV_FUNC( std::complex< double >, zgemv_, ZGEMV )
+HPRO_GEMV_FUNC( float,                  sgemv_, SGEMV )
+HPRO_GEMV_FUNC( double,                 dgemv_, DGEMV )
+HPRO_GEMV_FUNC( std::complex< float >,  cgemv_, CGEMV )
+HPRO_GEMV_FUNC( std::complex< double >, zgemv_, ZGEMV )
 
 //
 // *trmv
 //
-#define HLIB_TRMV_FUNC( type, func, flops )                             \
+#define HPRO_TRMV_FUNC( type, func, flops )                             \
     inline                                                              \
     void trmv ( const char uplo, const char trans, const char diag,     \
                 const blas_int_t n, const type * A, const blas_int_t ldA, \
@@ -2284,15 +2286,15 @@ HLIB_GEMV_FUNC( std::complex< double >, zgemv_, ZGEMV )
             ltrans = 'T';                                               \
         func( & uplo, & ltrans, & diag, & n, A, & ldA, x, & incx ); }
 
-HLIB_TRMV_FUNC( float,                  strmv_, STRMV )
-HLIB_TRMV_FUNC( double,                 dtrmv_, DTRMV )
-HLIB_TRMV_FUNC( std::complex< float >,  ctrmv_, CTRMV )
-HLIB_TRMV_FUNC( std::complex< double >, ztrmv_, ZTRMV )
+HPRO_TRMV_FUNC( float,                  strmv_, STRMV )
+HPRO_TRMV_FUNC( double,                 dtrmv_, DTRMV )
+HPRO_TRMV_FUNC( std::complex< float >,  ctrmv_, CTRMV )
+HPRO_TRMV_FUNC( std::complex< double >, ztrmv_, ZTRMV )
 
 //
 // *trsv
 //
-#define HLIB_TRSV_FUNC( type, func, flops )                             \
+#define HPRO_TRSV_FUNC( type, func, flops )                             \
     inline                                                              \
     void trsv ( const char uplo, const char trans, const char diag,     \
                 const blas_int_t n, const type * A, const blas_int_t ldA, \
@@ -2303,15 +2305,15 @@ HLIB_TRMV_FUNC( std::complex< double >, ztrmv_, ZTRMV )
             ltrans = 'T';                                               \
         func( & uplo, & ltrans, & diag, & n, A, & ldA, b, & incb ); }
 
-HLIB_TRSV_FUNC( float,                  strsv_, STRSV )
-HLIB_TRSV_FUNC( double,                 dtrsv_, DTRSV )
-HLIB_TRSV_FUNC( std::complex< float >,  ctrsv_, CTRSV )
-HLIB_TRSV_FUNC( std::complex< double >, ztrsv_, ZTRSV )
+HPRO_TRSV_FUNC( float,                  strsv_, STRSV )
+HPRO_TRSV_FUNC( double,                 dtrsv_, DTRSV )
+HPRO_TRSV_FUNC( std::complex< float >,  ctrsv_, CTRSV )
+HPRO_TRSV_FUNC( std::complex< double >, ztrsv_, ZTRSV )
 
 //
 // *gemm
 //
-#define HLIB_GEMM_FUNC( type, func, flops )                             \
+#define HPRO_GEMM_FUNC( type, func, flops )                             \
     inline                                                              \
     void gemm ( const char transA, const char transB,                   \
                 const blas_int_t n, const blas_int_t m, const blas_int_t k, \
@@ -2330,15 +2332,15 @@ HLIB_TRSV_FUNC( std::complex< double >, ztrsv_, ZTRSV )
               & alpha, A, & ldA, B, & ldB,                              \
               & beta, C, & ldC ); }
 
-HLIB_GEMM_FUNC( float,                  sgemm_, SGEMM )
-HLIB_GEMM_FUNC( double,                 dgemm_, DGEMM )
-HLIB_GEMM_FUNC( std::complex< float >,  cgemm_, CGEMM )
-HLIB_GEMM_FUNC( std::complex< double >, zgemm_, ZGEMM )
+HPRO_GEMM_FUNC( float,                  sgemm_, SGEMM )
+HPRO_GEMM_FUNC( double,                 dgemm_, DGEMM )
+HPRO_GEMM_FUNC( std::complex< float >,  cgemm_, CGEMM )
+HPRO_GEMM_FUNC( std::complex< double >, zgemm_, ZGEMM )
 
 //
 // *trmm
 //
-#define HLIB_TRMM_FUNC( type, func, flops )                             \
+#define HPRO_TRMM_FUNC( type, func, flops )                             \
     inline                                                              \
     void trmm ( const char side, const char uplo, const char trans, const char diag, \
                 const blas_int_t n, const blas_int_t m, const type alpha, const type * A, \
@@ -2349,15 +2351,15 @@ HLIB_GEMM_FUNC( std::complex< double >, zgemm_, ZGEMM )
             ltrans = 'T';                                               \
         func( & side, & uplo, & ltrans, & diag, & n, & m, & alpha, A, & ldA, B, & ldB ); }
 
-HLIB_TRMM_FUNC( float,                  strmm_, STRMM )
-HLIB_TRMM_FUNC( double,                 dtrmm_, CTRMM )
-HLIB_TRMM_FUNC( std::complex< float >,  ctrmm_, DTRMM )
-HLIB_TRMM_FUNC( std::complex< double >, ztrmm_, ZTRMM )
+HPRO_TRMM_FUNC( float,                  strmm_, STRMM )
+HPRO_TRMM_FUNC( double,                 dtrmm_, CTRMM )
+HPRO_TRMM_FUNC( std::complex< float >,  ctrmm_, DTRMM )
+HPRO_TRMM_FUNC( std::complex< double >, ztrmm_, ZTRMM )
 
 //
 // *trsm
 //
-#define HLIB_TRSM_FUNC( type, func, flops )                             \
+#define HPRO_TRSM_FUNC( type, func, flops )                             \
     inline                                                              \
     void trsm ( const char side, const char uplo, const char trans, const char diag, \
                 const blas_int_t n, const blas_int_t m, const type alpha, const type * A, \
@@ -2368,10 +2370,10 @@ HLIB_TRMM_FUNC( std::complex< double >, ztrmm_, ZTRMM )
             ltrans = 'T';                                               \
         func( & side, & uplo, & ltrans, & diag, & n, & m, & alpha, A, & ldA, B, & ldB ); }
 
-HLIB_TRSM_FUNC( float,                  strsm_, STRSM )
-HLIB_TRSM_FUNC( double,                 dtrsm_, CTRSM )
-HLIB_TRSM_FUNC( std::complex< float >,  ctrsm_, DTRSM )
-HLIB_TRSM_FUNC( std::complex< double >, ztrsm_, ZTRSM )
+HPRO_TRSM_FUNC( float,                  strsm_, STRSM )
+HPRO_TRSM_FUNC( double,                 dtrsm_, CTRSM )
+HPRO_TRSM_FUNC( std::complex< float >,  ctrsm_, DTRSM )
+HPRO_TRSM_FUNC( std::complex< double >, ztrsm_, ZTRSM )
 
 
 
@@ -2386,7 +2388,7 @@ HLIB_TRSM_FUNC( std::complex< double >, ztrsm_, ZTRSM )
 //
 // *gesv
 //
-#define HLIB_GESV_FUNC( type, func )                                \
+#define HPRO_GESV_FUNC( type, func )                                \
     inline void gesv ( const blas_int_t  n,                         \
                        const blas_int_t  nrhs,                      \
                        type *            A,                         \
@@ -2398,17 +2400,17 @@ HLIB_TRSM_FUNC( std::complex< double >, ztrsm_, ZTRSM )
         info = 0;                                                   \
         func( & n, & nrhs, A, & ldA, ipiv, B, & ldB, & info ); }
 
-HLIB_GESV_FUNC( float,                  sgesv_ )
-HLIB_GESV_FUNC( double,                 dgesv_ )
-HLIB_GESV_FUNC( std::complex< float >,  cgesv_ )
-HLIB_GESV_FUNC( std::complex< double >, zgesv_ )
+HPRO_GESV_FUNC( float,                  sgesv_ )
+HPRO_GESV_FUNC( double,                 dgesv_ )
+HPRO_GESV_FUNC( std::complex< float >,  cgesv_ )
+HPRO_GESV_FUNC( std::complex< double >, zgesv_ )
 
-#undef HLIB_GESV_FUNC
+#undef HPRO_GESV_FUNC
 
 //
 // *trtri
 //
-#define HLIB_TRTRI_FUNC( type, func )                                   \
+#define HPRO_TRTRI_FUNC( type, func )                                   \
     inline  void trtri ( const char        uplo,                        \
                          const char        diag,                        \
                          const blas_int_t  n,                           \
@@ -2418,17 +2420,17 @@ HLIB_GESV_FUNC( std::complex< double >, zgesv_ )
         info = 0;                                                       \
         func( & uplo, & diag, & n, A, & ldA, & info ); }
 
-HLIB_TRTRI_FUNC( float,                  strtri_ )
-HLIB_TRTRI_FUNC( double,                 dtrtri_ )
-HLIB_TRTRI_FUNC( std::complex< float >,  ctrtri_ )
-HLIB_TRTRI_FUNC( std::complex< double >, ztrtri_ )
+HPRO_TRTRI_FUNC( float,                  strtri_ )
+HPRO_TRTRI_FUNC( double,                 dtrtri_ )
+HPRO_TRTRI_FUNC( std::complex< float >,  ctrtri_ )
+HPRO_TRTRI_FUNC( std::complex< double >, ztrtri_ )
 
-#undef HLIB_TRTRI_FUNC
+#undef HPRO_TRTRI_FUNC
 
 //
 // *getrf
 //
-#define HLIB_GETRF_FUNC( type, func, flops )                            \
+#define HPRO_GETRF_FUNC( type, func, flops )                            \
     inline void getrf ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         type *            A,                            \
@@ -2439,17 +2441,17 @@ HLIB_TRTRI_FUNC( std::complex< double >, ztrtri_ )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, ipiv, & info ); }
 
-HLIB_GETRF_FUNC( float,                  sgetrf_, SGETRF )
-HLIB_GETRF_FUNC( double,                 dgetrf_, CGETRF )
-HLIB_GETRF_FUNC( std::complex< float >,  cgetrf_, DGETRF )
-HLIB_GETRF_FUNC( std::complex< double >, zgetrf_, ZGETRF )
+HPRO_GETRF_FUNC( float,                  sgetrf_, SGETRF )
+HPRO_GETRF_FUNC( double,                 dgetrf_, CGETRF )
+HPRO_GETRF_FUNC( std::complex< float >,  cgetrf_, DGETRF )
+HPRO_GETRF_FUNC( std::complex< double >, zgetrf_, ZGETRF )
 
-#undef HLIB_GETRF_FUNC
+#undef HPRO_GETRF_FUNC
 
 //
 // *getri
 //
-#define HLIB_GETRI_FUNC( type, func, flops )                           \
+#define HPRO_GETRI_FUNC( type, func, flops )                           \
     inline void getri ( const blas_int_t  n,                           \
                         type *            A,                           \
                         const blas_int_t  ldA,                         \
@@ -2461,17 +2463,17 @@ HLIB_GETRF_FUNC( std::complex< double >, zgetrf_, ZGETRF )
         info = 0;                                                      \
         func( & n, A, & ldA, ipiv, work, & lwork, & info ); }
 
-HLIB_GETRI_FUNC( float,                  sgetri_, SGETRI )
-HLIB_GETRI_FUNC( double,                 dgetri_, CGETRI )
-HLIB_GETRI_FUNC( std::complex< float >,  cgetri_, DGETRI )
-HLIB_GETRI_FUNC( std::complex< double >, zgetri_, ZGETRI )
+HPRO_GETRI_FUNC( float,                  sgetri_, SGETRI )
+HPRO_GETRI_FUNC( double,                 dgetri_, CGETRI )
+HPRO_GETRI_FUNC( std::complex< float >,  cgetri_, DGETRI )
+HPRO_GETRI_FUNC( std::complex< double >, zgetri_, ZGETRI )
 
-#undef HLIB_GETRI_FUNC
+#undef HPRO_GETRI_FUNC
 
 //
 // *geqrf
 //
-#define HLIB_GEQRF_FUNC( type, func, flops )                            \
+#define HPRO_GEQRF_FUNC( type, func, flops )                            \
     inline void geqrf ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         type *            A,                            \
@@ -2484,17 +2486,17 @@ HLIB_GETRI_FUNC( std::complex< double >, zgetri_, ZGETRI )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, tau, work, & lwork, & info ); }
 
-HLIB_GEQRF_FUNC( float,                  sgeqrf_, SGEQRF )
-HLIB_GEQRF_FUNC( double,                 dgeqrf_, CGEQRF )
-HLIB_GEQRF_FUNC( std::complex< float >,  cgeqrf_, DGEQRF )
-HLIB_GEQRF_FUNC( std::complex< double >, zgeqrf_, ZGEQRF )
+HPRO_GEQRF_FUNC( float,                  sgeqrf_, SGEQRF )
+HPRO_GEQRF_FUNC( double,                 dgeqrf_, CGEQRF )
+HPRO_GEQRF_FUNC( std::complex< float >,  cgeqrf_, DGEQRF )
+HPRO_GEQRF_FUNC( std::complex< double >, zgeqrf_, ZGEQRF )
 
-#undef HLIB_GEQRF_FUNC
+#undef HPRO_GEQRF_FUNC
 
 //
 // *geqr2
 //
-#define HLIB_GEQR2_FUNC( type, func, flops )                            \
+#define HPRO_GEQR2_FUNC( type, func, flops )                            \
     inline void geqr2 ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         type *            A,                            \
@@ -2506,17 +2508,17 @@ HLIB_GEQRF_FUNC( std::complex< double >, zgeqrf_, ZGEQRF )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, tau, work, & info ); }
 
-HLIB_GEQR2_FUNC( float,                  sgeqr2_, SGEQRF )
-HLIB_GEQR2_FUNC( double,                 dgeqr2_, CGEQRF )
-HLIB_GEQR2_FUNC( std::complex< float >,  cgeqr2_, DGEQRF )
-HLIB_GEQR2_FUNC( std::complex< double >, zgeqr2_, ZGEQRF )
+HPRO_GEQR2_FUNC( float,                  sgeqr2_, SGEQRF )
+HPRO_GEQR2_FUNC( double,                 dgeqr2_, CGEQRF )
+HPRO_GEQR2_FUNC( std::complex< float >,  cgeqr2_, DGEQRF )
+HPRO_GEQR2_FUNC( std::complex< double >, zgeqr2_, ZGEQRF )
 
-#undef HLIB_GEQR2_FUNC
+#undef HPRO_GEQR2_FUNC
 
 //
 // *orgqr
 //
-#define HLIB_ORGQR_FUNC( type, func, flops )                            \
+#define HPRO_ORGQR_FUNC( type, func, flops )                            \
     inline void orgqr ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         const blas_int_t  k,                            \
@@ -2530,17 +2532,17 @@ HLIB_GEQR2_FUNC( std::complex< double >, zgeqr2_, ZGEQRF )
         info = 0;                                                       \
         func( & n, & m, & k, A, & ldA, tau, work, & lwork, & info ); }
 
-HLIB_ORGQR_FUNC( float,             sorgqr_, SORGQR )
-HLIB_ORGQR_FUNC( double,            dorgqr_, DORGQR )
-HLIB_ORGQR_FUNC( std::complex< float >,  cungqr_, CUNGQR )
-HLIB_ORGQR_FUNC( std::complex< double >, zungqr_, ZUNGQR )
+HPRO_ORGQR_FUNC( float,             sorgqr_, SORGQR )
+HPRO_ORGQR_FUNC( double,            dorgqr_, DORGQR )
+HPRO_ORGQR_FUNC( std::complex< float >,  cungqr_, CUNGQR )
+HPRO_ORGQR_FUNC( std::complex< double >, zungqr_, ZUNGQR )
 
-#undef HLIB_ORGQR_FUNC
+#undef HPRO_ORGQR_FUNC
 
 //
 // *org2r
 //
-#define HLIB_ORG2R_FUNC( type, func, flops )                            \
+#define HPRO_ORG2R_FUNC( type, func, flops )                            \
     inline void org2r ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         const blas_int_t  k,                            \
@@ -2553,17 +2555,17 @@ HLIB_ORGQR_FUNC( std::complex< double >, zungqr_, ZUNGQR )
         info = 0;                                                       \
         func( & n, & m, & k, A, & ldA, tau, work, & info ); }
 
-HLIB_ORG2R_FUNC( float,                  sorg2r_, SORG2R )
-HLIB_ORG2R_FUNC( double,                 dorg2r_, DORG2R )
-HLIB_ORG2R_FUNC( std::complex< float >,  cung2r_, CUNG2R )
-HLIB_ORG2R_FUNC( std::complex< double >, zung2r_, ZUNG2R )
+HPRO_ORG2R_FUNC( float,                  sorg2r_, SORG2R )
+HPRO_ORG2R_FUNC( double,                 dorg2r_, DORG2R )
+HPRO_ORG2R_FUNC( std::complex< float >,  cung2r_, CUNG2R )
+HPRO_ORG2R_FUNC( std::complex< double >, zung2r_, ZUNG2R )
 
-#undef HLIB_ORG2R_FUNC
+#undef HPRO_ORG2R_FUNC
 
 //
 // *geqp3
 //
-#define HLIB_GEQP3_FUNC( type, func )                                   \
+#define HPRO_GEQP3_FUNC( type, func )                                   \
     inline void geqp3 ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         type *            A,                            \
@@ -2577,12 +2579,12 @@ HLIB_ORG2R_FUNC( std::complex< double >, zung2r_, ZUNG2R )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, jpvt, tau, work, & lwork, & info ); }
 
-HLIB_GEQP3_FUNC( float,  sgeqp3_ )
-HLIB_GEQP3_FUNC( double, dgeqp3_ )
+HPRO_GEQP3_FUNC( float,  sgeqp3_ )
+HPRO_GEQP3_FUNC( double, dgeqp3_ )
 
-#undef HLIB_GEQP3_FUNC
+#undef HPRO_GEQP3_FUNC
 
-#define HLIB_GEQP3_FUNC( type, func )                                   \
+#define HPRO_GEQP3_FUNC( type, func )                                   \
     inline void geqp3 ( const blas_int_t  n,                            \
                         const blas_int_t  m,                            \
                         type *            A,                            \
@@ -2596,17 +2598,17 @@ HLIB_GEQP3_FUNC( double, dgeqp3_ )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, jpvt, tau, work, & lwork, rwork, & info ); }
 
-HLIB_GEQP3_FUNC( std::complex< float >,  cgeqp3_ )
-HLIB_GEQP3_FUNC( std::complex< double >, zgeqp3_ )
+HPRO_GEQP3_FUNC( std::complex< float >,  cgeqp3_ )
+HPRO_GEQP3_FUNC( std::complex< double >, zgeqp3_ )
 
-#undef HLIB_GEQP3_FUNC
+#undef HPRO_GEQP3_FUNC
 
 #if HAS_GEQP3_TRUNC == 1
 
 //
 // *geqp3trunc
 //
-#define HLIB_GEQP3TRUNC_FUNC( type, func )                              \
+#define HPRO_GEQP3TRUNC_FUNC( type, func )                              \
     inline void geqp3trunc ( const blas_int_t  n,                       \
                              const blas_int_t  m,                       \
                              type *            A,                       \
@@ -2624,12 +2626,12 @@ HLIB_GEQP3_FUNC( std::complex< double >, zgeqp3_ )
         func( & n, & m, A, & ldA, jpvt, tau, & ntrunc, & atrunc, & rtrunc, work, & lwork, & info ); \
     }
 
-HLIB_GEQP3TRUNC_FUNC( float,  sgeqp3trunc_ )
-HLIB_GEQP3TRUNC_FUNC( double, dgeqp3trunc_ )
+HPRO_GEQP3TRUNC_FUNC( float,  sgeqp3trunc_ )
+HPRO_GEQP3TRUNC_FUNC( double, dgeqp3trunc_ )
 
-#undef HLIB_GEQP3TRUNC_FUNC
+#undef HPRO_GEQP3TRUNC_FUNC
 
-#define HLIB_GEQP3TRUNC_FUNC( type, func )                              \
+#define HPRO_GEQP3TRUNC_FUNC( type, func )                              \
     inline void geqp3trunc ( const blas_int_t  n,                       \
                              const blas_int_t  m,                       \
                              type *            A,                       \
@@ -2646,17 +2648,17 @@ HLIB_GEQP3TRUNC_FUNC( double, dgeqp3trunc_ )
         info = 0;                                                       \
         func( & n, & m, A, & ldA, jpvt, tau, & ntrunc, & atrunc, & rtrunc, work, & lwork, rwork, & info ); }
 
-HLIB_GEQP3TRUNC_FUNC( std::complex< float >,  cgeqp3trunc_ )
-HLIB_GEQP3TRUNC_FUNC( std::complex< double >, zgeqp3trunc_ )
+HPRO_GEQP3TRUNC_FUNC( std::complex< float >,  cgeqp3trunc_ )
+HPRO_GEQP3TRUNC_FUNC( std::complex< double >, zgeqp3trunc_ )
 
-#undef HLIB_GEQP3TRUNC_FUNC
+#undef HPRO_GEQP3TRUNC_FUNC
 
 #endif
 
 //
 // *syev/*heev
 //
-#define HLIB_HEEV_FUNC( type, func )                                    \
+#define HPRO_HEEV_FUNC( type, func )                                    \
     inline void heev ( const char        jobz,                          \
                        const char        uplo,                          \
                        const blas_int_t  n,                             \
@@ -2670,27 +2672,27 @@ HLIB_GEQP3TRUNC_FUNC( std::complex< double >, zgeqp3trunc_ )
         info = 0;                                                       \
         func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, & info ); }
 
-HLIB_HEEV_FUNC( float,  ssyev_ )
-HLIB_HEEV_FUNC( double, dsyev_ )
+HPRO_HEEV_FUNC( float,  ssyev_ )
+HPRO_HEEV_FUNC( double, dsyev_ )
 
-#undef HLIB_HEEV_FUNC
+#undef HPRO_HEEV_FUNC
 
-// #define HLIB_HEEV_FUNC( type, func )                                        
+// #define HPRO_HEEV_FUNC( type, func )                                        
 //     void heev<type> ( const char jobz, const char uplo, const blas_int_t n, 
 //                       type * A, const blas_int_t ldA, real_type< type >::type_t * W,   
 //                       type * work, const blas_int_t lwork, real_type< type >::type_t * rwork, blas_int_t & info ) { 
 //         info = 0;                                                       
 //         func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, rwork, & info ); }
 
-// HLIB_HEEV_FUNC( std::complex< float >,  cheev_ )
-// HLIB_HEEV_FUNC( std::complex< double >, zheev_ )
+// HPRO_HEEV_FUNC( std::complex< float >,  cheev_ )
+// HPRO_HEEV_FUNC( std::complex< double >, zheev_ )
 
-// #undef HLIB_HEEV_FUNC
+// #undef HPRO_HEEV_FUNC
 
 //
 // *syevx/*heevx
 //
-#define HLIB_HEEVX_FUNC( type, func )                                   \
+#define HPRO_HEEVX_FUNC( type, func )                                   \
     inline void heevx ( const char                  jobz,               \
                         const char                  uplo,               \
                         const blas_int_t            n,                  \
@@ -2714,15 +2716,15 @@ HLIB_HEEV_FUNC( double, dsyev_ )
         func( & jobz, & range, & uplo, & n, A, & ldA, & vl, & vu, & il, & iu, \
               & abstol, & m, W, Z, & ldZ, work, & lwork, iwork, & ifail, & info ); }
 
-HLIB_HEEVX_FUNC( float,  ssyevx_ )
-HLIB_HEEVX_FUNC( double, dsyevx_ )
+HPRO_HEEVX_FUNC( float,  ssyevx_ )
+HPRO_HEEVX_FUNC( double, dsyevx_ )
 
-#undef HLIB_HEEVX_FUNC
+#undef HPRO_HEEVX_FUNC
 
 //
 // sstev/dstev
 //
-#define HLIB_STEV_FUNC( type, func )                                  \
+#define HPRO_STEV_FUNC( type, func )                                  \
     inline void stev ( const char        jobz,                        \
                        const blas_int_t  n,                           \
                        type *            D,                           \
@@ -2734,15 +2736,15 @@ HLIB_HEEVX_FUNC( double, dsyevx_ )
         info = 0;                                                     \
         func( & jobz, & n, D, E, Z, & ldZ, work, & info ); }
 
-HLIB_STEV_FUNC( float,  sstev_ )
-HLIB_STEV_FUNC( double, dstev_ )
+HPRO_STEV_FUNC( float,  sstev_ )
+HPRO_STEV_FUNC( double, dstev_ )
 
-#undef HLIB_STEV_FUNC
+#undef HPRO_STEV_FUNC
 
 //
 // *gesvd
 //
-#define HLIB_GESVD_FUNC( type, func, flops )                            \
+#define HPRO_GESVD_FUNC( type, func, flops )                            \
     inline void gesvd ( const char                  jobu,               \
                         const char                  jobv,               \
                         const blas_int_t            n,                  \
@@ -2762,12 +2764,12 @@ HLIB_STEV_FUNC( double, dstev_ )
         info = 0;                                                       \
         func( & jobu, & jobv, & n, & m, A, & ldA, S, U, & ldU, VT, & ldVT, work, & lwork, & info ); }
 
-HLIB_GESVD_FUNC( float,  sgesvd_, SGESVD )
-HLIB_GESVD_FUNC( double, dgesvd_, DGESVD )
+HPRO_GESVD_FUNC( float,  sgesvd_, SGESVD )
+HPRO_GESVD_FUNC( double, dgesvd_, DGESVD )
 
-#undef  HLIB_GESVD_FUNC
+#undef  HPRO_GESVD_FUNC
 
-#define HLIB_GESVD_FUNC( type, func, flops )                            \
+#define HPRO_GESVD_FUNC( type, func, flops )                            \
     inline void gesvd ( const char                  jobu,               \
                         const char                  jobv,               \
                         const blas_int_t            n,                  \
@@ -2787,15 +2789,15 @@ HLIB_GESVD_FUNC( double, dgesvd_, DGESVD )
         info = 0;                                                       \
         func( & jobu, & jobv, & n, & m, A, & ldA, S, U, & ldU, VT, & ldVT, work, & lwork, rwork, & info ); }
 
-HLIB_GESVD_FUNC( std::complex< float >,  cgesvd_, CGESVD )
-HLIB_GESVD_FUNC( std::complex< double >, zgesvd_, CGESVD )
+HPRO_GESVD_FUNC( std::complex< float >,  cgesvd_, CGESVD )
+HPRO_GESVD_FUNC( std::complex< double >, zgesvd_, CGESVD )
 
-#undef  HLIB_GESVD_FUNC
+#undef  HPRO_GESVD_FUNC
 
 //
 // *gesdd
 //
-#define HLIB_GESDD_FUNC( type, func, flops )                            \
+#define HPRO_GESDD_FUNC( type, func, flops )                            \
     inline void gesdd ( const char                  jobz,               \
                         const blas_int_t            n,                  \
                         const blas_int_t            m,                  \
@@ -2815,12 +2817,12 @@ HLIB_GESVD_FUNC( std::complex< double >, zgesvd_, CGESVD )
         info = 0;                                                       \
         func( & jobz, & n, & m, A, & ldA, S, U, & ldU, VT, & ldVT, work, & lwork, iwork, & info ); }
 
-HLIB_GESDD_FUNC( float,  sgesdd_, SGESDD )
-HLIB_GESDD_FUNC( double, dgesdd_, DGESDD )
+HPRO_GESDD_FUNC( float,  sgesdd_, SGESDD )
+HPRO_GESDD_FUNC( double, dgesdd_, DGESDD )
 
-#undef  HLIB_GESDD_FUNC
+#undef  HPRO_GESDD_FUNC
 
-#define HLIB_GESDD_FUNC( type, func, flops )                            \
+#define HPRO_GESDD_FUNC( type, func, flops )                            \
     inline void gesdd ( const char                  jobz,               \
                         const blas_int_t            n,                  \
                         const blas_int_t            m,                  \
@@ -2840,12 +2842,12 @@ HLIB_GESDD_FUNC( double, dgesdd_, DGESDD )
         info = 0;                                                       \
         func( & jobz, & n, & m, A, & ldA, S, U, & ldU, VT, & ldVT, work, & lwork, rwork, iwork, & info ); }
 
-HLIB_GESDD_FUNC( std::complex< float >,  cgesdd_, CGESDD )
-HLIB_GESDD_FUNC( std::complex< double >, zgesdd_, ZGESDD )
+HPRO_GESDD_FUNC( std::complex< float >,  cgesdd_, CGESDD )
+HPRO_GESDD_FUNC( std::complex< double >, zgesdd_, ZGESDD )
 
-#undef  HLIB_GESDD_FUNC
+#undef  HPRO_GESDD_FUNC
 
-#define HLIB_GESVJ_FUNC( type, func )                                   \
+#define HPRO_GESVJ_FUNC( type, func )                                   \
     inline void gesvj ( const char                  joba,               \
                         const char                  jobu,               \
                         const char                  jobv,               \
@@ -2865,12 +2867,12 @@ HLIB_GESDD_FUNC( std::complex< double >, zgesdd_, ZGESDD )
         info = 0;                                                       \
         func( & joba, & jobu, & jobv, & n, & m, A, & ldA, S, & mv, V, & ldV, cwork, & lwork, & info ); }
 
-HLIB_GESVJ_FUNC( float,  sgesvj_ )
-HLIB_GESVJ_FUNC( double, dgesvj_ )
+HPRO_GESVJ_FUNC( float,  sgesvj_ )
+HPRO_GESVJ_FUNC( double, dgesvj_ )
 
-#undef  HLIB_GESVJ_FUNC
+#undef  HPRO_GESVJ_FUNC
 
-#define HLIB_GESVJ_FUNC( type, func )                                   \
+#define HPRO_GESVJ_FUNC( type, func )                                   \
     inline void gesvj ( const char                  joba,               \
                         const char                  jobu,               \
                         const char                  jobv,               \
@@ -2890,15 +2892,15 @@ HLIB_GESVJ_FUNC( double, dgesvj_ )
         info = 0;                                                       \
         func( & joba, & jobu, & jobv, & n, & m, A, & ldA, S, & mv, V, & ldV, cwork, & lwork, rwork, & lrwork, & info ); }
 
-HLIB_GESVJ_FUNC( std::complex< float >,  cgesvj_ )
-HLIB_GESVJ_FUNC( std::complex< double >, zgesvj_ )
+HPRO_GESVJ_FUNC( std::complex< float >,  cgesvj_ )
+HPRO_GESVJ_FUNC( std::complex< double >, zgesvj_ )
 
-#undef  HLIB_GESVJ_FUNC
+#undef  HPRO_GESVJ_FUNC
 
 //
 // *larfg
 //
-#define HLIB_LARFG_FUNC( type, func )                                   \
+#define HPRO_LARFG_FUNC( type, func )                                   \
     inline void larfg ( const blas_int_t  n,                            \
                         type &            alpha,                        \
                         type *            x,                            \
@@ -2906,18 +2908,18 @@ HLIB_GESVJ_FUNC( std::complex< double >, zgesvj_ )
                         type &            tau ) {                       \
         func( & n, & alpha, x, & incx, & tau ); }
 
-HLIB_LARFG_FUNC( float,                  slarfg_ )
-HLIB_LARFG_FUNC( double,                 dlarfg_ )
-HLIB_LARFG_FUNC( std::complex< float >,  clarfg_ )
-HLIB_LARFG_FUNC( std::complex< double >, zlarfg_ )
+HPRO_LARFG_FUNC( float,                  slarfg_ )
+HPRO_LARFG_FUNC( double,                 dlarfg_ )
+HPRO_LARFG_FUNC( std::complex< float >,  clarfg_ )
+HPRO_LARFG_FUNC( std::complex< double >, zlarfg_ )
 
-#undef HLIB_LARFG_FUNC
+#undef HPRO_LARFG_FUNC
 
 //
 // *larf
 //
 // apply householder reflection
-#define HLIB_LARF_FUNC( type, func )                                    \
+#define HPRO_LARF_FUNC( type, func )                                    \
     inline void larf ( const char        side,                          \
                        const blas_int_t  n,                             \
                        const blas_int_t  m,                             \
@@ -2929,17 +2931,17 @@ HLIB_LARFG_FUNC( std::complex< double >, zlarfg_ )
                        type *            work ) {                       \
         func( & side, & n, & m, V, & incv, & tau, C, & ldc, work ); }
 
-HLIB_LARF_FUNC( float,                  slarf_ )
-HLIB_LARF_FUNC( double,                 dlarf_ )
-HLIB_LARF_FUNC( std::complex< float >,  clarf_ )
-HLIB_LARF_FUNC( std::complex< double >, zlarf_ )
+HPRO_LARF_FUNC( float,                  slarf_ )
+HPRO_LARF_FUNC( double,                 dlarf_ )
+HPRO_LARF_FUNC( std::complex< float >,  clarf_ )
+HPRO_LARF_FUNC( std::complex< double >, zlarf_ )
 
-#undef HLIB_LARF_FUNC
+#undef HPRO_LARF_FUNC
 
 //! @endcond
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif // __HLIB_BLAS_LAPACK_HH
+#endif // __HPRO_BLAS_LAPACK_HH

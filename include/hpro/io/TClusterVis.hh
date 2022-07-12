@@ -1,11 +1,11 @@
-#ifndef __HLIB_TCLUSTERVIS_HH
-#define __HLIB_TCLUSTERVIS_HH
+#ifndef __HPRO_TCLUSTERVIS_HH
+#define __HPRO_TCLUSTERVIS_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TClusterVis.hh
 // Description : class for cluster tree and block cluster tree I/O
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
@@ -15,7 +15,7 @@
 #include "hpro/cluster/TCoordinate.hh"
 #include "hpro/cluster/TPermutation.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -78,7 +78,7 @@ public:
 
 /////////////////////////////////////////////////////////////////
 //
-// 2D visualisation (PostScript, PDF, SVG)
+// 2D visualisation (PostScript, SVG)
 //
 /////////////////////////////////////////////////////////////////
 
@@ -301,20 +301,6 @@ void
 print_ps ( const TBlockCluster *  cl,
            const std::string &    filename );
 
-//
-//! \ingroup  IO_Module
-//! \class    TPDFBlockClusterVis
-//! \brief    class for block cluster tree visualisation in PDF format
-//
-class TPDFBlockClusterVis : public T2DBlockClusterVis
-{
-protected:
-    // return printer object for given format
-    virtual T2DPrinter *  get_printer ( const double         width,
-                                        const double         height,
-                                        const std::string &  filename ) const;
-};
-
 /////////////////////////////////////////////////////////////////
 //
 // VTK visualisation
@@ -482,6 +468,6 @@ void
 print_gv ( const TBlockCluster *  cl,
            const std::string &    filename );
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif  // __TCLUSTERVIS_HH

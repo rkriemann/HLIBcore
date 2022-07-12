@@ -1,18 +1,18 @@
-#ifndef __HLIB_TREFINABLEGRID_HH
-#define __HLIB_TREFINABLEGRID_HH
+#ifndef __HPRO_TREFINABLEGRID_HH
+#define __HPRO_TREFINABLEGRID_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TRefinableGrid.hh
 // Description : defines a refinable grid class
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <functional>
 
 #include "hpro/bem/TGrid.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ///////////////////////////////////////////////////////////////
@@ -144,6 +144,6 @@ make_square   () -> std::unique_ptr< TRefinableGrid >;
 auto
 make_grid     ( const std::string &  gridname ) -> std::unique_ptr< TGrid >;
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TGRID_HH
+#endif  // __HPRO_TGRID_HH

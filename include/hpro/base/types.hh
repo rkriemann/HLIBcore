@@ -1,11 +1,11 @@
-#ifndef __HLIB_TYPES_HH
-#define __HLIB_TYPES_HH
+#ifndef __HPRO_TYPES_HH
+#define __HPRO_TYPES_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : types.hh
 // Description : type definitions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #if defined(WINDOWS) || defined(_WIN32) || defined(_WIN64)
@@ -27,20 +27,22 @@
 #include <stdlib.h>
 
 #include "hpro/base/basetypes.hh"
-#include "hlib-config.h"
+#include "hpro/config.h"
 
-namespace HLIB
+namespace Hpro
 {
 
 ////////////////////////////////////////////////////////
 //
-// enum indicating real/complex values
+// for handling of variants with respect to value type
 //
 
-enum value_type_t
+enum variant_id_t
 {
-    real_valued,
-    complex_valued
+    REAL_FP32    = 0,
+    REAL_FP64    = 1,
+    COMPLEX_FP32 = 2,
+    COMPLEX_FP64 = 3
 };
 
 ////////////////////////////////////////////////////////
@@ -90,8 +92,8 @@ enum term_color_t
 //
 
 #define TYPE_ID( type )        TYPE_##type
-#define DECLARE_TYPE( type )   const uint TYPE_ID( type ) = HLIB::RTTI::register_type( #type )
-#define IS_TYPE( obj, type )   HLIB::__internal_is_type( (obj), TYPE_ID( type ) )
+#define DECLARE_TYPE( type )   const uint TYPE_ID( type ) = Hpro::RTTI::register_type( #type )
+#define IS_TYPE( obj, type )   Hpro::__internal_is_type( (obj), TYPE_ID( type ) )
 
 template <class T>
 bool
@@ -114,17 +116,17 @@ is_type  ( const T *       obj,
 #define ptrcast(  ptr, type )  static_cast< type * >( ptr )
 #define cptrcast( ptr, type )  static_cast< const type * >( ptr )
 
-#define HLIB_RTTI_BASE( cname )                                         \
-    virtual HLIB::typeid_t  type () const                               \
+#define HPRO_RTTI_BASE( cname )                                         \
+    virtual Hpro::typeid_t  type () const                               \
     { return TYPE_ID( cname ); }
 
-#define HLIB_RTTI_DERIVED( cname, parent )                              \
-    virtual HLIB::typeid_t  type    () const                            \
+#define HPRO_RTTI_DERIVED( cname, parent )                              \
+    virtual Hpro::typeid_t  type    () const                            \
     { return TYPE_ID( cname ); }                                        \
-    virtual bool      is_type ( const HLIB::typeid_t  t ) const         \
+    virtual bool      is_type ( const Hpro::typeid_t  t ) const         \
     { return (t == TYPE_ID( cname )) || parent::is_type( t ); }
 
-}// namespace HLIB
+}// namespace Hpro
 
 ////////////////////////////////////////////////////////
 //
@@ -140,7 +142,7 @@ is_type  ( const T *       obj,
 // adjustments for safe pointers
 //
 
-namespace HLIB
+namespace Hpro
 {
 
 #if __cplusplus >= 201103L || ( defined(_MSC_VER) && _MSC_VER < 1914 )
@@ -159,6 +161,6 @@ __internal_is_type  ( const std::unique_ptr< T > &  obj,
 
 #endif
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif // __HLIB_TYPES_HH
+#endif // __HPRO_TYPES_HH

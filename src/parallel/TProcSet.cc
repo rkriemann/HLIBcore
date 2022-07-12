@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TProcSet.cc
 // Description : class for representing processor sets
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/System.hh"
 
 #include "hpro/parallel/TProcSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //

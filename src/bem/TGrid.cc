@@ -1,14 +1,14 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGrid.hh
 // Description : contains information about a grid
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TGrid.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace B = BLAS;

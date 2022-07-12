@@ -1,17 +1,17 @@
-#ifndef __HLIB_TALGPARTSTRAT_HH
-#define __HLIB_TALGPARTSTRAT_HH
+#ifndef __HPRO_TALGPARTSTRAT_HH
+#define __HPRO_TALGPARTSTRAT_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TAlgPartStrat.hh
 // Description : partitioning strategies for algebraic clustering
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/cluster/TGraph.hh"
 #include "hpro/cluster/TNodeSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -110,6 +110,6 @@ public:
                              TNodeSet &      right ) const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TALGPARTSTRAT_HH
+#endif  // __HPRO_TALGPARTSTRAT_HH

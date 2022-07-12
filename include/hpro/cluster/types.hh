@@ -1,14 +1,14 @@
-#ifndef __HLIB_CLUSTER_TYPES_HH
-#define __HLIB_CLUSTER_TYPES_HH
+#ifndef __HPRO_CLUSTER_TYPES_HH
+#define __HPRO_CLUSTER_TYPES_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : types.hh
 // Description : types used for clustering functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -78,6 +78,6 @@ enum diam_mode_t
     use_max_diam      //!< use maximum of cluster diameters
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif // __HLIB_CLUSTER_TYPES_HH
+#endif // __HPRO_CLUSTER_TYPES_HH

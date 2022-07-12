@@ -1,18 +1,18 @@
-#ifndef __HLIB_TRNG_HH
-#define __HLIB_TRNG_HH
+#ifndef __HPRO_TRNG_HH
+#define __HPRO_TRNG_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TRNG.hh
 // Description : class for a random-number-generator
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -60,4 +60,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TRNG_HH
+#endif  // __HPRO_TRNG_HH

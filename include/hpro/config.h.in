@@ -1,18 +1,21 @@
-#ifndef __HLIB_CONFIG_HH
-#define __HLIB_CONFIG_HH
+#ifndef __HPRO_CONFIG_HH
+#define __HPRO_CONFIG_HH
 /*
- * Project     : HLib
- * File        : hlib-config.h
+ * Project     : HLIBpro
+ * File        : config.h
  * Description : configuration settings
  * Author      : Ronald Kriemann
- * Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+ * Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
  */
 
 /* HLIBpro namespace override */
-#define  HLIB                    HLIB
+#define  Hpro                    Hpro
 
-/* prefix all HLIBpro types/functions (except constants) */
-#define  HLIBPF( name )          hlib_##name
+/* prefix all HLIBpro types/functions in lower case */
+#define  HPRO_PF( name )         hpro_##name
+
+/* prefix all HLIBpro constants in upper case */
+#define  HPRO_CONST_PF( name )   HPRO_##name
 
 /*
  * set to 1 if the following libraries are available and
@@ -49,6 +52,7 @@
 #define HAS_LOCALTIME_R          @HAS_LOCALTIME_R@
 #define HAS_GETRUSAGE            @HAS_GETRUSAGE@
 #define HAS_LWPINFO              @HAS_LWPINFO@
+#define HAS_C99COMPLEX           0
 
 #define HAS_GETPAGESIZE          0 /* @HAS_GETPAGESIZE@ */
 #define HAS_MMAP                 0 /* @HAS_MMAP@ */
@@ -83,17 +87,14 @@
  */
 
 /* activate to enable additional debugging features */
-#define HLIB_DEBUG               @HLIB_DEBUG@
+#define HPRO_DEBUG               @HPRO_DEBUG@
 
 /* activate argument tests in inline functions of BLAS module
- * (also activated by HLIB_DEBUG) */
-#define HLIB_BLAS_TESTS          0
-
-/* activate to enable single precision arithmetics */
-#define HLIB_SINGLE_PREC         @HLIB_SINGLE_PREC@
+ * (also activated by HPRO_DEBUG) */
+#define HPRO_BLAS_TESTS          0
 
 /* activate to enable flop counting */
-#define HLIB_COUNT_FLOPS         0
+#define HPRO_COUNT_FLOPS         0
 
 /* activate to enable old TBB functions */
 #define HAS_TBB_DEPRECATED       0
@@ -105,6 +106,6 @@
  *   3 : shared memory
  */
 
-#define HLIB_NET_TYPE            @NET_TYPE@
+#define HPRO_NET_TYPE            @NET_TYPE@
 
 #endif

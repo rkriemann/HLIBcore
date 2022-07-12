@@ -1,27 +1,28 @@
-#ifndef __HLIB_TMASSBF_HH
-#define __HLIB_TMASSBF_HH
+#ifndef __HPRO_TMASSBF_HH
+#define __HPRO_TMASSBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMassBF.hh
 // Description : bilinear form for mass matrix
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TBEMBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 //!
 //! \class  TMassBF
 //! \brief  bilinear form for mass matrix
 //!
-template < class T_ansatzsp,
-           class T_testsp >
+template < typename T_ansatzsp,
+           typename T_testsp,
+           typename T_value >
 class TMassBF : public TBEMBF< T_ansatzsp,
                                T_testsp,
-                               real >
+                               T_value >
 {
 public:
     //
@@ -29,7 +30,7 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
 
 protected:
     
@@ -65,6 +66,6 @@ public:
                           BLAS::Matrix< value_t > &     values ) const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TMASSBF_HH
+#endif  // __HPRO_TMASSBF_HH

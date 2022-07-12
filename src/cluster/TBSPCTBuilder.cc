@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBSPCTBuilder.cc
 // Description : build clustertrees via BSP
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -17,7 +17,7 @@
 
 #include "hpro/cluster/TBSPCTBuilder.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -262,44 +262,6 @@ support_size ( const node_t         node,
     return bbox;
 }
 
-//
-// compute bbox of <dofs> in parallel
-//
-TBBox
-par_compute_bb ( const TNodeSet &  dofs,
-                 const size_t      lb,
-                 const size_t      ub,
-                 const TCoordinate *  coord )
-{
-    if ( ub - lb > 10000 )
-    {
-        const size_t  mid = (ub + lb) / 2;
-        TBBox  bbox1, bbox2;
-
-        bbox1 = par_compute_bb( dofs, lb, mid, coord );
-        bbox2 = par_compute_bb( dofs, mid, ub, coord );
-
-        bbox1.join( bbox2 );
-
-        return  bbox1;
-    }// if
-    else
-    {
-        TBBox       bbox;
-        const uint  dim = coord->dim();
-    
-        bbox.min().set_dim( dim );
-        bbox.max().set_dim( dim );
-    
-        bbox = support_size( dofs[lb], true, coord );
-    
-        for ( size_t  i = lb; i < ub; ++i )
-            bbox.join( support_size( dofs[i], true, coord ) );
-
-        return  bbox;
-    }// else
-}
-
 }// namespace anonymous
 
 //
@@ -309,20 +271,18 @@ TBBox
 TGeomCTBuilder::compute_bb ( const TNodeSet &  dofs,
                              const data_t &    data ) const
 {
-    return  par_compute_bb( dofs, 0, dofs.nnodes(), data.coord );
-
-    // TBBox       bbox;
-    // const uint  dim = data.coord->dim();
+    TBBox       bbox;
+    const uint  dim = data.coord->dim();
     
-    // bbox.min().set_dim( dim );
-    // bbox.max().set_dim( dim );
+    bbox.min().set_dim( dim );
+    bbox.max().set_dim( dim );
     
-    // bbox = support_size( dofs[0], true, data.coord );
+    bbox = support_size( dofs[0], true, data.coord );
 
-    // for ( auto  dof : dofs )
-    //     bbox.join( support_size( dof, true, data.coord ) );
+    for ( auto  dof : dofs )
+        bbox.join( support_size( dof, true, data.coord ) );
 
-    // return bbox;
+    return bbox;
 }
 
 //
@@ -571,10 +531,10 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
 // constructor and destructor
 //
 
-TBSPNDCTBuilder::TBSPNDCTBuilder ( const TSparseMatrix *  S,
-                                   const TBSPPartStrat *  part_strat,
-                                   const uint             an_min,
-                                   const uint             amin_leaf_lvl )
+TBSPNDCTBuilder::TBSPNDCTBuilder ( any_const_sparse_matrix_t  S,
+                                   const TBSPPartStrat *      part_strat,
+                                   const uint                 an_min,
+                                   const uint                 amin_leaf_lvl )
         : TBSPCTBuilder( part_strat, an_min, amin_leaf_lvl )
         , _sparse_mat( S )
         , _sync_interface_depth( CFG::Cluster::sync_interface_depth )
@@ -584,7 +544,7 @@ TBSPNDCTBuilder::TBSPNDCTBuilder ( const TBSPPartStrat *  part_strat,
                                    const uint             an_min,
                                    const uint             amin_leaf_lvl )
         : TBSPCTBuilder( part_strat, an_min, amin_leaf_lvl )
-        , _sparse_mat( nullptr )
+        , _sparse_mat( static_cast< const TSparseMatrix< float > * >( nullptr ) )
         , _sync_interface_depth( CFG::Cluster::sync_interface_depth )
 {}
 
@@ -609,15 +569,18 @@ TBSPNDCTBuilder::build ( const TCoordinate * coord,
 }
 
 unique_ptr< TClusterTree >
-TBSPNDCTBuilder::build ( const TCoordinate *    coord,
-                         const TSparseMatrix *  S,
-                         const idx_t            index_ofs ) const
+TBSPNDCTBuilder::build ( const TCoordinate *        coord,
+                         any_const_sparse_matrix_t  S,
+                         const idx_t                index_ofs ) const
 {
     if ( coord == nullptr )
         return nullptr;
     
-    if ( S == nullptr )
-        HERROR( ERR_ARG, "(TBSPNDCTBuilder) build", "sparse matrix is nullptr" );
+    std::visit( [] ( auto && S_ptr )
+    {
+        if ( S_ptr == nullptr )
+            HERROR( ERR_ARG, "(TBSPNDCTBuilder) build", "sparse matrix is nullptr" );
+    }, S );
     
     //
     // setup array for son assignment and permutation
@@ -637,23 +600,26 @@ TBSPNDCTBuilder::build ( const TCoordinate *    coord,
     vector< uint >  nedges( nnodes, 0 );
     size_t          nentries = 0;
     
-    for ( node_t  node = 0; node < node_t(nnodes); ++node )
+    std::visit( [&,nnodes] ( auto && S_ptr )
     {
-        const idx_t  lb = S->rowptr(node);
-        const idx_t  ub = S->rowptr(node+1);
-            
-        for ( idx_t  j = lb; j < ub; j++ )
+        for ( node_t  node = 0; node < node_t(nnodes); ++node )
         {
-            const node_t  neigh = S->colind(j);
-
-            // no single loops
-            if ( node == neigh )
-                continue;
+            const idx_t  lb = S_ptr->rowptr(node);
+            const idx_t  ub = S_ptr->rowptr(node+1);
+            
+            for ( idx_t  j = lb; j < ub; j++ )
+            {
+                const node_t  neigh = S_ptr->colind(j);
                 
-            nedges[node]++;
-            nentries++;
+                // no single loops
+                if ( node == neigh )
+                    continue;
+                
+                nedges[node]++;
+                nentries++;
+            }// for
         }// for
-    }// for
+    }, S );
     
     //
     // look for highly connected nodes and remove them
@@ -843,43 +809,46 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
 
     for ( auto  dof : son_dofs[0] ) label[ dof ] = LEFT;
     for ( auto  dof : son_dofs[1] ) label[ dof ] = RIGHT;
-    
-    for ( uint l = 0; l < 2; l++ )
+
+    std::visit( [&] ( auto &&  S )
     {
-        idx_t  idx;
-        
-        if ( l == 0 ) idx = max_son;
-        else          idx = (max_son == 0 ? 1 : 0);
-        
-        for ( auto  dof : son_dofs[idx] )
+        for ( uint l = 0; l < 2; l++ )
         {
-            if ( label[ dof ] == INTERFACE )
-                continue;
-                
-            const idx_t  lb = _sparse_mat->rowptr( dof   ); // TODO: replace by options.S
-            const idx_t  ub = _sparse_mat->rowptr( dof+1 );
-                
-            for ( idx_t j = lb; j < ub; j++ )
+            idx_t  idx;
+        
+            if ( l == 0 ) idx = max_son;
+            else          idx = (max_son == 0 ? 1 : 0);
+        
+            for ( auto  dof : son_dofs[idx] )
             {
-                const idx_t  neigh = _sparse_mat->colind(j);
-                    
-                if (( dof != neigh ) &&
-                    ( local[ neigh ] ) &&   // neighbour has to be local node
-                    // ( local.find( neigh ) != local.end() ) &&   // neighbour has to be local node
-                    ( label[ neigh ] != label[ dof ] ) &&       // then if labels differ
-                    ( label[ neigh ] != INTERFACE ))            // and neighbour is not on interface
+                if ( label[ dof ] == INTERFACE )
+                    continue;
+                
+                const idx_t  lb = S->rowptr( dof   ); // TODO: replace by options.S
+                const idx_t  ub = S->rowptr( dof+1 );
+                
+                for ( idx_t j = lb; j < ub; j++ )
                 {
-                    //
-                    // remove dof from son list and put it into interface
-                    //
+                    const idx_t  neigh = S->colind(j);
                     
-                    label[ dof ] = INTERFACE;
-                    if_dofs.append( dof );
-                    break;
-                }// if
+                    if (( dof != neigh ) &&
+                        ( local[ neigh ] ) &&   // neighbour has to be local node
+                        // ( local.find( neigh ) != local.end() ) &&   // neighbour has to be local node
+                        ( label[ neigh ] != label[ dof ] ) &&       // then if labels differ
+                        ( label[ neigh ] != INTERFACE ))            // and neighbour is not on interface
+                    {
+                        //
+                        // remove dof from son list and put it into interface
+                        //
+                    
+                        label[ dof ] = INTERFACE;
+                        if_dofs.append( dof );
+                        break;
+                    }// if
+                }// for
             }// for
         }// for
-    }// for
+    }, _sparse_mat );
 
     //
     // rebuild list of reduced indexsets
@@ -1235,4 +1204,4 @@ avg_dom_depth ( const TCluster *  node )
 
 }// namespace anonymous
 
-}// namespace HLIB
+}// namespace Hpro

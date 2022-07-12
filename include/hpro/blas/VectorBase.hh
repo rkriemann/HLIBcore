@@ -1,18 +1,18 @@
-#ifndef __HLIB_BLAS_VECTORBASE_HH
-#define __HLIB_BLAS_VECTORBASE_HH
+#ifndef __HPRO_BLAS_VECTORBASE_HH
+#define __HPRO_BLAS_VECTORBASE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Vector.hh
 // Description : defines basic interface for vectors
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
 
 #include "hpro/blas/Range.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -32,6 +32,10 @@ struct is_vector
 {
     static const bool  value = false;
 };
+
+#if __cplusplus >= 201703L
+template <typename T> inline constexpr bool is_vector_v = is_vector< T >::value;
+#endif
 
 //!
 //! \ingroup  BLAS_Module
@@ -80,6 +84,6 @@ operator << ( std::ostream & os, const VectorBase< T > & v );
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_VECTORBASE_HH
+#endif  // __HPRO_BLAS_VECTORBASE_HH

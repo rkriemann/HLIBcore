@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : helmholtz_simd.inc
 // Description : Helmholtz kernels using SIMD functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #if !defined(SIMD_ISA)
@@ -17,23 +17,13 @@
 #include "hpro/bem/TConstEdgeFnSpace.hh"
 #include "hpro/bem/THelmholtzBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
 
 namespace
 {
-
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-//
-// local constants
-//
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-
-constexpr real  ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -46,18 +36,19 @@ constexpr real  ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
 //
 // form local quadrature vectors x and y and compute  y-x (Attention: y-x !!!)
 //
-template < typename T_packed >
+template < typename packed_t >
 inline
 void
-comp_diff_simd ( const real *    x1,
-                 const real *    y1,
-                 const real *    x2,
-                 const real *    y2,
-                 const T_packed  tri0coo[3][3],
-                 const T_packed  tri1coo[3][3],
-                 T_packed        diff[3] )
+comp_diff_simd ( const value_type_t< packed_t > * x1,
+                 const value_type_t< packed_t > * y1,
+                 const value_type_t< packed_t > * x2,
+                 const value_type_t< packed_t > * y2,
+                 const packed_t                   tri0coo[3][3],
+                 const packed_t                   tri1coo[3][3],
+                 packed_t                         diff[3],
+                 const bool                       adjoint = false )
 {
-    using vpacked = T_packed;
+    using vpacked = packed_t;
     using value_t = typename vpacked::value_t;
 
     const vpacked  vONE( value_t(1) );
@@ -72,36 +63,56 @@ comp_diff_simd ( const real *    x1,
     const vpacked  b2 = load< vpacked >( y2 );
     const vpacked  b0 = sub( sub( vONE, b1 ), b2 );
 
-    //
-    // compute y-x
-    //
+    if ( adjoint )
+    {
+        //
+        // compute x-y
+        //
 
-    vpacked  tmp1;
+        vpacked  tmp1;
     
-    diff[0] = sub( muladd( b2, tri1coo[0][2], muladd( b1, tri1coo[0][1], mul( b0, tri1coo[0][0] ) ) ),
-                   muladd( a2, tri0coo[0][2], muladd( a1, tri0coo[0][1], mul( a0, tri0coo[0][0] ) ) ) );
-                                                                                                     
-    diff[1] = sub( muladd( b2, tri1coo[1][2], muladd( b1, tri1coo[1][1], mul( b0, tri1coo[1][0] ) ) ),
-                   muladd( a2, tri0coo[1][2], muladd( a1, tri0coo[1][1], mul( a0, tri0coo[1][0] ) ) ) );
-                                                                                                     
-    diff[2] = sub( muladd( b2, tri1coo[2][2], muladd( b1, tri1coo[2][1], mul( b0, tri1coo[2][0] ) ) ),
-                   muladd( a2, tri0coo[2][2], muladd( a1, tri0coo[2][1], mul( a0, tri0coo[2][0] ) ) ) );
+        diff[0] = sub( muladd( a2, tri0coo[0][2], muladd( a1, tri0coo[0][1], mul( a0, tri0coo[0][0] ) ) ),
+                       muladd( b2, tri1coo[0][2], muladd( b1, tri1coo[0][1], mul( b0, tri1coo[0][0] ) ) ) );
+        
+        diff[1] = sub( muladd( a2, tri0coo[1][2], muladd( a1, tri0coo[1][1], mul( a0, tri0coo[1][0] ) ) ),
+                       muladd( b2, tri1coo[1][2], muladd( b1, tri1coo[1][1], mul( b0, tri1coo[1][0] ) ) ) );
+        
+        diff[2] = sub( muladd( a2, tri0coo[2][2], muladd( a1, tri0coo[2][1], mul( a0, tri0coo[2][0] ) ) ),
+                       muladd( b2, tri1coo[2][2], muladd( b1, tri1coo[2][1], mul( b0, tri1coo[2][0] ) ) ) );
+    }// if
+    else
+    {
+        //
+        // compute y-x
+        //
+
+        vpacked  tmp1;
+    
+        diff[0] = sub( muladd( b2, tri1coo[0][2], muladd( b1, tri1coo[0][1], mul( b0, tri1coo[0][0] ) ) ),
+                       muladd( a2, tri0coo[0][2], muladd( a1, tri0coo[0][1], mul( a0, tri0coo[0][0] ) ) ) );
+        
+        diff[1] = sub( muladd( b2, tri1coo[1][2], muladd( b1, tri1coo[1][1], mul( b0, tri1coo[1][0] ) ) ),
+                       muladd( a2, tri0coo[1][2], muladd( a1, tri0coo[1][1], mul( a0, tri0coo[1][0] ) ) ) );
+        
+        diff[2] = sub( muladd( b2, tri1coo[2][2], muladd( b1, tri1coo[2][1], mul( b0, tri1coo[2][0] ) ) ),
+                       muladd( a2, tri0coo[2][2], muladd( a1, tri0coo[2][1], mul( a0, tri0coo[2][0] ) ) ) );
+    }// else
 }
 
 //
 // form local quadrature vectors x and y and compute  |x-y|²
 //
-template < typename T_packed >
+template < typename packed_t >
 inline
-T_packed
-comp_sqdist_simd ( const real *    x1,
-                   const real *    y1,
-                   const real *    x2,
-                   const real *    y2,
-                   const T_packed  tri0coo[3][3],
-                   const T_packed  tri1coo[3][3] )
+packed_t
+comp_sqdist_simd ( const value_type_t< packed_t > *  x1,
+                   const value_type_t< packed_t > *  y1,
+                   const value_type_t< packed_t > *  x2,
+                   const value_type_t< packed_t > *  y2,
+                   const packed_t                    tri0coo[3][3],
+                   const packed_t                    tri1coo[3][3] )
 {
-    using vpacked = T_packed;
+    using vpacked = packed_t;
     using value_t = typename vpacked::value_t;
 
     const vpacked  vONE( value_t(1) );
@@ -140,6 +151,49 @@ comp_sqdist_simd ( const real *    x1,
     return dot;
 }
 
+//
+// get normal direction for all quadrature points in vector data
+//
+template < typename  T_ansatzsp,
+           typename  T_packed >
+inline
+void
+get_normal ( const T_packed             va1,
+             const T_packed             va2,
+             const idx_t                tri_id,
+             const TGrid::triangle_t &  tri,
+             const T_ansatzsp *         func_sp,
+             T_packed                   vn[3] )
+{
+    using vpacked = T_packed;
+    using value_t = typename vpacked::value_t;
+
+    const size_t   VECTOR_SIZE = vpacked::vector_size;
+    
+    //
+    // convert vector data to array
+    //
+    
+    value_t  a1[ VECTOR_SIZE ], a2[ VECTOR_SIZE ];
+    value_t  x[ VECTOR_SIZE ],  y[ VECTOR_SIZE ],  z[ VECTOR_SIZE ];
+
+    store( va1, a1 );
+    store( va2, a2 );
+    
+    for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
+    {
+        const auto  n = func_sp->grid()->tri_normal( tri_id, tri, a1[j], a2[j] );
+
+        x[j] = n.x();
+        y[j] = n.y();
+        z[j] = n.z();
+    }// for
+
+    vn[0] = load< vpacked >( x );
+    vn[1] = load< vpacked >( y );
+    vn[2] = load< vpacked >( z );
+}
+
 }// namespace anonymous
 
 ///////////////////////////////////////////////////////////////
@@ -149,8 +203,8 @@ comp_sqdist_simd ( const real *    x1,
 ///////////////////////////////////////////////////////////////
 
 #define DEFINE_LOCAL_TYPE                               \
-    using vpacked = T_packed;                           \
-    using value_t = typename vpacked::value_t;          \
+    using vpacked = packed_t;                           \
+    using real_t  = real_type_t< value_t >;             \
     const size_t   VECTOR_SIZE = vpacked::vector_size
 
 #define LOAD_TRIANGLE_COORD                                             \
@@ -184,20 +238,23 @@ comp_sqdist_simd ( const real *    x1,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_slp_simd ( const TGrid::triangle_t &   tri0,
-                     const TGrid::triangle_t &   tri1,
-                     const tripair_quad_rule_t * rule,
-                     const complex               ikappa,
-                     const T_ansatzsp *          ansatz_sp,
-                     const T_testsp *            test_sp,
-                     vector< complex > &         values )
+helmholtz_slp_simd ( const TGrid::triangle_t &                              tri0,
+                     const TGrid::triangle_t &                              tri1,
+                     const tripair_quad_rule_t< real_type_t< value_t > > *  rule,
+                     const value_t                                          ikappa,
+                     const T_ansatzsp *                                     ansatz_sp,
+                     const T_testsp *                                       test_sp,
+                     vector< value_t > &                                    values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
+    
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
     
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     const vpacked  vikappa_re( ikappa.real() );
@@ -208,8 +265,8 @@ helmholtz_slp_simd ( const TGrid::triangle_t &   tri0,
     // eval VECTOR_SIZE add the same time
     //
 
-    value_t  res_re[ VECTOR_SIZE ];
-    value_t  res_im[ VECTOR_SIZE ];
+    real_t  res_re[ VECTOR_SIZE ];
+    real_t  res_im[ VECTOR_SIZE ];
 
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
@@ -250,34 +307,37 @@ helmholtz_slp_simd ( const TGrid::triangle_t &   tri0,
         vc = mul( vexp_ikd_re, vc );
         vs = mul( vexp_ikd_re, vs );
 
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( vc, res_re );
         store( vs, res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; j++ )
-            values[ i+j ] = complex( res_re[j], res_im[j] );
+            values[ i+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
 ///////////////////////////////////////////////////////////////
 //
-// Helmholtz SLP kernel; real wave number
+// Helmholtz SLP kernel; double wave number
 //
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_slp_re_simd ( const TGrid::triangle_t &   tri0,
-                        const TGrid::triangle_t &   tri1,
-                        const tripair_quad_rule_t * rule,
-                        const complex               ikappa,
-                        const T_ansatzsp *          ansatz_sp,
-                        const T_testsp *            test_sp,
-                        vector< complex > &         values )
+helmholtz_slp_re_simd ( const TGrid::triangle_t &                            tri0,
+                        const TGrid::triangle_t &                            tri1,
+                        const tripair_quad_rule_t< real_type_t< value_t > > * rule,
+                        const value_t                                        ikappa,
+                        const T_ansatzsp *                                   ansatz_sp,
+                        const T_testsp *                                     test_sp,
+                        vector< value_t > &                                  values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
+    
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
     
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     const size_t   n_pts = rule->npts;
@@ -287,8 +347,8 @@ helmholtz_slp_re_simd ( const TGrid::triangle_t &   tri0,
     // eval VECTOR_SIZE add the same time
     //
 
-    value_t  res_re[ VECTOR_SIZE ];
-    value_t  res_im[ VECTOR_SIZE ];
+    real_t  res_re[ VECTOR_SIZE ];
+    real_t  res_im[ VECTOR_SIZE ];
 
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
@@ -328,12 +388,12 @@ helmholtz_slp_re_simd ( const TGrid::triangle_t &   tri0,
         vc = mul( vexp_ikd_re, vc );
         vs = mul( vexp_ikd_re, vs );
 
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( vc, res_re );
         store( vs, res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; j++ )
-            values[ i+j ] = complex( res_re[j], res_im[j] );
+            values[ i+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
@@ -342,20 +402,23 @@ helmholtz_slp_re_simd ( const TGrid::triangle_t &   tri0,
 // Helmholtz SLP kernel; imaginary wave number
 //
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_slp_im_simd ( const TGrid::triangle_t &   tri0,
-                        const TGrid::triangle_t &   tri1,
-                        const tripair_quad_rule_t * rule,
-                        const complex               ikappa,
-                        const T_ansatzsp *          ansatz_sp,
-                        const T_testsp *            test_sp,
-                        vector< complex > &         values )
+helmholtz_slp_im_simd ( const TGrid::triangle_t &          tri0,
+                        const TGrid::triangle_t &          tri1,
+                        const tripair_quad_rule_t< real_type_t< value_t > > *        rule,
+                        const value_t                      ikappa,
+                        const T_ansatzsp *                 ansatz_sp,
+                        const T_testsp *                   test_sp,
+                        vector< value_t > & values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
+    
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
     
     const vpacked   vONE_OVER_4PI( ONE_OVER_4PI );
     const size_t    n_pts   = rule->npts;
@@ -365,7 +428,7 @@ helmholtz_slp_im_simd ( const TGrid::triangle_t &   tri0,
     // eval VECTOR_SIZE add the same time
     //
 
-    value_t  res_re[ VECTOR_SIZE ];
+    real_t  res_re[ VECTOR_SIZE ];
     
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
@@ -395,11 +458,11 @@ helmholtz_slp_im_simd ( const TGrid::triangle_t &   tri0,
         const vpacked  vexp_ikd_re = mul( div( vONE_OVER_4PI, vdist ), exp( mul( vikappa_re, vdist ) ) ); 
 
         // exp(re)·cos(im), exp(re)·sin(im) = ( exp(re), 0 ) since im = 0
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( vexp_ikd_re, res_re );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; j++ )
-            values[ i+j ] = complex( res_re[j], real(0) );
+            values[ i+j ] = value_t( res_re[j], real_t(0) );
     }// for
 }
 
@@ -411,31 +474,29 @@ helmholtz_slp_im_simd ( const TGrid::triangle_t &   tri0,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_dlp_simd ( const idx_t                 tri1_id,
-                     const TGrid::triangle_t &   tri0,
-                     const TGrid::triangle_t &   tri1,
-                     const tripair_quad_rule_t * rule,
-                     const complex               ikappa,
-                     const T_ansatzsp *          ansatz_sp,
-                     const T_testsp *            test_sp,
-                     vector< complex > &         values )
+helmholtz_dlp_simd ( const idx_t                        tri_id,
+                     const bool                         adjoint,
+                     const TGrid::triangle_t &          tri0,
+                     const TGrid::triangle_t &          tri1,
+                     const tripair_quad_rule_t< real_type_t< value_t > > *  rule,
+                     const value_t                      ikappa,
+                     const T_ansatzsp *                 ansatz_sp,
+                     const T_testsp *                   test_sp,
+                     vector< value_t > &                values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
+    const vpacked  vMINUSONE( real_t(-1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
-    
-    //
-    // get normal direction
-    //
-    
-    const T3Point  sn( test_sp->grid()->tri_normal( tri1_id ) );
-    const vpacked  n[3] = { sn[0], sn[1], sn[2] };
     
     //
     // eval VECTOR_SIZE  add the same time
@@ -444,9 +505,14 @@ helmholtz_dlp_simd ( const idx_t                 tri1_id,
     const vpacked  vikappa_re( ikappa.real() );
     const vpacked  vikappa_im( ikappa.imag() );
     const size_t   n_pts = rule->npts;
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
     
+    // set normal direction
+    const bool     has_vtx_normal = ( adjoint ? ansatz_sp->grid()->has_vtx_normal() : test_sp->grid()->has_vtx_normal() );
+    const auto     n_vec          = ( adjoint ? ansatz_sp->grid()->tri_normal( tri_id ) : test_sp->grid()->tri_normal( tri_id ) );
+    vpacked        n[3]           = { n_vec[0], n_vec[1], n_vec[2] };
+
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
         //
@@ -455,9 +521,53 @@ helmholtz_dlp_simd ( const idx_t                 tri1_id,
         
         vpacked  diff[3];
         
-        comp_diff_simd( & rule->x1[i], & rule->y1[i],
-                        & rule->x2[i], & rule->y2[i],
-                        t0, t1, diff );
+        // load quadrature points for first triangle
+        const vpacked  a1 = load< vpacked >( & rule->x1[i] );
+        const vpacked  a2 = load< vpacked >( & rule->y1[i] );
+        const vpacked  a0 = sub( sub( vONE, a1 ),  a2 );
+
+        // load quadrature points for second triangle
+        const vpacked  b1 = load< vpacked >( & rule->x2[i] );
+        const vpacked  b2 = load< vpacked >( & rule->y2[i] );
+        const vpacked  b0 = sub( sub( vONE, b1 ), b2 );
+
+        if ( adjoint )
+        {
+            //
+            // compute x-y
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ),
+                           muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ),
+                           muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ),
+                           muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ) );
+        }// if
+        else
+        {
+            //
+            // compute y-x
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ),
+                           muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ),
+                           muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ),
+                           muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ) );
+        }// else
+        // comp_diff_simd( & rule->x1[i], & rule->y1[i],
+        //                 & rule->x2[i], & rule->y2[i],
+        //                 t0, t1, diff, adjoint );
 
         // |y-x|²
         const vpacked  vdist2 = muladd( diff[0], diff[0], muladd( diff[1], diff[1], mul( diff[2], diff[2] ) ) );
@@ -467,17 +577,35 @@ helmholtz_dlp_simd ( const idx_t                 tri1_id,
         // |y-x|³
         const vpacked  vdist3 = mul( vdist, vdist2 );
         
+        // get normal direction
+        if ( has_vtx_normal )
+        {
+            if ( adjoint )
+                get_normal( a1, a2, tri_id, tri0, ansatz_sp, n );
+            else
+                get_normal( b1, b2, tri_id, tri1, test_sp, n );
+        }// if
+    
         // < n, y-x >
-        const vpacked  vndu   = muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) );
+        const vpacked  vndu = ( adjoint
+                                ? muladd( diff[0], n[0], muladd( diff[1], n[1], mul( diff[2], n[2] ) ) )
+                                : muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) ) );
 
         
         //
         //   (i·κ·|x-y|)
-        // e            (i·κ·|x-y| - 1) <n,y-x>
-        // ────────────────────────────────────
+        // e            (i·κ·|x-y| - 1) <n(y),y-x>
+        // ───────────────────────────────────────
         //                |x-y|³
         //
-
+        // or
+        //
+        //   (i·κ·|x-y|)
+        // e            (1 - i·κ·|x-y|) <n(x),x-y>
+        // ───────────────────────────────────────
+        //                |x-y|³
+        //
+        
         //
         // compute exp( i·κ·|x-y| )
         //         = polar( exp( re ), im )
@@ -488,7 +616,7 @@ helmholtz_dlp_simd ( const idx_t                 tri1_id,
         vpacked        vikd_re = mul( vikappa_re, vdist );
         
         // im( ( i·κ·d[0], i·κ·d[1], i·κ·d[2], i·κ·d[3] ) )
-        const vpacked  vikd_im = mul( vikappa_im, vdist );
+        vpacked        vikd_im = mul( vikappa_im, vdist );
         
         // exp( re(·) )
         // (also: multiply with 1/(4·π) <n,y-x> / |x-y|³ as this would be done later anyway)
@@ -503,48 +631,55 @@ helmholtz_dlp_simd ( const idx_t                 tri1_id,
         vc = mul( vexp_ikd_re, vc );
         vs = mul( vexp_ikd_re, vs );
 
-        // i·κ·|x-y| - 1
-        vikd_re = sub( vikd_re, vONE );
+        if ( adjoint )
+        {
+            // 1 - i·κ·|x-y|
+            vikd_re = sub( vONE, vikd_re );
+            vikd_im = mul( vMINUSONE, vikd_im );
+        }// if
+        else
+        {
+            // i·κ·|x-y| - 1
+            vikd_re = sub( vikd_re, vONE );
+        }// else
         
         // compute exp() · (i·κ·|x-y| - 1) and store final values
         store( mulsub( vc, vikd_re, mul( vs, vikd_im ) ), res_re );
         store( muladd( vc, vikd_im, mul( vs, vikd_re ) ), res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ i+j ] = complex( res_re[j], res_im[j] );
+            values[ i+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
 ///////////////////////////////////////////////////////////////
 //
-// Helmholtz DLP kernel; real wavenumber
+// Helmholtz DLP kernel; double wavenumber
 //
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
-                        const TGrid::triangle_t &   tri0,
-                        const TGrid::triangle_t &   tri1,
-                        const tripair_quad_rule_t * rule,
-                        const complex               ikappa,
-                        const T_ansatzsp *          ansatz_sp,
-                        const T_testsp *            test_sp,
-                        vector< complex > &         values )
+helmholtz_dlp_re_simd ( const idx_t                        tri_id,
+                        const bool                         adjoint,
+                        const TGrid::triangle_t &          tri0,
+                        const TGrid::triangle_t &          tri1,
+                        const tripair_quad_rule_t< real_type_t< value_t > > *        rule,
+                        const value_t                      ikappa,
+                        const T_ansatzsp *                 ansatz_sp,
+                        const T_testsp *                   test_sp,
+                        vector< value_t > &                values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
 
-    const vpacked  vMINUS_ONE( value_t(-1) );  // used for: re(i·κ·|x-y|)-1 since re() = 0
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+
+    const vpacked  vONE( real_t(1) );         // used for: re(i·κ·|x-y|)-1 since re() = 0
+    const vpacked  vMINUS_ONE( real_t(-1) );  // used for: re(i·κ·|x-y|)-1 since re() = 0
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
-    
-    //
-    // get normal direction
-    //
-    
-    const T3Point  sn( test_sp->grid()->tri_normal( tri1_id ) );
-    const vpacked  n[3] = { sn[0], sn[1], sn[2] };
     
     //
     // eval VECTOR_SIZE  add the same time
@@ -552,9 +687,14 @@ helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
 
     const vpacked  vikappa_im( ikappa.imag() );
     const size_t   n_pts = rule->npts;
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
     
+    // set normal direction
+    const bool     has_vtx_normal = ( adjoint ? ansatz_sp->grid()->has_vtx_normal() : test_sp->grid()->has_vtx_normal() );
+    const auto     n_vec          = ( adjoint ? ansatz_sp->grid()->tri_normal( tri_id ) : test_sp->grid()->tri_normal( tri_id ) );
+    vpacked        n[3]           = { n_vec[0], n_vec[1], n_vec[2] };
+
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
         //
@@ -563,9 +703,53 @@ helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
         
         vpacked  diff[3];
         
-        comp_diff_simd( & rule->x1[i], & rule->y1[i],
-                        & rule->x2[i], & rule->y2[i],
-                        t0, t1, diff );
+        // load quadrature points for first triangle
+        const vpacked  a1 = load< vpacked >( & rule->x1[i] );
+        const vpacked  a2 = load< vpacked >( & rule->y1[i] );
+        const vpacked  a0 = sub( sub( vONE, a1 ),  a2 );
+
+        // load quadrature points for second triangle
+        const vpacked  b1 = load< vpacked >( & rule->x2[i] );
+        const vpacked  b2 = load< vpacked >( & rule->y2[i] );
+        const vpacked  b0 = sub( sub( vONE, b1 ), b2 );
+
+        if ( adjoint )
+        {
+            //
+            // compute x-y
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ),
+                           muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ),
+                           muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ),
+                           muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ) );
+        }// if
+        else
+        {
+            //
+            // compute y-x
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ),
+                           muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ),
+                           muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ),
+                           muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ) );
+        }// else
+        // comp_diff_simd( & rule->x1[i], & rule->y1[i],
+        //                 & rule->x2[i], & rule->y2[i],
+        //                 t0, t1, diff, adjoint );
 
         // |y-x|²
         const vpacked  vdist2 = muladd( diff[0], diff[0], muladd( diff[1], diff[1], mul( diff[2], diff[2] ) ) );
@@ -575,9 +759,19 @@ helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
         // |y-x|³
         const vpacked  vdist3 = mul( vdist, vdist2 );
         
-        // < n, y-x >
-        const vpacked  vndu   = muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) );
+        // get normal direction
+        if ( has_vtx_normal )
+        {
+            if ( adjoint )
+                get_normal( a1, a2, tri_id, tri0, ansatz_sp, n );
+            else
+                get_normal( b1, b2, tri_id, tri1, test_sp, n );
+        }// if
 
+        // < n, y-x >
+        const vpacked  vndu = ( adjoint
+                                ? muladd( diff[0], n[0], muladd( diff[1], n[1], mul( diff[2], n[2] ) ) )
+                                : muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) ) );
         
         //
         //   (i·κ·|x-y|)
@@ -608,12 +802,21 @@ helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
         vc = mul( vexp_ikd_re, vc );
         vs = mul( vexp_ikd_re, vs );
 
-        // compute exp() · (i·κ·|x-y| - 1) and store final values
-        store( mulsub( vc, vMINUS_ONE, mul( vs, vikd_im    ) ), res_re );
-        store( muladd( vc, vikd_im,    mul( vs, vMINUS_ONE ) ), res_im );
+        if ( adjoint )
+        {
+            // compute exp() · (1 - i·κ·|x-y|) and store final values
+            store( muladd(    vs, vikd_im, vc ), res_re );
+            store( negmuladd( vc, vikd_im, vs ), res_im );
+        }// if
+        else
+        {
+            // compute exp() · (i·κ·|x-y| - 1) and store final values
+            store( mulsub( vc, vMINUS_ONE, mul( vs, vikd_im    ) ), res_re );
+            store( muladd( vc, vikd_im,    mul( vs, vMINUS_ONE ) ), res_im );
+        }// else
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ i+j ] = complex( res_re[j], res_im[j] );
+            values[ i+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
@@ -622,31 +825,28 @@ helmholtz_dlp_re_simd ( const idx_t                 tri1_id,
 // Helmholtz DLP kernel; imaginary wavenumber
 //
 
-template < typename T_ansatzsp,
+template < typename value_t,
+           typename T_ansatzsp,
            typename T_testsp,
-           typename T_packed >
+           typename packed_t >
 void
-helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
-                        const TGrid::triangle_t &   tri0,
-                        const TGrid::triangle_t &   tri1,
-                        const tripair_quad_rule_t * rule,
-                        const complex               ikappa,
-                        const T_ansatzsp *          ansatz_sp,
-                        const T_testsp *            test_sp,
-                        vector< complex > &         values )
+helmholtz_dlp_im_simd ( const idx_t                        tri_id,
+                        const bool                         adjoint,
+                        const TGrid::triangle_t &          tri0,
+                        const TGrid::triangle_t &          tri1,
+                        const tripair_quad_rule_t< real_type_t< value_t > > *        rule,
+                        const value_t                      ikappa,
+                        const T_ansatzsp *                 ansatz_sp,
+                        const T_testsp *                   test_sp,
+                        vector< value_t > &                values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
-    
-    //
-    // get normal direction
-    //
-    
-    const T3Point  sn( test_sp->grid()->tri_normal( tri1_id ) );
-    const vpacked  n[3] = { sn[0], sn[1], sn[2] };
     
     //
     // eval VECTOR_SIZE  add the same time
@@ -654,8 +854,13 @@ helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
 
     const vpacked  vikappa_re( ikappa.real() );
     const size_t   n_pts = rule->npts;
-    value_t        res_re[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
     
+    // set normal direction
+    const bool     has_vtx_normal = ( adjoint ? ansatz_sp->grid()->has_vtx_normal() : test_sp->grid()->has_vtx_normal() );
+    const auto     n_vec          = ( adjoint ? ansatz_sp->grid()->tri_normal( tri_id ) : test_sp->grid()->tri_normal( tri_id ) );
+    vpacked        n[3]           = { n_vec[0], n_vec[1], n_vec[2] };
+
     for ( size_t  i = 0; i < n_pts; i += VECTOR_SIZE )
     {
         //
@@ -664,9 +869,53 @@ helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
         
         vpacked  diff[3];
         
-        comp_diff_simd( & rule->x1[i], & rule->y1[i],
-                        & rule->x2[i], & rule->y2[i],
-                        t0, t1, diff );
+        // load quadrature points for first triangle
+        const vpacked  a1 = load< vpacked >( & rule->x1[i] );
+        const vpacked  a2 = load< vpacked >( & rule->y1[i] );
+        const vpacked  a0 = sub( sub( vONE, a1 ),  a2 );
+
+        // load quadrature points for second triangle
+        const vpacked  b1 = load< vpacked >( & rule->x2[i] );
+        const vpacked  b2 = load< vpacked >( & rule->y2[i] );
+        const vpacked  b0 = sub( sub( vONE, b1 ), b2 );
+
+        if ( adjoint )
+        {
+            //
+            // compute x-y
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ),
+                           muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ),
+                           muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ),
+                           muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ) );
+        }// if
+        else
+        {
+            //
+            // compute y-x
+            //
+
+            vpacked  tmp1;
+    
+            diff[0] = sub( muladd( b2, t1[0][2], muladd( b1, t1[0][1], mul( b0, t1[0][0] ) ) ),
+                           muladd( a2, t0[0][2], muladd( a1, t0[0][1], mul( a0, t0[0][0] ) ) ) );
+        
+            diff[1] = sub( muladd( b2, t1[1][2], muladd( b1, t1[1][1], mul( b0, t1[1][0] ) ) ),
+                           muladd( a2, t0[1][2], muladd( a1, t0[1][1], mul( a0, t0[1][0] ) ) ) );
+        
+            diff[2] = sub( muladd( b2, t1[2][2], muladd( b1, t1[2][1], mul( b0, t1[2][0] ) ) ),
+                           muladd( a2, t0[2][2], muladd( a1, t0[2][1], mul( a0, t0[2][0] ) ) ) );
+        }// else
+        // comp_diff_simd( & rule->x1[i], & rule->y1[i],
+        //                 & rule->x2[i], & rule->y2[i],
+        //                 t0, t1, diff, adjoint );
 
         // |y-x|²
         const vpacked  vdist2 = muladd( diff[0], diff[0], muladd( diff[1], diff[1], mul( diff[2], diff[2] ) ) );
@@ -676,8 +925,19 @@ helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
         // |y-x|³
         const vpacked  vdist3 = mul( vdist, vdist2 );
         
+        // get normal direction
+        if ( has_vtx_normal )
+        {
+            if ( adjoint )
+                get_normal( a1, a2, tri_id, tri0, ansatz_sp, n );
+            else
+                get_normal( b1, b2, tri_id, tri1, test_sp, n );
+        }// if
+
         // < n, y-x >
-        const vpacked  vndu   = muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) );
+        const vpacked  vndu = ( adjoint
+                                ? muladd( diff[0], n[0], muladd( diff[1], n[1], mul( diff[2], n[2] ) ) )
+                                : muladd( n[0], diff[0], muladd( n[1], diff[1], mul( n[2], diff[2] ) ) ) );
 
         
         //
@@ -702,17 +962,25 @@ helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
 
         // exp(re)·cos(), exp(re)·sin() = ( exp(re), 0 ) since im = 0
 
-        // i·κ·|x-y| - 1
-        vikd_re = sub( vikd_re, vONE );
+        if ( adjoint )
+        {
+            // 1 - i·κ·|x-y|
+            vikd_re = sub( vONE, vikd_re );
+        }// if
+        else
+        {
+            // i·κ·|x-y| - 1
+            vikd_re = sub( vikd_re, vONE );
+        }// else
         
-        // compute exp() · (i·κ·|x-y| - 1) ( only real numbers ! )
+        // compute exp() · (i·κ·|x-y| - 1) ( only double numbers ! )
         vikd_re = mul( vexp_ikd_re, vikd_re );
         
         // store final values
         store( vikd_re, res_re );
         
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ i+j ] = complex( res_re[j], real(0) );
+            values[ i+j ] = value_t( res_re[j], real_t(0) );
     }// for
 }
 
@@ -724,17 +992,20 @@ helmholtz_dlp_im_simd ( const idx_t                 tri1_id,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_slp_eval_dx_simd ( const complex &          ikappa,
-                             const tri_quad_rule_t &  quad_rule,
-                             const T3Point            vx[3],
-                             const T3Point &          vy,
-                             vector< complex > &      values )
+helmholtz_slp_eval_dx_simd ( const value_t &     ikappa,
+                             const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule,
+                             const T3Point       vx[3],
+                             const T3Point &     vy,
+                             vector< value_t > & values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
     const vpacked  vikappa_re( ikappa.real() );
@@ -744,8 +1015,8 @@ helmholtz_slp_eval_dx_simd ( const complex &          ikappa,
     const vpacked  x0[3] = { vx[0].x(), vx[0].y(), vx[0].z() };
     const vpacked  x1[3] = { vx[1].x(), vx[1].y(), vx[1].z() };
     const vpacked  x2[3] = { vx[2].x(), vx[2].y(), vx[2].z() };
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
 
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -791,36 +1062,39 @@ helmholtz_slp_eval_dx_simd ( const complex &          ikappa,
         sincos( vikd_im, vs, vc );
 
         // exp(re)·cos(), exp(re)·sin()
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( mul( vexp_ikd_re, vc ), res_re );
         store( mul( vexp_ikd_re, vs ), res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], res_im[j] );
+            values[ k+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_slp_eval_dx_re_simd ( const complex &          ikappa,
-                                const tri_quad_rule_t &  quad_rule,
-                                const T3Point            vx[3],
-                                const T3Point &          vy,
-                                vector< complex > &      values )
+helmholtz_slp_eval_dx_re_simd ( const value_t &     ikappa,
+                                const tri_quad_rule_t< real_type_t< value_t > > &            quad_rule,
+                                const T3Point       vx[3],
+                                const T3Point &     vy,
+                                vector< value_t > & values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
-    const vpacked  vikappa_im( ikappa.imag() );  // κ real -> i·κ imaginary
+    const vpacked  vikappa_im( ikappa.imag() );  // κ double -> i·κ imaginary
     const size_t   npts  = quad_rule.npts;
     const vpacked  y[3]  = { vy.x(),    vy.y(),    vy.z() };
     const vpacked  x0[3] = { vx[0].x(), vx[0].y(), vx[0].z() };
     const vpacked  x1[3] = { vx[1].x(), vx[1].y(), vx[1].z() };
     const vpacked  x2[3] = { vx[2].x(), vx[2].y(), vx[2].z() };
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
     
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -867,35 +1141,38 @@ helmholtz_slp_eval_dx_re_simd ( const complex &          ikappa,
         sincos( vikd_im, vs, vc );
 
         // exp(re)·cos(), exp(re)·sin()
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( mul( vexp_ikd_re, vc ), res_re );
         store( mul( vexp_ikd_re, vs ), res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], res_im[j] );
+            values[ k+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_slp_eval_dx_im_simd ( const complex &         ikappa,
-                               const tri_quad_rule_t &  quad_rule,
-                               const T3Point            vx[3],
-                               const T3Point &          vy,
-                               vector< complex > &      values )
+helmholtz_slp_eval_dx_im_simd ( const value_t &     ikappa,
+                                const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule,
+                                const T3Point       vx[3],
+                                const T3Point &     vy,
+                                vector< value_t > & values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
-    const vpacked  vikappa_re( ikappa.real() ); // κ imaginary -> i·κ real
+    const vpacked  vikappa_re( ikappa.real() ); // κ imaginary -> i·κ double
     const size_t   npts  = quad_rule.npts;
     const vpacked  y[3]  = { vy.x(),    vy.y(),    vy.z() };
     const vpacked  x0[3] = { vx[0].x(), vx[0].y(), vx[0].z() };
     const vpacked  x1[3] = { vx[1].x(), vx[1].y(), vx[1].z() };
     const vpacked  x2[3] = { vx[2].x(), vx[2].y(), vx[2].z() };
-    value_t        res_re[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
     
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -936,26 +1213,29 @@ helmholtz_slp_eval_dx_im_simd ( const complex &         ikappa,
         // exp(re)·cos(im), exp(re)·sin(im) = ( exp(re), 0 ) since im = 0
         // (here we would multiply with 1/(4·π) / |x-y|)
 
-        // combine real and imaginary parts
+        // combine double and imaginary parts
         store( vexp_ikd_re, res_re );
         
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], real(0) );
+            values[ k+j ] = value_t( res_re[j], real_t(0) );
     }// for
 }
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_dlp_eval_dy_simd ( const complex &          ikappa,
-                             const tri_quad_rule_t &  quad_rule,
-                             const T3Point &          vx,
-                             const T3Point            vy[3],
-                             const T3Point &          normal,
-                             vector< complex > &      values )
+helmholtz_dlp_eval_dy_simd ( const value_t &      ikappa,
+                             const tri_quad_rule_t< real_type_t< value_t > > &            quad_rule,
+                             const T3Point &      vx,
+                             const T3Point        vy[3],
+                             const T3Point &      normal,
+                             vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
     const vpacked  vikappa_re( ikappa.real() );
@@ -966,8 +1246,8 @@ helmholtz_dlp_eval_dy_simd ( const complex &          ikappa,
     const vpacked  y1[3] = { vy[1].x(),  vy[1].y(),  vy[1].z() };
     const vpacked  y2[3] = { vy[2].x(),  vy[2].y(),  vy[2].z() };
     const vpacked  n[3]  = { normal.x(), normal.y(), normal.z() };
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
 
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -1034,34 +1314,37 @@ helmholtz_dlp_eval_dy_simd ( const complex &          ikappa,
         store( muladd( vc, vikd_im, mul( vs, vikd_re ) ), res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], res_im[j] );
+            values[ k+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_dlp_eval_dy_re_simd ( const complex &          ikappa,
-                                const tri_quad_rule_t &  quad_rule,
-                                const T3Point &          vx,
-                                const T3Point            vy[3],
-                                const T3Point &          normal,
-                                vector< complex > &      values )
+helmholtz_dlp_eval_dy_re_simd ( const value_t &      ikappa,
+                                const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
+                                const T3Point &      vx,
+                                const T3Point        vy[3],
+                                const T3Point &      normal,
+                                vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
-    const vpacked  vMINUS_ONE( value_t(-1) );  // used for: re(i·κ·|x-y|)-1 since re() = 0
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
+    const vpacked  vMINUS_ONE( real_t(-1) );  // used for: re(i·κ·|x-y|)-1 since re() = 0
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
-    const vpacked  vikappa_im( ikappa.imag() );  // κ real -> i·κ imaginary
+    const vpacked  vikappa_im( ikappa.imag() );  // κ double -> i·κ imaginary
     const size_t   npts  = quad_rule.npts;
     const vpacked  x[3]  = { vx.x(),     vx.y(),     vx.z() };
     const vpacked  y0[3] = { vy[0].x(),  vy[0].y(),  vy[0].z() };
     const vpacked  y1[3] = { vy[1].x(),  vy[1].y(),  vy[1].z() };
     const vpacked  y2[3] = { vy[2].x(),  vy[2].y(),  vy[2].z() };
     const vpacked  n[3]  = { normal.x(), normal.y(), normal.z() };
-    value_t        res_re[ VECTOR_SIZE ];
-    value_t        res_im[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
+    real_t         res_im[ VECTOR_SIZE ];
 
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -1122,32 +1405,35 @@ helmholtz_dlp_eval_dy_re_simd ( const complex &          ikappa,
         store( muladd( vc, vikd_im,    mul( vs, vMINUS_ONE ) ), res_im );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], res_im[j] );
+            values[ k+j ] = value_t( res_re[j], res_im[j] );
     }// for
 }
 
-template < typename T_packed >
+template < typename value_t,
+           typename packed_t >
 void
-helmholtz_dlp_eval_dy_im_simd ( const complex &          ikappa,
-                                const tri_quad_rule_t &  quad_rule,
-                                const T3Point &          vx,
-                                const T3Point            vy[3],
-                                const T3Point &          normal,
-                                vector< complex > &      values )
+helmholtz_dlp_eval_dy_im_simd ( const value_t &      ikappa,
+                                const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
+                                const T3Point &      vx,
+                                const T3Point        vy[3],
+                                const T3Point &      normal,
+                                vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
-    const vpacked  vONE( value_t(1) );
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
+    const vpacked  vONE( real_t(1) );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
     
-    const vpacked  vikappa_re( ikappa.real() ); // κ imaginary -> i·κ real
+    const vpacked  vikappa_re( ikappa.real() ); // κ imaginary -> i·κ double
     const size_t   npts  = quad_rule.npts;
     const vpacked  x[3]  = { vx.x(),     vx.y(),     vx.z() };
     const vpacked  y0[3] = { vy[0].x(),  vy[0].y(),  vy[0].z() };
     const vpacked  y1[3] = { vy[1].x(),  vy[1].y(),  vy[1].z() };
     const vpacked  y2[3] = { vy[2].x(),  vy[2].y(),  vy[2].z() };
     const vpacked  n[3]  = { normal.x(), normal.y(), normal.z() };
-    value_t        res_re[ VECTOR_SIZE ];
+    real_t         res_re[ VECTOR_SIZE ];
 
     for ( size_t  k = 0; k < npts; k += VECTOR_SIZE )
     {
@@ -1201,14 +1487,14 @@ helmholtz_dlp_eval_dy_im_simd ( const complex &          ikappa,
         // i·κ·|x-y| - 1
         vikd_re = sub( vikd_re, vONE );
         
-        // compute exp() · (i·κ·|x-y| - 1)  ( only real numbers ! )
+        // compute exp() · (i·κ·|x-y| - 1)  ( only double numbers ! )
         vikd_re = mul( vexp_ikd_re, vikd_re );
 
         // compute exp() · (i·κ·|x-y| - 1) and store final values
         store( vikd_re, res_re );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[ k+j ] = complex( res_re[j], real(0) );
+            values[ k+j ] = value_t( res_re[j], real_t(0) );
     }// for
 }
 
@@ -1220,92 +1506,108 @@ helmholtz_dlp_eval_dy_im_simd ( const complex &          ikappa,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-#define  INST_HELMHOLTZ_SLP_SIMD( T_value, T_ansatzsp, T_testsp, suffix ) \
+#define  INST_HELMHOLTZ_SLP_SIMD( value_t, ansatzsp_t, testsp_t, suffix ) \
     template void                                                       \
-    helmholtz_slp_##suffix< T_ansatzsp, T_testsp, packed< T_value, SIMD_ISA > > ( \
-        const TGrid::triangle_t &   tri0,                               \
-        const TGrid::triangle_t &   tri1,                               \
-        const tripair_quad_rule_t * rule,                               \
-        const complex               ikappa,                             \
-        const T_ansatzsp *          ansatz_sp,                          \
-        const T_testsp *            test_sp,                            \
-        vector< complex > &         values )
+    helmholtz_slp_##suffix< value_t, ansatzsp_t, testsp_t, packed< real_type_t< value_t >, SIMD_ISA > > ( \
+        const TGrid::triangle_t &           tri0,                       \
+        const TGrid::triangle_t &           tri1,                       \
+        const tripair_quad_rule_t< real_type_t< value_t > > * rule,     \
+        const value_t                       ikappa,                     \
+        const ansatzsp_t *                  ansatz_sp,                  \
+        const testsp_t *                    test_sp,                    \
+        vector< value_t > &                 values )
 
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TConstFnSpace,     simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TConstFnSpace,     simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TLinearFnSpace,    simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TLinearFnSpace,    simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstEdgeFnSpace, TConstEdgeFnSpace, simd );
+#define  INST_SLP( type1, type2 )                                             \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TConstFnSpace< type2 >,     simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TConstFnSpace< type2 >,     simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TLinearFnSpace< type2 >,    simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TLinearFnSpace< type2 >,    simd ); \
+                                                                        \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TConstFnSpace< type2 >,     re_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TConstFnSpace< type2 >,     re_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TLinearFnSpace< type2 >,    re_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TLinearFnSpace< type2 >,    re_simd ); \
+                                                                        \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TConstFnSpace< type2 >,     im_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TConstFnSpace< type2 >,     im_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TLinearFnSpace< type2 >,    im_simd ); \
+    INST_HELMHOLTZ_SLP_SIMD( type1, TLinearFnSpace< type2 >,    TLinearFnSpace< type2 >,    im_simd );
 
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TConstFnSpace,     re_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TConstFnSpace,     re_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TLinearFnSpace,    re_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TLinearFnSpace,    re_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstEdgeFnSpace, TConstEdgeFnSpace, re_simd );
+INST_SLP( std::complex< float >, float )
+INST_SLP( std::complex< double >, double )
 
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TConstFnSpace,     im_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TConstFnSpace,     im_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstFnSpace,     TLinearFnSpace,    im_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TLinearFnSpace,    TLinearFnSpace,    im_simd );
-INST_HELMHOLTZ_SLP_SIMD( real, TConstEdgeFnSpace, TConstEdgeFnSpace, im_simd );
+INST_HELMHOLTZ_SLP_SIMD( std::complex< double >, TConstEdgeFnSpace, TConstEdgeFnSpace, simd );
+INST_HELMHOLTZ_SLP_SIMD( std::complex< double >, TConstEdgeFnSpace, TConstEdgeFnSpace, re_simd );
+INST_HELMHOLTZ_SLP_SIMD( std::complex< double >, TConstEdgeFnSpace, TConstEdgeFnSpace, im_simd );
 
-#define  INST_HELMHOLTZ_DLP_SIMD( T_value, T_ansatzsp, T_testsp, suffix ) \
+#define  INST_HELMHOLTZ_DLP_SIMD( value_t, ansatzsp_t, testsp_t, suffix ) \
     template void                                                       \
-    helmholtz_dlp_##suffix< T_ansatzsp, T_testsp, packed< T_value, SIMD_ISA > > ( \
-        const idx_t                 tri1_id,                            \
-        const TGrid::triangle_t &   tri0,                               \
-        const TGrid::triangle_t &   tri1,                               \
-        const tripair_quad_rule_t * rule,                               \
-        const complex               ikappa,                             \
-        const T_ansatzsp *          ansatz_sp,                          \
-        const T_testsp *            test_sp,                            \
-        vector< complex > &         values )
+    helmholtz_dlp_##suffix< value_t, ansatzsp_t, testsp_t, packed< real_type_t< value_t >, SIMD_ISA > > ( \
+        const idx_t                            tri_id, \
+        const bool                             adjoint, \
+        const TGrid::triangle_t &              tri0, \
+        const TGrid::triangle_t &              tri1, \
+        const tripair_quad_rule_t< real_type_t< value_t > > * rule, \
+        const value_t                          ikappa, \
+        const ansatzsp_t *                     ansatz_sp, \
+        const testsp_t *                       test_sp, \
+        vector< value_t > &                    values )
 
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TConstFnSpace,  simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TConstFnSpace,  simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TLinearFnSpace, simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TLinearFnSpace, simd );
+#define  INST_DLP( type1, type2 )                                             \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TConstFnSpace< type2 >,  simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TConstFnSpace< type2 >,  simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TLinearFnSpace< type2 >, simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TLinearFnSpace< type2 >, simd ); \
+                                                                        \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TConstFnSpace< type2 >,  re_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TConstFnSpace< type2 >,  re_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TLinearFnSpace< type2 >, re_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TLinearFnSpace< type2 >, re_simd ); \
+                                                                        \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TConstFnSpace< type2 >,  im_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TConstFnSpace< type2 >,  im_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TLinearFnSpace< type2 >, im_simd ); \
+    INST_HELMHOLTZ_DLP_SIMD( type1, TLinearFnSpace< type2 >, TLinearFnSpace< type2 >, im_simd );
 
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TConstFnSpace,  re_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TConstFnSpace,  re_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TLinearFnSpace, re_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TLinearFnSpace, re_simd );
+INST_DLP( std::complex< float >, float )
+INST_DLP( std::complex< double >, double )
 
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TConstFnSpace,  im_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TConstFnSpace,  im_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TConstFnSpace,  TLinearFnSpace, im_simd );
-INST_HELMHOLTZ_DLP_SIMD( real, TLinearFnSpace, TLinearFnSpace, im_simd );
+#define  INST_HELMHOLTZ_SLP_HCA_SIMD( type, suffix )                    \
+    template void                                                       \
+    helmholtz_slp_eval_dx_##suffix< std::complex< type >, packed< type, SIMD_ISA > > ( \
+        const std::complex< type > &      ikappa,                       \
+        const tri_quad_rule_t< real_type_t< std::complex< type > > > &  quad_rule, \
+        const T3Point                     vx[3],                        \
+        const T3Point &                   vy,                           \
+        vector< std::complex< type > > &  values );
 
+INST_HELMHOLTZ_SLP_HCA_SIMD( float, simd )
+INST_HELMHOLTZ_SLP_HCA_SIMD( float, re_simd )
+INST_HELMHOLTZ_SLP_HCA_SIMD( float, im_simd )
 
-#define  INST_HELMHOLTZ_SLP_HCA_SIMD( T_value, suffix )             \
-    template void                                                   \
-    helmholtz_slp_eval_dx_##suffix< packed< T_value, SIMD_ISA > > ( \
-        const complex &            ikappa,                          \
-        const tri_quad_rule_t &    quad_rule,                       \
-        const T3Point              vx[3],                           \
-        const T3Point &            vy,                              \
-        vector< complex > &        values )
+INST_HELMHOLTZ_SLP_HCA_SIMD( double, simd )
+INST_HELMHOLTZ_SLP_HCA_SIMD( double, re_simd )
+INST_HELMHOLTZ_SLP_HCA_SIMD( double, im_simd )
 
-INST_HELMHOLTZ_SLP_HCA_SIMD( real, simd );
-INST_HELMHOLTZ_SLP_HCA_SIMD( real, re_simd );
-INST_HELMHOLTZ_SLP_HCA_SIMD( real, im_simd );
+#define  INST_HELMHOLTZ_DLP_HCA_SIMD( type, suffix )                    \
+    template void                                                       \
+    helmholtz_dlp_eval_dy_##suffix< std::complex< type >, packed< type, SIMD_ISA > > ( \
+        const std::complex< type > &      ikappa,                       \
+        const tri_quad_rule_t< real_type_t< std::complex< type > > > &  quad_rule, \
+        const T3Point &                   vx,                           \
+        const T3Point                     vy[3],                        \
+        const T3Point &                   normal,                       \
+        vector< std::complex< type > > &  values )
 
+INST_HELMHOLTZ_DLP_HCA_SIMD( float, simd );
+INST_HELMHOLTZ_DLP_HCA_SIMD( float, re_simd );
+INST_HELMHOLTZ_DLP_HCA_SIMD( float, im_simd );
 
-#define  INST_HELMHOLTZ_DLP_HCA_SIMD( T_value, suffix )             \
-    template void                                                   \
-    helmholtz_dlp_eval_dy_##suffix< packed< T_value, SIMD_ISA > > (  \
-        const complex &            ikappa,                          \
-        const tri_quad_rule_t &    quad_rule,                       \
-        const T3Point &            vx,                              \
-        const T3Point              vy[3],                           \
-        const T3Point &            normal,                          \
-        vector< complex > &        values )
+INST_HELMHOLTZ_DLP_HCA_SIMD( double, simd );
+INST_HELMHOLTZ_DLP_HCA_SIMD( double, re_simd );
+INST_HELMHOLTZ_DLP_HCA_SIMD( double, im_simd );
 
-INST_HELMHOLTZ_DLP_HCA_SIMD( real, simd );
-INST_HELMHOLTZ_DLP_HCA_SIMD( real, re_simd );
-INST_HELMHOLTZ_DLP_HCA_SIMD( real, im_simd );
-
-}// namespace HLIB
+}// namespace Hpro
 
 // Local Variables:
 // mode: c++

@@ -1,14 +1,14 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TZeroMatrix.cc
 // Description : class for a zero matrix, i.e. with only zero coefficients
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/matrix/TZeroMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////
@@ -17,10 +17,11 @@ namespace HLIB
 //
 
 //! set block cluster of matrix
+template < typename value_t >
 void
-TZeroMatrix::set_cluster  ( const TBlockCluster * bct )
+TZeroMatrix< value_t >::set_cluster  ( const TBlockCluster * bct )
 {
-    TMatrix::set_cluster( bct );
+    TMatrix< value_t >::set_cluster( bct );
 
     if ( bct != nullptr )
         set_size( bct->rowcl()->size(),
@@ -28,8 +29,9 @@ TZeroMatrix::set_cluster  ( const TBlockCluster * bct )
 }
 
 //! directly set dimension of matrix
+template < typename value_t >
 void
-TZeroMatrix::set_size ( const size_t  nrows,
+TZeroMatrix< value_t >::set_size ( const size_t  nrows,
                         const size_t  ncols )
 {
     _rows = nrows;
@@ -38,23 +40,25 @@ TZeroMatrix::set_size ( const size_t  nrows,
     
 /////////////////////////////////////////////////
 //
-// BLAS-routines (real valued)
+// BLAS-routines
 //
 
 //! compute y ≔ β·y + α·op(M)·x, with M = this
+template < typename value_t >
 void
-TZeroMatrix::mul_vec ( const real,
-                       const TVector *,
-                       const real      beta,
-                       TVector       * y,
-                       const matop_t ) const
+TZeroMatrix< value_t >::mul_vec ( const value_t              ,
+                                  const TVector< value_t > * ,
+                                  const value_t              beta,
+                                  TVector< value_t >       * y,
+                                  const matop_t               ) const
 {
     y->scale( beta );
 }
 
 //! compute this ≔ this + α · matrix
+template < typename value_t >
 void
-TZeroMatrix::add ( const real, const TMatrix * M )
+TZeroMatrix< value_t >::add ( const value_t, const TMatrix< value_t > * M )
 {
     if ( ! IS_TYPE( M, TZeroMatrix ) )
         HERROR( ERR_MAT_TYPE, "(TZeroMatrix) cadd", M->typestr() );
@@ -63,10 +67,11 @@ TZeroMatrix::add ( const real, const TMatrix * M )
 //
 // transpose matrix
 //
+template < typename value_t >
 void
-TZeroMatrix::transpose ()
+TZeroMatrix< value_t >::transpose ()
 {
-    TMatrix::transpose();
+    TMatrix< value_t >::transpose();
     
     std::swap( _rows, _cols );
 }
@@ -74,75 +79,55 @@ TZeroMatrix::transpose ()
 //
 // conjugate matrix coefficients
 //
+template < typename value_t >
 void
-TZeroMatrix::conjugate ()
+TZeroMatrix< value_t >::conjugate ()
 {
 }
 
-/////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
-//! compute y ≔ β·y + α·op(M)·x, with M = this
-void
-TZeroMatrix::cmul_vec ( const complex,
-                        const TVector *,
-                        const complex   beta,
-                        TVector       * y,
-                        const matop_t ) const
-{
-    y->cscale( beta );
-}
-
-//! compute this ≔ this + α · matrix
-void
-TZeroMatrix::cadd ( const complex,
-                    const TMatrix *  M )
-{
-    if ( ! IS_TYPE( M, TZeroMatrix ) )
-        HERROR( ERR_MAT_TYPE, "(TZeroMatrix) cadd", M->typestr() );
-}
-        
 //
 // serialisation
 //
 
 //! read data from stream \a s and copy to matrix
+template < typename value_t >
 void
-TZeroMatrix::read  ( TByteStream & s )
+TZeroMatrix< value_t >::read  ( TByteStream & s )
 {
-    TMatrix::read( s );
+    TMatrix< value_t >::read( s );
 
     s.get( _rows );
     s.get( _cols );
 }
     
 //! use data from stream \a s to build matrix
+template < typename value_t >
 void
-TZeroMatrix::build ( TByteStream & s )
+TZeroMatrix< value_t >::build ( TByteStream & s )
 {
-    TMatrix::build( s );
+    TMatrix< value_t >::build( s );
 
     s.get( _rows );
     s.get( _cols );
 }
 
 //! write data to stream \a s
+template < typename value_t >
 void
-TZeroMatrix::write ( TByteStream & s ) const
+TZeroMatrix< value_t >::write ( TByteStream & s ) const
 {
-    TMatrix::write( s );
+    TMatrix< value_t >::write( s );
 
     s.put( _rows );
     s.put( _cols );
 }
 
 //! returns size of object in bytestream
+template < typename value_t >
 size_t
-TZeroMatrix::bs_size () const
+TZeroMatrix< value_t >::bs_size () const
 {
-    return TMatrix::bs_size() + + sizeof(_rows) + sizeof(_cols);
+    return TMatrix< value_t >::bs_size() + + sizeof(_rows) + sizeof(_cols);
 }
 
 /////////////////////////////////////////////////
@@ -153,11 +138,12 @@ TZeroMatrix::bs_size () const
 //
 // return copy of matrix
 //
-std::unique_ptr< TMatrix >
-TZeroMatrix::copy  () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TZeroMatrix< value_t >::copy  () const
 {
-    auto           M = TMatrix::copy();
-    TZeroMatrix *  Z = ptrcast( M.get(), TZeroMatrix );
+    auto           M = TMatrix< value_t >::copy();
+    TZeroMatrix< value_t > *  Z = ptrcast( M.get(), TZeroMatrix< value_t > );
 
     copy_to( Z );
 
@@ -167,11 +153,12 @@ TZeroMatrix::copy  () const
 //
 // return structural copy of matrix
 //
-std::unique_ptr< TMatrix >
-TZeroMatrix::copy_struct  () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TZeroMatrix< value_t >::copy_struct  () const
 {
-    auto           M = TMatrix::copy_struct();
-    TZeroMatrix *  Z = ptrcast( M.get(), TZeroMatrix );
+    auto  M = TMatrix< value_t >::copy_struct();
+    auto  Z = ptrcast( M.get(), TZeroMatrix< value_t > );
 
     copy_to( Z );
 
@@ -181,26 +168,32 @@ TZeroMatrix::copy_struct  () const
 //
 // copy matrix into matrix \a A
 //
+template < typename value_t >
 void
-TZeroMatrix::copy_to ( TMatrix * A ) const
+TZeroMatrix< value_t >::copy_to ( TMatrix< value_t > * A ) const
 {
     if ( ! IS_TYPE( A, TZeroMatrix ) )
-        HERROR( ERR_MAT_TYPE, "(TRkMatrix) copy_to", A->typestr() );
+        HERROR( ERR_MAT_TYPE, "(TZeroMatrix) copy_to", A->typestr() );
 
-    TZeroMatrix *  M = ptrcast( A, TZeroMatrix );
+    auto  M = ptrcast( A, TZeroMatrix< value_t > );
 
-    M->set_complex( is_complex() );
     M->set_size( rows(), cols() );
-    M->set_ofs( row_ofs(), col_ofs() );
+    M->set_ofs( this->row_ofs(), this->col_ofs() );
 }
 
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TZeroMatrix::byte_size () const
+TZeroMatrix< value_t >::byte_size () const
 {
-    return TMatrix::byte_size() + sizeof(_rows) + sizeof(_cols);
+    return TMatrix< value_t >::byte_size() + sizeof(_rows) + sizeof(_cols);
 }
 
-}// namespace HLIB
+template class TZeroMatrix< float >;
+template class TZeroMatrix< double >;
+template class TZeroMatrix< std::complex< float > >;
+template class TZeroMatrix< std::complex< double > >;
+
+}// namespace Hpro

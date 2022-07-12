@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBSPCTBUILDER_HH
-#define __HLIB_TBSPCTBUILDER_HH
+#ifndef __HPRO_TBSPCTBUILDER_HH
+#define __HPRO_TBSPCTBUILDER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBSPCTBuilder.hh
 // Description : build clustertrees for coordinate based indexsets via BSP
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -23,7 +23,7 @@
 
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -202,10 +202,10 @@ class TBSPNDCTBuilder : public TBSPCTBuilder
 {
 private:
     //! sparse matrix for connectivity between indices
-    const TSparseMatrix *  _sparse_mat;
+    any_const_sparse_matrix_t  _sparse_mat;
 
     // mode for handling interface cluster tree depth
-    bool                   _sync_interface_depth;
+    bool                       _sync_interface_depth;
 
 public:
     //////////////////////////////////////////////
@@ -215,10 +215,10 @@ public:
 
     //! construct cluster tree with partition strategy defined by \a part_strat
     //! and connectivity defined by \a S
-    TBSPNDCTBuilder ( const TSparseMatrix *  S,
-                      const TBSPPartStrat *  part_strat,
-                      const uint             n_min        = CFG::Cluster::nmin,
-                      const uint             min_leaf_lvl = 0 );
+    TBSPNDCTBuilder ( any_const_sparse_matrix_t  S,
+                      const TBSPPartStrat *      part_strat,
+                      const uint                 n_min        = CFG::Cluster::nmin,
+                      const uint                 min_leaf_lvl = 0 );
 
     //! construct cluster tree with partition strategy defined by \a part_strat
     //! (must use "build( coord, S )")
@@ -251,9 +251,9 @@ public:
 
     //! build nested dissection cluster tree out of coordinate set \a coord and
     //! additional connectivity defined by sparse matrix \a S
-    virtual std::unique_ptr< TClusterTree >  build     ( const TCoordinate *      coord,
-                                                         const TSparseMatrix *    S,
-                                                         const idx_t              idx_ofs = 0 ) const;
+    virtual std::unique_ptr< TClusterTree >  build     ( const TCoordinate *        coord,
+                                                         any_const_sparse_matrix_t  S,
+                                                         const idx_t                idx_ofs = 0 ) const;
     
     //! recursively build cluster tree
     virtual std::unique_ptr< TGeomCluster >  divide    ( const TNodeSet &         dofs,
@@ -333,6 +333,6 @@ public:
              data_t &                       data ) const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TBSPCTBUILDER_HH
+#endif  // __HPRO_TBSPCTBUILDER_HH

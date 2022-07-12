@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCluster.cc
 // Description : baseclass for a cluster tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -14,7 +14,7 @@
 
 #include "hpro/cluster/TCluster.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -99,7 +99,7 @@ TCluster::add_son ( TCluster *  son_ct,
 uint
 TCluster::nnodes () const
 {
-    return uint( HLIB::Tree::nnodes( this ) );
+    return uint( Hpro::Tree::nnodes( this ) );
 }
 
 //
@@ -108,7 +108,7 @@ TCluster::nnodes () const
 uint
 TCluster::depth () const
 {
-    return uint( HLIB::Tree::depth( this ) );
+    return uint( Hpro::Tree::depth( this ) );
 }
 
 //
@@ -247,4 +247,4 @@ flatten ( TCluster * cl )
     }// for
 }
 
-}// namespace HLIB
+}// namespace Hpro

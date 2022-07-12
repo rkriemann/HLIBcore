@@ -1,15 +1,15 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixSum.cc
 // Description : Represents sum of two matrices (linear ops)
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/Algebra.hh"
 #include "hpro/matrix/TMatrixSum.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -85,21 +85,18 @@ apply_op ( const matop_t  op0,
 //
 
 template < typename value_t >
-TMatrixSum< value_t >::TMatrixSum ( const value_t            alpha0,
-                                    const matop_t            op0,
-                                    const TLinearOperator *  A0,
-                                    const value_t            alpha1,
-                                    const matop_t            op1,
-                                    const TLinearOperator *  A1,
-                                    const bool               is_owner )
-        : TLinearOperator()
+TMatrixSum< value_t >::TMatrixSum ( const value_t                       alpha0,
+                                    const matop_t                       op0,
+                                    const TLinearOperator< value_t > *  A0,
+                                    const value_t                       alpha1,
+                                    const matop_t                       op1,
+                                    const TLinearOperator< value_t > *  A1,
+                                    const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixSum) ctor", "matrix is NULL" );
-    
-    if ( A0->is_complex() != A1->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TMatrixSum) ctor", "matrices have different value type" );
 
     _summands.push_back( { A0, op0, alpha0 } );
     _summands.push_back( { A1, op1, alpha1 } );
@@ -107,24 +104,21 @@ TMatrixSum< value_t >::TMatrixSum ( const value_t            alpha0,
 
 
 template < typename value_t >
-TMatrixSum< value_t >::TMatrixSum ( const value_t            alpha0,
-                                    const matop_t            op0,
-                                    const TLinearOperator *  A0,
-                                    const value_t            alpha1,
-                                    const matop_t            op1,
-                                    const TLinearOperator *  A1,
-                                    const value_t            alpha2,
-                                    const matop_t            op2,
-                                    const TLinearOperator *  A2,
-                                    const bool               is_owner )
-        : TLinearOperator()
+TMatrixSum< value_t >::TMatrixSum ( const value_t                       alpha0,
+                                    const matop_t                       op0,
+                                    const TLinearOperator< value_t > *  A0,
+                                    const value_t                       alpha1,
+                                    const matop_t                       op1,
+                                    const TLinearOperator< value_t > *  A1,
+                                    const value_t                       alpha2,
+                                    const matop_t                       op2,
+                                    const TLinearOperator< value_t > *  A2,
+                                    const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ) || ( A2 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixSum) ctor", "matrix is NULL" );
-    
-    if (( A0->is_complex() != A1->is_complex() ) || ( A0->is_complex() != A2->is_complex() ))
-        HERROR( ERR_REAL_CMPLX, "(TMatrixSum) ctor", "matrices have different value type" );
 
     _summands.push_back( { A0, op0, alpha0 } );
     _summands.push_back( { A1, op1, alpha1 } );
@@ -193,78 +187,41 @@ TMatrixSum< value_t >::is_self_adjoint () const
 // mapping function of linear operator \f$A\f$, e.g. \f$ y := A(x)\f$.
 // Depending on \a op, either \f$A\f$, \f$A^T\f$ or \f$A^H\f$ is applied.
 //
-template <>
+template < typename value_t >
 void
-TMatrixSum< real >::apply ( const TVector *  x,
-                            TVector *        y,
-                            const matop_t    op ) const
+TMatrixSum< value_t >::apply ( const TVector< value_t > *  x,
+                               TVector< value_t > *        y,
+                               const matop_t    op ) const
 {
-    if ( y->is_complex() ) y->cfill( 0 );
-    else                   y->fill( 0 );
+    y->fill( value_t(0) );
     
     for ( auto &  s : _summands )
         s.linop->apply_add( s.scale, x, y, apply_op( op, s.op ) );
-}
-
-template <>
-void
-TMatrixSum< complex >::apply ( const TVector *  x,
-                               TVector *        y,
-                               const matop_t    op ) const
-{
-    if ( y->is_complex() ) y->cfill( 0 );
-    else                   y->fill( 0 );
-    
-    for ( auto &  s : _summands )
-        s.linop->capply_add( s.scale, x, y, apply_op( op, s.op ) );
 }
 
 //
 // mapping function with update: \f$ y := y + \alpha A(x)\f$.
 // Depending on \a op, either \f$A\f$, \f$A^T\f$ or \f$A^H\f$ is applied.
 //
-template <>
+template < typename value_t >
 void
-TMatrixSum< real >::apply_add ( const real       alpha,
-                                const TVector *  x,
-                                TVector *        y,
-                                const matop_t    op ) const
+TMatrixSum< value_t >::apply_add ( const value_t               alpha,
+                                   const TVector< value_t > *  x,
+                                   TVector< value_t > *        y,
+                                   const matop_t               op ) const
 {
-    y->fill( 0 );
+    y->fill( value_t(0) );
     
     for ( auto &  s : _summands )
         s.linop->apply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
 }
 
-template <>
-void
-TMatrixSum< complex >::apply_add ( const real,
-                                   const TVector *,
-                                   TVector *,
-                                   const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
 template < typename value_t >
 void
-TMatrixSum< value_t >::capply_add ( const complex    alpha,
-                                    const TVector *  x,
-                                    TVector *        y,
-                                    const matop_t    op ) const
-{
-    y->cfill( 0 );
-    
-    for ( auto &  s : _summands )
-        s.linop->capply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
-}
-
-template < typename value_t >
-void
-TMatrixSum< value_t >::apply_add   ( const real       , // alpha,
-                                     const TMatrix *  , // X,
-                                     TMatrix *        , // Y,
-                                     const matop_t      // op
+TMatrixSum< value_t >::apply_add   ( const value_t               , // alpha,
+                                     const TMatrix< value_t > *  , // X,
+                                     TMatrix< value_t > *        , // Y,
+                                     const matop_t                 // op
                                      ) const
 {
     HERROR( ERR_NOT_IMPL, "", "" );
@@ -274,37 +231,14 @@ TMatrixSum< value_t >::apply_add   ( const real       , // alpha,
 // same as above but only the dimension of the vector spaces is tested,
 // not the corresponding index sets
 //
-template <>
-void
-TMatrixSum< real >::apply_add   ( const real                    alpha,
-                                  const BLAS::Vector< real > &  x,
-                                  BLAS::Vector< real > &        y,
-                                  const matop_t                 op ) const
-{
-    BLAS::fill( real(0), y );
-    
-    for ( auto &  s : _summands )
-        s.linop->apply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
-}
-
-template <>
-void
-TMatrixSum< complex >::apply_add   ( const real                    /* alpha */,
-                                     const BLAS::Vector< real > &  /* x */,
-                                     BLAS::Vector< real > &        /* y */,
-                                     const matop_t                 /* op */ ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
 template < typename value_t >
 void
-TMatrixSum< value_t >::apply_add   ( const complex                    alpha,
-                                     const BLAS::Vector< complex > &  x,
-                                     BLAS::Vector< complex > &        y,
+TMatrixSum< value_t >::apply_add   ( const value_t                    alpha,
+                                     const BLAS::Vector< value_t > &  x,
+                                     BLAS::Vector< value_t > &        y,
                                      const matop_t                    op ) const
 {
-    BLAS::fill( complex(0), y );
+    BLAS::fill( value_t(0), y );
     
     for ( auto &  s : _summands )
         s.linop->apply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
@@ -312,35 +246,12 @@ TMatrixSum< value_t >::apply_add   ( const complex                    alpha,
 
 template < typename value_t >
 void
-TMatrixSum< value_t >::apply_add   ( const real                    alpha,
-                                     const BLAS::Matrix< real > &  X,
-                                     BLAS::Matrix< real > &        Y,
-                                     const matop_t                 op ) const
-{
-    BLAS::fill( real(0), Y );
-    
-    for ( auto &  s : _summands )
-        s.linop->apply_add( alpha*s.scale, X, Y, apply_op( op, s.op ) );
-}
-
-template <>
-void
-TMatrixSum< complex >::apply_add   ( const real                    /* alpha */,
-                                     const BLAS::Matrix< real > &  /* X */,
-                                     BLAS::Matrix< real > &        /* Y */,
-                                     const matop_t                 /* op */ ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template < typename value_t >
-void
-TMatrixSum< value_t >::apply_add   ( const complex                    alpha,
-                                     const BLAS::Matrix< complex > &  X,
-                                     BLAS::Matrix< complex > &        Y,
+TMatrixSum< value_t >::apply_add   ( const value_t                    alpha,
+                                     const BLAS::Matrix< value_t > &  X,
+                                     BLAS::Matrix< value_t > &        Y,
                                      const matop_t                    op ) const
 {
-    BLAS::fill( complex(0), Y );
+    BLAS::fill( value_t(0), Y );
     
     for ( auto &  s : _summands )
         s.linop->apply_add( alpha*s.scale, X, Y, apply_op( op, s.op ) );
@@ -382,7 +293,7 @@ TMatrixSum< value_t >::range_dim () const
 //
 template < typename value_t >
 auto
-TMatrixSum< value_t >::domain_vector  () const -> std::unique_ptr< TVector >
+TMatrixSum< value_t >::domain_vector  () const -> std::unique_ptr< TVector< value_t > >
 {
     const auto  s = _summands.front();
 
@@ -395,7 +306,7 @@ TMatrixSum< value_t >::domain_vector  () const -> std::unique_ptr< TVector >
 //
 template < typename value_t >
 auto
-TMatrixSum< value_t >::range_vector   () const -> std::unique_ptr< TVector >
+TMatrixSum< value_t >::range_vector   () const -> std::unique_ptr< TVector< value_t > >
 {
     const auto  s = _summands.front();
 
@@ -407,7 +318,10 @@ TMatrixSum< value_t >::range_vector   () const -> std::unique_ptr< TVector >
 //
 // explicit instantiation
 //
-template class TMatrixSum< real >;
-template class TMatrixSum< Complex< real > >;
 
-}// namespace HLIB
+template class TMatrixSum< float >;
+template class TMatrixSum< double >;
+template class TMatrixSum< std::complex< float > >;
+template class TMatrixSum< std::complex< double > >;
+
+}// namespace Hpro

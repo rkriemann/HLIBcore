@@ -1,18 +1,18 @@
-#ifndef __HLIB_SCHEDULER_HH
-#define __HLIB_SCHEDULER_HH
+#ifndef __HPRO_SCHEDULER_HH
+#define __HPRO_SCHEDULER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TListSched.hh
 // Description : provides List scheduling algorithm
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
 
 #include "hpro/base/types.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -53,6 +53,6 @@ protected:
     DISABLE_COPY_OP( TMFitSched );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_SCHEDULER_HH
+#endif  // __HPRO_SCHEDULER_HH

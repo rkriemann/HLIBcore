@@ -1,17 +1,17 @@
-#ifndef __HLIB_TMATERNCOVCOEFFFN_HH
-#define __HLIB_TMATERNCOVCOEFFFN_HH
+#ifndef __HPRO_TMATERNCOVCOEFFFN_HH
+#define __HPRO_TMATERNCOVCOEFFFN_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMaternCovCoeffFn.hh
 // Description : matrix coefficients for matern covariance kernel
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/TPoint.hh"
 #include "hpro/matrix/TCoeffFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -26,10 +26,11 @@ namespace HLIB
 //!          random field decays with distance.
 //!
 template < typename T_point = TPoint >
-class TMaternCovCoeffFn : public TCoeffFn< real >
+class TMaternCovCoeffFn : public TCoeffFn< double >
 {
 public:
-    using  value_t = real;
+    using  value_t = double;
+    using  point_t = T_point;
     
 private:
     //! @cond
@@ -37,11 +38,12 @@ private:
     // special type of Matern kernel for optimization
     enum  matern_type_t  { one_half, three_half, five_half, general };
     
-    const real                      _length;
-    const real                      _nu;
-    const real                      _sigmasq;
-    const real                      _scale_fac;
-    const std::vector< T_point > &  _vertices;
+    const value_t                   _length;
+    const value_t                   _nu;
+    const value_t                   _sigmasq;
+    const value_t                   _scale_fac;
+    const std::vector< point_t > &  _row_vertices;
+    const std::vector< point_t > &  _col_vertices;
     const matern_type_t             _matern_type;
 
     //! @endcond
@@ -50,10 +52,16 @@ public:
     //!
     //! constructor
     //!
-    TMaternCovCoeffFn ( const real                      sigma,
-                        const real                      length,
-                        const real                      nu,
-                        const std::vector< T_point > &  vertices );
+    TMaternCovCoeffFn ( const value_t                   sigma,
+                        const value_t                   length,
+                        const value_t                   nu,
+                        const std::vector< point_t > &  vertices );
+
+    TMaternCovCoeffFn ( const value_t                   sigma,
+                        const value_t                   length,
+                        const value_t                   nu,
+                        const std::vector< point_t > &  row_vertices,
+                        const std::vector< point_t > &  col_vertices );
 
     //!
     //! coefficient evaluation
@@ -69,6 +77,6 @@ public:
     virtual matform_t  matrix_format  () const { return symmetric; }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif //  __HLIB_TMATERNCOVCOEFFFN_HH
+#endif //  __HPRO_TMATERNCOVCOEFFFN_HH

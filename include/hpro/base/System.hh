@@ -1,11 +1,11 @@
-#ifndef __HLIB_SYSTEM_HH
-#define __HLIB_SYSTEM_HH
+#ifndef __HPRO_SYSTEM_HH
+#define __HPRO_SYSTEM_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : System.hh
 // Description : module containing basic system routines
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cmath>
@@ -15,7 +15,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/base/String.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ///////////////////////////////////////////////////
@@ -236,16 +236,16 @@ namespace Limits
 {
     
 // minimal representable value
-template <class T>  T  min      () { return std::numeric_limits< T >::min(); }
+template <class T>  constexpr T  min      () { return std::numeric_limits< T >::min(); }
     
 // maximal representable value
-template <class T>  T  max      () { return std::numeric_limits< T >::max(); }
+template <class T>  constexpr T  max      () { return std::numeric_limits< T >::max(); }
     
 // return difference between 1 and smallest value bigger than 1
-template <class T>  T  epsilon  () { return std::numeric_limits< T >::epsilon(); }
+template <class T>  constexpr T  epsilon  () { return std::numeric_limits< T >::epsilon(); }
 
 // return NaN value
-template <class T>  T  nan      ();
+template <class T>            T  nan      ();
 
 }// namespace Limits
 
@@ -519,6 +519,6 @@ std::string  hostname ();
 
 }// namespace Mach
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_SYSTEM_HH
+#endif  // __HPRO_SYSTEM_HH

@@ -1,14 +1,14 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixProduct.cc
 // Description : Represents product of two matrices (linear ops)
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/matrix/TMatrixProduct.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -84,10 +84,10 @@ apply_op ( const matop_t  op0,
 //
 
 template < typename value_t >
-TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
-                                          const TLinearOperator *  A0,
-                                          const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if ( A0 == nullptr )
@@ -97,11 +97,11 @@ TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
 }
 
 template < typename value_t >
-TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
-                                          const matop_t            op0,
-                                          const TLinearOperator *  A0,
-                                          const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const matop_t                       op0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if ( A0 == nullptr )
@@ -110,42 +110,35 @@ TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
     _factors.push_back( { A0, op0, alpha0 } );
 }
 
-
 template < typename value_t >
-TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
-                                          const TLinearOperator *  A0,
-                                          const value_t            alpha1,
-                                          const TLinearOperator *  A1,
-                                          const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const value_t                       alpha1,
+                                            const TLinearOperator< value_t > *  A1,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixProduct) ctor", "matrix is NULL" );
-
-    if ( A0->is_complex() != A1->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TMatrixProduct) ctor", "matrices have different value type" );
 
     _factors.push_back( { A0, apply_normal, alpha0 } );
     _factors.push_back( { A1, apply_normal, alpha1 } );
 }
 
 template < typename value_t >
-TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
-                                          const matop_t            op0,
-                                          const TLinearOperator *  A0,
-                                          const value_t            alpha1,
-                                          const matop_t            op1,
-                                          const TLinearOperator *  A1,
-                                          const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const matop_t                       op0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const value_t                       alpha1,
+                                            const matop_t                       op1,
+                                            const TLinearOperator< value_t > *  A1,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixProduct) ctor", "matrix is NULL" );
-
-    if ( A0->is_complex() != A1->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TMatrixProduct) ctor", "matrices have different value type" );
 
     _factors.push_back( { A0, op0, alpha0 } );
     _factors.push_back( { A1, op1, alpha1 } );
@@ -153,21 +146,18 @@ TMatrixProduct<value_t>::TMatrixProduct ( const value_t            alpha0,
 
 
 template < typename value_t >
-TMatrixProduct< value_t >::TMatrixProduct ( const value_t            alpha0,
-                                            const TLinearOperator *  A0,
-                                            const value_t            alpha1,
-                                            const TLinearOperator *  A1,
-                                            const value_t            alpha2,
-                                            const TLinearOperator *  A2,
-                                            const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const value_t                       alpha1,
+                                            const TLinearOperator< value_t > *  A1,
+                                            const value_t                       alpha2,
+                                            const TLinearOperator< value_t > *  A2,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ) || ( A2 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixProduct) ctor", "matrix is NULL" );
-
-    if (( A0->is_complex() != A1->is_complex() ) || ( A0->is_complex() != A2->is_complex() ))
-        HERROR( ERR_REAL_CMPLX, "(TMatrixProduct) ctor", "matrices have different value type" );
 
     _factors.push_back( { A0, apply_normal, alpha0 } );
     _factors.push_back( { A1, apply_normal, alpha1 } );
@@ -175,24 +165,21 @@ TMatrixProduct< value_t >::TMatrixProduct ( const value_t            alpha0,
 }
 
 template < typename value_t >
-TMatrixProduct< value_t >::TMatrixProduct ( const value_t            alpha0,
-                                            const matop_t            op0,
-                                            const TLinearOperator *  A0,
-                                            const value_t            alpha1,
-                                            const matop_t            op1,
-                                            const TLinearOperator *  A1,
-                                            const value_t            alpha2,
-                                            const matop_t            op2,
-                                            const TLinearOperator *  A2,
-                                            const bool               is_owner )
-        : TLinearOperator()
+TMatrixProduct< value_t >::TMatrixProduct ( const value_t                       alpha0,
+                                            const matop_t                       op0,
+                                            const TLinearOperator< value_t > *  A0,
+                                            const value_t                       alpha1,
+                                            const matop_t                       op1,
+                                            const TLinearOperator< value_t > *  A1,
+                                            const value_t                       alpha2,
+                                            const matop_t                       op2,
+                                            const TLinearOperator< value_t > *  A2,
+                                            const bool                          is_owner )
+        : TLinearOperator< value_t >()
         , _is_owner( is_owner )
 {
     if (( A0 == nullptr ) || ( A1 == nullptr ) || ( A2 == nullptr ))
         HERROR( ERR_ARG, "(TMatrixProduct) ctor", "matrix is NULL" );
-
-    if (( A0->is_complex() != A1->is_complex() ) || ( A0->is_complex() != A2->is_complex() ))
-        HERROR( ERR_REAL_CMPLX, "(TMatrixProduct) ctor", "matrices have different value type" );
 
     _factors.push_back( { A0, op0, alpha0 } );
     _factors.push_back( { A1, op1, alpha1 } );
@@ -263,52 +250,45 @@ TMatrixProduct< value_t >::is_self_adjoint () const
 //
 template < typename value_t >
 void
-TMatrixProduct< value_t >::apply ( const TVector *  x,
-                                   TVector *        y,
-                                   const matop_t    op ) const
+TMatrixProduct< value_t >::apply ( const TVector< value_t > *  x,
+                                   TVector< value_t > *        y,
+                                   const matop_t               op ) const
 {
     const auto  N = _factors.size();
     
     if ( N == 1 )
     {
-        _factors[0].linop->apply( x, y, apply_op( op, _factors[0].op ) );
+        std::unique_ptr< TVector< value_t > >  tx, ty;
+
+        ty = ( _factors[N-1].op == apply_normal ? _factors[N-1].linop->range_vector() : _factors[N-1].linop->domain_vector() );
+        _factors[N-1].linop->apply( x, ty.get(), _factors[N-1].op );
+        
+        for ( int  i = int(N-2); i >= 1; --i )
+        {
+            tx = std::move( ty );
+            ty = ( op == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
+            
+            _factors[i].linop->apply( tx.get(), ty.get(), _factors[i].op );
+        }// for
+        
+        _factors[0].linop->apply( ty.get(), y, _factors[0].op );
     }// if
     else
     {
-        if ( op == apply_normal )
-        {
-            std::unique_ptr< TVector >  tx, ty;
-
-            ty = ( _factors[N-1].op == apply_normal ? _factors[N-1].linop->range_vector() : _factors[N-1].linop->domain_vector() );
-            _factors[N-1].linop->apply( x, ty.get(), _factors[N-1].op );
+        std::unique_ptr< TVector< value_t > >  tx, ty;
         
-            for ( int  i = int(N-2); i >= 1; --i )
-            {
-                tx = std::move( ty );
-                ty = ( op == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
-            
-                _factors[i].linop->apply( tx.get(), ty.get(), _factors[i].op );
-            }// for
-
-            _factors[0].linop->apply( ty.get(), y, _factors[0].op );
-        }// if
-        else
-        {
-            std::unique_ptr< TVector >  tx, ty;
-
-            ty = ( apply_op( op, _factors[0].op ) == apply_normal ? _factors[0].linop->range_vector() : _factors[0].linop->domain_vector() );
-            _factors[0].linop->apply( x, ty.get(), apply_op( op, _factors[0].op ) );
+        ty = ( apply_op( op, _factors[0].op ) == apply_normal ? _factors[0].linop->range_vector() : _factors[0].linop->domain_vector() );
+        _factors[0].linop->apply( x, ty.get(), apply_op( op, _factors[0].op ) );
         
-            for ( size_t  i = 1; i < N-1; ++i )
-            {
-                tx = std::move( ty );
-                ty = ( apply_op( op, _factors[i].op ) == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
+        for ( size_t  i = 1; i < N-1; ++i )
+        {
+            tx = std::move( ty );
+            ty = ( apply_op( op, _factors[i].op ) == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
             
-                _factors[i].linop->apply( tx.get(), ty.get(), apply_op( op, _factors[i].op ) );
-            }// for
-
-            _factors[N-1].linop->apply( ty.get(), y, apply_op( op, _factors[N-1].op ) );
-        }// else
+            _factors[i].linop->apply( tx.get(), ty.get(), apply_op( op, _factors[i].op ) );
+        }// for
+        
+        _factors[N-1].linop->apply( ty.get(), y, apply_op( op, _factors[N-1].op ) );
     }// else
 }
 
@@ -316,136 +296,57 @@ TMatrixProduct< value_t >::apply ( const TVector *  x,
 // mapping function with update: \f$ y := y + \alpha A(x)\f$.
 // Depending on \a op, either \f$A\f$, \f$A^T\f$ or \f$A^H\f$ is applied.
 //
-template <>
+template < typename value_t >
 void
-TMatrixProduct< real >::apply_add ( const real       alpha,
-                                    const TVector *  x,
-                                    TVector *        y,
-                                    const matop_t    op ) const
+TMatrixProduct< value_t >::apply_add ( const value_t               alpha,
+                                       const TVector< value_t > *  x,
+                                       TVector< value_t > *        y,
+                                       const matop_t               op ) const
 {
     const auto  N = _factors.size();
     
     if ( N == 1 )
     {
-        _factors[0].linop->apply_add( _factors[0].scale * alpha, x, y, apply_op( op, _factors[0].op ) );
+        std::unique_ptr< TVector< value_t > >  tx, ty;
+
+        ty = ( _factors[N-1].op == apply_normal ? _factors[N-1].linop->range_vector() : _factors[N-1].linop->domain_vector() );
+        _factors[N-1].linop->apply( x, ty.get(), _factors[N-1].op );
+        
+        for ( int  i = int(N-2); i >= 1; --i )
+        {
+            tx = std::move( ty );
+            ty = ( op == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
+            
+            _factors[i].linop->apply( tx.get(), ty.get(), _factors[i].op );
+        }// for
+
+        _factors[0].linop->apply_add( alpha, ty.get(), y, _factors[0].op );
     }// if
     else
     {
-        if ( op == apply_normal )
-        {
-            std::unique_ptr< TVector >  tx, ty;
+        std::unique_ptr< TVector< value_t > >  tx, ty;
 
-            ty = ( _factors[N-1].op == apply_normal ? _factors[N-1].linop->range_vector() : _factors[N-1].linop->domain_vector() );
-            _factors[N-1].linop->apply( x, ty.get(), _factors[N-1].op );
+        ty = ( apply_op( op, _factors[0].op ) == apply_normal ? _factors[0].linop->range_vector() : _factors[0].linop->domain_vector() );
+        _factors[0].linop->apply( x, ty.get(), apply_op( op, _factors[0].op ) );
         
-            for ( int  i = int(N-2); i >= 1; --i )
-            {
-                tx = std::move( ty );
-                ty = ( op == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
-            
-                _factors[i].linop->apply( tx.get(), ty.get(), _factors[i].op );
-            }// for
-
-            _factors[0].linop->apply_add( alpha, ty.get(), y, _factors[0].op );
-        }// if
-        else
+        for ( size_t  i = 1; i < N-1; ++i )
         {
-            std::unique_ptr< TVector >  tx, ty;
-
-            ty = ( apply_op( op, _factors[0].op ) == apply_normal ? _factors[0].linop->range_vector() : _factors[0].linop->domain_vector() );
-            _factors[0].linop->apply( x, ty.get(), apply_op( op, _factors[0].op ) );
-        
-            for ( size_t  i = 1; i < N-1; ++i )
-            {
-                tx = std::move( ty );
-                ty = ( apply_op( op, _factors[i].op ) == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
+            tx = std::move( ty );
+            ty = ( apply_op( op, _factors[i].op ) == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
             
-                _factors[i].linop->apply( tx.get(), ty.get(), apply_op( op, _factors[i].op ) );
-            }// for
+            _factors[i].linop->apply( tx.get(), ty.get(), apply_op( op, _factors[i].op ) );
+        }// for
 
-            _factors[N-1].linop->apply_add( alpha, ty.get(), y, apply_op( op, _factors[N-1].op ) );
-        }// else
+        _factors[N-1].linop->apply_add( alpha, ty.get(), y, apply_op( op, _factors[N-1].op ) );
     }// else
-}
-
-template <>
-void
-TMatrixProduct< complex >::apply_add ( const real,
-                                       const TVector *,
-                                       TVector *,
-                                       const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template <>
-void
-TMatrixProduct< complex >::capply_add ( const complex    alpha,
-                                        const TVector *  x,
-                                        TVector *        y,
-                                        const matop_t    op ) const
-{
-    const auto  N = _factors.size();
-    
-    if ( N == 1 )
-    {
-        _factors[0].linop->capply_add( _factors[0].scale * alpha, x, y, apply_op( op, _factors[0].op ) );
-    }// if
-    else
-    {
-        if ( op == apply_normal )
-        {
-            std::unique_ptr< TVector >  tx, ty;
-
-            ty = ( _factors[N-1].op == apply_normal ? _factors[N-1].linop->range_vector() : _factors[N-1].linop->domain_vector() );
-            _factors[N-1].linop->apply( x, ty.get(), _factors[N-1].op );
-        
-            for ( int  i = int(N-2); i >= 1; --i )
-            {
-                tx = std::move( ty );
-                ty = ( op == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
-            
-                _factors[i].linop->apply( tx.get(), ty.get(), _factors[i].op );
-            }// for
-
-            _factors[0].linop->capply_add( alpha, ty.get(), y, _factors[0].op );
-        }// if
-        else
-        {
-            std::unique_ptr< TVector >  tx, ty;
-
-            ty = ( apply_op( op, _factors[0].op ) == apply_normal ? _factors[0].linop->range_vector() : _factors[0].linop->domain_vector() );
-            _factors[0].linop->apply( x, ty.get(), apply_op( op, _factors[0].op ) );
-        
-            for ( size_t  i = 1; i < N-1; ++i )
-            {
-                tx = std::move( ty );
-                ty = ( apply_op( op, _factors[i].op ) == apply_normal ? _factors[i].linop->range_vector() : _factors[i].linop->domain_vector() );
-            
-                _factors[i].linop->apply( tx.get(), ty.get(), apply_op( op, _factors[i].op ) );
-            }// for
-
-            _factors[N-1].linop->capply_add( alpha, ty.get(), y, apply_op( op, _factors[N-1].op ) );
-        }// else
-    }// else
-}
-
-template <>
-void
-TMatrixProduct< real >::capply_add ( const complex,
-                                     const TVector *,
-                                     TVector *,
-                                     const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
 }
 
 template < typename value_t >
 void
-TMatrixProduct< value_t >::apply_add   ( const real       , // alpha,
-                                         const TMatrix *  , // X,
-                                         TMatrix *        , // Y,
-                                         const matop_t      // op
+TMatrixProduct< value_t >::apply_add   ( const value_t               , // alpha,
+                                         const TMatrix< value_t > *  , // X,
+                                         TMatrix< value_t > *        , // Y,
+                                         const matop_t                 // op
                                          ) const
 {
     HERROR( ERR_NOT_IMPL, "", "" );
@@ -455,96 +356,11 @@ TMatrixProduct< value_t >::apply_add   ( const real       , // alpha,
 // same as above but only the dimension of the vector spaces is tested,
 // not the corresponding index sets
 //
-template <>
+template < typename value_t >
 void
-TMatrixProduct< real >::apply_add   ( const real                    alpha,
-                                      const BLAS::Vector< real > &  x,
-                                      BLAS::Vector< real > &        y,
-                                      const matop_t                 op ) const
-{
-    const auto  N = _factors.size();
-
-    if ( N == 1 )
-    {
-        _factors[0].linop->apply_add( _factors[0].scale * alpha, x, y, apply_op( op, _factors[0].op ) );
-    }// if
-    else
-    {
-        BLAS::Vector< real >  tx, ty;
-        auto                  init_ty     = [this,&ty,op] ( const size_t  i )
-        {
-            const auto &  f = _factors[i];
-                                            
-            if ( apply_op( op, f.op ) == apply_normal )
-                ty = std::move( BLAS::Vector< real >( f.linop->range_dim() ) );
-            else
-                ty = std::move( BLAS::Vector< real >( f.linop->domain_dim() ) );
-        };
-        auto                  linop_apply = [this,op] ( const size_t                  i,
-                                                        const BLAS::Vector< real > &  vx,
-                                                        BLAS::Vector< real > &        vy)
-        {
-            const auto &  f = _factors[i];
-                                            
-            f.linop->apply_add( f.scale, vx, vy, apply_op( op, f.op ) );
-        };
-    
-        if ( op == apply_normal )
-        {
-            init_ty( N-1 );
-            linop_apply( N-1, x, ty );
-        
-            for ( int  i = int(N-2); i >= 1; --i )
-            {
-                tx = std::move( ty );
-                init_ty( i );
-                linop_apply( i, tx, ty );
-            }// for
-
-            _factors[0].linop->apply_add( _factors[0].scale * alpha, ty, y, _factors[0].op );
-        }// if
-        else
-        {
-            init_ty( 0 );
-            linop_apply( 0, x, ty );
-        
-            for ( size_t  i = 1; i < N-1; ++i )
-            {
-                tx = std::move( ty );
-                init_ty( i );
-                linop_apply( i, tx, ty );
-            }// for
-
-            _factors[N-1].linop->apply_add( alpha*_factors[N-1].scale, ty, y, apply_op( op, _factors[N-1].op ) );
-        }// else
-    }// else
-}
-
-template <>
-void
-TMatrixProduct< complex >::apply_add   ( const real,
-                                         const BLAS::Vector< real > &,
-                                         BLAS::Vector< real > &,
-                                         const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template <>
-void
-TMatrixProduct< real >::apply_add   ( const complex,
-                                      const BLAS::Vector< complex > &,
-                                      BLAS::Vector< complex > &,
-                                      const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template <>
-void
-TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
-                                         const BLAS::Vector< complex > &  x,
-                                         BLAS::Vector< complex > &        y,
+TMatrixProduct< value_t >::apply_add   ( const value_t                    alpha,
+                                         const BLAS::Vector< value_t > &  x,
+                                         BLAS::Vector< value_t > &        y,
                                          const matop_t                    op ) const
 {
     const auto  N = _factors.size();
@@ -555,7 +371,7 @@ TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
     }// if
     else
     {
-        BLAS::Vector< complex >  tx, ty;
+        BLAS::Vector< value_t >  tx, ty;
 
         auto  init_ty =
             [this,&ty,op] ( const size_t  i )
@@ -563,15 +379,15 @@ TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
                 const auto &  f = _factors[i];
                 
                 if ( apply_op( op, f.op ) == apply_normal )
-                    ty = std::move( BLAS::Vector< complex >( f.linop->range_dim() ) );
+                    ty = std::move( BLAS::Vector< value_t >( f.linop->range_dim() ) );
                 else
-                    ty = std::move( BLAS::Vector< complex >( f.linop->domain_dim() ) );
+                    ty = std::move( BLAS::Vector< value_t >( f.linop->domain_dim() ) );
             };
         
         auto  linop_apply =
             [this,op] ( const size_t                     i,
-                        const BLAS::Vector< complex > &  vx,
-                        BLAS::Vector< complex > &        vy)
+                        const BLAS::Vector< value_t > &  vx,
+                        BLAS::Vector< value_t > &        vy)
             {
                 const auto &  f = _factors[i];
                 
@@ -609,97 +425,11 @@ TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
     }// else
 }
 
-template <>
+template < typename value_t >
 void
-TMatrixProduct< real >::apply_add   ( const real                    alpha,
-                                      const BLAS::Matrix< real > &  X,
-                                      BLAS::Matrix< real > &        Y,
-                                      const matop_t                 op ) const
-{
-    const auto  N = _factors.size();
-
-    if ( N == 1 )
-    {
-        _factors[0].linop->apply_add( _factors[0].scale * alpha, X, Y, apply_op( op, _factors[0].op ) );
-    }// if
-    else
-    {
-        auto        TX = BLAS::Matrix< real >();
-        auto        TY = BLAS::Matrix< real >();
-        auto        init_ty     = [this,&X,&TY,op] ( const size_t  i )
-        {
-            const auto &  f = _factors[i];
-                                  
-            if ( apply_op( op, f.op ) == apply_normal )
-                TY = std::move( BLAS::Matrix< real >( f.linop->range_dim(), X.ncols() ) );
-            else
-                TY = std::move( BLAS::Matrix< real >( f.linop->domain_dim(), X.ncols() ) );
-        };
-        auto        linop_apply = [this,op] ( const size_t                  i,
-                                              const BLAS::Matrix< real > &  VX,
-                                              BLAS::Matrix< real > &        VY )
-        {
-            const auto &  f = _factors[i];
-                                  
-            f.linop->apply_add( f.scale, VX, VY, apply_op( op, f.op ) );
-        };
-    
-        if ( op == apply_normal )
-        {
-            init_ty( N-1 );
-            linop_apply( N-1, X, TY );
-        
-            for ( int  i = int(N-2); i >= 1; --i )
-            {
-                TX = std::move( TY );
-                init_ty( i );
-                linop_apply( i, TX, TY );
-            }// for
-
-            _factors[0].linop->apply_add( _factors[0].scale * alpha, TY, Y, _factors[0].op );
-        }// if
-        else
-        {
-            init_ty( 0 );
-            linop_apply( 0, X, TY );
-        
-            for ( size_t  i = 1; i < N-1; ++i )
-            {
-                TX = std::move( TY );
-                init_ty( i );
-                linop_apply( i, TX, TY );
-            }// for
-
-            _factors[N-1].linop->apply_add( alpha*_factors[N-1].scale, TY, Y, apply_op( op, _factors[N-1].op ) );
-        }// else
-    }// else
-}
-
-template <>
-void
-TMatrixProduct< complex >::apply_add   ( const real,
-                                         const BLAS::Matrix< real > &,
-                                         BLAS::Matrix< real > &,
-                                         const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template <>
-void
-TMatrixProduct< real >::apply_add   ( const complex,
-                                      const BLAS::Matrix< complex > &,
-                                      BLAS::Matrix< complex > &,
-                                      const matop_t ) const
-{
-    HERROR( ERR_REAL_CMPLX, "", "" );
-}
-
-template <>
-void
-TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
-                                         const BLAS::Matrix< complex > &  X,
-                                         BLAS::Matrix< complex > &        Y,
+TMatrixProduct< value_t >::apply_add   ( const value_t                    alpha,
+                                         const BLAS::Matrix< value_t > &  X,
+                                         BLAS::Matrix< value_t > &        Y,
                                          const matop_t                    op ) const
 {
     const auto  N = _factors.size();
@@ -710,25 +440,25 @@ TMatrixProduct< complex >::apply_add   ( const complex                    alpha,
     }// if
     else
     {
-        auto        TX = BLAS::Matrix< complex >();
-        auto        TY = BLAS::Matrix< complex >();
-        auto        init_ty =
-            [this,&X,&TY,op] ( const size_t  i )
-            {
-                const auto &  f = _factors[i];
+        auto  TX = BLAS::Matrix< value_t >();
+        auto  TY = BLAS::Matrix< value_t >();
+        
+        auto  init_ty = [this,&X,&TY,op] ( const size_t  i )
+        {
+            const auto &  f = _factors[i];
             
-                if ( apply_op( op, f.op ) == apply_normal ) TY = std::move( BLAS::Matrix< complex >( f.linop->range_dim(), X.ncols() ) );
-                else                                        TY = std::move( BLAS::Matrix< complex >( f.linop->domain_dim(), X.ncols() ) );
-            };
-        auto        linop_apply =
-            [this,op] ( const size_t                     i,
-                        const BLAS::Matrix< complex > &  VX,
-                        BLAS::Matrix< complex > &        VY )
-            {
-                const auto &  f = _factors[i];
+            if ( apply_op( op, f.op ) == apply_normal ) TY = std::move( BLAS::Matrix< value_t >( f.linop->range_dim(), X.ncols() ) );
+            else                                        TY = std::move( BLAS::Matrix< value_t >( f.linop->domain_dim(), X.ncols() ) );
+        };
+        
+        auto  linop_apply = [this,op] ( const size_t                     i,
+                                        const BLAS::Matrix< value_t > &  VX,
+                                        BLAS::Matrix< value_t > &        VY )
+        {
+            const auto &  f = _factors[i];
             
-                f.linop->apply_add( f.scale, VX, VY, apply_op( op, f.op ) );
-            };
+            f.linop->apply_add( f.scale, VX, VY, apply_op( op, f.op ) );
+        };
     
         if ( op == apply_normal )
         {
@@ -797,7 +527,7 @@ TMatrixProduct< value_t >::range_dim  () const
 //
 template < typename value_t >
 auto
-TMatrixProduct< value_t >::domain_vector  () const -> std::unique_ptr< TVector >
+TMatrixProduct< value_t >::domain_vector  () const -> std::unique_ptr< TVector< value_t > >
 {
     auto &  f = _factors.back();
     
@@ -810,7 +540,7 @@ TMatrixProduct< value_t >::domain_vector  () const -> std::unique_ptr< TVector >
 //
 template < typename value_t >
 auto
-TMatrixProduct< value_t >::range_vector   () const -> std::unique_ptr< TVector >
+TMatrixProduct< value_t >::range_vector   () const -> std::unique_ptr< TVector< value_t > >
 {
     auto &  f = _factors.front();
     
@@ -822,7 +552,10 @@ TMatrixProduct< value_t >::range_vector   () const -> std::unique_ptr< TVector >
 //
 // explicit instantiation
 //
-template class TMatrixProduct< real >;
-template class TMatrixProduct< Complex< real > >;
 
-}// namespace HLIB
+template class TMatrixProduct< float >;
+template class TMatrixProduct< double >;
+template class TMatrixProduct< std::complex< float > >;
+template class TMatrixProduct< std::complex< double > >;
+
+}// namespace Hpro

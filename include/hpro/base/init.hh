@@ -1,14 +1,14 @@
-#ifndef __HLIB_INIT_HH
-#define __HLIB_INIT_HH
+#ifndef __HPRO_INIT_HH
+#define __HPRO_INIT_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : init.hh
 // Description : initialisation and finalisation
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-namespace HLIB
+namespace Hpro
 {
 
 ///////////////////////////////////////////////////////////////////
@@ -18,12 +18,12 @@ namespace HLIB
 ///////////////////////////////////////////////////////////////////
 
 //!
-//! global initialisation routine for HLib
+//! global initialisation routine for HLIBpro
 //!
 void INIT ();
 
 //!
-//! finalisation routing for HLib
+//! finalisation routing for HLIBpro
 //!
 void DONE ();
 

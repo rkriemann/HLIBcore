@@ -1,14 +1,12 @@
-#ifndef __HLIB_TSCALARVECTOR_HH
-#define __HLIB_TSCALARVECTOR_HH
+#ifndef __HPRO_TSCALARVECTOR_HH
+#define __HPRO_TSCALARVECTOR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TScalarVector.hh
 // Description : class for a vector of scalar type
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
-
-#include <mutex>
 
 #include "hpro/base/types.hh"
 #include "hpro/blas/Vector.hh"
@@ -19,7 +17,7 @@
 
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -33,27 +31,21 @@ const size_t  SCALAR_CHUNK_SIZE = 64;
 //! \class   TScalarVector 
 //! \brief   Class for a scalar vector.
 //!
-class TScalarVector : public TVector
+template < typename T_value >
+class TScalarVector : public TVector< T_value >
 {
-private:
-    // local mutex and lock types
-    using  mutex_t = std::mutex;
-    using  lock_t  = std::lock_guard< mutex_t >;
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
     
 protected:
     //! @cond
     
     //! real valued vector data
-    BLAS::Vector< real >     _rvec;
-    
-    //! complex valued vector data
-    BLAS::Vector< complex >  _cvec;
+    BLAS::Vector< value_t >  _vec;
 
     //! size of vector
     size_t                   _size;
-
-    // //! mutices for each chunk of vector
-    // std::vector< mutex_t >   _mutices;
 
     //! @endcond
     
@@ -68,44 +60,23 @@ public:
     //
     
     //! construct zero sized vector
-    TScalarVector ( const value_type_t               avalue_type = real_valued )
-            : TVector( 0, avalue_type )
-            , _size( 0 ) 
-    {}
-    TScalarVector ( const bool                       acomplex )
-            : TVector( 0, acomplex ? complex_valued : real_valued )
+    TScalarVector ()
+            : TVector< value_t >( 0 )
             , _size( 0 ) 
     {}
     
     //! construct vector of size \a n with offset \a offset
-    TScalarVector ( const size_t                     n,
-                    const idx_t                      offset      = 0,
-                    const value_type_t               avalue_type = real_valued )
-            : TVector( offset, avalue_type )
-            , _size( 0 )
-    {
-        set_size( n );
-    }
-    TScalarVector ( const size_t                     n,
-                    const idx_t                      offset,
-                    const bool                       acomplex )
-            : TVector( offset, acomplex ? complex_valued : real_valued )
+    TScalarVector ( const size_t  n,
+                    const idx_t   offset      = 0 )
+            : TVector< value_t >( offset )
             , _size( 0 )
     {
         set_size( n );
     }
     
     //! construct vector with size defined by indexset \a ais
-    TScalarVector ( const TIndexSet &                ais,
-                    const value_type_t               avalue_type = real_valued )
-            : TVector( ais.first(), avalue_type )
-            , _size( 0 )
-    {
-        set_size( ais.size() );
-    }
-    TScalarVector ( const TIndexSet &                ais,
-                    const bool                       acomplex )
-            : TVector( ais.first(), acomplex ? complex_valued : real_valued )
+    TScalarVector ( const TIndexSet &  ais )
+            : TVector< value_t >( ais.first() )
             , _size( 0 )
     {
         set_size( ais.size() );
@@ -118,48 +89,29 @@ public:
     //! construct vector with size defined by indexset \a ais
     //! and data defined by \a bvec
     TScalarVector ( const TIndexSet &                ais,
-                    const BLAS::Vector< real > &     bvec )
-            : TVector( ais.first(), real_valued )
-            , _rvec( bvec )
+                    const BLAS::Vector< value_t > &  bvec )
+            : TVector< value_t >( ais.first() )
+            , _vec( bvec )
             , _size( bvec.length() )
     {
         init_chunk_mutices();
     }
     
-    //! construct vector with size defined by indexset \a ais
-    //! and data defined by \a bvec
-    TScalarVector ( const TIndexSet &                ais,
-                    const BLAS::Vector< complex > &  bvec )
-            : TVector( ais.first(), complex_valued )
-            , _cvec( bvec )
-            , _size( bvec.length() )
-    {
-        init_chunk_mutices();
-    }
-
     //! standard copy constructor
-    TScalarVector ( const TScalarVector &            v )
-            : TVector()
+    TScalarVector ( const TScalarVector< value_t > &  v )
+            : TVector< value_t >()
             , _size( 0 )
     {
-        assign( 1.0, & v );
+        assign( value_t(1), & v );
     }
 
     //! standard move constructor
-    TScalarVector ( TScalarVector &&                 v )
-            : TVector( v.ofs(), v.value_type() )
+    TScalarVector ( TScalarVector< value_t > &&       v )
+            : TVector< value_t >( v.ofs() )
             , _size( 0 )
     {
-        if ( v.is_complex() )
-        {
-            _size = v._cvec.length();
-            _cvec = std::move( v._cvec );
-        }// if
-        else
-        {
-            _size = v._rvec.length();
-            _rvec = std::move( v._rvec );
-        }// else
+        _size = v._vec.length();
+        _vec  = std::move( v._vec );
     }
 
     //
@@ -169,21 +121,10 @@ public:
     //! construct vector with size defined by indexset \a ais
     //! and data defined by \a bvec
     TScalarVector ( const TIndexSet &           ais,
-                    BLAS::Vector< real > &&     bvec )
-            : TVector( ais.first(), real_valued )
-            , _rvec( std::move( bvec ) )
-            , _size( _rvec.length() )  // use _rvec, because bvec is now "empty"
-    {
-        init_chunk_mutices();
-    }
-    
-    //! construct vector with size defined by indexset \a ais
-    //! and data defined by \a bvec
-    TScalarVector ( const TIndexSet &           ais,
-                    BLAS::Vector< complex > &&  bvec )
-            : TVector( ais.first(), complex_valued )
-            , _cvec( std::move( bvec ) )
-            , _size( _cvec.length() )
+                    BLAS::Vector< value_t > &&  bvec )
+            : TVector< value_t >( ais.first() )
+            , _vec( std::move( bvec ) )
+            , _size( _vec.length() )  // use _rvec, because bvec is now "empty"
     {
         init_chunk_mutices();
     }
@@ -204,45 +145,24 @@ public:
     }
 
     //! access coefficent \a i (real valued)
-    virtual real            entry       ( const idx_t  i ) const
+    virtual value_t         entry       ( const idx_t  i ) const
     {
         HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) entry", "" );
-        return _rvec(i);
-    }
-    
-    //! access coefficent \a i (complex valued)
-    virtual const complex   centry      ( const idx_t  i ) const
-    {
-        HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) centry", "" );
-        return _cvec(i);
+        return _vec(i);
     }
     
     //! set coefficient \a i to \a f (real valued)
-    virtual void            set_entry   ( const idx_t  i, const real  f )
+    virtual void            set_entry   ( const idx_t  i, const value_t  f )
     {
         HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) set_entry", "" );
-        _rvec(i) = f;
-    }
-    
-    //! set coefficient \a i to \a f (complex valued)
-    virtual void            set_centry  ( const idx_t  i, const complex  f )
-    {
-        HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) set_centry", "" );
-        _cvec(i) = f;
+        _vec(i) = f;
     }
     
     //! add \a f to \a i'th entry
-    virtual void            add_entry   ( const idx_t  i, const real  f )
+    virtual void            add_entry   ( const idx_t  i, const value_t  f )
     {
         HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) add_entry", "" );
-        _rvec(i) += f;
-    }
-    
-    //! add \a f to \a i'th entry (complex valued)
-    virtual void            add_centry  ( const idx_t  i, const complex  f )
-    {
-        HASSERT( i < idx_t(_size), ERR_ARR_BOUND, "(TScalarVector) add_centry", "" );
-        _cvec(i) += f;
+        _vec(i) += f;
     }
 
     //
@@ -250,16 +170,10 @@ public:
     //
 
     //! return real valued data
-    BLAS::Vector< real > &           blas_rvec  ()       { return _rvec; }
+    BLAS::Vector< value_t > &        blas_vec  ()       { return _vec; }
 
     //! return constant real valued data
-    const BLAS::Vector< real > &     blas_rvec  () const { return _rvec; }
-    
-    //! return complex valued data
-    BLAS::Vector< complex > &        blas_cvec  ()       { return _cvec; }
-
-    //! return constant complex valued data
-    const BLAS::Vector< complex > &  blas_cvec  () const { return _cvec; }
+    const BLAS::Vector< value_t > &  blas_vec  () const { return _vec; }
 
     //
     // handle index set
@@ -274,7 +188,7 @@ public:
         if ( c != NULL )
         {
             set_size( c->size() );
-            set_ofs( c->first() );
+            this->set_ofs( c->first() );
         }// if
     }
 
@@ -282,7 +196,7 @@ public:
     virtual void set_is ( const TIndexSet &  ais )
     {
         set_size( ais.size() );
-        set_ofs( ais.first() );
+        this->set_ofs( ais.first() );
     }
 
     //
@@ -290,39 +204,25 @@ public:
     //
     
     //! set internal data directly (real valued)
-    virtual void set_vector ( const BLAS::Vector< real > &  vec,
-                              const idx_t                   offset )
-    {
-        set_complex( false );
-        set_size( vec.length() );
-        set_ofs( offset );
-        BLAS::copy( vec, _rvec );
-    }
-
-    //! set internal data directly (complex valued)
-    virtual void set_vector ( const BLAS::Vector< complex > &  vec,
+    virtual void set_vector ( const BLAS::Vector< value_t > &  vec,
                               const idx_t                      offset )
     {
-        set_complex( true );
         set_size( vec.length() );
-        set_ofs( offset );
-        BLAS::copy( vec, _cvec );
+        this->set_ofs( offset );
+        BLAS::copy( vec, _vec );
     }
 
     //! copy from vector \a v
-    virtual void copy_from ( const TScalarVector * v )
+    virtual void copy_from ( const TScalarVector< value_t > *  v )
     {
         if ( v == NULL )
             HERROR( ERR_ARG, "(TScalarVector) copy_from", "v is NULL" );
 
-        if ( v->is_complex() )
-            set_vector( v->blas_cvec(), v->ofs() );
-        else
-            set_vector( v->blas_rvec(), v->ofs() );
+        set_vector( v->blas_vec(), v->ofs() );
     }
 
     //! copy to vector \a v
-    virtual void copy_to ( TScalarVector * v ) const
+    virtual void copy_to ( TScalarVector< value_t > *  v ) const
     {
         if ( v == NULL )
             HERROR( ERR_ARG, "(TScalarVector) copy_to", "v is NULL" );
@@ -334,50 +234,38 @@ public:
     // return reference to sub vector
     //
 
-    TScalarVector  sub_vector ( const TIndexSet &  ais )
+    TScalarVector< value_t >
+    sub_vector ( const TIndexSet &  ais )
     {
-        if ( ! is().is_sub( ais ) )
+        if ( ! this->is().is_sub( ais ) )
             HERROR( ERR_INDEXSET, "(TScalarVector) sub_vector",
                     "given index set is NOT a sub set of local index set" );
 
-        if ( is_complex() )
-        {
-            return TScalarVector( ais, BLAS::Vector< complex >( _cvec, ais - ofs() ) );
-        }// if
-        else
-        {
-            return TScalarVector( ais, BLAS::Vector< real >( _rvec, ais - ofs() ) );
-        }// else
+        return TScalarVector( ais, BLAS::Vector< value_t >( _vec, ais - this->ofs() ) );
     }
     
-    const TScalarVector  sub_vector ( const TIndexSet &  ais ) const
+    const TScalarVector< value_t >
+    sub_vector ( const TIndexSet &  ais ) const
     {
-        if ( ! is().is_sub( ais ) )
+        if ( ! this->is().is_sub( ais ) )
             HERROR( ERR_INDEXSET, "(TScalarVector) sub_vector",
                     "given index set is NOT a sub set of local index set" );
 
-        if ( is_complex() )
-        {
-            return TScalarVector( ais, BLAS::Vector< complex >( _cvec, ais - ofs() ) );
-        }// if
-        else
-        {
-            return TScalarVector( ais, BLAS::Vector< real >( _rvec, ais - ofs() ) );
-        }// else
+        return TScalarVector( ais, BLAS::Vector< value_t >( _vec, ais - this->ofs() ) );
     }
     
     
     //! copy from C array \a v
-    virtual void copy_from ( const real * v );
+    virtual void copy_from ( const value_t *  v );
 
     //! copy to C array \a v
-    virtual void copy_to   ( real *       v );
-    using TVector::copy_to;
+    virtual void copy_to   ( value_t *        v );
+    using TVector< value_t >::copy_to;
 
     //! standard copy operator
-    TScalarVector &  operator = ( const TScalarVector &  v )
+    TScalarVector< value_t > &  operator = ( const TScalarVector< value_t > &  v )
     {
-        assign( 1.0, & v );
+        assign( value_t(1), & v );
         return * this;
     }
 
@@ -385,16 +273,6 @@ public:
     void permute ( const TPermutation &  perm );
 
 protected:
-
-    //
-    // switch between real and complex
-    //
-    
-    //! switch to real valued representation if possible
-    virtual void to_real    ();
-
-    //! switch to complex valued representation
-    virtual void to_complex ();
 
     //
     // handle chunk mutex array
@@ -410,62 +288,46 @@ protected:
 public:
     //////////////////////////////////////////////////
     //
-    // BLAS-routines (real valued)
-    //
-
-    //! fill vector with constant \a α
-    virtual void   fill        ( const real alpha );
-
-    //! fill vector with random numbers
-    virtual void   fill_rand   ( const uint seed );
-
-    //! set this ≔ α · this
-    virtual void   scale       ( const real alpha );
-
-    //! set this ≔ α · x
-    virtual void   assign      ( const real alpha, const TVector * x );
-
-    //! compute ‖·‖₂
-    virtual real   norm2       () const;
-
-    //! compute ‖·‖∞
-    virtual real   norm_inf    () const;
-    
-    //! set this ≔ this + α · x
-    virtual void   axpy        ( const real alpha, const TVector * x );
-
-    //! set this ≔ this + x (thread safe, is(x) ⊆ is(this))
-    virtual void   add_sub_mt  ( const TScalarVector &  x );
-
-    //////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
+    // BLAS-routines
     //
 
     //! conjugate coefficients
     virtual void     conjugate  ()
     {
-        if ( is_complex() )
-            BLAS::conj( blas_cvec() );
+        if ( is_complex_type< value_t >::value )
+            BLAS::conj( blas_vec() );
     }
     
     //! fill vector with constant \a α
-    virtual void     cfill      ( const complex &  alpha );
+    virtual void     fill        ( const value_t  alpha );
+
+    //! fill vector with random numbers
+    virtual void     fill_rand   ( const uint     seed );
 
     //! set this ≔ α · this
-    virtual void     cscale     ( const complex &  alpha );
+    virtual void     scale       ( const value_t  alpha );
 
     //! set this ≔ α · x
-    virtual void     cassign    ( const complex &  alpha, const TVector * x );
+    virtual void     assign      ( const value_t               alpha,
+                                   const TVector< value_t > *  x );
 
     //! return inner product <this, x> = this^H · x
-    virtual complex  dot        ( const TVector * x ) const;
+    virtual value_t  dot         ( const TVector< value_t > *  x ) const;
 
     //! return inner product <this, x> = this^T · x
-    virtual complex  dotu       ( const TVector * x ) const;
+    virtual value_t  dotu        ( const TVector< value_t > *  x ) const;
 
+    //! compute ‖·‖₂
+    virtual real_t   norm2       () const;
+
+    //! compute ‖·‖∞
+    virtual real_t   norm_inf    () const;
+    
     //! set this ≔ this + α · x
-    virtual void     caxpy      ( const complex & f, const TVector * x );
+    virtual void     axpy        ( const value_t alpha, const TVector< value_t > * x );
+
+    //! set this ≔ this + x (thread safe, is(x) ⊆ is(this))
+    virtual void     add_sub_mt  ( const TScalarVector< value_t > &  x );
 
     //////////////////////////////////////////////////
     //
@@ -480,23 +342,23 @@ public:
     //
 
     //! return copy of vector
-    virtual auto  copy   () const -> std::unique_ptr< TVector > { return std::make_unique< TScalarVector >( *this ); }
+    virtual auto  copy   () const -> std::unique_ptr< TVector< value_t > > { return std::make_unique< TScalarVector< value_t > >( *this ); }
     
     //! return object of same class
-    virtual auto  create () const -> std::unique_ptr< TVector > { return std::make_unique< TScalarVector >(); }
+    virtual auto  create () const -> std::unique_ptr< TVector< value_t > > { return std::make_unique< TScalarVector< value_t > >(); }
     
     //
     // restriction
     //
 
     //! return vector restricted to real part of coefficients
-    virtual auto restrict_re  () const -> std::unique_ptr< TVector >;
+    virtual auto  restrict_re  () const -> std::unique_ptr< TVector< real_t > >;
 
     //! return vector restricted to imaginary part of coefficients
-    virtual auto restrict_im  () const -> std::unique_ptr< TVector >;
+    virtual auto  restrict_im  () const -> std::unique_ptr< TVector< real_t > >;
     
     //! return vector restricted to absolute value of coefficients
-    virtual auto restrict_abs () const -> std::unique_ptr< TVector >;
+    virtual auto  restrict_abs () const -> std::unique_ptr< TVector< real_t > >;
     
     //
     // stream output
@@ -524,9 +386,9 @@ public:
 
     //! pointwise summation between all vectors in \a ps
     virtual void sum ( const TProcSet & ps );
-    using TVector::sum;
+    using TVector< value_t >::sum;
 
-    HLIB_RTTI_DERIVED( TScalarVector, TVector )
+    HPRO_RTTI_DERIVED( TScalarVector, TVector< value_t > )
 };
 
 //////////////////////////////////////////////////////////
@@ -537,42 +399,24 @@ public:
 //
 // blas_rvec/_cvec const
 //
-template <typename T> BLAS::Vector< T > &  blas_vec  ( TScalarVector *  v ); 
-template <typename T> BLAS::Vector< T > &  blas_vec  ( TScalarVector &  v );
-
-template <> inline BLAS::Vector< real > &     blas_vec<real>     ( TScalarVector *  v ) { return v->blas_rvec(); }
-template <> inline BLAS::Vector< complex > &  blas_vec<complex>  ( TScalarVector *  v ) { return v->blas_cvec(); }
-
-template <> inline BLAS::Vector< real > &     blas_vec<real>     ( TScalarVector &  v ) { return v.blas_rvec(); }
-template <> inline BLAS::Vector< complex > &  blas_vec<complex>  ( TScalarVector &  v ) { return v.blas_cvec(); }
-
-//
-// blas_rvec/_cvec const
-//
-template <typename T> const BLAS::Vector< T > &  blas_vec  ( const TScalarVector *  v );
-template <typename T> const BLAS::Vector< T > &  blas_vec  ( const TScalarVector &  v );
-
-template <> inline const BLAS::Vector< real > &     blas_vec<real>     ( const TScalarVector *  v ) { return v->blas_rvec(); }
-template <> inline const BLAS::Vector< complex > &  blas_vec<complex>  ( const TScalarVector *  v ) { return v->blas_cvec(); }
-
-template <> inline const BLAS::Vector< real > &     blas_vec<real>     ( const TScalarVector &  v ) { return v.blas_rvec(); }
-template <> inline const BLAS::Vector< complex > &  blas_vec<complex>  ( const TScalarVector &  v ) { return v.blas_cvec(); }
+template <typename value_t>       BLAS::Vector< value_t > &  blas_vec  (       TScalarVector< value_t > *  v ) { return v->blas_vec(); }
+template <typename value_t> const BLAS::Vector< value_t > &  blas_vec  ( const TScalarVector< value_t > *  v ) { return v->blas_vec(); }
 
 //!
 //! functional version of TScalarVector::sub_vector
 //!
-inline
-TScalarVector
-sub_vector ( TScalarVector *    v,
-             const TIndexSet &  is )
+template <typename value_t>
+TScalarVector< value_t >
+sub_vector ( TScalarVector< value_t > *  v,
+             const TIndexSet &           is )
 {
     return v->sub_vector( is );
 }
              
-inline
-const TScalarVector
-sub_vector ( const TScalarVector *  v,
-             const TIndexSet &      is )
+template <typename value_t>
+const TScalarVector< value_t >
+sub_vector ( const TScalarVector< value_t > *  v,
+             const TIndexSet &                 is )
 {
     return v->sub_vector( is );
 }
@@ -581,9 +425,9 @@ sub_vector ( const TScalarVector *  v,
 // type checks
 //
 
-inline bool is_scalar ( const TVector &  v ) noexcept { return IS_TYPE( & v, TScalarVector ); }
-inline bool is_scalar ( const TVector *  v ) noexcept { return ( v != nullptr ) && IS_TYPE( v, TScalarVector ); }
+template <typename value_t> bool is_scalar ( const TVector< value_t > &  v ) noexcept { return IS_TYPE( & v, TScalarVector ); }
+template <typename value_t> bool is_scalar ( const TVector< value_t > *  v ) noexcept { return ( v != nullptr ) && IS_TYPE( v, TScalarVector ); }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TSCALARVECTOR_HH
+#endif  // __HPRO_TSCALARVECTOR_HH

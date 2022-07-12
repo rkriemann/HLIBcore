@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TFnSpace.cc
 // Description : implements function spaces over grids
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
 
 #include "hpro/bem/TFnSpace.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -30,56 +30,19 @@ using std::make_unique;
 // constructor and destructor
 //
 
-TFnSpace::TFnSpace ( const TGrid * agrid )
+template < typename value_t >
+TFnSpace< value_t >::TFnSpace ( const TGrid * agrid )
         : _grid(agrid)
 {
     if ( agrid == nullptr )
         HERROR( ERR_ARG, "(TFnSpace)", "given grid is nullptr" );
 }
 
-TFnSpace::~TFnSpace ()
+template < typename value_t >
+TFnSpace< value_t >::~TFnSpace ()
 {
 }
 
-///////////////////////////////////////////////////////////////////////
-//
-// function evaluation
-//
-///////////////////////////////////////////////////////////////////////
-
-//
-// evaluate function <fn> at index positions on grid
-// and build corresponding vector
-//
-template < typename T_val >
-unique_ptr< TScalarVector >
-TFnSpace::eval ( const TBEMFunction< T_val > * fn ) const
-{
-    if ( fn == nullptr )
-        HERROR( ERR_ARG, "(TFnSpace) eval", "given function is nullptr" );
-
-    //
-    // build vector
-    //
-
-    auto  v = make_unique< TScalarVector >( this->n_indices(), 0, fn->is_complex() );
-    
-    for ( uint i = 0; i < this->n_indices(); i++ )
-    {
-        // get index position
-        const T3Point  t = index_coord( i );
-
-        // get normal at index (only valid for constant ansatz)
-        const T3Point  n( _grid->tri_normal( _supp_list_ptr[i] ) );
-
-        // evaluate
-        if ( fn->is_complex() ) v->set_centry( i, complex( fn->eval( t, n ) ) );
-        else                    v->set_entry(  i, std::real( fn->eval( t, n ) ) );
-    }// for
-
-    return v;
-}
-    
 ////////////////////////////////////////////////////////
 //
 // misc.
@@ -88,8 +51,9 @@ TFnSpace::eval ( const TBEMFunction< T_val > * fn ) const
 //
 // return coordinate info for grid
 //
+template < typename value_t >
 unique_ptr< TCoordinate >
-TFnSpace::build_coord ( const bool  with_bbox ) const
+TFnSpace< value_t >::build_coord ( const bool  with_bbox ) const
 {
     const size_t       nindices = _indices.size();
     vector< T3Point >  coord( nindices );
@@ -144,8 +108,9 @@ TFnSpace::build_coord ( const bool  with_bbox ) const
 //
 // return size of grid in bytes
 //
+template < typename value_t >
 size_t
-TFnSpace::byte_size () const
+TFnSpace< value_t >::byte_size () const
 {
     size_t  size = sizeof(TGrid*);
     
@@ -169,13 +134,15 @@ TFnSpace::byte_size () const
 // constructor and destructor
 //
 
-TConstFnSpace::TConstFnSpace ( const TGrid * agrid )
-        : TFnSpace( agrid )
+template < typename value_t >
+TConstFnSpace< value_t >::TConstFnSpace ( const TGrid * agrid )
+        : TFnSpace< value_t >( agrid )
 {
     construct();
 }
 
-TConstFnSpace::~TConstFnSpace ()
+template < typename value_t >
+TConstFnSpace< value_t >::~TConstFnSpace ()
 {
 }
     
@@ -188,27 +155,28 @@ TConstFnSpace::~TConstFnSpace ()
 // construct function space by building indices
 // and their support
 //
+template < typename value_t >
 void
-TConstFnSpace::construct ()
+TConstFnSpace< value_t >::construct ()
 {
     //
     // indices are built at the midpoints of each triangle
     //
 
-    const size_t  n_triangles = _grid->n_triangles();
+    const size_t  n_triangles = this->_grid->n_triangles();
 
-    _indices.resize( n_triangles );
+    this->_indices.resize( n_triangles );
 
     for ( size_t  i = 0; i < n_triangles; i++ )
     {
-        const idx_t  vid[3] = { _grid->triangle( idx_t(i) ).vtx[0],
-                                _grid->triangle( idx_t(i) ).vtx[1],
-                                _grid->triangle( idx_t(i) ).vtx[2] };
+        const idx_t  vid[3] = { this->_grid->triangle( idx_t(i) ).vtx[0],
+                                this->_grid->triangle( idx_t(i) ).vtx[1],
+                                this->_grid->triangle( idx_t(i) ).vtx[2] };
             
-        _indices[i]  = T3Point( _grid->vertex( vid[0] ) +
-                                _grid->vertex( vid[1] ) +
-                                _grid->vertex( vid[2] ) );
-        _indices[i] *= 1.0 / 3.0;
+        this->_indices[i]  = T3Point( this->_grid->vertex( vid[0] ) +
+                                      this->_grid->vertex( vid[1] ) +
+                                      this->_grid->vertex( vid[2] ) );
+        this->_indices[i] *= 1.0 / 3.0;
     }// for
 
     //
@@ -217,32 +185,32 @@ TConstFnSpace::construct ()
     // is just the identity
     //
 
-    _supp_list_ptr.resize( n_triangles+1, 0 );
-    _supp_list.resize( n_triangles, 0 );
+    this->_supp_list_ptr.resize( n_triangles+1, 0 );
+    this->_supp_list.resize( n_triangles, 0 );
 
     for ( uint i = 0; i < n_triangles; i++ )
     {
-        _supp_list_ptr[i] = i;
-        _supp_list[i]     = i;
+        this->_supp_list_ptr[i] = i;
+        this->_supp_list[i]     = i;
     }// for
         
-    _supp_list_ptr[n_triangles] = uint( n_triangles );
+    this->_supp_list_ptr[n_triangles] = uint( n_triangles );
 
     //
     // build mapping of triangle to triangle local indices
     // - one index per triangle
     //
 
-    _tri_idx_ptr.resize( n_triangles+1, 0 );
-    _tri_idx.resize( n_triangles+1, 0 );
+    this->_tri_idx_ptr.resize( n_triangles+1, 0 );
+    this->_tri_idx.resize( n_triangles+1, 0 );
 
     for ( uint i = 0; i < n_triangles; i++ )
     {
-        _tri_idx_ptr[i] = i;
-        _tri_idx[i]     = i;
+        this->_tri_idx_ptr[i] = i;
+        this->_tri_idx[i]     = i;
     }// for
         
-    _tri_idx_ptr[n_triangles] = uint( n_triangles );
+    this->_tri_idx_ptr[n_triangles] = uint( n_triangles );
 }
 
 /////////////////////////////////////////////////////////////////
@@ -258,13 +226,15 @@ TConstFnSpace::construct ()
 // constructor and destructor
 //
 
-TLinearFnSpace::TLinearFnSpace ( const TGrid * agrid )
-        : TFnSpace( agrid )
+template < typename value_t >
+TLinearFnSpace< value_t >::TLinearFnSpace ( const TGrid * agrid )
+        : TFnSpace< value_t >( agrid )
 {
     construct();
 }
 
-TLinearFnSpace::~TLinearFnSpace ()
+template < typename value_t >
+TLinearFnSpace< value_t >::~TLinearFnSpace ()
 {
 }
     
@@ -277,20 +247,21 @@ TLinearFnSpace::~TLinearFnSpace ()
 // construct function space by building indices
 // and their support
 //
+template < typename value_t >
 void
-TLinearFnSpace::construct ()
+TLinearFnSpace< value_t >::construct ()
 {
     //
     // just copy position of vertices to index-array
     //
 
-    const size_t  n_vertices = _grid->n_vertices();
+    const size_t  n_vertices = this->_grid->n_vertices();
         
-    _indices.resize( n_vertices );
+    this->_indices.resize( n_vertices );
 
     for ( idx_t  i = 0; i < idx_t( n_vertices ); ++i )
     {
-        _indices[i] = _grid->vertex( i );
+        this->_indices[i] = this->_grid->vertex( i );
     }// for
         
     //
@@ -298,27 +269,27 @@ TLinearFnSpace::construct ()
     // built start-end-array of positions in the support-list array
     //
 
-    const size_t    n_triangles = _grid->n_triangles();
+    const size_t    n_triangles = this->_grid->n_triangles();
     vector< uint >  count( n_vertices, 0 );
     
     for ( idx_t  i = 0; i < idx_t( n_triangles ); ++i )
     {
-        count[ _grid->triangle(i).vtx[0] ]++;
-        count[ _grid->triangle(i).vtx[1] ]++;
-        count[ _grid->triangle(i).vtx[2] ]++;
+        count[ this->_grid->triangle(i).vtx[0] ]++;
+        count[ this->_grid->triangle(i).vtx[1] ]++;
+        count[ this->_grid->triangle(i).vtx[2] ]++;
     }// for
 
     idx_t  pos = 0;
 
-    _supp_list_ptr.resize( n_vertices+1, 0 );
+    this->_supp_list_ptr.resize( n_vertices+1, 0 );
 
     for ( size_t  i = 0; i < n_vertices; ++i )
     {
-        _supp_list_ptr[i] = pos;
-        pos              += idx_t( count[i] );
+        this->_supp_list_ptr[i] = pos;
+        pos                    += idx_t( count[i] );
     }// for
 
-    _supp_list_ptr[n_vertices] = pos;
+    this->_supp_list_ptr[n_vertices] = pos;
 
     //
     // fill support-list per index with the corresponding triangle indices
@@ -326,7 +297,7 @@ TLinearFnSpace::construct ()
     //   and triangles
     //
 
-    _supp_list.resize( pos, 0 );
+    this->_supp_list.resize( pos, 0 );
     
     for ( size_t  i = 0; i < n_vertices; ++i )
         count[i] = 0;
@@ -335,9 +306,9 @@ TLinearFnSpace::construct ()
     {
         for ( uint  j = 0; j < 3; j++ )
         {
-            const idx_t  vid = _grid->triangle(  idx_t(i) ).vtx[j];
+            const idx_t  vid = this->_grid->triangle(  idx_t(i) ).vtx[j];
             
-            _supp_list[ _supp_list_ptr[ vid ] + count[vid] ] = idx_t( i );
+            this->_supp_list[ this->_supp_list_ptr[ vid ] + count[vid] ] = idx_t( i );
             count[vid]++;
         }// for
     }// for
@@ -347,23 +318,23 @@ TLinearFnSpace::construct ()
     // - three indices per triangle
     //
 
-    _tri_idx_ptr.resize( n_triangles+1, 0 );
-    _tri_idx.resize( 3 * n_triangles, 0 );
+    this->_tri_idx_ptr.resize( n_triangles+1, 0 );
+    this->_tri_idx.resize( 3 * n_triangles, 0 );
 
     pos = 0;
     
     for ( size_t  i = 0; i < n_triangles; ++i )
     {
-        _tri_idx_ptr[ i ] = pos;
+        this->_tri_idx_ptr[ i ] = pos;
         
         for ( uint j = 0; j < 3; j++ )
         {
-            _tri_idx[ pos ] = _grid->triangle( idx_t(i) ).vtx[j];
+            this->_tri_idx[ pos ] = this->_grid->triangle( idx_t(i) ).vtx[j];
             ++pos;
         }// for
     }// for
 
-    _tri_idx_ptr[ n_triangles ] = pos;
+    this->_tri_idx_ptr[ n_triangles ] = pos;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -374,7 +345,14 @@ TLinearFnSpace::construct ()
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-template unique_ptr< TScalarVector >  TFnSpace::eval< real >     ( const TBEMFunction< real > *    ) const;
-template unique_ptr< TScalarVector >  TFnSpace::eval< complex >  ( const TBEMFunction< complex > * ) const;
+#define INST_ALL( type )                        \
+    template class TFnSpace< type >;            \
+    template class TConstFnSpace< type >;       \
+    template class TLinearFnSpace< type >;
 
-}// namespace
+INST_ALL( float )
+INST_ALL( double )
+
+template class TFnSpace< T2Point >;
+
+}// namespace Hpro

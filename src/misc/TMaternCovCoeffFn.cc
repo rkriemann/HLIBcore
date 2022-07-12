@@ -1,24 +1,24 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMaternCovCoeffFn.cc
 // Description : matrix coefficients for matern covariance kernel
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if USE_GSL == 1
-#include <gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_sf_gamma.h>
+#  include <gsl/gsl_sf_bessel.h>
+#  include <gsl/gsl_sf_gamma.h>
 #else
-#include <boost/math/special_functions/gamma.hpp>
-#include <boost/math/special_functions/bessel.hpp>
+#  include <boost/math/special_functions/gamma.hpp>
+#  include <boost/math/special_functions/bessel.hpp>
 #endif
 
 #include "hpro/misc/TMaternCovCoeffFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -33,14 +33,14 @@ const double  SQRT_5 = std::sqrt( 5 );
 //
 // compute modified bessel function
 //
-real
-compute_Bessel ( const real  d,
-                 const real  rho,
-                 const real  nu,
-                 const real  sigmasq,
-                 const real  scale_fac ) // constant scaling factor for optimization
+double
+compute_Bessel ( const double  d,
+                 const double  rho,
+                 const double  nu,
+                 const double  sigmasq,
+                 const double  scale_fac ) // constant scaling factor for optimization
 {
-    if ( d < Limits::epsilon< real >() )
+    if ( d < Limits::epsilon< double >() )
         return sigmasq;
     else
     {
@@ -59,12 +59,12 @@ compute_Bessel ( const real  d,
 //
 // constructor
 //
-template < typename T_point >
-TMaternCovCoeffFn< T_point >::TMaternCovCoeffFn ( const real                      sigma,
-                                                  const real                      length,
-                                                  const real                      nu,
-                                                  const std::vector< T_point > &  vertices )
-    : TCoeffFn< real >()
+template < typename point_t >
+TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                   sigma,
+                                                  const value_t                   length,
+                                                  const value_t                   nu,
+                                                  const std::vector< point_t > &  vertices )
+    : TCoeffFn< value_t >()
     , _length( length )
     , _nu( nu )
     , _sigmasq( sigma*sigma )
@@ -73,18 +73,39 @@ TMaternCovCoeffFn< T_point >::TMaternCovCoeffFn ( const real                    
     #else
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * boost::math::tgamma( nu ) ) )
     #endif
-    , _vertices( vertices )
+    , _row_vertices( vertices )
+    , _col_vertices( vertices )
+    , _matern_type( general )
+{}
+
+template < typename point_t >
+TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                   sigma,
+                                                  const value_t                   length,
+                                                  const value_t                   nu,
+                                                  const std::vector< point_t > &  row_vertices,
+                                                  const std::vector< point_t > &  col_vertices )
+    : TCoeffFn< value_t >()
+    , _length( length )
+    , _nu( nu )
+    , _sigmasq( sigma*sigma )
+    #if USE_GSL == 1
+    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * gsl_sf_gamma(nu) ) )
+    #else
+    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * boost::math::tgamma( nu ) ) )
+    #endif
+    , _row_vertices( row_vertices )
+    , _col_vertices( col_vertices )
     , _matern_type( general )
 {}
 
 //
 // coefficient evaluation
 //
-template < typename T_point >
+template < typename point_t >
 void
-TMaternCovCoeffFn< T_point >::eval  ( const std::vector< idx_t > &  rowidxs,
+TMaternCovCoeffFn< point_t >::eval  ( const std::vector< idx_t > &  rowidxs,
                                       const std::vector< idx_t > &  colidxs,
-                                      real *                        matrix ) const
+                                      value_t *                     matrix ) const
 {
     const size_t  n = rowidxs.size();
     const size_t  m = colidxs.size();
@@ -92,13 +113,13 @@ TMaternCovCoeffFn< T_point >::eval  ( const std::vector< idx_t > &  rowidxs,
     for ( size_t  j = 0; j < m; ++j )
     {
         const idx_t      idx1 = colidxs[ j ];
-        const T_point &  y    = _vertices[ idx1 ];
+        const point_t &  y    = _col_vertices[ idx1 ];
             
         for ( size_t  i = 0; i < n; ++i )
         {
             const idx_t      idx0 = rowidxs[ i ];
-            const T_point &  x    = _vertices[ idx0 ];
-            const real       dist = norm2( x - y );
+            const point_t &  x    = _row_vertices[ idx0 ];
+            const value_t    dist = norm2( x - y );
 
             switch ( _matern_type )
             {
@@ -146,4 +167,4 @@ template class TMaternCovCoeffFn< TPoint >;
 template class TMaternCovCoeffFn< T2Point >;
 template class TMaternCovCoeffFn< T3Point >;
 
-}// namespace HLIB
+}// namespace Hpro

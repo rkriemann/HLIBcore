@@ -1,11 +1,11 @@
-#ifndef __HLIB_TPROCSET_HH
-#define __HLIB_TPROCSET_HH
+#ifndef __HPRO_TPROCSET_HH
+#define __HPRO_TPROCSET_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TProcSet.hh
 // Description : class for representing processor sets
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -16,7 +16,7 @@
 #include "hpro/base/System.hh"
 #include "hpro/base/TByteStream.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////////////////////////
@@ -188,8 +188,8 @@ public:
     //! return string representation
     std::string  to_string  () const
     {
-        if ( _first != _last ) return HLIB::to_string( "[%d:%d]", _first, _last );
-        else                   return HLIB::to_string( "[%d]", _first );
+        if ( _first != _last ) return Hpro::to_string( "[%d:%d]", _first, _last );
+        else                   return Hpro::to_string( "[%d]", _first );
     }
 
     //
@@ -286,6 +286,6 @@ intersect ( const TProcSet &  ps1,
                          std::min( ps1.last(), ps2.last() ) );
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif // __HLIB_TPROCSET_HH
+#endif // __HPRO_TPROCSET_HH

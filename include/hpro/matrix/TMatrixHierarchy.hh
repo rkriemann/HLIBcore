@@ -1,11 +1,11 @@
-#ifndef __HLIB_TMATRIXHIERARCHY_HH
-#define __HLIB_TMATRIXHIERARCHY_HH
+#ifndef __HPRO_TMATRIXHIERARCHY_HH
+#define __HPRO_TMATRIXHIERARCHY_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixHierarchy.hh
 // Description : represents a level-wise hierarchy of matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -15,7 +15,7 @@
 
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -23,12 +23,13 @@ namespace HLIB
 //! \brief Represents a n×m block matrix with only a small number of non-null
 //!        sub matrices stored in an efficient way
 //!
+template < typename value_t >
 class TSparseBlockMatrix
 {
 public:
     //! \typedef block_list_t
     //! list for block rows and columns
-    using  block_list_t  = std::list< TMatrix * >;
+    using  block_list_t  = std::list< TMatrix< value_t > * >;
         
     //! \typedef mat_storage_t
     //! storage type for sparse block matrix
@@ -66,18 +67,18 @@ public:
     //
         
     //! access individual submatrix addressed by is0 × is1
-    TMatrix *
+    TMatrix< value_t > *
     block ( const TIndexSet &  is0,
             const TIndexSet &  is1 );
         
     //! return submatrix t×s with is0 × is1 ⊆ t×s
-    TMatrix *
+    TMatrix< value_t > *
     block_containing ( const TIndexSet &  is0,
                        const TIndexSet &  is1 );
         
     //! insert matrix A into sparse block matrix
     void
-    insert_block ( TMatrix *  A );
+    insert_block ( TMatrix< value_t > *  A );
         
     //! return sparse block matrix
     const mat_storage_t *
@@ -118,11 +119,12 @@ public:
 //! \details Stores a hierarchy of block matrices, such that each level matrix
 //!          holds all matrices (or leaves) of that level of a given matrix.
 //!
+template < typename value_t >
 class TMatrixHierarchy
 {
 private:
     //! the matrix hierarchy
-    std::deque< TSparseBlockMatrix * >  _hierarchy;
+    std::deque< TSparseBlockMatrix< value_t > * >  _hierarchy;
 
 public:
     //////////////////////////////////////////////////////////////
@@ -136,8 +138,8 @@ public:
     //! construct a hierarchy based on given matrix A
     //! \param  A             matrix to construct hierarchy with
     //! \param  with_blocked  if true, also block matrices will be stored in hierarchy
-    TMatrixHierarchy ( TMatrix *   A,
-                       const bool  with_blocked );
+    TMatrixHierarchy ( TMatrix< value_t > *  A,
+                       const bool            with_blocked );
 
     //! destructor
     ~TMatrixHierarchy ();
@@ -151,7 +153,8 @@ public:
     size_t  n_levels () const { return _hierarchy.size(); }
     
     //! return blockmatrix for given level
-    TSparseBlockMatrix *  matrix ( const size_t  lvl )
+    TSparseBlockMatrix< value_t > *
+    matrix ( const size_t  lvl )
     {
         if ( lvl < _hierarchy.size() )
             return _hierarchy[ lvl ];
@@ -160,15 +163,16 @@ public:
     }
 
     //! return matrix defined by is0×is1 on given level
-    TMatrix *  block ( const size_t       lvl,
-                       const TIndexSet &  row_is,
-                       const TIndexSet &  col_is )
+    TMatrix< value_t > *
+    block ( const size_t       lvl,
+            const TIndexSet &  row_is,
+            const TIndexSet &  col_is )
     {
-        TMatrix *  M = nullptr;
+        TMatrix< value_t > *  M = nullptr;
         
         if ( lvl < _hierarchy.size() )
         {
-            TSparseBlockMatrix *  B = _hierarchy[ lvl ];
+            TSparseBlockMatrix< value_t > *  B = _hierarchy[ lvl ];
 
             if ( B != nullptr )
                 M = B->block( row_is, col_is );
@@ -178,15 +182,16 @@ public:
     }
 
     //! return matrix t×s with is0×is1 ⊆ t×s on given level
-    TMatrix *  block_containing ( const size_t       lvl,
-                                  const TIndexSet &  row_is,
-                                  const TIndexSet &  col_is )
+    TMatrix< value_t > *
+    block_containing ( const size_t       lvl,
+                       const TIndexSet &  row_is,
+                       const TIndexSet &  col_is )
     {
-        TMatrix *  M = nullptr;
+        TMatrix< value_t > *  M = nullptr;
         
         if ( lvl < _hierarchy.size() )
         {
-            TSparseBlockMatrix *  B = _hierarchy[ lvl ];
+            TSparseBlockMatrix< value_t > *  B = _hierarchy[ lvl ];
 
             if ( B != nullptr )
                 M = B->block_containing( row_is, col_is );
@@ -209,4 +214,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TMATRIXHIERARCHY_HH
+#endif  // __HPRO_TMATRIXHIERARCHY_HH

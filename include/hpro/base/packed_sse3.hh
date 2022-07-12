@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_SSE3_HH
-#define __HLIB_PACKED_SSE3_HH
+#ifndef __HPRO_PACKED_SSE3_HH
+#define __HPRO_PACKED_SSE3_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_sse3.hh
 // Description : datatype for packed (vector) operations using SSE3
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ extern "C" __m128d  _ZGVbN2v_sin  ( __m128d  x );
 extern "C" __m128d  _ZGVbN2v_cos  ( __m128d  x );
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -532,9 +532,9 @@ zdiv ( const packed< double, ISA_SSE3 >  a,
     return _mm_div_pd( _mm_shuffle_pd( t1.x, t1.x, 1 ), _mm_hadd_pd( t2.x, t2.x ) );
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif // __SSE3__
 
-#endif // __HLIB_PACKED_SSE3_HH
+#endif // __HPRO_PACKED_SSE3_HH
 

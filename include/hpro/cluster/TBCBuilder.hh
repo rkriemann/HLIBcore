@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBCBUILDER_HH
-#define __HLIB_TBCBUILDER_HH
+#ifndef __HPRO_TBCBUILDER_HH
+#define __HPRO_TBCBUILDER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBCBuilder.hh
 // Description : builds a block-cluster-tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/cluster/types.hh"
@@ -15,7 +15,7 @@
 #include "hpro/cluster/TAdmCondition.hh"
 #include "hpro/parallel/TProcSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -78,6 +78,6 @@ protected:
                                                           TCluster *       colcl ) const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TBCBUILDER_HH
+#endif  // __HPRO_TBCBUILDER_HH

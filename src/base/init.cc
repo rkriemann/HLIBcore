@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : init.cc
 // Description : initialisation and finalisation
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <stdlib.h>
@@ -16,7 +16,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/parallel/NET.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -100,6 +100,8 @@ INIT ()
     
     if ( get_environ( "HLIB_VERBOSITY", value ) )
         verbosity = std::max( 0, boost::lexical_cast< int >( value ) );
+    if ( get_environ( "HPRO_VERBOSITY", value ) )
+        verbosity = std::max( 0, boost::lexical_cast< int >( value ) );
 
     CFG::set_verbosity( verbosity );
 
@@ -108,17 +110,6 @@ INIT ()
     
     if ( verbose( LOG_DEBUG ) )
         RTTI::print_registered();
-    
-    //
-    // read environment variable for nthreads
-    //
-
-    if ( get_environ( "HLIB_NTHREADS", value ) )
-    {
-        const uint  nthreads = std::max( 1, boost::lexical_cast< int >( value ) );
-        
-        CFG::set_nthreads( nthreads );
-    }//if
     
     HINFO( "(INIT) initial memory consumption: " + Mem::to_string() );
     

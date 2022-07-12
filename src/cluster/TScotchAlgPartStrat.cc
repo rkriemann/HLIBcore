@@ -1,15 +1,15 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TScotchAlgPartStrat.cc
 // Description : class for algebraic clustertree construction with Scoth
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstdio>
 #include <vector>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if USE_SCOTCH == 1
 extern "C" {
@@ -21,7 +21,7 @@ extern "C" {
 
 using namespace std;
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////
@@ -170,4 +170,4 @@ TScotchAlgPartStrat::partition ( const TGraph &  ,
 
 #endif
 
-}// namespace HLIB
+}// namespace Hpro

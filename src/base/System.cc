@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : System.cc
 // Description : module containing basic system routines
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #ifdef __INTEL_COMPILER
@@ -55,7 +55,7 @@ using namespace std;
 #  include <float.h>
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Math
@@ -97,10 +97,10 @@ template <> bool is_inf ( const double  val ) { return std::isinf( val ); }
 template <> bool is_inf ( const float   val ) { return std::isinf( val ); }
 template <> bool is_inf ( const double  val ) { return std::isinf( val ); }
 #endif
-template <> bool is_inf ( const Complex<float>  val ) { return ( is_inf<float>(  std::real( val ) ) ||
-                                                                 is_inf<float>(  std::imag( val ) ) ); }
-template <> bool is_inf ( const Complex<double> val ) { return ( is_inf<double>( std::real( val ) ) ||
-                                                                 is_inf<double>( std::imag( val ) ) ); }
+template <> bool is_inf ( const std::complex<float>  val ) { return ( is_inf<float>(  std::real( val ) ) ||
+                                                                      is_inf<float>(  std::imag( val ) ) ); }
+template <> bool is_inf ( const std::complex<double> val ) { return ( is_inf<double>( std::real( val ) ) ||
+                                                                      is_inf<double>( std::imag( val ) ) ); }
 
 //
 // return true if given value contains NaN
@@ -116,10 +116,10 @@ template <> bool is_nan ( const double  val ) { return std::isnan( val ); }
 template <> bool is_nan ( const float   val ) { return std::isnan( val ); }
 template <> bool is_nan ( const double  val ) { return std::isnan( val ); }
 #endif
-template <> bool is_nan ( const Complex<float>  val ) { return ( is_nan<float>(  std::real( val ) ) ||
-                                                                 is_nan<float>(  std::imag( val ) ) ); }
-template <> bool is_nan ( const Complex<double> val ) { return ( is_nan<double>( std::real( val ) ) ||
-                                                                 is_nan<double>( std::imag( val ) ) ); }
+template <> bool is_nan ( const std::complex<float>  val ) { return ( is_nan<float>(  std::real( val ) ) ||
+                                                                      is_nan<float>(  std::imag( val ) ) ); }
+template <> bool is_nan ( const std::complex<double> val ) { return ( is_nan<double>( std::real( val ) ) ||
+                                                                      is_nan<double>( std::imag( val ) ) ); }
 
 //
 // compute givens rotation (cs,sn;-sn,cs) for given <a>, <b>
@@ -130,10 +130,10 @@ extern "C"
 // LAPACK routines for Givens rotations
 int slartg_ ( float  * f, float  * g, float  * cs, float  * sn, float  * r );
 int dlartg_ ( double * f, double * g, double * cs, double * sn, double * r );
-int clartg_ ( Complex<float> *  f,  Complex<float> *  g, float * cs,
-              Complex<float> *  sn, Complex<float> *  r );
-int zlartg_ ( Complex<double> * f,  Complex<double> * g, double * cs,
-              Complex<double> * sn, Complex<double> * r );
+int clartg_ ( std::complex<float> *  f,  std::complex<float> *  g, float * cs,
+              std::complex<float> *  sn, std::complex<float> *  r );
+int zlartg_ ( std::complex<double> * f,  std::complex<double> * g, double * cs,
+              std::complex<double> * sn, std::complex<double> * r );
 }
     
 void givens ( const float a, const float b, float & cs, float & sn )
@@ -150,25 +150,29 @@ void givens ( const double a, const double b, double & cs, double & sn )
     dlartg_( const_cast< double * >( & a ), const_cast< double * >( & b ), & cs, & sn, & r );
 }
 
-void givens ( const Complex<float> & a, const Complex<float> & b,
-              Complex<float> & cs, Complex<float> & sn )
+void givens ( const std::complex<float> &  a,
+              const std::complex<float> &  b,
+              std::complex<float> &        cs,
+              std::complex<float> &        sn )
 {
-    Complex<float>  r  = 0.0;  // will not be used;
+    std::complex<float>  r  = 0.0;  // will not be used;
     float           tc = 0.0;
          
-    clartg_( const_cast< Complex<float> * >( & a ), const_cast< Complex<float> * >( & b ),
+    clartg_( const_cast< std::complex<float> * >( & a ), const_cast< std::complex<float> * >( & b ),
              & tc, & sn, & r );
 
     cs = tc;
 }
 
-void givens ( const Complex<double> & a, const Complex<double> & b,
-              Complex<double> & cs, Complex<double> & sn )
+void givens ( const std::complex<double> &  a,
+              const std::complex<double> &  b,
+              std::complex<double> &        cs,
+              std::complex<double> &        sn )
 {
-    Complex<double>  r  = 0.0;  // will not be used;
-    double           tc = 0.0;
+    std::complex<double>  r  = 0.0;  // will not be used;
+    double                tc = 0.0;
          
-    zlartg_( const_cast< Complex<double> * >( & a ), const_cast< Complex<double> * >( & b ),
+    zlartg_( const_cast< std::complex<double> * >( & a ), const_cast< std::complex<double> * >( & b ),
              & tc, & sn, & r );
 
     cs = tc;
@@ -176,7 +180,7 @@ void givens ( const Complex<double> & a, const Complex<double> & b,
 
 }// namespace Math
 
-}// namespace HLIB
+}// namespace Hpro
 
 ///////////////////////////////////////////////////
 //
@@ -184,7 +188,7 @@ void givens ( const Complex<double> & a, const Complex<double> & b,
 //
 ///////////////////////////////////////////////////
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Limits
@@ -196,11 +200,13 @@ namespace Limits
 
 template <> float   nan<float>   () { return std::numeric_limits<float>::quiet_NaN(); }
 template <> double  nan<double>  () { return std::numeric_limits<double>::quiet_NaN(); }
-template <> complex nan<complex> () { return complex( nan<real>(), nan<real>() ); }
+
+template <> std::complex< float >  nan< std::complex< float > >  () { return std::complex< float >(  nan<float>(),  nan<float>() ); }
+template <> std::complex< double > nan< std::complex< double > > () { return std::complex< double >( nan<double>(), nan<double>() ); }
 
 }// namespace Limits
 
-}// namespace HLIB
+}// namespace Hpro
     
 ///////////////////////////////////////////////////
 //
@@ -222,7 +228,7 @@ template <> complex nan<complex> () { return complex( nan<real>(), nan<real>() )
 #include <time.h>
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Time
@@ -492,7 +498,7 @@ TDuration   since ( const TTimePoint  t ) { return now() - t; }
 
 }// namespace Time
 
-}// namespace HLIB
+}// namespace Hpro
     
 ///////////////////////////////////////////////////
 //
@@ -500,7 +506,7 @@ TDuration   since ( const TTimePoint  t ) { return now() - t; }
 //
 ///////////////////////////////////////////////////
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Crypt
@@ -620,7 +626,7 @@ adler32 ( const size_t size, const void * data )
 
 }// namespace Crypt
 
-}// namespace HLIB
+}// namespace Hpro
     
 ///////////////////////////////////////////////////
 //
@@ -628,7 +634,7 @@ adler32 ( const size_t size, const void * data )
 //
 ///////////////////////////////////////////////////
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace RTTI
@@ -787,7 +793,7 @@ print_registered ()
 
 }// namespace RTTI
 
-}// namespace HLIB
+}// namespace Hpro
     
 /////////////////////////////////////////////////////////////////
 //
@@ -837,7 +843,7 @@ print_registered ()
 #include <sys/resource.h>
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Mem
@@ -1150,7 +1156,7 @@ to_string ( const size_t byteval,
         
 }// namespace Memory
 
-}// namespace HLIB
+}// namespace Hpro
 
 ///////////////////////////////////////////////////
 //
@@ -1169,7 +1175,7 @@ to_string ( const size_t byteval,
 #  include <Winsock2.h>
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Mach
@@ -1260,4 +1266,4 @@ hostname ()
 
 }// namespace Mach
 
-}// namespace HLIB
+}// namespace Hpro

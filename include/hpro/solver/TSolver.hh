@@ -1,11 +1,11 @@
-#ifndef __HLIB_TSOLVER_HH
-#define __HLIB_TSOLVER_HH
+#ifndef __HPRO_TSOLVER_HH
+#define __HPRO_TSOLVER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TSolver.hh
 // Description : base-class for all iterative solvers
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
@@ -14,7 +14,7 @@
 #include "hpro/matrix/TLinearOperator.hh"
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 enum solver_status_t
@@ -40,7 +40,7 @@ public:
     //! \brief   used to store history information
     //!
     struct hist_t {
-        real   res_norm;
+        double   res_norm;
     };
         
 protected:
@@ -54,10 +54,10 @@ protected:
     size_t               _n_iter;
         
     //! average convergance rate
-    real                 _conv_rate;
+    double               _conv_rate;
 
     //! residual norm after iteration
-    real                 _res_norm;
+    double               _res_norm;
 
     //! if true, iteration history information is stored
     bool                 _store_hist;
@@ -68,9 +68,6 @@ protected:
     //! if true, print convergence history
     bool                 _print;
 
-    //! internal flags
-    const bool           _flag0, _flag1;
-    
     //! @endcond
         
 public:
@@ -109,10 +106,10 @@ public:
     size_t         n_iter    () const { return _n_iter; }
 
     //! return convergence rate
-    real           conv_rate () const { return _conv_rate; }
+    double         conv_rate () const { return _conv_rate; }
 
     //! return current residual norm
-    real           res_norm  () const { return _res_norm; }
+    double         res_norm  () const { return _res_norm; }
 
     //! return iteration history data
     const std::list< hist_t > &  history () const { return _history; }
@@ -129,7 +126,7 @@ public:
         
     //! append data for single iteration step to history (if set so)
     //! and update internal iteration data
-    void append         ( const uint it, const real res_norm );
+    void append         ( const uint it, const double res_norm );
 
     //! set solver name
     void set_solver     ( const std::string & name ) { _solver = name; }
@@ -141,10 +138,10 @@ public:
     void set_n_iter     ( const uint     n    ) { _n_iter    = n; }
 
     //! set convergence rate
-    void set_conv_rate  ( const real     conv ) { _conv_rate = conv; }
+    void set_conv_rate  ( const double   conv ) { _conv_rate = conv; }
 
     //! set current residual norm
-    void set_res_norm   ( const real     norm ) { _res_norm  = norm; }
+    void set_res_norm   ( const double   norm ) { _res_norm  = norm; }
 
     //! turn on/off printing of history
     void set_print_hist ( const bool     b    ) { _print = b; }
@@ -178,22 +175,22 @@ class TStopCriterion
 {
 public:
     // maximal number of iterations
-    uint  max_iter;
+    uint    max_iter;
         
     // absolute reduction of residual norm
-    real  abs_res_reduct;
+    double  abs_res_reduct;
         
     // relative reduction of residual norm compared to start residual
-    real  rel_res_reduct;
+    double  rel_res_reduct;
         
     // maximal relative growth of residual norm compared to start residual
-    real  rel_res_growth;
+    double  rel_res_growth;
 
     // ctors
-    TStopCriterion ( const uint  max_iter       = CFG::Solver::max_iter,
-                     const real  abs_res_red    = CFG::Solver::abs_res_red,
-                     const real  rel_res_red    = CFG::Solver::rel_res_red,
-                     const real  rel_res_growth = CFG::Solver::rel_res_growth );
+    TStopCriterion ( const uint    max_iter       = CFG::Solver::max_iter,
+                     const double  abs_res_red    = CFG::Solver::abs_res_red,
+                     const double  rel_res_red    = CFG::Solver::rel_res_red,
+                     const double  rel_res_growth = CFG::Solver::rel_res_growth );
 
     TStopCriterion ( const TStopCriterion &  stop_crit );
     TStopCriterion ( TStopCriterion &&       stop_crit );
@@ -203,8 +200,8 @@ public:
         
     //! return true if stop condition is met
     virtual bool stopped ( const uint     it, 
-                           const real     norm, 
-                           const real     norm0, 
+                           const double     norm, 
+                           const double     norm0, 
                            TSolverInfo *  info ) const;
 
     //! convert to string
@@ -232,15 +229,20 @@ max_steps           ( const uint  steps );
 //! \brief    sets relative reduction of residual
 //!
 TStopCriterion 
-relative_reduction  ( const real  red );
+relative_reduction  ( const double  red );
 
 //!
 //! \ingroup  Solver_Module
 //! \brief    sets absolute reduction of residual
 //!
 TStopCriterion 
-absolute_reduction  ( const real  red );
+absolute_reduction  ( const double  red );
 
+//!
+//! unions of possible matrix/vector types to enable virtual
+//! solve function in TSolver and derived classes
+//!
+    
 //!
 //! \ingroup  Solver_Module
 //! \class    TSolver
@@ -291,28 +293,55 @@ public:
     //
 
     //! solve A·x = b with optional preconditioner \a W
-    virtual void solve         ( const TLinearOperator *  A,
-                                 TVector *                x,
-                                 const TVector *          b,
-                                 const TLinearOperator *  W    = nullptr,
-                                 TSolverInfo *            info = nullptr ) const = 0;
+    virtual
+    void solve ( any_const_operator_t  A,
+                 any_vector_t          x,
+                 any_const_vector_t    b,
+                 any_const_operator_t  W,
+                 TSolverInfo *         info = nullptr ) const = 0;
+    virtual
+    void solve ( any_const_operator_t  A,
+                 any_vector_t          x,
+                 any_const_vector_t    b,
+                 TSolverInfo *         info = nullptr ) const = 0;
 
     //! set stop criterion
     virtual void set_stop_crit ( const TStopCriterion &  stop_crit );
 
     //! return true if stop condition is met
     virtual bool stopped       ( const uint     it, 
-                                 const real     norm, 
-                                 const real     norm0, 
+                                 const double   norm, 
+                                 const double   norm0, 
                                  TSolverInfo *  info ) const;
     
     //! initialises start value of iteration
-    virtual void set_start_value ( TVector *                x,
-                                   const TVector *          b,
-                                   const TLinearOperator *  W = nullptr ) const;
-
+    void set_start_value ( any_vector_t          x,
+                           any_const_vector_t    b ) const;
+    void set_start_value ( any_vector_t          x,
+                           any_const_vector_t    b,
+                           any_const_operator_t  W ) const;
 };
 
-}// namespace HLIB
+//
+// to instantiate mixed precision solve method
+//
+#define HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, type1, type2 )      \
+    template void solverclass :: solve< type1, type2 > ( const TLinearOperator< type1 > *, \
+                                                         TVector< type1 > *              , \
+                                                         const TVector< type1 > *        , \
+                                                         const TLinearOperator< type2 > *, \
+                                                         TSolverInfo *                    ) const;
 
-#endif  // __HLIB_TSOLVER_HH
+#define HPRO_INST_SOLVE_METHOD( solverclass )                           \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, float, float )          \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, float, double )         \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, double, float )         \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, double, double )        \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, std::complex< float >, std::complex< float > ) \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, std::complex< float >, std::complex< double > ) \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, std::complex< double >, std::complex< float > ) \
+    HPRO_INST_SINGLE_SOLVE_METHOD( solverclass, std::complex< double >, std::complex< double > )
+
+}// namespace Hpro
+
+#endif  // __HPRO_TSOLVER_HH

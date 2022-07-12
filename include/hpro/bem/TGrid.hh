@@ -1,11 +1,11 @@
-#ifndef __HLIB_TGRID_HH
-#define __HLIB_TGRID_HH
+#ifndef __HPRO_TGRID_HH
+#define __HPRO_TGRID_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGrid.hh
 // Description : contains information about a grid
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -16,7 +16,7 @@
 #include "hpro/vector/TScalarVector.hh"
 #include "hpro/bem/TBEMFunction.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ///////////////////////////////////////////////////////////////
@@ -160,8 +160,8 @@ public:
 
     // evaluate function <fn> at index positions on grid
     // and build corresponding vector
-    template < typename T_val >
-    TScalarVector *  eval ( const TBEMFunction< T_val > *  fn )  const;
+    template < typename value_t >
+    TScalarVector< value_t > *  eval ( const TBEMFunction< value_t > *  fn )  const;
     
     //////////////////////////////////////
     //
@@ -183,4 +183,4 @@ protected:
 
 }// namespace
 
-#endif  // __HLIB_TGRID_HH
+#endif  // __HPRO_TGRID_HH

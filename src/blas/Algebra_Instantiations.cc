@@ -8,26 +8,26 @@
 
 template void  fill_rand ( Matrix< float > &             M );
 template void  fill_rand ( Matrix< double > &            M );
-template void  fill_rand ( Matrix< Complex< float > > &  M );
-template void  fill_rand ( Matrix< Complex< double > > & M );
+template void  fill_rand ( Matrix< std::complex< float > > &  M );
+template void  fill_rand ( Matrix< std::complex< double > > & M );
 
 
 template float  norm2 ( const Matrix< float > &             M );
 template double norm2 ( const Matrix< double > &            M );
-template float  norm2 ( const Matrix< Complex< float > > &  M );
-template double norm2 ( const Matrix< Complex< double > > & M );
+template float  norm2 ( const Matrix< std::complex< float > > &  M );
+template double norm2 ( const Matrix< std::complex< double > > & M );
 
 
 template float  cond ( const Matrix< float > &              M );
 template double cond ( const Matrix< double > &             M );
-template float  cond ( const Matrix< Complex< float > > &   M );
-template double cond ( const Matrix< Complex< double > > &  M );
+template float  cond ( const Matrix< std::complex< float > > &   M );
+template double cond ( const Matrix< std::complex< double > > &  M );
 
 
 template void  invert ( Matrix< float > &             M );
 template void  invert ( Matrix< double > &            M );
-template void  invert ( Matrix< Complex< float > > &  M );
-template void  invert ( Matrix< Complex< double > > & M );
+template void  invert ( Matrix< std::complex< float > > &  M );
+template void  invert ( Matrix< std::complex< double > > & M );
 
 
 template void  invert ( Matrix< float > &             M,
@@ -36,10 +36,10 @@ template void  invert ( Matrix< float > &             M,
 template void  invert ( Matrix< double > &            M,
                         const tri_type_t              tri_type,
                         const diag_type_t             diag_type );
-template void  invert ( Matrix< Complex< float > > &  M,
+template void  invert ( Matrix< std::complex< float > > &  M,
                         const tri_type_t              tri_type,
                         const diag_type_t             diag_type );
-template void  invert ( Matrix< Complex< double > > & M,
+template void  invert ( Matrix< std::complex< double > > & M,
                         const tri_type_t              tri_type,
                         const diag_type_t             diag_type );
 
@@ -48,44 +48,44 @@ template void pseudo_invert< float >            ( Matrix< float > &            A
                                                   const TTruncAcc &            acc );
 template void pseudo_invert< double >           ( Matrix< double > &           A,
                                                   const TTruncAcc &            acc );
-template void pseudo_invert< Complex<float> >   ( Matrix< Complex<float> > &   A,
+template void pseudo_invert< std::complex<float> >   ( Matrix< std::complex<float> > &   A,
                                                   const TTruncAcc &            acc );
-template void pseudo_invert< Complex<double> >  ( Matrix< Complex<double> > &  A,
+template void pseudo_invert< std::complex<double> >  ( Matrix< std::complex<double> > &  A,
                                                   const TTruncAcc &            acc );
 
 template void lu< Matrix< float > >                ( Matrix< float > &            A );
 template void lu< Matrix< double > >               ( Matrix< double > &           A );
-template void lu< Matrix< Complex<float> > >       ( Matrix< Complex<float> > &   A );
-template void lu< Matrix< Complex<double> > >      ( Matrix< Complex<double> > &  A );
+template void lu< Matrix< std::complex<float> > >       ( Matrix< std::complex<float> > &   A );
+template void lu< Matrix< std::complex<double> > >      ( Matrix< std::complex<double> > &  A );
 
 template void llt< Matrix< float > >               ( Matrix< float > &            A );
 template void llt< Matrix< double > >              ( Matrix< double > &           A );
-template void llt< Matrix< Complex<float> > >      ( Matrix< Complex<float> > &   A );
-template void llt< Matrix< Complex<double> > >     ( Matrix< Complex<double> > &  A );
+template void llt< Matrix< std::complex<float> > >      ( Matrix< std::complex<float> > &   A );
+template void llt< Matrix< std::complex<double> > >     ( Matrix< std::complex<double> > &  A );
 
 template void llh< Matrix< float > >               ( Matrix< float > &            A );
 template void llh< Matrix< double > >              ( Matrix< double > &           A );
-template void llh< Matrix< Complex<float> > >      ( Matrix< Complex<float> > &   A );
-template void llh< Matrix< Complex<double> > >     ( Matrix< Complex<double> > &  A );
+template void llh< Matrix< std::complex<float> > >      ( Matrix< std::complex<float> > &   A );
+template void llh< Matrix< std::complex<double> > >     ( Matrix< std::complex<double> > &  A );
 
 template void ldlt< Matrix< float > >              ( Matrix< float > &            A );
 template void ldlt< Matrix< double > >             ( Matrix< double > &           A );
-template void ldlt< Matrix< Complex<float> > >     ( Matrix< Complex<float> > &   A );
-template void ldlt< Matrix< Complex<double> > >    ( Matrix< Complex<double> > &  A );
+template void ldlt< Matrix< std::complex<float> > >     ( Matrix< std::complex<float> > &   A );
+template void ldlt< Matrix< std::complex<double> > >    ( Matrix< std::complex<double> > &  A );
 
 template void ldlh< Matrix< float > >              ( Matrix< float > &            A );
 template void ldlh< Matrix< double > >             ( Matrix< double > &           A );
-template void ldlh< Matrix< Complex<float> > >     ( Matrix< Complex<float> > &   A );
-template void ldlh< Matrix< Complex<double> > >    ( Matrix< Complex<double> > &  A );
+template void ldlh< Matrix< std::complex<float> > >     ( Matrix< std::complex<float> > &   A );
+template void ldlh< Matrix< std::complex<double> > >    ( Matrix< std::complex<double> > &  A );
 
 template void qr< Matrix< float > >                ( Matrix< float > &            A,
                                                      Matrix< float > &            R );
 template void qr< Matrix< double > >               ( Matrix< double > &           A,
                                                      Matrix< double > &           R );
-template void qr< Matrix< Complex<float> > >       ( Matrix< Complex<float> > &   A,
-                                                     Matrix< Complex<float> > &   R );
-template void qr< Matrix< Complex<double> > >      ( Matrix< Complex<double> > &  A,
-                                                     Matrix< Complex<double> > &  R );
+template void qr< Matrix< std::complex<float> > >       ( Matrix< std::complex<float> > &   A,
+                                                     Matrix< std::complex<float> > &   R );
+template void qr< Matrix< std::complex<double> > >      ( Matrix< std::complex<double> > &  A,
+                                                     Matrix< std::complex<double> > &  R );
 
 template void tsqr< Matrix< float > >              ( Matrix< float > &            A,
                                                      Matrix< float > &            R,
@@ -93,11 +93,11 @@ template void tsqr< Matrix< float > >              ( Matrix< float > &          
 template void tsqr< Matrix< double > >             ( Matrix< double > &           A,
                                                      Matrix< double > &           R,
                                                      const size_t                 ntile );
-template void tsqr< Matrix< Complex<float> > >     ( Matrix< Complex<float> > &   A,
-                                                     Matrix< Complex<float> > &   R,
+template void tsqr< Matrix< std::complex<float> > >     ( Matrix< std::complex<float> > &   A,
+                                                     Matrix< std::complex<float> > &   R,
                                                      const size_t                 ntile );
-template void tsqr< Matrix< Complex<double> > >    ( Matrix< Complex<double> > &  A,
-                                                     Matrix< Complex<double> > &  R,
+template void tsqr< Matrix< std::complex<double> > >    ( Matrix< std::complex<double> > &  A,
+                                                     Matrix< std::complex<double> > &  R,
                                                      const size_t                 ntile );
 
 template void eigen< Matrix< float > >   ( Matrix< float > &            M,
@@ -130,9 +130,9 @@ template void eigen< Vector< double >,
 template void svd_double< double >          ( Matrix< double > &           U,
                                               Vector< double > &           S,
                                               Matrix< double > &           V );
-template void svd_double< Complex<double> > ( Matrix< Complex<double> > &  U,
+template void svd_double< std::complex<double> > ( Matrix< std::complex<double> > &  U,
                                               Vector< double > &           S,
-                                              Matrix< Complex<double> > &  V );
+                                              Matrix< std::complex<double> > &  V );
 
 
 #define INST_SVD( T )                                                   \
@@ -142,8 +142,8 @@ template void svd_double< Complex<double> > ( Matrix< Complex<double> > &  U,
                           Matrix< T > &                                V )
 INST_SVD( float );
 INST_SVD( double );
-INST_SVD( Complex< float > );
-INST_SVD( Complex< double > );
+INST_SVD( std::complex< float > );
+INST_SVD( std::complex< double > );
 #undef INST_SVD
 
 
@@ -154,8 +154,8 @@ INST_SVD( Complex< double > );
                           const bool left )
 INST_SVD( float );
 INST_SVD( double );
-INST_SVD( Complex< float > );
-INST_SVD( Complex< double > );
+INST_SVD( std::complex< float > );
+INST_SVD( std::complex< double > );
 #undef INST_SVD
 
 
@@ -165,8 +165,8 @@ INST_SVD( Complex< double > );
                          Vector< typename real_type< T >::type_t > &  S )
 INST_SV( float );
 INST_SV( double );
-INST_SV( Complex< float > );
-INST_SV( Complex< double > );
+INST_SV( std::complex< float > );
+INST_SV( std::complex< double > );
 #undef INST_SV
 
 
@@ -177,8 +177,8 @@ INST_SV( Complex< double > );
                                       Vector< typename real_type< T >::type_t > &  S )
 INST_SV( float );
 INST_SV( double );
-INST_SV( Complex< float > );
-INST_SV( Complex< double > );
+INST_SV( std::complex< float > );
+INST_SV( std::complex< double > );
 #undef INST_SV
 
 #define INST_APPROX( T )                                            \
@@ -189,8 +189,8 @@ INST_SV( Complex< double > );
                             Matrix< T > &      B )
 INST_APPROX( float );
 INST_APPROX( double );
-INST_APPROX( Complex< float > );
-INST_APPROX( Complex< double > );
+INST_APPROX( std::complex< float > );
+INST_APPROX( std::complex< double > );
 #undef INST_APPROX
 
 
@@ -202,8 +202,8 @@ INST_APPROX( Complex< double > );
                                   Matrix< T > &      B )
 INST_APPROX_RRQR( float );
 INST_APPROX_RRQR( double );
-INST_APPROX_RRQR( Complex< float > );
-INST_APPROX_RRQR( Complex< double > );
+INST_APPROX_RRQR( std::complex< float > );
+INST_APPROX_RRQR( std::complex< double > );
 #undef INST_APPROX_RRQR
 
 
@@ -217,8 +217,8 @@ INST_APPROX_RRQR( Complex< double > );
                                      const uint         oversampling )
 INST_APPROX_RANDSVD( float );
 INST_APPROX_RANDSVD( double );
-INST_APPROX_RANDSVD( Complex< float > );
-INST_APPROX_RANDSVD( Complex< double > );
+INST_APPROX_RANDSVD( std::complex< float > );
+INST_APPROX_RANDSVD( std::complex< double > );
 #undef INST_APPROX_RANDSVD
 
 
@@ -229,8 +229,8 @@ INST_APPROX_RANDSVD( Complex< double > );
                     const TTruncAcc &  acc )
 INST_TRUNCATE( float );
 INST_TRUNCATE( double );
-INST_TRUNCATE( Complex< float > );
-INST_TRUNCATE( Complex< double > );
+INST_TRUNCATE( std::complex< float > );
+INST_TRUNCATE( std::complex< double > );
 #undef INST_TRUNCATE
 
 
@@ -241,8 +241,8 @@ INST_TRUNCATE( Complex< double > );
                          const TTruncAcc &  acc )
 INST_TRUNCATE_RRQR( float );
 INST_TRUNCATE_RRQR( double );
-INST_TRUNCATE_RRQR( Complex< float > );
-INST_TRUNCATE_RRQR( Complex< double > );
+INST_TRUNCATE_RRQR( std::complex< float > );
+INST_TRUNCATE_RRQR( std::complex< double > );
 #undef INST_TRUNCATE_RRQR
 
 
@@ -253,8 +253,8 @@ INST_TRUNCATE_RRQR( Complex< double > );
                          const TTruncAcc &  acc )
 INST_TRUNCATE_RAND( float );
 INST_TRUNCATE_RAND( double );
-INST_TRUNCATE_RAND( Complex< float > );
-INST_TRUNCATE_RAND( Complex< double > );
+INST_TRUNCATE_RAND( std::complex< float > );
+INST_TRUNCATE_RAND( std::complex< double > );
 #undef INST_TRUNCATE_RAND
 
 
@@ -264,8 +264,8 @@ INST_TRUNCATE_RAND( Complex< double > );
                                       Matrix< T > &  R )
 INST_FACTORISE_ORTHO( float );
 INST_FACTORISE_ORTHO( double );
-INST_FACTORISE_ORTHO( Complex< float > );
-INST_FACTORISE_ORTHO( Complex< double > );
+INST_FACTORISE_ORTHO( std::complex< float > );
+INST_FACTORISE_ORTHO( std::complex< double > );
 #undef INST_FACTORISE_ORTHO
 
 
@@ -276,8 +276,8 @@ INST_FACTORISE_ORTHO( Complex< double > );
                             const TTruncAcc &  acc )
 INST_FACTORISE_ORTHO( float );
 INST_FACTORISE_ORTHO( double );
-INST_FACTORISE_ORTHO( Complex< float > );
-INST_FACTORISE_ORTHO( Complex< double > );
+INST_FACTORISE_ORTHO( std::complex< float > );
+INST_FACTORISE_ORTHO( std::complex< double > );
 #undef INST_FACTORISE_ORTHO
 
 
@@ -289,8 +289,8 @@ INST_FACTORISE_ORTHO( Complex< double > );
                           const TTruncAcc &    acc )
 INST_TRUNCATE2_SVD( float );
 INST_TRUNCATE2_SVD( double );
-INST_TRUNCATE2_SVD( Complex< float > );
-INST_TRUNCATE2_SVD( Complex< double > );
+INST_TRUNCATE2_SVD( std::complex< float > );
+INST_TRUNCATE2_SVD( std::complex< double > );
 #undef INST_TRUNCATE2_SVD
 
 

@@ -1,17 +1,17 @@
-#ifndef __HLIB_TGHOSTMATRIX_HH
-#define __HLIB_TGHOSTMATRIX_HH
+#ifndef __HPRO_TGHOSTMATRIX_HH
+#define __HPRO_TGHOSTMATRIX_HH
 //
 // \file         TGhostMatrix.hh
 //
-// Project     : HLib
+// Project     : HLIBpro
 // Description : class for representing remote matrix blocks
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -24,8 +24,13 @@ DECLARE_TYPE( TGhostMatrix );
 //!          access logical information, e.g. size, processor number, but
 //!          can not perform any computations
 //!
-class TGhostMatrix : public TMatrix
+template < typename T_value >
+class TGhostMatrix : public TMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+
 private:
     //! number of rows in matrix
     size_t  _n_rows;
@@ -40,8 +45,8 @@ public:
     //
 
     //! construct zero-sized matrix
-    TGhostMatrix ( const value_type_t  avalue_type = real_valued )
-            : TMatrix( avalue_type )
+    TGhostMatrix ()
+            : TMatrix< value_t >()
             , _n_rows( 0 )
             , _n_cols(0)
     {}
@@ -49,14 +54,13 @@ public:
     //! construct matrix defined over given block index set and
     //! on given processor set
     TGhostMatrix ( const TBlockIndexSet &  is,
-                   const TProcSet &        ps,
-                   const value_type_t      avalue_type = real_valued )
-            : TMatrix( avalue_type )
+                   const TProcSet &        ps )
+            : TMatrix< value_t >()
             , _n_rows( is.row_is().size() )
             , _n_cols( is.col_is().size() )
     {
-        set_ofs( is.row_is().first(), is.col_is().first() );
-        set_procs( ps );
+        this->set_ofs( is.row_is().first(), is.col_is().first() );
+        this->set_procs( ps );
     }
 
     ////////////////////////////////////////////////////////
@@ -77,17 +81,6 @@ public:
         _n_cols = m;
     }
 
-    ///////////////////////////////////////////
-    //
-    // management of field type
-    //
-
-    //! convert matrix data to real valued format
-    virtual void to_real    () {}
-    
-    //! convert matrix data to complex valued format
-    virtual void to_complex () {}
-    
     /////////////////////////////////////////////////
     //
     // misc.
@@ -96,7 +89,7 @@ public:
     // transpose matrix
     virtual void   transpose  ()
     {
-        TMatrix::transpose();
+        TMatrix< value_t >::transpose();
 
         std::swap( _n_rows, _n_cols );
     }  
@@ -110,24 +103,24 @@ public:
     {}
 
     //! return matrix of same class (but no content)
-    virtual auto   create     () const -> std::unique_ptr< TMatrix >
+    virtual auto   create     () const -> std::unique_ptr< TMatrix< value_t > >
     {
-        return std::make_unique< TGhostMatrix >();
+        return std::make_unique< TGhostMatrix< value_t > >();
     }
 
     //! return size in bytes used by this object
     virtual size_t byte_size  () const
     {
-        return TMatrix::byte_size() + sizeof(size_t) * 2;
+        return TMatrix< value_t >::byte_size() + sizeof(size_t) * 2;
     }
 
     //
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TGhostMatrix, TMatrix )
+    HPRO_RTTI_DERIVED( TGhostMatrix, TMatrix< value_t > )
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TGHOSTMATRIX_HH
+#endif  // __HPRO_TGHOSTMATRIX_HH

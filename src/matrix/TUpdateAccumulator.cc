@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TUpdateAccumulator.cc
 // Description : class for handling updates to matrix blocks
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/matrix/TMatrix.hh"
@@ -14,7 +14,7 @@
 
 #include "hpro/matrix/structure.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace B = BLAS;
@@ -28,8 +28,9 @@ using std::unique_ptr;
 //
 // initialise matrix for accumulated updates
 //
+template < typename value_t >
 void
-TUpdateAccumulator::init ( const TMatrix *  M )
+TUpdateAccumulator< value_t >::init ( const TMatrix< value_t > *  M )
 {
     TScopedLock  mlock( *this );
 
@@ -37,11 +38,11 @@ TUpdateAccumulator::init ( const TMatrix *  M )
     {
         if ( is_dense( M ) )
         {
-            _accumulated = std::make_unique< TDenseMatrix >( M->row_is(), M->col_is(), M->value_type() );
+            _accumulated = std::make_unique< TDenseMatrix< value_t > >( M->row_is(), M->col_is(), M->value_type() );
         }// if
         else
         {
-            _accumulated = std::make_unique< TRkMatrix >( M->row_is(), M->col_is(), M->value_type() );
+            _accumulated = std::make_unique< TRkMatrix< value_t > >( M->row_is(), M->col_is(), M->value_type() );
         }// else
     }// if
 }
@@ -49,8 +50,9 @@ TUpdateAccumulator::init ( const TMatrix *  M )
 //
 // return true if accumulator holds any updates
 //
+template < typename value_t >
 bool
-TUpdateAccumulator::has_updates () const
+TUpdateAccumulator< value_t >::has_updates () const
 {
     if ( pending_direct().empty() && pending_recursive().empty() && ( accumulated_updates() == nullptr ))
         return false;
@@ -61,10 +63,11 @@ TUpdateAccumulator::has_updates () const
 //
 // compute sum of local direct updates
 //
+template < typename value_t >
 void
-TUpdateAccumulator::apply_direct ( const TTruncAcc &  /* acc */,
-                                   TMatrix *          /* M */,
-                                   const bool         /* update_M */ )
+TUpdateAccumulator< value_t >::apply_direct ( const TTruncAcc &     /* acc */,
+                                              TMatrix< value_t > *  /* M */,
+                                              const bool            /* update_M */ )
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
@@ -73,8 +76,9 @@ TUpdateAccumulator::apply_direct ( const TTruncAcc &  /* acc */,
 //
 // remove list of pending updates
 //
+template < typename value_t >
 void
-TUpdateAccumulator::clear_pending ()
+TUpdateAccumulator< value_t >::clear_pending ()
 {
     TScopedLock  mlock( *this );
     
@@ -92,10 +96,11 @@ TUpdateAccumulator::clear_pending ()
 //
 // add update matrix
 //
+template < typename value_t >
 void
-TUpdateAccumulator::add_update ( const TMatrix *    /* M */,
-                                 const TTruncAcc &  /* acc */,
-                                 const TMatrix *    /* dest */ )
+TUpdateAccumulator< value_t >::add_update ( const TMatrix< value_t > *  /* M */,
+                                            const TTruncAcc &           /* acc */,
+                                            const TMatrix< value_t > *  /* dest */ )
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
@@ -103,11 +108,12 @@ TUpdateAccumulator::add_update ( const TMatrix *    /* M */,
 //
 // add update from parent matrix
 //
+template < typename value_t >
 void
-TUpdateAccumulator::add_parent_update ( const TMatrix *    /* M */,
-                                        const TTruncAcc &  /* acc */ )
+TUpdateAccumulator< value_t >::add_parent_update ( const TMatrix< value_t > * /* M */,
+                                                   const TTruncAcc &          /* acc */ )
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
 
-}// namespace HLIB
+}// namespace Hpro

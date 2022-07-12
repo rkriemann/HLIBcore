@@ -1,17 +1,17 @@
-#ifndef __HLIB_COLOUR_HH
-#define __HLIB_COLOUR_HH
+#ifndef __HPRO_COLOUR_HH
+#define __HPRO_COLOUR_HH
 //
 // Project     : HLIBpro
 // File        : colour.hh
 // Description : colour managment functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/base/String.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -73,7 +73,7 @@ struct colour_t
     //! return html color code
     std::string  to_string () const
     {
-        return HLIB::to_string( "%02x%02x%02x", red, green, blue );
+        return Hpro::to_string( "%02x%02x%02x", red, green, blue );
     }
 };
 
@@ -183,6 +183,6 @@ const colour_t  Aluminium6( 46,52,54 );
 
 }// namespace Tango
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_COLOUR_HH
+#endif  // __HPRO_COLOUR_HH

@@ -1,14 +1,14 @@
-#ifndef __HLIB_BLAS_TYPES_HH
-#define __HLIB_BLAS_TYPES_HH
+#ifndef __HPRO_BLAS_TYPES_HH
+#define __HPRO_BLAS_TYPES_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : types.hh
 // Description : provide basic types for BLAS operations
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-namespace HLIB
+namespace Hpro
 {
 
 //! \enum  matop_t
@@ -79,6 +79,6 @@ enum eval_side_t
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_TYPES_HH
+#endif  // __HPRO_BLAS_TYPES_HH

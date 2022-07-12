@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : THiLoFreqGeomAdmCond.cc
 // Description : 
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
@@ -11,12 +11,12 @@
 
 #include "hpro/cluster/TGeomAdmCond.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
-THiLoFreqGeomAdmCond::THiLoFreqGeomAdmCond ( const complex  kappa,
-                                             const double   max_waves,
-                                             const double   eta )
+THiLoFreqGeomAdmCond::THiLoFreqGeomAdmCond ( const std::complex< double >  kappa,
+                                             const double                  max_waves,
+                                             const double                  eta )
         : _kappa( Math::abs(kappa) )
         , _eta( eta )
         , _max_waves( max_waves )
@@ -138,4 +138,4 @@ THiLoFreqGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     return false; 
 }
 
-}// namespace HLIB
+}// namespace Hpro

@@ -1,22 +1,23 @@
-#ifndef __HLIB_BLAS_VECTOR_HH
-#define __HLIB_BLAS_VECTOR_HH
+#ifndef __HPRO_BLAS_VECTOR_HH
+#define __HPRO_BLAS_VECTOR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Vector.hh
 // Description : implements dense vector class for BLAS operations
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
 
 #include "hpro/base/error.hh"
+#include "hpro/base/traits.hh"
 
 #include "hpro/blas/VectorBase.hh"
 #include "hpro/blas/MatrixBase.hh"
 #include "hpro/blas/MemBlock.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -36,6 +37,9 @@ template < typename T > class Matrix;
 template < typename T_value >
 class Vector : public VectorBase< Vector< T_value > >, public MemBlock< T_value >
 {
+    // ensure only floating point types (or complex version)
+    static_assert( std::is_floating_point< T_value >::value || is_complex_type< T_value >::value );
+    
 public:
     //! internal value type
     using   value_t = T_value;
@@ -308,11 +312,36 @@ struct is_vector< Vector< T_value > >
 //
 // return real copy of given vector
 //
-template < typename T >
-Vector< T >
-copy ( const Vector< T > &  v )
+template < typename value_t >
+Vector< value_t >
+copy ( const Vector< value_t > &  v )
 {
     return v.copy();
+}
+
+//!
+//! convert between different dataypes 
+//!
+template < typename dest_value_t,
+           typename src_value_t >
+Vector< dest_value_t >
+convert ( const Vector< src_value_t > &  v )
+{
+    // prevent complex to real conversion
+    static_assert( ! is_complex_type< src_value_t >::value || is_complex_type< dest_value_t >::value,
+                   "can not convert complex to real type" );
+    
+    if constexpr ( std::is_same< dest_value_t, src_value_t >::value )
+        return v.copy();
+    else
+    {
+        auto  t = Vector< dest_value_t >( v.length() );
+
+        for ( size_t  i = 0; i < v.length(); ++i )
+            t(i) = dest_value_t( v(i) );
+
+        return t;
+    }// else
 }
 
 //
@@ -343,6 +372,6 @@ write ( const BLAS::Vector< T > &  v,
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_VECTOR_HH
+#endif  // __HPRO_BLAS_VECTOR_HH

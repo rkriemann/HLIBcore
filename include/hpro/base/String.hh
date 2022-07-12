@@ -1,11 +1,11 @@
-#ifndef __HLIB_STRING_HH
-#define __HLIB_STRING_HH
+#ifndef __HPRO_STRING_HH
+#define __HPRO_STRING_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : String.hh
 // Description : module containing a class for a string
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
@@ -13,7 +13,7 @@
 
 #include "hpro/base/config.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 /////////////////////////////////////////////////////////////////
@@ -72,6 +72,6 @@ std::vector< std::string >
 split     ( const std::string &           str,
             const std::string &           delim );
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_STRING_HH
+#endif  // __HPRO_STRING_HH

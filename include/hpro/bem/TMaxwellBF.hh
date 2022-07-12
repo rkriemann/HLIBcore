@@ -1,16 +1,16 @@
-#ifndef __HLIB_TMAXWELLBF_HH
-#define __HLIB_TMAXWELLBF_HH
+#ifndef __HPRO_TMAXWELLBF_HH
+#define __HPRO_TMAXWELLBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMaxwellBF.hh
 // Description : bilinear forms for Maxwell operator
 // Author      : Ronald Kriemann, Jonas Ballani
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TQuadBEMBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 ////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ namespace HLIB
 
 template < typename  T_ansatzsp,
            typename  T_testsp >
-class TMaxwellEFIEBF : public TQuadBEMBF< T_ansatzsp, T_testsp, complex >
+class TMaxwellEFIEBF : public TQuadBEMBF< T_ansatzsp, T_testsp, std::complex< double > >
 {
 public:
     //
@@ -37,33 +37,34 @@ public:
     //
     using  ansatzsp_t     = T_ansatzsp;
     using  testsp_t       = T_testsp;
-    using  value_t        = complex;
+    using  value_t        = std::complex< double >;
+    using  real_t         = real_type_t< value_t >;
 
-    using  ansatz_value_t = typename ansatzsp_t::value_t;
-    using  test_value_t   = typename testsp_t::value_t;
+    using  ansatz_value_t = value_type_t< ansatzsp_t >;
+    using  test_value_t   = value_type_t< testsp_t >;
 
 private:
 
     //! @cond
     
     // i · wave number
-    const complex  _ikappa;
+    const value_t  _ikappa;
 
     // √( mu / epsilon )
-    const real     _eta;
+    const real_t   _eta;
 
     // constants used in bilinear form
-    const complex  _ikappa_times_eta;
-    const complex  _eta_over_ikappa;
+    const value_t  _ikappa_times_eta;
+    const value_t  _eta_over_ikappa;
 
     // kernel function implementation
-    void ( * _kernel_fn ) ( const TGrid::triangle_t &    tri0,
-                            const TGrid::triangle_t &    tri1,
-                            const tripair_quad_rule_t *  rule,
-                            const complex                ikappa,
-                            const ansatzsp_t *           ansatz_sp,
-                            const testsp_t *             test_sp,
-                            std::vector< complex > &     values );
+    void ( * _kernel_fn ) ( const TGrid::triangle_t &             tri0,
+                            const TGrid::triangle_t &             tri1,
+                            const tripair_quad_rule_t< real_t > * rule,
+                            const value_t                         ikappa,
+                            const ansatzsp_t *                    ansatz_sp,
+                            const testsp_t *                      test_sp,
+                            std::vector< value_t > &              values );
     
     //! @endcond
     
@@ -73,8 +74,8 @@ public:
     // constructor and destructor
     //
 
-    TMaxwellEFIEBF ( const complex       kappa,
-                     const real          eta,
+    TMaxwellEFIEBF ( const value_t       kappa,
+                     const real_t        eta,
                      const ansatzsp_t *  aansatzsp,
                      const testsp_t *    atestsp,
                      const uint          quad_order = CFG::BEM::quad_order );
@@ -89,18 +90,18 @@ public:
     //! contiguous
     virtual void  eval  ( const std::vector< idx_t > &  row_ind,
                           const std::vector< idx_t > &  col_ind,
-                          BLAS::Matrix< complex > &     values ) const;
+                          BLAS::Matrix< value_t > &     values ) const;
 
 
 
 protected:
     // eval kernel function at quadrature points
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< complex > &     values ) const;
+    virtual void  eval_kernel  ( const idx_t                           tri0idx,
+                                 const idx_t                           tri1idx,
+                                 const TGrid::triangle_t &             tri0,
+                                 const TGrid::triangle_t &             tri1,
+                                 const tripair_quad_rule_t< real_t > * quad_rule,
+                                 std::vector< value_t > &              values ) const;
 };
 
 //!
@@ -111,7 +112,7 @@ template < class T_ansatzsp,
            class T_testsp >
 class TMaxwellEFIEMassBF : public TBEMBF< T_ansatzsp,
                                           T_testsp,
-                                          real >
+                                          std::complex< double > >
 {
 public:
     //
@@ -119,7 +120,7 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = std::complex< double >;
 
 protected:
     
@@ -164,7 +165,7 @@ public:
 
 template < typename  T_ansatzsp,
            typename  T_testsp >
-class TMaxwellMFIEBF : public TQuadBEMBF< T_ansatzsp, T_testsp, complex >
+class TMaxwellMFIEBF : public TQuadBEMBF< T_ansatzsp, T_testsp, std::complex< double > >
 {
 public:
     //
@@ -172,26 +173,27 @@ public:
     //
     using  ansatzsp_t     = T_ansatzsp;
     using  testsp_t       = T_testsp;
-    using  value_t        = complex;
+    using  value_t        = std::complex< double >;
+    using  real_t         = real_type_t< value_t >;
 
-    using  ansatz_value_t = typename ansatzsp_t::value_t;
-    using  test_value_t   = typename testsp_t::value_t;
+    using  ansatz_value_t = value_type_t< ansatzsp_t >;
+    using  test_value_t   = value_type_t< testsp_t >;
 
 private:
 
     //! @cond
     
     // i · wave number
-    const complex  _ikappa;
+    const value_t  _ikappa;
 
     // kernel function implementation
-    void ( * _kernel_fn ) ( const TGrid::triangle_t &    tri0,
-                            const TGrid::triangle_t &    tri1,
-                            const tripair_quad_rule_t *  rule,
-                            const complex                ikappa,
-                            const ansatzsp_t *           ansatz_sp,
-                            const testsp_t *             test_sp,
-                            std::vector< complex > &     values );
+    void ( * _kernel_fn ) ( const TGrid::triangle_t &             tri0,
+                            const TGrid::triangle_t &             tri1,
+                            const tripair_quad_rule_t< real_t > * rule,
+                            const value_t                         ikappa,
+                            const ansatzsp_t *                    ansatz_sp,
+                            const testsp_t *                      test_sp,
+                            std::vector< value_t > &              values );
     
     //! @endcond
     
@@ -201,7 +203,7 @@ public:
     // constructor and destructor
     //
 
-    TMaxwellMFIEBF ( const complex       kappa,
+    TMaxwellMFIEBF ( const value_t       kappa,
                      const ansatzsp_t *  aansatzsp,
                      const testsp_t *    atestsp,
                      const uint          quad_order = CFG::BEM::quad_order );
@@ -220,12 +222,12 @@ public:
 
 protected:
     // eval kernel function at quadrature points
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< complex > &     values ) const;
+    virtual void  eval_kernel  ( const idx_t                           tri0idx,
+                                 const idx_t                           tri1idx,
+                                 const TGrid::triangle_t &             tri0,
+                                 const TGrid::triangle_t &             tri1,
+                                 const tripair_quad_rule_t< real_t > * quad_rule,
+                                 std::vector< value_t > &              values ) const;
 };
 
 //!
@@ -236,7 +238,7 @@ template < class T_ansatzsp,
            class T_testsp >
 class TMaxwellMFIEMassBF : public TBEMBF< T_ansatzsp,
                                           T_testsp,
-                                          real >
+                                          std::complex< double > >
 {
 public:
     //
@@ -244,7 +246,7 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = std::complex< double >;
 
 protected:
     

@@ -1,17 +1,17 @@
-#ifndef __HLIB_TVECTORIO_HH
-#define __HLIB_TVECTORIO_HH
+#ifndef __HPRO_TVECTORIO_HH
+#define __HPRO_TVECTORIO_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TVectorIO.hh
 // Description : class for vector input/output
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/Vector.hh"
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -23,44 +23,11 @@ namespace HLIB
 ///////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
-//! \class    TVectorIO
-//! \brief    Base class for vector IO defining interface.
-//!
-class TVectorIO
-{
-public:
-    ///////////////////////////////////////////////
-    //
-    // constructor and destructor
-    //
-
-    TVectorIO ();
-
-    virtual ~TVectorIO () {}
-    
-    ///////////////////////////////////////////////
-    //
-    // interface for I/O
-    //
-
-    //! write vector \a v to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string &  fname ) const;
-
-    //! read and return vector from file \a fname
-    virtual std::unique_ptr< TVector >
-    read  ( const std::string &  fname ) const;
-};
-
-///////////////////////////////////////////////////
-//!
-//! \ingroup  IO_Module
 //! \class    TAutoVectorIO
 //! \brief    Class for vector I/O with automatic
 //!           file format detection
 //!
-class TAutoVectorIO : public TVectorIO
+class TAutoVectorIO 
 {
 public:
     ///////////////////////////////////////////////
@@ -70,7 +37,7 @@ public:
 
     TAutoVectorIO () {}
 
-    virtual ~TAutoVectorIO () {}
+    ~TAutoVectorIO () {}
     
     ///////////////////////////////////////////////
     //
@@ -78,24 +45,28 @@ public:
     //
 
     //! write vector \a A to file \a filename
-    virtual void
-    write ( const TVector *      A,
-            const std::string &  filename ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  A,
+            const std::string &         filename ) const;
 
     //! write vector \a A to file \a filename with optional
     //! vector name \a vecname (if file format has corresponding support)
-    virtual void
-    write ( const TVector *      A,
-            const std::string &  filename,
-            const std::string &  vecname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  A,
+            const std::string &         filename,
+            const std::string &         vecname ) const;
 
     //! read and return vector from file \a filename
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  filename ) const;
 
     //! read and return vector from file \a filename with optional
     //! vector name \a vecname (if file format has corresponding support)
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  filename,
             const std::string &  vecname ) const;
 };
@@ -109,8 +80,9 @@ public:
 //!           of several matrices (or other objects), only the first vector
 //!           will be read.
 //!
-std::unique_ptr< TVector >
-read_vector  ( const char *  filename );
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+read_vector  ( const std::string &  filename );
 
 //!
 //! \ingroup  IO_Module
@@ -122,9 +94,10 @@ read_vector  ( const char *  filename );
 //!           Furthermore, if the file format supports storage of several matrices
 //!           (or other objects), only the first vector will be read.
 //!
-std::unique_ptr< TVector >
-read_vector  ( const char *  filename,
-               const char *  vecname );
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+read_vector  ( const std::string &  filename,
+               const std::string &  vecname );
 
 //!
 //! \ingroup  IO_Module
@@ -138,9 +111,10 @@ read_vector  ( const char *  filename,
 //!           - rhs, sol              : SAMG format
 //!           - mtx                   : VectorMarket format
 //!
+template < typename value_t >
 void
-write_vector  ( const TVector *  A,
-                const char *     filename );
+write_vector  ( const TVector< value_t > *  A,
+                const std::string &         filename );
 
 //!
 //! \ingroup  IO_Module
@@ -151,10 +125,11 @@ write_vector  ( const TVector *  A,
 //!           format supports named matrices, the vector will be stored under the
 //!           name \a vecname.
 //!
+template < typename value_t >
 void
-write_vector  ( const TVector *  A,
-                const char *     filename,
-                const char *     vecname );
+write_vector  ( const TVector< value_t > *  A,
+                const std::string &         filename,
+                const std::string &         vecname );
 
 ///////////////////////////////////////////////////
 //!
@@ -162,7 +137,7 @@ write_vector  ( const TVector *  A,
 //! \class    TSAMGVectorIO
 //! \brief    Class for vector I/O in SAMG format
 //!
-class TSAMGVectorIO : public TVectorIO
+class TSAMGVectorIO 
 {
 public:
     ///////////////////////////////////////////////
@@ -172,7 +147,7 @@ public:
 
     TSAMGVectorIO () {}
 
-    virtual ~TSAMGVectorIO () {}
+    ~TSAMGVectorIO () {}
     
     ///////////////////////////////////////////////
     //
@@ -180,12 +155,14 @@ public:
     //
 
     //! write vector \a v to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string &         fname ) const;
 
     //! read and return vector from file \a fname
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -195,7 +172,7 @@ public:
 //! \class    TMatlabVectorIO
 //! \brief    Class for vector I/O in Matlab format
 //!
-class TMatlabVectorIO : public TVectorIO
+class TMatlabVectorIO 
 {
 public:
     ///////////////////////////////////////////////
@@ -205,7 +182,7 @@ public:
 
     TMatlabVectorIO () {}
 
-    virtual ~TMatlabVectorIO () {}
+    ~TMatlabVectorIO () {}
     
     ///////////////////////////////////////////////
     //
@@ -213,53 +190,46 @@ public:
     //
 
     //! write vector \a v with name "v" to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string  & fname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string  &        fname ) const;
     
     //! write vector \a v with name \a vname to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string  & fname,
-            const std::string  & vname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string  &        fname,
+            const std::string  &        vname ) const;
 
     //! read first vector in file \a fname
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string & fname ) const;
 
     //! read and return vector named \a vname from file \a fname
     //! (if vname = "", return first vector)
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string & fname,
             const std::string & vname ) const;
 
     // write BLAS vector \a v with name \a mname to file \a fname
-    virtual void
-    write ( const BLAS::Vector< float > &   v,
-            const std::string &             fname,
-            const std::string &             mname ) const;
-    virtual void
-    write ( const BLAS::Vector< double > &  v,
-            const std::string &             fname,
-            const std::string &             mname ) const;
-    virtual void
-    write ( const BLAS::Vector< Complex< float > > &   v,
-            const std::string &                        fname,
-            const std::string &                        mname ) const;
-    virtual void
-    write ( const BLAS::Vector< Complex< double > > &  v,
-            const std::string &                        fname,
-            const std::string &                        mname ) const;
+    template < typename value_t >
+    void
+    write ( const BLAS::Vector< value_t > &  v,
+            const std::string &              fname,
+            const std::string &              mname ) const;
 
 };
 
 ///////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
-//! \class    THLibVectorIO
+//! \class    THproVectorIO
 //! \brief    Class for vector I/O in HLIB format
 //!
-class THLibVectorIO : public TVectorIO
+class THproVectorIO 
 {
 protected:
     // use compression
@@ -271,11 +241,11 @@ public:
     // constructor and destructor
     //
 
-    THLibVectorIO ( const bool compressed = false )
+    THproVectorIO ( const bool compressed = false )
             : _compressed(compressed)
     {}
 
-    virtual ~THLibVectorIO () {}
+    ~THproVectorIO () {}
     
     ///////////////////////////////////////////////
     //
@@ -283,14 +253,18 @@ public:
     //
 
     //! write vector \a v to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string &         fname ) const;
 
     //! read and return vector from file \a fname
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  fname ) const;
 };
+
+using THLibVectorIO = THproVectorIO;
 
 ///////////////////////////////////////////////////
 //!
@@ -299,7 +273,7 @@ public:
 //! \brief    Class for vector I/O in Harwell-Boeing and
 //!           Rutherford-Boeing format
 //!
-class THBVectorIO : public TVectorIO
+class THBVectorIO 
 {
 public:
     ///////////////////////////////////////////////
@@ -309,7 +283,7 @@ public:
 
     THBVectorIO () {}
 
-    virtual ~THBVectorIO () {}
+    ~THBVectorIO () {}
 
     ///////////////////////////////////////////////
     //
@@ -317,12 +291,14 @@ public:
     //
 
     //! write vector \a v to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string &         fname ) const;
 
     //! read and return vector from file \a fname
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -333,7 +309,7 @@ public:
 //! \class    TMMVectorIO
 //! \brief    Class for vector I/O in MatrixMarket format
 //!
-class TMMVectorIO : public TVectorIO
+class TMMVectorIO 
 {
 public:
     ///////////////////////////////////////////////
@@ -343,7 +319,7 @@ public:
 
     TMMVectorIO () {}
 
-    virtual ~TMMVectorIO () {}
+    ~TMMVectorIO () {}
 
     ///////////////////////////////////////////////
     //
@@ -351,12 +327,14 @@ public:
     //
 
     //! write vector \a v to file \a fname
-    virtual void
-    write ( const TVector *      v,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TVector< value_t > *  v,
+            const std::string &         fname ) const;
 
     //! read and return vector from file \a fname
-    virtual std::unique_ptr< TVector >
+    template < typename value_t >
+    std::unique_ptr< TVector< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -364,4 +342,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TVECTORIO_HH
+#endif  // __HPRO_TVECTORIO_HH

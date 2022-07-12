@@ -1,18 +1,18 @@
-#ifndef __HLIB_TGEOMCLUSTER_HH
-#define __HLIB_TGEOMCLUSTER_HH
+#ifndef __HPRO_TGEOMCLUSTER_HH
+#define __HPRO_TGEOMCLUSTER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGeomCluster.hh
 // Description : class for a cluster with geometrical information
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/cluster/TBBox.hh"
 #include "hpro/cluster/TCluster.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -111,9 +111,9 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TGeomCluster, TCluster );
+    HPRO_RTTI_DERIVED( TGeomCluster, TCluster );
 };
 
 }// namespace
 
-#endif  // __HLIB_TGEOMCLUSTER_HH
+#endif  // __HPRO_TGEOMCLUSTER_HH

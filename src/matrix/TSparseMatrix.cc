@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TSparseMatrix.cc
 // Description : class for a sparse matrix
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
 
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -31,8 +31,9 @@ namespace
 //
 // return number of non-zeroes in lower left part plus diagonal
 //
+template < typename value_t >
 size_t
-lower_left_nonzeroes ( const TSparseMatrix *  S )
+lower_left_nonzeroes ( const TSparseMatrix< value_t > *  S )
 {
     if ( S == nullptr )
         return 0;
@@ -67,12 +68,12 @@ lower_left_nonzeroes ( const TSparseMatrix *  S )
 // constructor and destructor
 //
 
-TSparseMatrix::~TSparseMatrix ()
+template < typename value_t >
+TSparseMatrix< value_t >::~TSparseMatrix ()
 {
     _rowptr.resize( 0 );
     _colind.resize( 0 );
-    _rcoeff.resize( 0 );
-    _ccoeff.resize( 0 );
+    _coeff.resize( 0 );
 }
 
 /////////////////////////////////////////////////
@@ -83,8 +84,9 @@ TSparseMatrix::~TSparseMatrix ()
 //
 // set cluster of matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::set_cluster ( const TBlockCluster * c )
+TSparseMatrix< value_t >::set_cluster ( const TBlockCluster * c )
 {
     if ( _colind.size() > 0 )
         HERROR( ERR_CONSISTENCY, "(TSparseMatrix) set_cluster",
@@ -100,9 +102,10 @@ TSparseMatrix::set_cluster ( const TBlockCluster * c )
 //
 // directly set dimension of matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::set_size ( const size_t  n,
-                          const size_t  m )
+TSparseMatrix< value_t >::set_size ( const size_t  n,
+                                     const size_t  m )
 {
     if (( _rows != n ) || ( _cols != m ))
     {
@@ -119,55 +122,18 @@ TSparseMatrix::set_size ( const size_t  n,
 }
 
 //
-// switch between complex and real format
-//
-void
-TSparseMatrix::to_real ()
-{
-    if ( ! is_complex() )
-        return;
-
-    for ( size_t  i = 0; i < _ccoeff.size(); ++i )
-        if ( std::imag( _ccoeff[i] ) != real(0) )
-        {
-            TMatrix::set_complex( true );
-            HERROR( ERR_COMPLEX, "(TSparseMatrix) to_real", "matrix has imaginary part" );
-        }// if
-    
-    _rcoeff.resize( _ccoeff.size() );
-    
-    for ( size_t  i = 0; i < _ccoeff.size(); ++i )
-        _rcoeff[i] = std::real( _ccoeff[i] );
-    
-    _ccoeff.resize( 0 );
-}
-
-void
-TSparseMatrix::to_complex ()
-{
-    if ( is_complex() )
-        return;
-    
-    _ccoeff.resize( _rcoeff.size() );
-        
-    for ( size_t  i = 0; i < _rcoeff.size(); ++i )
-        _ccoeff[i] = _rcoeff[i];
-    
-    _rcoeff.resize( 0 );
-}
-
-//
 // return a_ij
 //
-real
-TSparseMatrix::entry ( const idx_t  ai,
-                       const idx_t  aj ) const
+template < typename value_t >
+value_t
+TSparseMatrix< value_t >::entry ( const idx_t  ai,
+                                  const idx_t  aj ) const
 {
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
+    if ( ! ( this->row_is().is_in( ai ) && this->col_is().is_in( aj ) ) )
         HERROR( ERR_MAT_SIZE, "(TSparseMatrix) entry",
                 to_string( "(%d,%d) not in indexset", ai, aj ) );
         
-    if ( is_complex() )
+    if ( this->is_complex() )
         HERROR( ERR_COMPLEX, "(TSparseMatrix) entry", "matrix is complex valued" );
 
     const idx_t  lb = _rowptr[ai];
@@ -176,44 +142,22 @@ TSparseMatrix::entry ( const idx_t  ai,
     for ( idx_t  pos = lb; pos < ub; pos++ )
     {
         if ( _colind[pos] == aj )
-            return _rcoeff[pos];
+            return _coeff[pos];
     }// for
 
-    return real(0);
-}
-
-const complex
-TSparseMatrix::centry ( const idx_t  ai,
-                        const idx_t  aj ) const
-{
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
-        HERROR( ERR_MAT_SIZE, "(TSparseMatrix) centry",
-                to_string( "(%d,%d) not in indexset", ai, aj ) );
-        
-    const idx_t  lb = _rowptr[ai];
-    const idx_t  ub = _rowptr[ai+1];
-    
-    for ( idx_t  pos = lb; pos < ub; pos++ )
-    {
-        if ( _colind[pos] == aj )
-        {
-            if ( is_complex() ) return _ccoeff[pos];
-            else                return _rcoeff[pos];
-        }// if
-    }// for
-
-    return real(0);
+    return value_t(0);
 }
 
 //
 // set entry a_ij (add if not present)
 //
+template < typename value_t >
 void
-TSparseMatrix::set_entry ( const idx_t  ai,
-                           const idx_t  aj,
-                           const real   c )
+TSparseMatrix< value_t >::set_entry ( const idx_t    ai,
+                                      const idx_t    aj,
+                                      const value_t  c )
 {
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
+    if ( ! ( this->row_is().is_in( ai ) && this->col_is().is_in( aj ) ) )
         HERROR( ERR_MAT_SIZE, "(TSparseMatrix) set_entry",
                 to_string( "(%d,%d) not in indexset", ai, aj ) );
     
@@ -224,38 +168,7 @@ TSparseMatrix::set_entry ( const idx_t  ai,
     {
         if ( _colind[pos] == aj )
         {
-            if ( is_complex() ) _ccoeff[pos] = c;
-            else                _rcoeff[pos]  = c;
-            
-            return;
-        }// if
-    }// for
-
-    HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) set_entry",
-            to_string( "(%d,%d) not in sparsity pattern", ai, aj ) );
-}
-
-void
-TSparseMatrix::set_entry ( const idx_t    ai,
-                           const idx_t    aj,
-                           const complex  c )
-{
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
-        HERROR( ERR_MAT_SIZE, "(TSparseMatrix) set_entry",
-                to_string( "(%d,%d) not in indexset", ai, aj ) );
-    
-    if ( ! is_complex() && ( std::imag( c ) != real(0) ))
-        HERROR( ERR_REAL, "(TSparseMatrix) set_entry", "matrix is real valued" );
-    
-    const idx_t  lb = _rowptr[ai];
-    const idx_t  ub = _rowptr[ai+1];
-
-    for ( idx_t  pos = lb; pos < ub; pos++ )
-    {
-        if ( _colind[pos] == aj )
-        {
-            if ( is_complex() ) _ccoeff[pos] = c;
-            else                _rcoeff[pos]  = std::real( c );
+            _coeff[pos] = c;
             
             return;
         }// if
@@ -268,12 +181,13 @@ TSparseMatrix::set_entry ( const idx_t    ai,
 //
 // add to entry a_ij if present
 //
+template < typename value_t >
 void
-TSparseMatrix::add_entry ( const idx_t  ai,
-                           const idx_t  aj,
-                           const real   c )
+TSparseMatrix< value_t >::add_entry ( const idx_t    ai,
+                                      const idx_t    aj,
+                                      const value_t  c )
 {
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
+    if ( ! ( this->row_is().is_in( ai ) && this->col_is().is_in( aj ) ) )
         HERROR( ERR_MAT_SIZE, "(TSparseMatrix) add_entry",
                 to_string( "(%d,%d) not in indexset", ai, aj ) );
     
@@ -284,38 +198,7 @@ TSparseMatrix::add_entry ( const idx_t  ai,
     {
         if ( _colind[pos] == aj )
         {
-            if ( is_complex() ) _ccoeff[pos] += c;
-            else                _rcoeff[pos]  += c;
-            
-            return;
-        }// if
-    }// for
-
-    HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) add_entry",
-            to_string( "(%d,%d) not in sparsity pattern", ai, aj ) );
-}
-
-void
-TSparseMatrix::add_entry ( const idx_t    ai,
-                           const idx_t    aj,
-                           const complex  c )
-{
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
-        HERROR( ERR_MAT_SIZE, "(TSparseMatrix) add_entry",
-                to_string( "(%d,%d) not in indexset", ai, aj ) );
-    
-    if ( ! is_complex() && ( std::imag( c ) != real(0) ))
-        HERROR( ERR_REAL, "(TSparseMatrix) add_entry", "matrix is real valued" );
-    
-    const idx_t  lb = _rowptr[ai];
-    const idx_t  ub = _rowptr[ai+1];
-
-    for ( idx_t  pos = lb; pos < ub; pos++ )
-    {
-        if ( _colind[pos] == aj )
-        {
-            if ( is_complex() ) _ccoeff[pos] += c;
-            else                _rcoeff[pos]  += std::real( c );
+            _coeff[pos] += c;
             
             return;
         }// if
@@ -328,11 +211,12 @@ TSparseMatrix::add_entry ( const idx_t    ai,
 //
 // add to entry a_ij (insert if not present)
 //
+template < typename value_t >
 bool
-TSparseMatrix::has_entry ( const idx_t  ai,
-                           const idx_t  aj ) const
+TSparseMatrix< value_t >::has_entry ( const idx_t  ai,
+                                      const idx_t  aj ) const
 {
-    if ( ! ( row_is().is_in( ai ) && col_is().is_in( aj ) ) )
+    if ( ! ( this->row_is().is_in( ai ) && this->col_is().is_in( aj ) ) )
         HERROR( ERR_MAT_SIZE, "(TSparseMatrix) has_entry",
                 to_string( "(%d,%d) not in indexset", ai, aj ) );
     
@@ -351,8 +235,9 @@ TSparseMatrix::has_entry ( const idx_t  ai,
 //
 // sort list per row wrt column
 //
+template < typename value_t >
 void
-TSparseMatrix::sort_entries ()
+TSparseMatrix< value_t >::sort_entries ()
 {
     //
     // sort CRS data structure
@@ -371,11 +256,7 @@ TSparseMatrix::sort_entries ()
                 if ( _colind[l] > _colind[l+1] )
                 {
                     std::swap( _colind[l], _colind[l+1] );
-                    
-                    if ( is_complex() )
-                        std::swap( _ccoeff[l], _ccoeff[l+1] );
-                    else
-                        std::swap( _rcoeff[l], _rcoeff[l+1] );
+                    std::swap( _coeff[l],  _coeff[l+1] );
                     
                     changed = true;
                 }// if
@@ -389,12 +270,11 @@ TSparseMatrix::sort_entries ()
 //
 // initialise CRS data for n entries
 //
+template < typename value_t >
 void
-TSparseMatrix::init ( const size_t nnz )
+TSparseMatrix< value_t >::init ( const size_t nnz )
 {
-    if ( is_complex() ) _ccoeff.resize( nnz );
-    else                _rcoeff.resize( nnz );
-    
+    _coeff.resize( nnz );
     _colind.resize( nnz );
     _rowptr.resize( rows() + 1 );
 
@@ -406,20 +286,17 @@ TSparseMatrix::init ( const size_t nnz )
 //
 // import CRS data
 //
-template <typename T_idx, typename T_val>
+template < typename value_t >
+template < typename T_idx >
 void
-TSparseMatrix::import_crs ( const size_t   nrows,
-                            const size_t   ncols,
-                            const size_t   nnz,
-                            const T_idx *  arowptr,
-                            const T_idx *  acolind,
-                            const T_val *  acoeffs )
+TSparseMatrix< value_t >::import_crs ( const size_t     nrows,
+                                       const size_t     ncols,
+                                       const size_t     nnz,
+                                       const T_idx *    arowptr,
+                                       const T_idx *    acolind,
+                                       const value_t *  acoeffs )
 {
-    const bool  is_complex_val = is_complex_type< T_val >::value;
-
     init( 0 );
-
-    set_complex( is_complex_val );
 
     _rows = nrows;
     _cols = ncols;
@@ -430,42 +307,26 @@ TSparseMatrix::import_crs ( const size_t   nrows,
     for ( size_t i = 0; i <= nrows; ++i ) _rowptr[i] = arowptr[i];
     for ( size_t i = 0; i <  nnz;   ++i ) _colind[i] = acolind[i];
 
-    if ( is_complex_val )
-    {
-        _ccoeff.resize( nnz );
-        _rcoeff.resize( 0 );
+    _coeff.resize( nnz );
 
-        for ( size_t i = 0; i < nnz; ++i )
-            _ccoeff[i]  = acoeffs[i];
-    }// if
-    else
-    {
-        _rcoeff.resize( nnz );
-        _ccoeff.resize( 0 );
-
-        for ( size_t i = 0; i < nnz; ++i )
-            _rcoeff[i]  = std::real( acoeffs[i] ); // use std::real(·) to prevent compiler error
-                                           // in complex valued case
-    }// else
+    for ( size_t i = 0; i < nnz; ++i )
+        _coeff[i]  = acoeffs[i];
 }
 
 //
 // import CCS data
 //
-template <typename T_idx, typename T_val>
+template < typename value_t >
+template < typename T_idx >
 void
-TSparseMatrix::import_ccs ( const size_t   nrows,
-                            const size_t   ncols,
-                            const size_t   nnz,
-                            const T_idx *  acolptr,
-                            const T_idx *  arowind,
-                            const T_val *  acoeffs )
+TSparseMatrix< value_t >::import_ccs ( const size_t     nrows,
+                                       const size_t     ncols,
+                                       const size_t     nnz,
+                                       const T_idx *    acolptr,
+                                       const T_idx *    arowind,
+                                       const value_t *  acoeffs )
 {
-    const bool  is_complex_val = is_complex_type< T_val >::value;
-
     init( 0 );
-
-    set_complex( is_complex_val );
 
     _rows = nrows;
     _cols = ncols;
@@ -473,16 +334,7 @@ TSparseMatrix::import_ccs ( const size_t   nrows,
     _rowptr.resize( nrows+1 );
     _colind.resize( nnz );
 
-    if ( is_complex_val )
-    {
-        _rcoeff.resize( 0 );
-        _ccoeff.resize( nnz );
-    }// if
-    else
-    {
-        _rcoeff.resize( nnz );
-        _ccoeff.resize( 0 );
-    }// else
+    _coeff.resize( nnz );
 
     // count number of entries per column
     for ( idx_t  col = 0; col < idx_t(ncols); ++col )
@@ -524,11 +376,7 @@ TSparseMatrix::import_ccs ( const size_t   nrows,
             const idx_t  idx = _rowptr[row] + rowpos[row];
 
             _colind[ idx ] = col;
-
-            if ( is_complex_val )
-                _ccoeff[ idx ] = acoeffs[ j ];
-            else
-                _rcoeff[ idx ] = std::real( acoeffs[ j ] ); // for std::real(·) see above
+            _coeff[  idx ] = acoeffs[ j ];
 
             rowpos[row]++;
         }// for
@@ -538,42 +386,17 @@ TSparseMatrix::import_ccs ( const size_t   nrows,
 //
 // export internal data to CCS format (real valued)
 //
-template <typename T_val>
-T_val
-sparse_rcoeff ( const TSparseMatrix *  S,
-               const idx_t            i );
-
-template <>
-inline real
-sparse_rcoeff< real > ( const TSparseMatrix *  S,
-                       const idx_t            i )
-{
-    return S->rcoeff( i );
-}
-
-template <>
-inline complex
-sparse_rcoeff< complex > ( const TSparseMatrix *  S,
-                          const idx_t            i )
-{
-    return S->ccoeff( i );
-}
-
-template <typename T_idx, typename T_val>
+template < typename value_t >
+template < typename T_idx >
 void
-TSparseMatrix::export_ccs  ( vector< T_idx > &  colptr,
-                             vector< T_idx > &  rowind,
-                             vector< T_val > &  acoeffs,
-                             const bool         use_sym ) const
+TSparseMatrix< value_t >::export_ccs  ( vector< T_idx > &    colptr,
+                                        vector< T_idx > &    rowind,
+                                        vector< value_t > &  acoeffs,
+                                        const bool           use_sym ) const
 {
-    const bool  is_complex_val = is_complex_type< T_val >::value;
-
-    if ( is_complex() && ! is_complex_val )
-        HERROR( ERR_REAL_CMPLX, "(TSparseMatrix) export_ccs", "" );
-
     const size_t  nrows  = rows();
     const size_t  ncols  = cols();
-    const bool    is_sym = use_sym && ( is_symmetric() || is_hermitian() );
+    const bool    is_sym = use_sym && ( this->is_symmetric() || this->is_hermitian() );
     const size_t  nnz    = ( is_sym ? lower_left_nonzeroes( this ) : n_non_zero() );
 
     colptr.resize( ncols+1 );
@@ -634,7 +457,7 @@ TSparseMatrix::export_ccs  ( vector< T_idx > &  colptr,
                     continue;
 
                 rowind[ idx ]  = T_idx( row );
-                acoeffs[ idx ] = sparse_rcoeff< T_val >( this, j );
+                acoeffs[ idx ] = coeff(j);
 
                 colpos[col]++;
             }// for
@@ -647,7 +470,7 @@ TSparseMatrix::export_ccs  ( vector< T_idx > &  colptr,
                 const idx_t  idx = colptr[col] + colpos[col];
 
                 rowind[ idx ]  = T_idx( row );
-                acoeffs[ idx ] = sparse_rcoeff< T_val >( this, j );
+                acoeffs[ idx ] = coeff(j);
 
                 colpos[col]++;
             }// for
@@ -659,9 +482,10 @@ TSparseMatrix::export_ccs  ( vector< T_idx > &  colptr,
 //
 // permute entries in sparse matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::permute ( const TPermutation &  rowperm,
-                         const TPermutation &  colperm )
+TSparseMatrix< value_t >::permute ( const TPermutation &  rowperm,
+                                    const TPermutation &  colperm )
 {
     TPermutation  inv_rowperm( rowperm );
 
@@ -669,18 +493,9 @@ TSparseMatrix::permute ( const TPermutation &  rowperm,
 
     vector< idx_t >    new_rowptr;
     vector< idx_t >    new_colind;
-    vector< real >     new_rcoeff;
-    vector< complex >  new_ccoeff;
+    vector< value_t >  new_coeff;
 
-    if ( is_complex() )
-    {
-        new_ccoeff.resize( _ccoeff.size() );
-    }// if
-    else
-    {
-        new_rcoeff.resize( _rcoeff.size() );
-    }// else
-    
+    new_coeff.resize(  _coeff.size() );
     new_colind.resize( _colind.size() );
     new_rowptr.resize( _rowptr.size() );
 
@@ -703,9 +518,7 @@ TSparseMatrix::permute ( const TPermutation &  rowperm,
         {
             const idx_t   new_col = colperm.permute( _colind[j] );
 
-            if ( is_complex() ) new_ccoeff[cpos] = _ccoeff[j];
-            else                new_rcoeff[cpos]  = _rcoeff[j];
-            
+            new_coeff[cpos]  = _coeff[j];
             new_colind[cpos] = new_col;
         }// for
     }// for
@@ -716,8 +529,7 @@ TSparseMatrix::permute ( const TPermutation &  rowperm,
     // copy to local data
     //
     
-    for ( size_t i = 0; i < _rcoeff.size();  i++ ) _rcoeff[i]  = new_rcoeff[i];
-    for ( size_t i = 0; i < _ccoeff.size(); i++ ) _ccoeff[i] = new_ccoeff[i];
+    for ( size_t i = 0; i < _coeff.size();  i++ ) _coeff[i]  = new_coeff[i];
     for ( size_t i = 0; i < _colind.size(); i++ ) _colind[i] = new_colind[i];
     for ( size_t i = 0; i < _rowptr.size(); i++ ) _rowptr[i] = new_rowptr[i];
 }
@@ -725,8 +537,9 @@ TSparseMatrix::permute ( const TPermutation &  rowperm,
 //
 // check symmetry of matrix, return true if symmetric
 //
+template < typename value_t >
 bool
-TSparseMatrix::test_symmetry () 
+TSparseMatrix< value_t >::test_symmetry () 
 {
     //
     // go through sparsity pattern and compare entries
@@ -738,7 +551,7 @@ TSparseMatrix::test_symmetry ()
     bool         is_sym  = true;
     bool         is_herm = true;
 
-    set_nonsym();
+    this->set_nonsym();
     
     for ( idx_t  i = 0; i < n; i++ )
     {
@@ -756,23 +569,15 @@ TSparseMatrix::test_symmetry ()
             if (( col >= n ) || ( i >= m ))
                 is_herm = is_sym = false;
             
-            if ( is_complex() )
-            {
-                const complex  f = centry( col, i );
+            const value_t  f = entry( col, i );
 
-                if      ( _ccoeff[j] != f         ) is_sym  = false;
-                else if ( _ccoeff[j] != conj( f ) ) is_herm = false;
-            }// if
-            else
-            {
-                if ( _rcoeff[j] != entry( col, i ) )
-                    is_herm = is_sym = false;
-            }// else
+            if ( _coeff[j] != f               ) is_sym  = false;
+            if ( _coeff[j] != Math::conj( f ) ) is_herm = false;
         }// for
     }// for
 
-    if      ( is_sym  ) set_symmetric();
-    else if ( is_herm ) set_hermitian();
+    if      ( is_sym  ) this->set_symmetric();
+    else if ( is_herm ) this->set_hermitian();
     
     return is_sym || is_herm;
 }
@@ -780,14 +585,16 @@ TSparseMatrix::test_symmetry ()
 //
 // compute average/maximal number of entries per row
 //
+template < typename value_t >
 size_t
-TSparseMatrix::avg_entries_per_row () const
+TSparseMatrix< value_t >::avg_entries_per_row () const
 {
     return _colind.size() / rows();
 }
     
+template < typename value_t >
 size_t
-TSparseMatrix::max_entries_per_row () const
+TSparseMatrix< value_t >::max_entries_per_row () const
 {
     size_t max_entries = 0;
 
@@ -800,28 +607,18 @@ TSparseMatrix::max_entries_per_row () const
 //
 // return true if matrix contains zero or elements < ε on diagonal
 //
+template < typename value_t >
 bool
-TSparseMatrix::has_diag_zero ( const real  eps )
+TSparseMatrix< value_t >::has_diag_zero ( const real_t  eps )
 {
     const size_t  nrows = rows();
     const size_t  ncols = cols();
 
-    if ( is_complex() )
+    for ( idx_t  i = 0; i < std::min( idx_t( nrows ), idx_t( ncols ) ); ++i )
     {
-        for ( idx_t  i = 0; i < std::min( idx_t( nrows ), idx_t( ncols ) ); ++i )
-        {
-            if ( ! has_entry( i, i ) || ( Math::abs( centry( i, i ) ) < eps ))
-                return true;
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < std::min( idx_t( nrows ), idx_t( ncols ) ); ++i )
-        {
-            if ( ! has_entry( i, i ) || ( Math::abs( entry( i, i ) ) < eps ))
-                return true;
-        }// for
-    }// else
+        if ( ! has_entry( i, i ) || ( Math::abs( entry( i, i ) ) < eps ))
+            return true;
+    }// for
 
     return false;
 }
@@ -836,45 +633,38 @@ namespace
 //
 // return ∑_j |S_ij|, j≠i
 //
-real
+template < typename value_t >
+real_type_t< value_t >
 comp_off_diag ( const idx_t            i,
-                const TSparseMatrix *  S )
+                const TSparseMatrix< value_t > *  S )
 {
-    real         retval = real(0);
+    using  real_t = typename TSparseMatrix< value_t >::real_t;
+    
+    real_t       retval = real_t(0);
     const idx_t  lb     = S->rowptr( i );
     const idx_t  ub     = S->rowptr( i+1 );
 
-    if ( S->is_complex() )
+    for ( idx_t  j = lb; j < ub; j++ )
     {
-        for ( idx_t  j = lb; j < ub; j++ )
-        {
-            if ( S->colind( j ) != i )
-                retval += Math::abs( S->ccoeff( j ) );
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  j = lb; j < ub; j++ )
-        {
-            if ( S->colind( j ) != i )
-                retval += Math::abs( S->rcoeff( j ) );
-        }// for
-    }// else
+        if ( S->colind( j ) != i )
+            retval += Math::abs( S->coeff( j ) );
+    }// for
 
     return retval;
 }
 
 }// namespace anonymous
 
+template < typename value_t >
 bool
-TSparseMatrix::is_diag_dom ( const bool  weak )
+TSparseMatrix< value_t >::is_diag_dom ( const bool  weak )
 {
     if ( weak )
     {
-        for ( auto  i : row_is() )
+        for ( auto  i : this->row_is() )
         {
-            const real  off_diag = comp_off_diag( i, this );
-            const real  diag     = Math::abs( is_complex() ? centry( i, i ) : entry( i, i ) );
+            const real_t  off_diag = comp_off_diag( i, this );
+            const real_t  diag     = Math::abs( entry( i, i ) );
             
             if ( diag < off_diag )
                 return false;
@@ -882,10 +672,10 @@ TSparseMatrix::is_diag_dom ( const bool  weak )
     }// if
     else
     {
-        for ( auto  i : row_is() )
+        for ( auto  i : this->row_is() )
         {
-            const real  off_diag = comp_off_diag( i, this );
-            const real  diag     = Math::abs( is_complex() ? centry( i, i ) : entry( i, i ) );
+            const real_t  off_diag = comp_off_diag( i, this );
+            const real_t  diag     = Math::abs( entry( i, i ) );
             
             if ( diag <= off_diag )
                 return false;
@@ -898,15 +688,16 @@ TSparseMatrix::is_diag_dom ( const bool  weak )
 //
 // return factor α, such that S + α·I is diagonally dominant (this = S)
 //
-real
-TSparseMatrix::diag_dom_factor ()
+template < typename value_t >
+typename TSparseMatrix< value_t >::real_t
+TSparseMatrix< value_t >::diag_dom_factor ()
 {
-    real  alpha = real(0);
+    real_t  alpha = real_t(0);
     
-    for ( auto  i : row_is() )
+    for ( auto  i : this->row_is() )
     {
-        const real  off_diag = comp_off_diag( i, this );
-        const real  diag     = Math::abs( is_complex() ? centry( i, i ) : entry( i, i ) );
+        const real_t  off_diag = comp_off_diag( i, this );
+        const real_t  diag     = Math::abs( entry( i, i ) );
 
         if ( diag < off_diag )
             alpha = std::max( alpha, off_diag - diag );
@@ -918,8 +709,9 @@ TSparseMatrix::diag_dom_factor ()
 //
 // some tests on the matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::check_matrix () const
+TSparseMatrix< value_t >::check_matrix () const
 {
     //
     // print number of entries per row
@@ -962,13 +754,13 @@ TSparseMatrix::check_matrix () const
     
     for ( size_t row = 0; row < rows(); row++ )
     {
-        const idx_t lb      = _colind[row];
-        const idx_t ub      = _colind[row+1];
-        real       row_sum = real(0);
+        const idx_t  lb      = _colind[row];
+        const idx_t  ub      = _colind[row+1];
+        value_t      row_sum = value_t(0);
 
         for ( idx_t j = lb; j < ub; j++ )
         {
-            row_sum += _rcoeff[j];
+            row_sum += _coeff[j];
         }// for
 
         if ( Math::abs( row_sum ) < 1e-8 )
@@ -990,33 +782,27 @@ TSparseMatrix::check_matrix () const
 //
 // scale matrix by constant factor
 //
+template < typename value_t >
 void
-TSparseMatrix::scale ( const real f )
+TSparseMatrix< value_t >::scale ( const value_t  f )
 {
-    if ( f == real(1) )
+    if ( f == value_t(1) )
         return;
 
-    if ( is_complex() )
-    {
-        for ( size_t i = 0; i < _rcoeff.size(); i++ )
-            _ccoeff[i] *= f;
-    }// if
-    else
-    {
-        for ( size_t i = 0; i < _rcoeff.size(); i++ )
-            _rcoeff[i] *= f;
-    }// else
+    for ( size_t i = 0; i < _coeff.size(); i++ )
+        _coeff[i] *= f;
 }
     
 //
 // matrix-vector-multiplication
 //
+template < typename value_t >
 void
-TSparseMatrix::mul_vec ( const real      alpha,
-                         const TVector * x,
-                         const real      beta,
-                         TVector *       y,
-                         const matop_t   op ) const
+TSparseMatrix< value_t >::mul_vec ( const value_t               alpha,
+                                    const TVector< value_t > *  x,
+                                    const value_t               beta,
+                                    TVector< value_t > *        y,
+                                    const matop_t               op ) const
 {
     //
     // check for nullptr, index set and type
@@ -1025,17 +811,14 @@ TSparseMatrix::mul_vec ( const real      alpha,
     if ( x == nullptr ) HERROR( ERR_ARG, "(TSparseMatrix) mul_vec", "x = nullptr" );
     if ( y == nullptr ) HERROR( ERR_ARG, "(TSparseMatrix) mul_vec", "y = nullptr" );
 
-    if (( is_complex() != x->is_complex() ) || ( is_complex() != y->is_complex() ))
-        HERROR( ERR_REAL_CMPLX, "(TSparseMatrix) mul_vec", "" );
-    
     if ( op == MATOP_NORM )
     {
-        if (( row_is() != y->is() ) || ( col_is() != x->is() ))
+        if (( this->row_is() != y->is() ) || ( this->col_is() != x->is() ))
             HERROR( ERR_VEC_STRUCT, "(TSparseMatrix) mul_vec", "incompatible vector index set" );
     }// if
     else
     {
-        if (( col_is() != y->is() ) || ( row_is() != x->is() ))
+        if (( this->col_is() != y->is() ) || ( this->row_is() != x->is() ))
             HERROR( ERR_VEC_STRUCT, "(TSparseMatrix) mul_vec", "incompatible vector index set" );
     }// if
     
@@ -1047,121 +830,83 @@ TSparseMatrix::mul_vec ( const real      alpha,
     // apply β
     //
 
-    if      ( beta == real(0) ) y->fill( real(0) );
-    else if ( beta != real(1) ) y->scale( beta );
+    if      ( beta == value_t(0) ) y->fill( value_t(0) );
+    else if ( beta != value_t(1) ) y->scale( beta );
 
     //
     // stop, if nothing to do
     //
     
-    if (( alpha == real(0) ) || ( n_non_zero() == 0 ))
+    if (( alpha == value_t(0) ) || ( n_non_zero() == 0 ))
         return;
 
     //
     // entry-wise multiplication
     //
 
-    const TScalarVector *  sx = cptrcast( x, TScalarVector );
-    TScalarVector *        sy = ptrcast( y, TScalarVector );
-    const size_t           n  = rows();
+    auto        sx = cptrcast( x, TScalarVector< value_t > );
+    auto        sy =  ptrcast( y, TScalarVector< value_t > );
+    const auto  n  = rows();
             
-    if ( is_complex() )
+    if ( op == apply_normal )
     {
-        if ( op == MATOP_NORM )
-        {
-            //
-            // complex matrix
-            //
+        //
+        // normal matrix
+        //
                 
-            for ( idx_t i = 0; i < idx_t(n); i++ )
-            {
-                const idx_t  lb = _rowptr[i];
-                const idx_t  ub = _rowptr[i+1];
-                complex      s  = real(0);
+        for ( idx_t i = 0; i < idx_t(n); i++ )
+        {
+            const idx_t  lb = _rowptr[i];
+            const idx_t  ub = _rowptr[i+1];
+            value_t      s  = value_t(0);
                     
-                for ( idx_t j = lb; j < ub; j++ )
-                    s += _ccoeff[j] * sx->blas_cvec()( _colind[j] );
+            for ( idx_t j = lb; j < ub; j++ )
+                s += _coeff[j] * sx->blas_vec()( _colind[j] );
 
-                sy->blas_cvec()( i ) += alpha * s;
-            }// for
-        }// if
-        else if ( op == MATOP_TRANS )
-        {
-            //
-            // complex, transposed matrix
-            //
-                
-            for ( idx_t  i = 0; i < idx_t(n); i++ )
-            {
-                const idx_t    lb = _rowptr[i];
-                const idx_t    ub = _rowptr[i+1];
-                const complex  a  = alpha * sx->blas_cvec()( i );
-                
-                for ( idx_t j = lb; j < ub; j++ )
-                    sy->blas_cvec()( _colind[j] ) += _ccoeff[j] * a;
-            }// for
-        }// if
-        else if ( op == MATOP_ADJ )
-        {
-            //
-            // complex, adjoint matrix
-            //
-                
-            for ( idx_t  i = 0; i < idx_t(n); i++ )
-            {
-                const idx_t    lb = _rowptr[i];
-                const idx_t    ub = _rowptr[i+1];
-                const complex  a  = alpha * sx->blas_cvec()( i );
-
-                for ( idx_t j = lb; j < ub; j++ )
-                    sy->blas_cvec()( _colind[j] ) += conj( _ccoeff[j] ) * a;
-            }// for
-        }// if
+            sy->blas_vec()( i ) += alpha * s;
+        }// for
     }// if
-    else
+    else if ( op == apply_transposed )
     {
-        if ( op == MATOP_NORM )
-        {
-            //
-            // real matrix
-            //
-
-            for ( idx_t  i = 0; i < idx_t(n); i++ )
-            {
-                const idx_t  lb = _rowptr[i];
-                const idx_t  ub = _rowptr[i+1];
-                real         s  = 0;
-                    
-                for ( idx_t j = lb; j < ub; j++ )
-                    s += _rcoeff[j] * sx->blas_rvec()( _colind[j] );
-                    
-                sy->blas_rvec()( i ) += alpha * s;
-            }// for
-        }// if
-        else
-        {
-            //
-            // real, transposed matrix
-            //
+        //
+        // transposed matrix
+        //
                 
-            for ( idx_t  i = 0; i < idx_t(n); i++ )
-            {
-                const idx_t  lb = _rowptr[i];
-                const idx_t  ub = _rowptr[i+1];
-                const real   a  = alpha * sx->blas_rvec()( i );
+        for ( idx_t  i = 0; i < idx_t(n); i++ )
+        {
+            const idx_t    lb = _rowptr[i];
+            const idx_t    ub = _rowptr[i+1];
+            const value_t  a  = alpha * sx->blas_vec()( i );
+                
+            for ( idx_t j = lb; j < ub; j++ )
+                sy->blas_vec()( _colind[j] ) += _coeff[j] * a;
+        }// for
+    }// if
+    else if ( op == MATOP_ADJ )
+    {
+        //
+        // adjoint matrix
+        //
+                
+        for ( idx_t  i = 0; i < idx_t(n); i++ )
+        {
+            const idx_t    lb = _rowptr[i];
+            const idx_t    ub = _rowptr[i+1];
+            const value_t  a  = alpha * sx->blas_vec()( i );
 
-                for ( idx_t  j = lb; j < ub; j++ )
-                    sy->blas_rvec()( _colind[j] ) += _rcoeff[j] * a;
-            }// for
-        }// else
-    }// else
+            for ( idx_t j = lb; j < ub; j++ )
+                sy->blas_vec()( _colind[j] ) += Math::conj( _coeff[j] ) * a;
+        }// for
+    }// if
 }
 
 //
 // compute this = this + a * M
 //
+template < typename value_t >
 void
-TSparseMatrix::add ( const real a, const TMatrix * M )
+TSparseMatrix< value_t >::add ( const value_t               a,
+                                const TMatrix< value_t > *  M )
 {
     if ( M == nullptr )
         HERROR( ERR_ARG, "(TSparseMatrix) add", "matrix is nullptr" );
@@ -1169,12 +914,12 @@ TSparseMatrix::add ( const real a, const TMatrix * M )
     if ( ! IS_TYPE( M, TSparseMatrix ) )
         HERROR( ERR_MAT_TYPE, "(TSparseMatrix) add", M->typestr() );
 
-    if ( a == real(0) )
+    if ( a == value_t(0) )
         return;
     
-    const TSparseMatrix * S = cptrcast( M, TSparseMatrix );
+    auto  S = cptrcast( M, TSparseMatrix< value_t > );
 
-    if (( _rcoeff.size()  != S->_rcoeff.size() ) ||
+    if (( _coeff.size()  != S->_coeff.size() ) ||
         ( _colind.size() != S->_colind.size() ))
         HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) add", "argument has different CRS format" );
     
@@ -1190,202 +935,10 @@ TSparseMatrix::add ( const real a, const TMatrix * M )
         if ( _colind[i] != S->_colind[i] )
             HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) add", "argument has different CRS format" );
     
-    if ( S->is_complex() != is_complex() )
-        HERROR( ERR_NOT_IMPL, "(TSparseMatrix) add", "different field type (real <=> complex)" );
-    
     // finally: same format, just add entries
     // (assuming same ordering !!!)
-    if ( is_complex() )
-    {
-        for ( size_t  i = 0; i < _ccoeff.size(); i++ )
-            _ccoeff[i] += a * S->_ccoeff[i];
-    }// if
-    else
-    {
-        for ( size_t  i = 0; i < _rcoeff.size(); i++ )
-            _rcoeff[i] += a * S->_rcoeff[i];
-    }// else
-}
-
-/////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
-//
-// scale matrix by constant factor
-//
-void
-TSparseMatrix::cscale ( const complex f )
-{
-    if ( f == real(1) )
-        return;
-
-    if ( is_complex() || ( std::imag( f ) != real(0) ))
-    {
-        set_complex( true );
-        
-        for ( size_t i = 0; i < _ccoeff.size(); i++ )
-            _ccoeff[i] *= f;
-    }// if
-    else
-    {
-        const real  g = std::real( f );
-        
-        for ( size_t i = 0; i < _rcoeff.size(); i++ )
-            _rcoeff[i] *= g;
-    }// else
-}
-    
-//
-// matrix-vector-multiplication
-//
-void
-TSparseMatrix::cmul_vec ( const complex   alpha,
-                          const TVector * x,
-                          const complex   beta,
-                          TVector       * y,
-                          const matop_t   op ) const
-{
-    //
-    // check for nullptr, index set and type
-    //
-    
-    if ( x == nullptr ) HERROR( ERR_ARG, "(TSparseMatrix) cmul_vec", "x = nullptr" );
-    if ( y == nullptr ) HERROR( ERR_ARG, "(TSparseMatrix) cmul_vec", "y = nullptr" );
-    
-    if ( ! is_complex() || ( is_complex() != x->is_complex() ) || ( is_complex() != y->is_complex() ))
-        HERROR( ERR_REAL_CMPLX, "(TSparseMatrix) cmul_vec", "" );
-
-    if ( op == MATOP_NORM )
-    {
-        if (( row_is() != y->is() ) || ( col_is() != x->is() ))
-            HERROR( ERR_VEC_STRUCT, "(TSparseMatrix) cmul_vec", "incompatible vector index set" );
-    }// if
-    else
-    {
-        if (( col_is() != y->is() ) || ( row_is() != x->is() ))
-            HERROR( ERR_VEC_STRUCT, "(TSparseMatrix) cmul_vec", "incompatible vector index set" );
-    }// if
-    
-    if ( ! IS_TYPE( x, TScalarVector ) || ! IS_TYPE( y, TScalarVector ) )
-        HERROR( ERR_VEC_TYPE, "(TSparseMatrix) cmul_vec",
-                y->typestr() + " += TSparseMatrix * " + x->typestr() );
-    
-    //
-    // apply β
-    //
-
-    if      ( beta == real(0) ) y->fill( real(0) );
-    else if ( beta != real(1) ) y->cscale( beta );
-
-    //
-    // stop, if nothing to do
-    //
-    
-    if (( alpha == complex(0) ) || ( n_non_zero() == 0 ))
-        return;
-
-    //
-    // entry-wise multiplication
-    //
-    
-    const TScalarVector  * sx = cptrcast( x, TScalarVector );
-    TScalarVector        * sy = ptrcast( y, TScalarVector );
-    const size_t           n  = rows();
-
-    if ( op == MATOP_NORM )
-    {
-        //
-        // complex matrix, complex argument
-        //
-                
-        for ( idx_t  i = 0; i < idx_t(n); i++ )
-        {
-            const idx_t  lb = _rowptr[i];
-            const idx_t  ub = _rowptr[i+1];
-            complex      s  = real(0);
-
-            for ( idx_t j = lb; j < ub; j++ )
-                s += _ccoeff[j] * sx->blas_cvec()( _colind[j] );
-
-            sy->blas_cvec()( i ) += alpha * s;
-        }// for
-    }// if
-    else if ( op == MATOP_TRANS )
-    {
-        //
-        // complex, transposed matrix, complex argument
-        //
-                
-        for ( idx_t  i = 0; i < idx_t(n); i++ )
-        {
-            const idx_t    lb = _rowptr[i];
-            const idx_t    ub = _rowptr[i+1];
-            const complex  a  = alpha * sx->blas_cvec()( i );
-
-            for ( idx_t j = lb; j < ub; j++ )
-                sy->blas_cvec()( _colind[j] ) += _ccoeff[j] * a;
-        }// for
-    }// if
-    else if ( op == MATOP_ADJ )
-    {
-        //
-        // complex, adjoint matrix, complex argument
-        //
-                
-                
-        for ( idx_t  i = 0; i < idx_t(n); i++ )
-        {
-            const idx_t    lb = _rowptr[i];
-            const idx_t    ub = _rowptr[i+1];
-            const complex  a  = alpha * sx->blas_cvec()( i );
-
-            for ( idx_t j = lb; j < ub; j++ )
-                sy->blas_cvec()( _colind[j] ) += conj( _ccoeff[j] ) * a;
-        }// for
-    }// if
-}
-
-//
-// compute this = this + a * M
-//
-void
-TSparseMatrix::cadd ( const complex a, const TMatrix * M )
-{
-    if ( M == nullptr )
-        HERROR( ERR_ARG, "(TSparseMatrix) cadd", "argument is nullptr" );
-
-    if ( ! IS_TYPE( M, TSparseMatrix ) )
-        HERROR( ERR_MAT_TYPE, "(TSparseMatrix) cadd", M->typestr() );
-
-    if ( a == real(0) )
-        return;
-    
-    if ( ! is_complex() || ! M->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TSparseMatrix) cadd", "" );
-    
-    const TSparseMatrix * S = cptrcast( M, TSparseMatrix );
-
-    if (( _ccoeff.size() != S->_ccoeff.size() ) ||
-        ( _colind.size() != S->_colind.size() ))
-        HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) cadd", "argument has different CRS format" );
-        
-    //
-    // check for same structure
-    //
-
-    for ( size_t i = 0; i < _rowptr.size(); i++ )
-        if ( _rowptr[i] != S->_rowptr[i] )
-            HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) cadd", "argument has different CRS format" );
-        
-    for ( size_t i = 0; i < _colind.size(); i++ )
-        if ( _colind[i] != S->_colind[i] )
-            HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) cadd", "argument has different CRS format" );
-
-    // finally: same format, just add entries
-    for ( size_t i = 0; i < _ccoeff.size(); i++ )
-        _ccoeff[i] += a * S->_ccoeff[i];
+    for ( size_t  i = 0; i < _coeff.size(); i++ )
+        _coeff[i] += a * S->_coeff[i];
 }
 
 /////////////////////////////////////////////////
@@ -1396,26 +949,29 @@ TSparseMatrix::cadd ( const complex a, const TMatrix * M )
 //
 // output of matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::print ( const uint ofs ) const
+TSparseMatrix< value_t >::print ( const uint ofs ) const
 {
-    TMatrix::print( ofs );
+    TMatrix< value_t >::print( ofs );
 }
 
 //
 // serialisation
 //
 
+template < typename value_t >
 void
-TSparseMatrix::read  ( TByteStream & s )
+TSparseMatrix< value_t >::read  ( TByteStream & s )
 {
     return build( s );
 }
 
+template < typename value_t >
 void
-TSparseMatrix::build ( TByteStream & s )
+TSparseMatrix< value_t >::build ( TByteStream & s )
 {
-    TMatrix::read( s );
+    TMatrix< value_t >::read( s );
 
     s.get( & _rows, sizeof(size_t) );
     s.get( & _cols, sizeof(size_t) );
@@ -1433,20 +989,14 @@ TSparseMatrix::build ( TByteStream & s )
     s.get( _rowptr.data(), _rows+1 * sizeof(idx_t) );
     s.get( _colind.data(), nnz * sizeof(idx_t) );
     
-    if ( is_complex() )
-    {
-        s.get( _ccoeff.data(), nnz * sizeof(complex) );
-    }// if
-    else
-    {
-        s.get( _rcoeff.data(), nnz * sizeof(real) );
-    }// else
+    s.get( _coeff.data(), nnz * sizeof(value_t) );
 }
 
+template < typename value_t >
 void
-TSparseMatrix::write ( TByteStream & s ) const
+TSparseMatrix< value_t >::write ( TByteStream & s ) const
 {
-    TMatrix::write( s );
+    TMatrix< value_t >::write( s );
 
     s.put( & _rows, sizeof(size_t) );
     s.put( & _cols, sizeof(size_t) );
@@ -1456,31 +1006,22 @@ TSparseMatrix::write ( TByteStream & s ) const
     s.put( & nnz, sizeof(nnz) );
     s.put( const_cast< vector< idx_t > & >(_rowptr).data(), sizeof(size_t) * _rowptr.size() );
     s.put( const_cast< vector< idx_t > & >(_colind).data(), sizeof(size_t) * _colind.size() );
-    
-    if ( is_complex() )
-    {
-        s.put( const_cast< vector< complex > & >(_ccoeff).data(), sizeof(complex) * _ccoeff.size() );
-    }// if
-    else
-    {
-        s.put( const_cast< vector< real > & >(_rcoeff).data(),  sizeof(real) * _rcoeff.size() );
-    }// else
+    s.put( const_cast< vector< value_t > & >(_coeff).data(), sizeof(value_t) * _coeff.size() );
 }
 
 //
 // returns size of object in bytestream
 //
+template < typename value_t >
 size_t
-TSparseMatrix::bs_size () const
+TSparseMatrix< value_t >::bs_size () const
 {
-    size_t  size = TMatrix::bs_size() + 2*sizeof(size_t);
+    size_t  size = TMatrix< value_t >::bs_size() + 2*sizeof(size_t);
 
     size += sizeof(size_t);
     size += _rowptr.size() * sizeof(size_t);
     size += _colind.size() * sizeof(size_t);
-
-    if ( is_complex() ) size += _ccoeff.size() * sizeof(complex);
-    else                size += _rcoeff.size()  * sizeof(real);
+    size += _coeff.size() * sizeof(value_t);
 
     return size;
 }
@@ -1493,42 +1034,44 @@ TSparseMatrix::bs_size () const
 //
 // transpose matrix
 //
+template < typename value_t >
 void
-TSparseMatrix::transpose ()
+TSparseMatrix< value_t >::transpose ()
 {
     // to be done
     HERROR( ERR_NOT_IMPL, "(TSparseMatrix) transpose", "" );
 
-    TMatrix::transpose();
+    TMatrix< value_t >::transpose();
 }
     
 //
 // conjugate matrix coefficients
 //
+template < typename value_t >
 void
-TSparseMatrix::conjugate ()
+TSparseMatrix< value_t >::conjugate ()
 {
-    if ( is_complex() && ! is_hermitian() )
+    if ( this->is_complex() && ! this->is_hermitian() )
     {
-        for ( size_t  i = 0; i < _ccoeff.size(); ++i )
-            _ccoeff[i] = conj( _ccoeff[i] );
+        for ( size_t  i = 0; i < _coeff.size(); ++i )
+            _coeff[i] = Math::conj( _coeff[i] );
     }// if
 }
 
 //
 // restrict sparse matrix to given block index set
 //
-unique_ptr< TSparseMatrix >
-TSparseMatrix::restrict ( const TIndexSet &  rowis,
-                          const TIndexSet &  colis ) const
+template < typename value_t >
+unique_ptr< TSparseMatrix< value_t > >
+TSparseMatrix< value_t >::restrict ( const TIndexSet &  rowis,
+                                     const TIndexSet &  colis ) const
 {
-    if ( ! block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
+    if ( ! this->block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
         HERROR( ERR_MAT_STRUCT, "TSparseMatrix) restrict", "given block index set is not a local sub set" );
                 
-    auto  T = make_unique< TSparseMatrix >( rowis.size(), colis.size() );
+    auto  T = make_unique< TSparseMatrix< value_t > >( rowis.size(), colis.size() );
 
     T->set_block_is( TBlockIndexSet( rowis, colis ) );
-    T->set_complex( is_complex() );
     
     //
     // determine total number of nonzeroes and number per row in subblock
@@ -1539,14 +1082,14 @@ TSparseMatrix::restrict ( const TIndexSet &  rowis,
 
     for ( auto  row : rowis )
     {
-        const idx_t  lb = _rowptr[ row - row_ofs() ];
-        const idx_t  ub = _rowptr[ row - row_ofs() + 1 ];
+        const idx_t  lb = _rowptr[ row - this->row_ofs() ];
+        const idx_t  ub = _rowptr[ row - this->row_ofs() + 1 ];
 
         sub_rowptr[ row - rowis.first() ] = idx_t(sub_nnzero);
         
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col = _colind[j] + col_ofs();
+            const idx_t  col = _colind[j] + this->col_ofs();
             
             if ( colis.is_in( col ) )
                 sub_nnzero++;
@@ -1567,21 +1110,18 @@ TSparseMatrix::restrict ( const TIndexSet &  rowis,
     
     for ( auto  row : rowis )
     {
-        const idx_t  lb = _rowptr[ row - row_ofs() ];
-        const idx_t  ub = _rowptr[ row - row_ofs() + 1 ];
+        const idx_t  lb = _rowptr[ row - this->row_ofs() ];
+        const idx_t  ub = _rowptr[ row - this->row_ofs() + 1 ];
 
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col = _colind[j] + col_ofs();
+            const idx_t  col = _colind[j] + this->col_ofs();
             
             if ( colis.is_in( col ) )
             {
                 T->colind( pos ) = col - colis.first();
-
-                if ( is_complex() )
-                    T->ccoeff( pos ) = _ccoeff[j];
-                else
-                    T->rcoeff( pos ) = _rcoeff[j];
+                T->coeff( pos )  = _coeff[j];
+                
                 pos++;
             }// if
         }// for
@@ -1594,19 +1134,19 @@ TSparseMatrix::restrict ( const TIndexSet &  rowis,
 // restrict sparse matrix to given block index set
 // which is given in a different ordering
 //
-unique_ptr< TSparseMatrix >
-TSparseMatrix::restrict ( const TIndexSet &     rowis,
-                          const TPermutation *  rowperm,
-                          const TIndexSet &     colis,
-                          const TPermutation *  colperm ) const
+template < typename value_t >
+unique_ptr< TSparseMatrix< value_t > >
+TSparseMatrix< value_t >::restrict ( const TIndexSet &     rowis,
+                                     const TPermutation *  rowperm,
+                                     const TIndexSet &     colis,
+                                     const TPermutation *  colperm ) const
 {
-    if ( ! block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
+    if ( ! this->block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
         HERROR( ERR_MAT_STRUCT, "TSparseMatrix) restrict", "given block index set is not a local sub set" );
                 
-    auto  T = make_unique< TSparseMatrix >( rowis.size(), colis.size() );
+    auto  T = make_unique< TSparseMatrix< value_t > >( rowis.size(), colis.size() );
 
     T->set_block_is( TBlockIndexSet( rowis, colis ) );
-    T->set_complex( is_complex() );
     
     //
     // determine total number of nonzeroes and number per row in subblock
@@ -1618,14 +1158,14 @@ TSparseMatrix::restrict ( const TIndexSet &     rowis,
     for ( auto  row : rowis )
     {
         const idx_t  prow = ( rowperm != nullptr ? rowperm->permute( row ) : row );
-        const idx_t  lb   = _rowptr[ prow - row_ofs() ];
-        const idx_t  ub   = _rowptr[ prow - row_ofs() + 1 ];
+        const idx_t  lb   = _rowptr[ prow - this->row_ofs() ];
+        const idx_t  ub   = _rowptr[ prow - this->row_ofs() + 1 ];
 
         sub_rowptr[ row - rowis.first() ] = idx_t(sub_nnzero);
         
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col  = _colind[j] + col_ofs();
+            const idx_t  col  = _colind[j] + this->col_ofs();
             const idx_t  pcol = ( colperm != nullptr ? colperm->permute( col ) : col );
             
             if ( colis.is_in( pcol ) )
@@ -1648,20 +1188,19 @@ TSparseMatrix::restrict ( const TIndexSet &     rowis,
     for ( auto  row : rowis )
     {
         const idx_t  prow = ( rowperm != nullptr ? rowperm->permute( row ) : row );
-        const idx_t  lb   = _rowptr[ prow - row_ofs() ];
-        const idx_t  ub   = _rowptr[ prow - row_ofs() + 1 ];
+        const idx_t  lb   = _rowptr[ prow - this->row_ofs() ];
+        const idx_t  ub   = _rowptr[ prow - this->row_ofs() + 1 ];
 
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col  = _colind[j] + col_ofs();
+            const idx_t  col  = _colind[j] + this->col_ofs();
             const idx_t  pcol = ( colperm != nullptr ? colperm->permute( col ) : col );
             
             if ( colis.is_in( pcol ) )
             {
                 T->colind( pos ) = pcol - colis.first();
+                T->coeff( pos )  = _coeff[j];
 
-                if ( is_complex() ) T->ccoeff( pos ) = _ccoeff[j];
-                else                T->rcoeff(  pos ) = _rcoeff[j];
                 pos++;
             }// if
         }// for
@@ -1673,11 +1212,12 @@ TSparseMatrix::restrict ( const TIndexSet &     rowis,
 //
 // return number of coefficients in sub block index set \a rowis × \a colis
 //
+template < typename value_t >
 size_t
-TSparseMatrix::restrict_nonzeroes ( const TIndexSet &  rowis,
-                                    const TIndexSet &  colis ) const
+TSparseMatrix< value_t >::restrict_nonzeroes ( const TIndexSet &  rowis,
+                                               const TIndexSet &  colis ) const
 {
-    if ( ! block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
+    if ( ! this->block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
         HERROR( ERR_MAT_STRUCT, "(TSparseMatrix) restrict_nonzeroes", "given block index set is not a local sub set" );
                 
     //
@@ -1688,12 +1228,12 @@ TSparseMatrix::restrict_nonzeroes ( const TIndexSet &  rowis,
 
     for ( auto  row : rowis )
     {
-        const idx_t  lb = _rowptr[ row - row_ofs() ];
-        const idx_t  ub = _rowptr[ row - row_ofs() + 1 ];
+        const idx_t  lb = _rowptr[ row - this->row_ofs() ];
+        const idx_t  ub = _rowptr[ row - this->row_ofs() + 1 ];
 
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col = _colind[j] + col_ofs();
+            const idx_t  col = _colind[j] + this->col_ofs();
             
             if ( colis.is_in( col ) )
                 sub_nnzero++;
@@ -1703,13 +1243,14 @@ TSparseMatrix::restrict_nonzeroes ( const TIndexSet &  rowis,
     return sub_nnzero;
 }
 
+template < typename value_t >
 size_t
-TSparseMatrix::restrict_nonzeroes ( const TIndexSet &     rowis,
-                                    const TPermutation *  rowperm,
-                                    const TIndexSet &     colis,
-                                    const TPermutation *  colperm ) const
+TSparseMatrix< value_t >::restrict_nonzeroes ( const TIndexSet &     rowis,
+                                               const TPermutation *  rowperm,
+                                               const TIndexSet &     colis,
+                                               const TPermutation *  colperm ) const
 {
-    if ( ! block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
+    if ( ! this->block_is().is_sub( TBlockIndexSet( rowis, colis ) ) )
         HERROR( ERR_MAT_STRUCT, "TSparseMatrix) restrict", "given block index set is not a local sub set" );
                 
     //
@@ -1721,12 +1262,12 @@ TSparseMatrix::restrict_nonzeroes ( const TIndexSet &     rowis,
     for ( auto  row : rowis )
     {
         const idx_t  prow = ( rowperm != nullptr ? rowperm->permute( row ) : row );
-        const idx_t  lb   = _rowptr[ prow - row_ofs() ];
-        const idx_t  ub   = _rowptr[ prow - row_ofs() + 1 ];
+        const idx_t  lb   = _rowptr[ prow - this->row_ofs() ];
+        const idx_t  ub   = _rowptr[ prow - this->row_ofs() + 1 ];
 
         for ( idx_t  j = lb; j < ub; j++ )
         {
-            const idx_t  col  = _colind[j] + col_ofs();
+            const idx_t  col  = _colind[j] + this->col_ofs();
             const idx_t  pcol = ( colperm != nullptr ? colperm->permute( col ) : col );
             
             if ( colis.is_in( pcol ) )
@@ -1740,16 +1281,17 @@ TSparseMatrix::restrict_nonzeroes ( const TIndexSet &     rowis,
 //
 // virtual constructors
 //
-std::unique_ptr< TMatrix >
-TSparseMatrix::copy () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TSparseMatrix< value_t >::copy () const
 {
-    auto             M = TMatrix::copy();
-    TSparseMatrix *  S = ptrcast( M.get(), TSparseMatrix );
+    auto  M = TMatrix< value_t >::copy();
+    auto  S = ptrcast( M.get(), TSparseMatrix< value_t > );
 
-    if ( cluster() != nullptr )
-        S->set_cluster( cluster() );
+    if ( this->cluster() != nullptr )
+        S->set_cluster( this->cluster() );
     else
-        S->set_block_is( block_is() );
+        S->set_block_is( this->block_is() );
 
     const size_t  nnz = _colind.size();
 
@@ -1758,22 +1300,11 @@ TSparseMatrix::copy () const
     for ( size_t i = 0; i <= rows(); i++ )
         S->_rowptr[i] = _rowptr[i];
 
-    if ( is_complex() )
+    for ( size_t i = 0; i < nnz; i++ )
     {
-        for ( size_t i = 0; i < nnz; i++ )
-        {
-            S->_ccoeff[i]  = _ccoeff[i];
-            S->_colind[i] = _colind[i];
-        }// for
-    }// if
-    else
-    {
-        for ( size_t i = 0; i < nnz; i++ )
-        {
-            S->_rcoeff[i]   = _rcoeff[i];
-            S->_colind[i] = _colind[i];
-        }// for
-    }// else
+        S->_colind[i] = _colind[i];
+        S->_coeff[i]  = _coeff[i];
+    }// for
 
     return M;
 }
@@ -1781,21 +1312,21 @@ TSparseMatrix::copy () const
 //
 // copy matrix into A
 //
+template < typename value_t >
 void
-TSparseMatrix::copy_to ( TMatrix * A ) const
+TSparseMatrix< value_t >::copy_to ( TMatrix< value_t > * A ) const
 {
-    TMatrix::copy_to( A );
+    TMatrix< value_t >::copy_to( A );
     
     if ( ! IS_TYPE( A, TSparseMatrix ) )
         HERROR( ERR_MAT_TYPE, "(TSparseMatrix) copy_to", A->typestr() );
     
-    TSparseMatrix * M = ptrcast( A, TSparseMatrix );
+    auto  M = ptrcast( A, TSparseMatrix< value_t > );
 
-    M->set_complex( is_complex() );
-    if ( cluster() != nullptr )
-        M->set_cluster( cluster() );
+    if ( this->cluster() != nullptr )
+        M->set_cluster( this->cluster() );
     else
-        M->set_block_is( block_is() );
+        M->set_block_is( this->block_is() );
 
     const size_t  nnz = _colind.size();
         
@@ -1804,37 +1335,27 @@ TSparseMatrix::copy_to ( TMatrix * A ) const
     for ( size_t i = 0; i <= rows(); i++ )
         M->_rowptr[i] = _rowptr[i];
     
-    if ( is_complex() )
+    for ( size_t i = 0; i < nnz; i++ )
     {
-        for ( size_t i = 0; i < nnz; i++ )
-        {
-            M->_colind[i] = _colind[i];
-            M->_ccoeff[i] = _ccoeff[i];
-        }// for
-    }// if
-    else
-    {
-        for ( size_t i = 0; i < nnz; i++ )
-        {
-            M->_colind[i] = _colind[i];
-            M->_rcoeff[i] = _rcoeff[i];
-        }// for
-    }// else
+        M->_colind[i] = _colind[i];
+        M->_coeff[i]  = _coeff[i];
+    }// for
 }
 
 //
 // return structural copy
 //
-std::unique_ptr< TMatrix >
-TSparseMatrix::copy_struct () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TSparseMatrix< value_t >::copy_struct () const
 {
-    auto             M = TMatrix::copy_struct();
-    TSparseMatrix *  S = ptrcast( M.get(), TSparseMatrix );
+    auto  M = TMatrix< value_t >::copy_struct();
+    auto  S = ptrcast( M.get(), TSparseMatrix< value_t > );
 
-    if ( cluster() != nullptr )
-        S->set_cluster( cluster() );
+    if ( this->cluster() != nullptr )
+        S->set_cluster( this->cluster() );
     else
-        S->set_block_is( block_is() );
+        S->set_block_is( this->block_is() );
 
     S->init( 0 );
 
@@ -1844,13 +1365,13 @@ TSparseMatrix::copy_struct () const
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TSparseMatrix::byte_size () const
+TSparseMatrix< value_t >::byte_size () const
 {
-    size_t  size = TMatrix::byte_size() + 2*sizeof(size_t);
+    size_t  size = TMatrix< value_t >::byte_size() + 2*sizeof(size_t);
 
-    size += _rcoeff.size()  * sizeof(real)    + sizeof(_rcoeff);
-    size += _ccoeff.size() * sizeof(complex) + sizeof(_ccoeff);
+    size += _coeff.size()  * sizeof(value_t) + sizeof(_coeff);
     size += _colind.size() * sizeof(idx_t)   + sizeof(_colind);
     size += _rowptr.size() * sizeof(idx_t)   + sizeof(_rowptr);
     
@@ -1860,46 +1381,26 @@ TSparseMatrix::byte_size () const
 //
 // test data for invalid values, e.g. INF and NAN
 //
+template < typename value_t >
 void
-TSparseMatrix::check_data () const
+TSparseMatrix< value_t >::check_data () const
 {
-    if ( is_complex() )
+    for ( auto  val : _coeff )
     {
-        for ( vector< complex >::const_iterator  iter = _ccoeff.begin();
-              iter != _ccoeff.end();
-              ++iter )
-        {
-            const complex  val = *iter;
-            
-            if ( Math::is_inf( val ) )
-                HERROR( ERR_INF, "(TSparseMatrix) check_data", "" );
-            
-            if ( Math::is_nan( val ) )
-                HERROR( ERR_NAN, "(TSparseMatrix) check_data", "" );
-        }// for
-    }// if
-    else
-    {
-        for ( vector< real >::const_iterator  iter = _rcoeff.begin();
-              iter != _rcoeff.end();
-              ++iter )
-        {
-            const real  val = *iter;
-            
-            if ( Math::is_inf( val ) )
-                HERROR( ERR_INF, "(TSparseMatrix) check_data", "" );
-            
-            if ( Math::is_nan( val ) )
-                HERROR( ERR_NAN, "(TSparseMatrix) check_data", "" );
-        }// for
-    }// else
+        if ( Math::is_inf( val ) )
+            HERROR( ERR_INF, "(TSparseMatrix) check_data", "" );
+        
+        if ( Math::is_nan( val ) )
+            HERROR( ERR_NAN, "(TSparseMatrix) check_data", "" );
+    }// for
 }
 
 //
 // print histogram for entries per row in GNUPLOT format
 //
+template < typename value_t >
 void
-TSparseMatrix::print_pattern_hist ( std::ostream & os ) const
+TSparseMatrix< value_t >::print_pattern_hist ( std::ostream & os ) const
 {
     //
     // compute histogram
@@ -1933,42 +1434,61 @@ TSparseMatrix::print_pattern_hist ( std::ostream & os ) const
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-#define INST_IMPORT_CRS( T_idx, T_val )                                  \
-    template void                                                        \
-    TSparseMatrix::import_crs< T_idx, T_val > ( const size_t   nrows,    \
-                                                const size_t   ncols,    \
-                                                const size_t   nnonzero, \
-                                                const T_idx *  rowptr,   \
-                                                const T_idx *  colind,   \
-                                                const T_val *  coeffs )
+template class TSparseMatrix< float >;
+template class TSparseMatrix< double >;
+template class TSparseMatrix< std::complex< float > >;
+template class TSparseMatrix< std::complex< double > >;
 
-INST_IMPORT_CRS( int,   real );
-INST_IMPORT_CRS( idx_t, real );
-INST_IMPORT_CRS( int,   complex );
-INST_IMPORT_CRS( idx_t, complex );
+#define INST_IMPORT_CRS( T_idx, T_val )                                 \
+    template void                                                       \
+    TSparseMatrix< T_val >::import_crs< T_idx > ( const size_t   nrows, \
+                                                  const size_t   ncols, \
+                                                  const size_t   nnonzero, \
+                                                  const T_idx *  rowptr, \
+                                                  const T_idx *  colind, \
+                                                  const T_val *  coeffs )
 
-#define INST_IMPORT_CCS( T_idx, T_val )                                  \
-    template void                                                        \
-    TSparseMatrix::import_ccs< T_idx, T_val > ( const size_t   nrows,    \
-                                                const size_t   ncols,    \
-                                                const size_t   nnonzero, \
-                                                const T_idx *  colptr,   \
-                                                const T_idx *  rowind,   \
-                                                const T_val *  coeffs )
+INST_IMPORT_CRS( int,   float );
+INST_IMPORT_CRS( int,   double );
+INST_IMPORT_CRS( int,   std::complex< float > );
+INST_IMPORT_CRS( int,   std::complex< double > );
+INST_IMPORT_CRS( int64_t, float );
+INST_IMPORT_CRS( int64_t, double );
+INST_IMPORT_CRS( int64_t, std::complex< float > );
+INST_IMPORT_CRS( int64_t, std::complex< double > );
 
-INST_IMPORT_CCS( int,   real );
-INST_IMPORT_CCS( idx_t, real );
-INST_IMPORT_CCS( int,   complex );
-INST_IMPORT_CCS( idx_t, complex );
+#define INST_IMPORT_CCS( T_idx, T_val )                                 \
+    template void                                                       \
+    TSparseMatrix< T_val >::import_ccs< T_idx > ( const size_t   nrows, \
+                                                  const size_t   ncols, \
+                                                  const size_t   nnonzero, \
+                                                  const T_idx *  colptr, \
+                                                  const T_idx *  rowind, \
+                                                  const T_val *  coeffs )
 
-#define INST_EXPORT_CCS( T_idx, T_val )                                  \
-    template void                                                        \
-    TSparseMatrix::export_ccs< T_idx, T_val > ( std::vector< T_idx > &  colptr, \
-                                                std::vector< T_idx > &  rowind, \
-                                                std::vector< T_val > &  coeffs, \
-                                                const bool              use_sym ) const
+INST_IMPORT_CCS( int,   float );
+INST_IMPORT_CCS( int,   double );
+INST_IMPORT_CCS( int,   std::complex< float > );
+INST_IMPORT_CCS( int,   std::complex< double > );
+INST_IMPORT_CCS( int64_t, float );
+INST_IMPORT_CCS( int64_t, double );
+INST_IMPORT_CCS( int64_t, std::complex< float > );
+INST_IMPORT_CCS( int64_t, std::complex< double > );
 
-INST_EXPORT_CCS( idx_t, real );
-INST_EXPORT_CCS( idx_t, complex );
+#define INST_EXPORT_CCS( T_idx, T_val )                                 \
+    template void                                                       \
+    TSparseMatrix< T_val >::export_ccs< T_idx > ( std::vector< T_idx > &  colptr, \
+                                                  std::vector< T_idx > &  rowind, \
+                                                  std::vector< T_val > &  coeffs, \
+                                                  const bool              use_sym ) const
 
-}// namespace HLIB
+INST_EXPORT_CCS( int,   float );
+INST_EXPORT_CCS( int,   double );
+INST_EXPORT_CCS( int,   std::complex< float > );
+INST_EXPORT_CCS( int,   std::complex< double > );
+INST_EXPORT_CCS( int64_t, float );
+INST_EXPORT_CCS( int64_t, double );
+INST_EXPORT_CCS( int64_t, std::complex< float > );
+INST_EXPORT_CCS( int64_t, std::complex< double > );
+
+}// namespace Hpro

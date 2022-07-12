@@ -1,18 +1,18 @@
-#ifndef __HLIB_TCOORDIO_HH
-#define __HLIB_TCOORDIO_HH
+#ifndef __HPRO_TCOORDIO_HH
+#define __HPRO_TCOORDIO_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordIO.hh
 // Description : classes for coordinate input/output
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
 
 #include "hpro/cluster/TCoordinate.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -191,10 +191,10 @@ public:
 ///////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
-//! \class    THLibCoordIO
+//! \class    THproCoordIO
 //! \brief    Class for coordinate I/O in HLIB format
 //!
-class THLibCoordIO : public TCoordIO
+class THproCoordIO : public TCoordIO
 {
 public:
     ///////////////////////////////////////////////
@@ -202,9 +202,9 @@ public:
     // constructor and destructor
     //
 
-    THLibCoordIO () {}
+    THproCoordIO () {}
 
-    virtual ~THLibCoordIO () {}
+    virtual ~THproCoordIO () {}
     
     ///////////////////////////////////////////////
     //
@@ -220,6 +220,8 @@ public:
     virtual std::unique_ptr< TCoordinate >
     read  ( const std::string &  filename ) const;
 };
+
+using THLibCoordIO = THproCoordIO;
 
 ///////////////////////////////////////////////////
 //!
@@ -287,8 +289,41 @@ public:
     read  ( const std::string &  filename ) const;
 };
 
+//////////////////////////////////////////////////////////////
+//!
+//! \ingroup  IO_Module
+//! \class    TGMSHCoordIO
+//! \brief    Class for coordinate I/O in GMSH format.
+//!
+class TGMSHCoordIO : public TCoordIO
+{
+public:
+    //////////////////////////////////////
+    //
+    // constructor and destructor
+    //
+
+    TGMSHCoordIO () {}
+
+    virtual ~TGMSHCoordIO () {}
+
+    //////////////////////////////////////
+    //
+    // read in a grid from a file
+    //
+
+    //! write coordinates \a coo to file \a filename
+    virtual void
+    write ( const TCoordinate *  coo,
+            const std::string &  filename ) const;
+
+    //! return and return coordinates from file \a filename
+    virtual std::unique_ptr< TCoordinate >
+    read  ( const std::string &  filename ) const;
+};
+
 //! \}
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TCOORDIO_HH
+#endif  // __HPRO_TCOORDIO_HH

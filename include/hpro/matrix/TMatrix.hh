@@ -1,11 +1,11 @@
-#ifndef __HLIB_TMATRIX_HH
-#define __HLIB_TMATRIX_HH
+#ifndef __HPRO_TMATRIX_HH
+#define __HPRO_TMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrix.hh
 // Description : baseclass for all matrix-classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/TStreamable.hh"
@@ -21,7 +21,7 @@
 #include "hpro/matrix/TLinearOperator.hh"
 #include "hpro/matrix/TUpdateAccumulator.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -42,6 +42,7 @@ enum matform_t
 DECLARE_TYPE( TMatrix );
 
 // forward decl.
+template < typename value_t >
 class TBlockMatrix;
 
 //!
@@ -50,46 +51,48 @@ class TBlockMatrix;
 //! \brief   Base class for all matrices, defining basic properties, e.g.
 //!          underlying block index and processor set
 //!
+template < typename T_value >
 class TMatrix :
-        public TLinearOperator,
+        public TLinearOperator< T_value >,
         public TStreamable,
         public TLockable
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+    
 private:
     //! @cond
     
     //! globally unique id
-    int                   _id;
+    int                        _id;
 
     //! corresponding block cluster
-    const TBlockCluster * _cluster;
+    const TBlockCluster *      _cluster;
 
     //! row offset of the block index set
-    idx_t                 _row_ofs;
+    idx_t                      _row_ofs;
 
     //! column offset of the block index set
-    idx_t                 _col_ofs;
+    idx_t                      _col_ofs;
 
     //! processors this matrix is on
-    TProcSet              _procs;
+    TProcSet                   _procs;
     
     //! flag to indicate form of matrix
-    matform_t             _matform;
+    matform_t                  _matform;
     
-    //! flag to indicate complex values
-    bool                  _complex;
-
     //! hierarchy data
-    TBlockMatrix *        _parent;
-    TMatrix *             _prev_in_block_row;
-    TMatrix *             _next_in_block_row;
-    TMatrix *             _prev_in_block_col;
-    TMatrix *             _next_in_block_col;
-    TMatrix *             _row_diag;
-    TMatrix *             _col_diag;
+    TBlockMatrix< value_t > *  _parent;
+    TMatrix< value_t > *       _prev_in_block_row;
+    TMatrix< value_t > *       _next_in_block_row;
+    TMatrix< value_t > *       _prev_in_block_col;
+    TMatrix< value_t > *       _next_in_block_col;
+    TMatrix< value_t > *       _row_diag;
+    TMatrix< value_t > *       _col_diag;
 
     // accumulator
-    TUpdateAccumulator    _accumulator;
+    TUpdateAccumulator< value_t >  _accumulator;
     
     //! @endcond
     
@@ -100,18 +103,16 @@ private:
     //
 
     //! construct zero sized matrix
-    TMatrix ( const value_type_t      avalue_type = real_valued );
+    TMatrix ();
 
     //! construct matrix of size defined by block cluster \a bcl
-    TMatrix ( const TBlockCluster *   bcl,
-              const value_type_t      avalue_type = real_valued );
+    TMatrix ( const TBlockCluster *   bcl );
 
     //! construct matrix of size defined by block index set \a bis
-    TMatrix ( const TBlockIndexSet &  bis,
-              const value_type_t      avalue_type = real_valued );
+    TMatrix ( const TBlockIndexSet &  bis );
 
     //! copy constructor
-    TMatrix ( const TMatrix &         A );
+    TMatrix ( const TMatrix< value_t > &  A );
 
     //! dtor
     virtual ~TMatrix () {}
@@ -192,11 +193,11 @@ private:
 
     //! return true if matrix is symmetric
     bool              is_symmetric    () const              { return (( _matform == symmetric ) ||
-                                                                     ( is_real() && ( _matform == hermitian ) )); }
+                                                                     ( this->is_real() && ( _matform == hermitian ) )); }
 
     //! return true if matrix is hermitian
     bool              is_hermitian    () const              { return (( _matform == hermitian ) ||
-                                                                     ( is_real() && ( _matform == symmetric ) )); }
+                                                                     ( this->is_real() && ( _matform == symmetric ) )); }
 
     //! return matrix format
     matform_t         form            () const              { return _matform; }
@@ -259,7 +260,6 @@ private:
 
         set_id( M->id() );
         set_form( M->form() );
-        set_complex( M->is_complex() );
         set_ofs( M->row_ofs(), M->col_ofs() );
         set_size( M->rows(), M->cols() );
         set_procs( M->procs() );
@@ -267,92 +267,50 @@ private:
     
     ///////////////////////////////////////////
     //
-    // management of field type
-    //
-
-    //! return value type of matrix
-    value_type_t  value_type     () const { return ( is_complex() ? complex_valued : real_valued ); }
-    
-    //! set value type of matrix
-    void          set_value_type ( const value_type_t  vt )
-    {
-        if ( vt == real_valued ) set_complex( false );
-        else                     set_complex( true );
-    }
-    
-    //! return true if matrix is real valued
-    bool          is_real        () const { return ! _complex; }
-
-    //! return true if matrix is complex valued
-    bool          is_complex     () const { return _complex; }
-
-    //! set internal representation to either real or complex valued;
-    //! if \a force is true, the change is performed independent on
-    //! current state
-    void set_complex ( const bool  b,
-                       const bool  force = false )
-    {
-        if ( ! force && ( b == _complex ))
-            return;
-
-        if ( b ) to_complex();
-        else     to_real();
-
-        _complex = b;
-    }
-
-    //! change data representation to real valued (if possible)
-    virtual void to_real    () = 0;
-
-    //! change data representation to complex valued
-    virtual void to_complex () = 0;
-    
-    ///////////////////////////////////////////
-    //
     // access to hierarchy data
     //
 
-    TBlockMatrix *  parent            () const { return _parent; }
+    TBlockMatrix< value_t > *  parent            () const { return _parent; }
     
-    TMatrix *       next_in_block_row () const { return _next_in_block_row; }
-    TMatrix *       prev_in_block_row () const { return _prev_in_block_row; }
-    TMatrix *       next_in_block_col () const { return _next_in_block_col; }
-    TMatrix *       prev_in_block_col () const { return _prev_in_block_col; }
+    TMatrix< value_t > *       next_in_block_row () const { return _next_in_block_row; }
+    TMatrix< value_t > *       prev_in_block_row () const { return _prev_in_block_row; }
+    TMatrix< value_t > *       next_in_block_col () const { return _next_in_block_col; }
+    TMatrix< value_t > *       prev_in_block_col () const { return _prev_in_block_col; }
 
-    TMatrix *       next_in_block_row ( const matop_t  op ) const { return op == apply_normal ? _next_in_block_row : _next_in_block_col; }
-    TMatrix *       prev_in_block_row ( const matop_t  op ) const { return op == apply_normal ? _prev_in_block_row : _prev_in_block_col; }
-    TMatrix *       next_in_block_col ( const matop_t  op ) const { return op == apply_normal ? _next_in_block_col : _next_in_block_row; }
-    TMatrix *       prev_in_block_col ( const matop_t  op ) const { return op == apply_normal ? _prev_in_block_col : _prev_in_block_row; }
+    TMatrix< value_t > *       next_in_block_row ( const matop_t  op ) const { return op == apply_normal ? _next_in_block_row : _next_in_block_col; }
+    TMatrix< value_t > *       prev_in_block_row ( const matop_t  op ) const { return op == apply_normal ? _prev_in_block_row : _prev_in_block_col; }
+    TMatrix< value_t > *       next_in_block_col ( const matop_t  op ) const { return op == apply_normal ? _next_in_block_col : _next_in_block_row; }
+    TMatrix< value_t > *       prev_in_block_col ( const matop_t  op ) const { return op == apply_normal ? _prev_in_block_col : _prev_in_block_row; }
 
-    TMatrix *       row_diag () const { return _row_diag; }
-    TMatrix *       col_diag () const { return _col_diag; }
+    TMatrix< value_t > *       row_diag () const { return _row_diag; }
+    TMatrix< value_t > *       col_diag () const { return _col_diag; }
     
-    void  set_parent            ( TBlockMatrix *  M )
+    void  set_parent            ( TBlockMatrix< value_t > *  M )
     {
         _parent = M;
     }
     
-    void  set_next_in_block_row ( TMatrix * M ) { _next_in_block_row = M; }
-    void  set_prev_in_block_row ( TMatrix * M ) { _prev_in_block_row = M; }
-    void  set_next_in_block_col ( TMatrix * M ) { _next_in_block_col = M; }
-    void  set_prev_in_block_col ( TMatrix * M ) { _prev_in_block_col = M; }
+    void  set_next_in_block_row ( TMatrix< value_t > * M ) { _next_in_block_row = M; }
+    void  set_prev_in_block_row ( TMatrix< value_t > * M ) { _prev_in_block_row = M; }
+    void  set_next_in_block_col ( TMatrix< value_t > * M ) { _next_in_block_col = M; }
+    void  set_prev_in_block_col ( TMatrix< value_t > * M ) { _prev_in_block_col = M; }
 
-    void  set_block_row_neighbours ( TMatrix *  prev,
-                                     TMatrix *  next )
+    void  set_block_row_neighbours ( TMatrix< value_t > *  prev,
+                                     TMatrix< value_t > *  next )
     {
         _prev_in_block_row = prev;
         _next_in_block_row = next;
     }
     
-    void  set_block_col_neighbours ( TMatrix *  prev,
-                                     TMatrix *  next )
+    void  set_block_col_neighbours ( TMatrix< value_t > *  prev,
+                                     TMatrix< value_t > *  next )
     {
         _prev_in_block_col = prev;
         _next_in_block_col = next;
     }
 
-    void  set_row_diag             ( TMatrix *  diag ) { _row_diag = diag; }
-    void  set_col_diag             ( TMatrix *  diag ) { _col_diag = diag; }
+    void  set_row_diag             ( TMatrix< value_t > *  diag ) { _row_diag = diag; }
+    void  set_col_diag             ( TMatrix< value_t > *  diag ) { _col_diag = diag; }
 
     // set hierarchy data automatically
     void  set_hierarchy_data       ();
@@ -363,18 +321,18 @@ private:
     //
 
     //! access accumulator object
-    TUpdateAccumulator &        accumulator  ()       { return _accumulator; }
-    const TUpdateAccumulator &  accumulator  () const { return _accumulator; }
+    TUpdateAccumulator< value_t > &        accumulator  ()       { return _accumulator; }
+    const TUpdateAccumulator< value_t > &  accumulator  () const { return _accumulator; }
 
     //! add update matrix
-    void          add_update             ( const TMatrix *           M,
-                                           const TTruncAcc &         acc );
+    void          add_update             ( const TMatrix< value_t > *  M,
+                                           const TTruncAcc &           acc );
     
     //! add update U to set of recursive pending updates
-    void          add_pending_direct     ( TDirectMatrixUpdate *     U );
+    void          add_pending_direct     ( TDirectMatrixUpdate< value_t > *     U );
 
     //! add update U to set of recursive pending updates
-    void          add_pending_recursive  ( TRecursiveMatrixUpdate *  U );
+    void          add_pending_recursive  ( TRecursiveMatrixUpdate< value_t > *  U );
         
     //! apply stored updates U to local matrix M, e.g., M = M + U,
     //! with accuracy \a acc
@@ -394,11 +352,7 @@ private:
 
     //! return index (\a i,\a j) of the matrix (real valued)
     //! - \a i and \a j are global indices, e.g. not w.r.t. local index set
-    virtual real          entry  ( const idx_t  i, const idx_t  j ) const;
-
-    //! return index (\a i,\a j) of the matrix (complex valued)
-    //! - \a i and \a j are global indices, e.g. not w.r.t. local index set
-    virtual const complex centry ( const idx_t  i, const idx_t  j ) const;
+    virtual value_t        entry  ( const idx_t  i, const idx_t  j ) const;
 
     ///////////////////////////////////////////
     //
@@ -428,56 +382,40 @@ private:
     //! mapping function of linear operator \f$A\f$, e.g. \f$ y := A(x)\f$.
     //! Depending on \a op, either \f$A\f$, \f$A^T\f$ or \f$A^H\f$ is applied.
     //!
-    virtual void  apply      ( const TVector *  x,
-                               TVector *        y,
-                               const matop_t    op = apply_normal ) const
+    virtual void  apply      ( const TVector< value_t > *  x,
+                               TVector< value_t > *        y,
+                               const matop_t               op = apply_normal ) const
     {
-        mul_vec( real(1), x, real(0), y, op );
+        mul_vec( value_t(1), x, value_t(0), y, op );
     }
 
     //!
     //! mapping function with update: \f$ y := y + \alpha A(x)\f$.
     //! Depending on \a op, either \f$A\f$, \f$A^T\f$ or \f$A^H\f$ is applied.
     //!
-    virtual void  apply_add  ( const real       alpha,
-                               const TVector *  x,
-                               TVector *        y,
-                               const matop_t    op = apply_normal ) const
+    virtual void  apply_add  ( const value_t               alpha,
+                               const TVector< value_t > *  x,
+                               TVector< value_t > *        y,
+                               const matop_t               op = apply_normal ) const
     {
-        mul_vec( alpha, x, real(1), y, op );
+        mul_vec( alpha, x, value_t(1), y, op );
     }
 
-    virtual void  capply_add ( const complex    alpha,
-                               const TVector *  x,
-                               TVector *        y,
-                               const matop_t    op = apply_normal ) const
-    {
-        cmul_vec( alpha, x, complex(1), y, op );
-    }
-
-    virtual void  apply_add   ( const real       alpha,
-                                const TMatrix *  X,
-                                TMatrix *        Y,
-                                const matop_t    op = apply_normal ) const;
+    virtual void  apply_add   ( const value_t               alpha,
+                                const TMatrix< value_t > *  X,
+                                TMatrix< value_t > *        Y,
+                                const matop_t               op = apply_normal ) const;
 
     //! same as above but only the dimension of the vector spaces is tested,
     //! not the corresponding index sets
-    virtual void  apply_add   ( const real                       alpha,
-                                const BLAS::Vector< real > &     x,
-                                BLAS::Vector< real > &           y,
-                                const matop_t                    op = apply_normal ) const;
-    virtual void  apply_add   ( const complex                    alpha,
-                                const BLAS::Vector< complex > &  x,
-                                BLAS::Vector< complex > &        y,
+    virtual void  apply_add   ( const value_t                    alpha,
+                                const BLAS::Vector< value_t > &  x,
+                                BLAS::Vector< value_t > &        y,
                                 const matop_t                    op = apply_normal ) const;
     
-    virtual void  apply_add   ( const real                       alpha,
-                                const BLAS::Matrix< real > &     x,
-                                BLAS::Matrix< real > &           y,
-                                const matop_t                    op = apply_normal ) const;
-    virtual void  apply_add   ( const complex                    alpha,
-                                const BLAS::Matrix< complex > &  x,
-                                BLAS::Matrix< complex > &        y,
+    virtual void  apply_add   ( const value_t                    alpha,
+                                const BLAS::Matrix< value_t > &  X,
+                                BLAS::Matrix< value_t > &        Y,
                                 const matop_t                    op = apply_normal ) const;
     
     ///////////////////////////////////////////////////////////
@@ -492,10 +430,10 @@ private:
     virtual size_t  range_dim  () const { return nrows(); }
     
     //! return vector in domain space
-    virtual auto    domain_vector  () const -> std::unique_ptr< TVector > { return col_vector(); }
+    virtual auto    domain_vector  () const -> std::unique_ptr< TVector< value_t > > { return col_vector(); }
 
     //! return vector in range space
-    virtual auto    range_vector   () const -> std::unique_ptr< TVector > { return row_vector(); }
+    virtual auto    range_vector   () const -> std::unique_ptr< TVector< value_t > > { return row_vector(); }
     
     /////////////////////////////////////////////////
     //
@@ -509,57 +447,33 @@ private:
     virtual void conjugate ();
     
     //! truncate matrix to accuracy \a acc
-    virtual void truncate ( const TTruncAcc & acc ) = 0;
-
-    //
-    // real valued
-    //
+    virtual void truncate  ( const TTruncAcc & acc ) = 0;
 
     //! compute this ≔ α·this
-    virtual void scale ( const real alpha );
+    virtual void scale     ( const value_t  alpha );
     
     //! compute this ≔ this + α · matrix
-    virtual void add ( const real alpha, const TMatrix * matrix );
+    virtual void add       ( const value_t               alpha,
+                             const TMatrix< value_t > *  matrix );
 
     //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void mul_vec ( const real      alpha,
-                           const TVector * x,
-                           const real      beta,
-                           TVector       * y,
-                           const matop_t   op = MATOP_NORM ) const;
+    virtual void mul_vec   ( const value_t               alpha,
+                             const TVector< value_t > *  x,
+                             const value_t               beta,
+                             TVector< value_t >       *  y,
+                             const matop_t               op = apply_normal ) const;
     
     //! compute α·op(A)·op(B), with A = this
-    virtual TMatrix * mul_right ( const real alpha, const TMatrix * B,
-                                  const matop_t op_A, const matop_t op_B ) const;
+    virtual TMatrix< value_t > *  mul_right ( const value_t               alpha,
+                                              const TMatrix< value_t > *  B,
+                                              const matop_t               op_A,
+                                              const matop_t               op_B ) const;
     
     //! compute α·op(A)·op(B), with B = this
-    virtual TMatrix * mul_left  ( const real alpha, const TMatrix * A,
-                                  const matop_t op_A, const matop_t op_B ) const;
-
-    //
-    // complex valued
-    //
-
-    //! compute this ≔ α·this
-    virtual void cscale ( const complex alpha );
-    
-    //! compute this ≔ this + α · matrix
-    virtual void cadd ( const complex alpha, const TMatrix * matrix );
-
-    //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void cmul_vec ( const complex   alpha,
-                            const TVector * x,
-                            const complex   beta,
-                            TVector       * y,
-                            const matop_t   op = MATOP_NORM ) const;
-    
-    //! compute α·op(A)·op(B), with A = this
-    virtual TMatrix * cmul_right ( const complex alpha, const TMatrix * B,
-                                   const matop_t op_A, const matop_t op_B ) const;
-    
-    //! compute α·op(A)·op(B), with B = this
-    virtual TMatrix * cmul_left  ( const complex alpha, const TMatrix * A,
-                                   const matop_t op_A, const matop_t op_B ) const;
+    virtual TMatrix< value_t > *  mul_left  ( const value_t               alpha,
+                                              const TMatrix< value_t > *  A,
+                                              const matop_t               op_A,
+                                              const matop_t               op_B ) const;
 
     /////////////////////////////////////////////////
     //
@@ -581,46 +495,46 @@ private:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TMatrix, TLinearOperator )
+    HPRO_RTTI_DERIVED( TMatrix, TLinearOperator< value_t > )
 
     //
     // virtual constructor
     //
 
     //! return matrix of same class (but no content)
-    virtual auto  create       () const -> std::unique_ptr< TMatrix > = 0;
+    virtual auto  create       () const -> std::unique_ptr< TMatrix< value_t > > = 0;
 
     //! return copy of matrix
-    virtual auto  copy         () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy         () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! return copy of matrix with accuracy \a acc and optional coarsening
     virtual auto  copy         ( const TTruncAcc & acc,
-                                 const bool        coarsen = false ) const -> std::unique_ptr< TMatrix >;
+                                 const bool        coarsen = false ) const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! return structural copy of matrix (with zeroed/empty data)
-    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! copy data from matrix \a A
-    virtual void  copy_from    ( const TMatrix * A );
+    virtual void  copy_from    ( const TMatrix< value_t > * A );
     
     //! copy matrix into matrix \a A
-    virtual void  copy_to      ( TMatrix *         A ) const;
+    virtual void  copy_to      ( TMatrix< value_t > *         A ) const;
     
     //! copy matrix into matrix \a A with accuracy \a acc and optional coarsening
-    virtual void  copy_to      ( TMatrix *         A,
-                                 const TTruncAcc & acc,
-                                 const bool        coarsen = false ) const;
+    virtual void  copy_to      ( TMatrix< value_t > *         A,
+                                 const TTruncAcc &            acc,
+                                 const bool                   coarsen = false ) const;
 
     //! return appropriate row vector object for matrix
-    virtual auto row_vector    () const -> std::unique_ptr< TVector >  
+    virtual auto row_vector    () const -> std::unique_ptr< TVector< value_t > >  
     {
-        return std::make_unique< TScalarVector >( rows(), row_ofs(), value_type() );
+        return std::make_unique< TScalarVector< value_t > >( rows(), row_ofs() );
     }
     
     //! return appropriate column vector object for matrix
-    virtual auto col_vector    () const -> std::unique_ptr< TVector >
+    virtual auto col_vector    () const -> std::unique_ptr< TVector< value_t > >
     {
-        return std::make_unique< TScalarVector >( cols(), col_ofs(), value_type() );
+        return std::make_unique< TScalarVector< value_t > >( cols(), col_ofs() );
     }
     
     //
@@ -669,73 +583,99 @@ private:
 
 //////////////////////////////////////////////////////////
 //
-// template wrappers
+// functional versions
 //
 
-template <typename T>
-T
-entry ( const TMatrix *  M,
-        const idx_t      i,
-        const idx_t      j );
-
-template <>
-inline real
-entry<real>  ( const TMatrix *  M,
-               const idx_t      i,
-               const idx_t      j )
+template < typename value_t >
+value_t
+entry ( const TMatrix< value_t > *  M,
+        const idx_t                 i,
+        const idx_t                 j )
 {
+    if ( M == nullptr )
+        HERROR( ERR_ARG, "entry", "M is null" );
+    
     return M->entry( i, j );
 }
 
-template <>
-inline complex
-entry<complex>  ( const TMatrix *  M,
-                  const idx_t      i,
-                  const idx_t      j )
+template < typename value_t >
+value_t
+entry ( const TMatrix< value_t > &  M,
+        const idx_t                 i,
+        const idx_t                 j )
 {
-    return M->centry( i, j );
+    return M.entry( i, j );
 }
 
-template <typename T>
+template < typename value_t,
+           typename alpha_t >
 void
-scale ( const T    alpha,
-        TMatrix *  M );
-
-template <>
-inline void
-scale< real > ( const real  alpha,
-                TMatrix *   M )
+scale ( const alpha_t         alpha,
+        TMatrix< value_t > *  M )
 {
-    M->scale( alpha );
+    if ( M == nullptr )
+        HERROR( ERR_ARG, "scale", "M is null" );
+    
+    M->scale( value_t( alpha ) );
 }
 
-template <>
-inline void
-scale< complex > ( const complex  alpha,
-                   TMatrix *      M )
+template < typename value_t,
+           typename alpha_t >
+void
+scale ( const alpha_t         alpha,
+        TMatrix< value_t > &  M )
 {
-    M->cscale( alpha );
+    M.scale( value_t( alpha ) );
 }
 
-//////////////////////////////////////////////////////////
-//
-// matrix views
-//
-
-struct TMatrixView
+template < typename value_t >
+void
+mul_vec ( const value_t               alpha,
+          const TMatrix< value_t > *  A,
+          const TVector< value_t > *  x,
+          const value_t               beta,
+          TVector< value_t > *        y,
+          const matop_t               op )
 {
-    const TMatrix *  M;
-    const matop_t    op;
+    if ( A == nullptr )
+        HERROR( ERR_ARG, "mul_vec", "A is null" );
+    
+    A->mul_vec( alpha, x, beta, y, op );
+}
 
-    TMatrixView ( const TMatrix *  aM,
-                  const matop_t    aop )
-            : M(aM), op(aop)
-    {}
-};
+template < typename value_t,
+           typename alpha_t,
+           typename beta_t >
+void
+mul_vec ( const alpha_t               alpha,
+          const TMatrix< value_t > &  A,
+          const TVector< value_t > &  x,
+          const beta_t                beta,
+          TVector< value_t > &        y,
+          const matop_t               op )
+{
+    A.mul_vec( value_t(alpha), & x, value_t(beta), & y, op );
+}
 
-// special views
-inline TMatrixView  transposed ( const TMatrix * M ) { return TMatrixView( M, MATOP_TRANS ); }
-inline TMatrixView  adjoint    ( const TMatrix * M ) { return TMatrixView( M, MATOP_ADJ   ); }
+//
+// copy matrices
+//
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+copy ( const TMatrix< value_t > *  M )
+{
+    if ( M == nullptr )
+        HERROR( ERR_ARG, "copy", "matrix is null" );
+    
+    return M->copy();
+}
+
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+copy ( const TMatrix< value_t > &  M )
+{
+    return M.copy();
+}
 
 //////////////////////////////////////////////////////////
 //
@@ -743,15 +683,30 @@ inline TMatrixView  adjoint    ( const TMatrix * M ) { return TMatrixView( M, MA
 //
 
 //! return vector containing diagonal coefficients of A
-std::unique_ptr< TVector >
-diagonal ( const TMatrix *  A );
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+diagonal ( const TMatrix< value_t > *  A );
+
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+diagonal ( const TMatrix< value_t > &  A )
+{
+    return diagonal( &A );
+}
 
 //!
 //! return copy of all diagonal blocks of A with full hierarchy
 //!
-std::unique_ptr< TMatrix >
-copy_diag   ( const TMatrix * A );
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+copy_diag   ( const TMatrix< value_t > * A );
 
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+copy_diag   ( const TMatrix< value_t > & A )
+{
+    return copy_diag( &A );
+}
 
 //////////////////////////////////////////////////////////
 //
@@ -764,18 +719,20 @@ namespace DBG
 //!
 //! write Matrix to file
 //!
+template < typename value_t >
 void
-write ( const TMatrix *      M,
-        const std::string &  filename,
-        const std::string &  matname );
+write ( const TMatrix< value_t > *  M,
+        const std::string &         filename,
+        const std::string &         matname );
 
+template < typename value_t >
 void
-write ( const TMatrix &      M,
-        const std::string &  filename,
-        const std::string &  matname );
+write ( const TMatrix< value_t > &  M,
+        const std::string &         filename,
+        const std::string &         matname );
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TMATRIX_HH
+#endif  // __HPRO_TMATRIX_HH

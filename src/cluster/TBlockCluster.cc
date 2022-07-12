@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBlockCluster.cc
 // Description : class for a block cluster tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -18,7 +18,7 @@
 
 #include "hpro/cluster/TBlockCluster.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::list;
@@ -252,7 +252,7 @@ TBlockCluster::son ( const uint  i,
     const auto  idx = ( j * nrows()) + i;
 
     if ( idx >= nsons() )
-        HERROR( ERR_ARG, "(TBlockCluster) son", HLIB::to_string( "son_%d,%d not available", i, j ) );
+        HERROR( ERR_ARG, "(TBlockCluster) son", Hpro::to_string( "son_%d,%d not available", i, j ) );
     
     return _sons[ idx ];
 }
@@ -264,7 +264,7 @@ TBlockCluster::son ( const uint  i,
     const auto  idx = ( j * nrows()) + i;
     
     if ( idx >= nsons() )
-        HERROR( ERR_ARG, "(TBlockCluster) son", HLIB::to_string( "son_%d,%d not available", i, j ) );
+        HERROR( ERR_ARG, "(TBlockCluster) son", Hpro::to_string( "son_%d,%d not available", i, j ) );
     
     return _sons[ idx ];
 }
@@ -323,7 +323,7 @@ TBlockCluster::set_son ( const uint     i,
     const auto  idx = ( j * nrows()) + i;
     
     if ( idx >= nsons() )
-        HERROR( ERR_ARG, "(TBlockCluster) set_son", HLIB::to_string( "son_%d,%d not available", i, j ) );
+        HERROR( ERR_ARG, "(TBlockCluster) set_son", Hpro::to_string( "son_%d,%d not available", i, j ) );
     
     if ( del_son && (( _sons[ idx ] != nullptr ) && ( _sons[ idx ] != son_bct )))
         delete _sons[ idx ];
@@ -337,7 +337,7 @@ TBlockCluster::set_son ( const uint     i,
 uint
 TBlockCluster::nnodes () const
 {
-    return uint(HLIB::Tree::nnodes( this ));
+    return uint(Hpro::Tree::nnodes( this ));
 }
 
 //
@@ -346,7 +346,7 @@ TBlockCluster::nnodes () const
 uint
 TBlockCluster::depth () const
 {
-    return uint(HLIB::Tree::depth( this ));
+    return uint(Hpro::Tree::depth( this ));
 }
 
 //
@@ -823,4 +823,4 @@ flatten_leaf ( TBlockCluster *  root )
     }// while
 }
 
-}// namespace HLIB
+}// namespace Hpro

@@ -1,12 +1,12 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : error.cc
-// Description : error handling in HLib
+// Description : error handling in HLIBpro
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -30,6 +30,7 @@
 
 #include "hpro/base/System.hh"
 #include "hpro/parallel/TMutex.hh"
+
 #include "hpro/matrix/TMatrix.hh"
 #include "hpro/matrix/TBlockMatrix.hh"
 #include "hpro/matrix/structure.hh"
@@ -43,7 +44,7 @@
 #define localtime_r( time, timeval )  localtime_s( timeval, time )
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace DBG
@@ -56,6 +57,8 @@ void exception ( const std::string &  msg );
 
 namespace
 {
+
+#if HAS_BACKTRACE == 1
 
 std::string
 demangle ( char *      symbol,
@@ -154,6 +157,8 @@ demangle ( char *      symbol,
     #endif
 }
 
+#endif
+
 //
 // inquire environment variable and return true if 
 // available or <false> otherwise
@@ -220,8 +225,8 @@ Error::Error ( const std::string & filename,
 
     _error_string = to_string();
 
-    if ( verbose(2) && ( _errno != NO_ERROR ))
-        print();
+    // if ( verbose(2) && ( _errno != NO_ERROR ))
+    //     print();
     
     // error breakpoint for debugging
     if ( _errno != NO_ERROR )
@@ -240,8 +245,8 @@ Error::Error ( const std::string & fnname,
 
     _error_string = to_string();
     
-    if ( verbose(2) && ( _errno != NO_ERROR ))
-        print();
+    // if ( verbose(2) && ( _errno != NO_ERROR ))
+    //     print();
     
     // error breakpoint for debugging
     if ( _errno != NO_ERROR )
@@ -314,7 +319,7 @@ Error::to_string () const
     
     std::string  msg;
 
-    msg  = "ERROR " + HLIB::to_string( "%d", _errno );
+    msg  = "ERROR " + Hpro::to_string( "%d", _errno );
 
     if ( _fnname != "" )
         msg += " in function \"" + _fnname + "\"";
@@ -326,7 +331,7 @@ Error::to_string () const
         msg += " (" + _errmsg + ")";
     
     msg += '\n';
-    msg += "       (in file \"" + _file + "\" at line " + HLIB::to_string( "%d", _lineno ) + ')';
+    msg += "       (in file \"" + _file + "\" at line " + Hpro::to_string( "%d", _lineno ) + ')';
     
 #else
     
@@ -334,7 +339,7 @@ Error::to_string () const
 
     if ( _fnname != "" )
     {
-        msg = " in \"" + _fnname + "\" at \"" + _file + HLIB::to_string( ":%d", _lineno ) + "\"\n";
+        msg = " in \"" + _fnname + "\" at \"" + _file + Hpro::to_string( ":%d", _lineno ) + "\"\n";
         msg += "    Error: " + strerror( _errno );
     
         if ( _errmsg != "" )
@@ -342,7 +347,7 @@ Error::to_string () const
     }// if
     else
     {
-        msg = " at \"" + _file + HLIB::to_string( ":%d", _lineno ) + "\"\n";
+        msg = " at \"" + _file + Hpro::to_string( ":%d", _lineno ) + "\"\n";
         msg += "    Error: " + strerror( _errno );
     
         if ( _errmsg != "" )
@@ -455,7 +460,7 @@ init ()
 
     std::string  env_logfile;
 
-    if ( get_environ( "HLIB_LOGFILE", env_logfile ) )
+    if ( get_environ( "HPRO_LOGFILE", env_logfile ) )
         logfile = new std::ofstream( env_logfile.c_str() );
 }
 
@@ -719,10 +724,10 @@ uint  indent_ofs = 0;
 // debug hook for exceptions
 //
 void
-exception ( const std::string &  msg )
+exception ( const std::string &  /* msg */ )
 {
-    if ( verbose( LOG_ERROR ) )
-        std::cerr << msg << std::endl;
+    // if ( verbose( LOG_ERROR ) )
+    //     std::cerr << msg << std::endl;
 }
 
 //
@@ -821,5 +826,5 @@ breakpoint ()
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro
 

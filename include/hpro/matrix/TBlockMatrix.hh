@@ -1,19 +1,20 @@
-#ifndef __HLIB_TBLOCKMATRIX_HH
-#define __HLIB_TBLOCKMATRIX_HH
+#ifndef __HPRO_TBLOCKMATRIX_HH
+#define __HPRO_TBLOCKMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBlockMatrix.hh
 // Description : class for a matrix consisting of submatrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <list>
+#include <vector>
 
 #include "hpro/matrix/TMatrix.hh"
 #include "hpro/matrix/TRkMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -24,25 +25,30 @@ DECLARE_TYPE( TBlockMatrix );
 //! \class    TBlockMatrix
 //! \brief    Class for a n×m block matrix of TMatrix sub matrices.
 //!
-class TBlockMatrix : public TMatrix
+template < typename T_value >
+class TBlockMatrix : public TMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+
 private:
     //! @cond
 
     //! number of rows of matrix
-    size_t      _rows;
+    size_t                               _rows;
 
     //! number of columns of matrix
-    size_t      _cols;
+    size_t                               _cols;
     
     //! number of block rows of matrix
-    uint        _block_rows;
+    uint                                 _block_rows;
 
     //! number of block columns of matrix
-    uint        _block_cols;
+    uint                                 _block_cols;
     
     //! array of sub-blocks of this matrix (column-wise storage !!!)
-    TMatrix  ** _blocks;
+    std::vector< TMatrix< value_t > * >  _blocks;
 
     //! @endcond
     
@@ -54,10 +60,9 @@ public:
 
     //! construct block matrix with size and block structure defined by \a bct
     TBlockMatrix ( const TBlockCluster * bct = nullptr )
-            : TMatrix( bct )
+            : TMatrix< value_t >( bct )
             , _block_rows(0)
             , _block_cols(0)
-            , _blocks(nullptr)
     {
         if ( bct != nullptr ) set_cluster( bct );
         else                  set_block_struct( 1, 1 );
@@ -66,23 +71,21 @@ public:
     //! construct block matrix with over block index set \a row_is × \a col_is
     TBlockMatrix ( const TIndexSet &  row_is,
                    const TIndexSet &  col_is )
-            : TMatrix()
+            : TMatrix< value_t >()
             , _block_rows(0)
             , _block_cols(0)
-            , _blocks(nullptr)
     {
-        set_ofs(  row_is.first(), col_is.first() );
+        this->set_ofs(  row_is.first(), col_is.first() );
         set_size( row_is.size(),  col_is.size() );
     }
 
     //! construct block matrix with over block index set \a bis
     TBlockMatrix ( const TBlockIndexSet &  bis )
-            : TMatrix()
+            : TMatrix< value_t >()
             , _block_rows(0)
             , _block_cols(0)
-            , _blocks(nullptr)
     {
-        set_ofs(  bis.row_is().first(), bis.col_is().first() );
+        this->set_ofs(  bis.row_is().first(), bis.col_is().first() );
         set_size( bis.row_is().size(),  bis.col_is().size() );
     }
 
@@ -136,35 +139,32 @@ public:
                                              const recursion_type_t  rec_type );
     
     //! return matrix coefficient (\a i, \a j)
-    virtual real          entry  ( const idx_t i, const idx_t j ) const;
-
-    //! return matrix coefficient (\a i, \a j)
-    virtual const complex centry ( const idx_t i, const idx_t j ) const;
+    virtual value_t       entry  ( const idx_t i, const idx_t j ) const;
 
     //! return block at block index (\a i, \a j)
-    TMatrix *             block ( const uint i, const uint j )       { return _blocks[(j*_block_rows)+i]; }
+    TMatrix< value_t > *        block ( const uint i, const uint j )       { return _blocks[(j*_block_rows)+i]; }
 
     //! return block at block index (\a i, \a j)
-    const TMatrix *       block ( const uint i, const uint j ) const { return _blocks[(j*_block_rows)+i]; }
+    const TMatrix< value_t > *  block ( const uint i, const uint j ) const { return _blocks[(j*_block_rows)+i]; }
 
     //! return block at block index (\a i, \a j)
-    TMatrix *             block ( const uint     i,
-                                  const uint     j,
-                                  const matop_t  op )                { return ( op == apply_normal
-                                                                                ? _blocks[(j*_block_rows)+i]
-                                                                                : _blocks[(i*_block_rows)+j] ); }
+    TMatrix< value_t > *        block ( const uint     i,
+                                        const uint     j,
+                                        const matop_t  op )                { return ( op == apply_normal
+                                                                                      ? _blocks[(j*_block_rows)+i]
+                                                                                      : _blocks[(i*_block_rows)+j] ); }
 
     //! return block at block index (\a i, \a j)
-    const TMatrix *       block ( const uint     i,
-                                  const uint     j,
-                                  const matop_t  op ) const          { return ( op == apply_normal
-                                                                                ? _blocks[(j*_block_rows)+i]
-                                                                                : _blocks[(i*_block_rows)+j] ); }
+    const TMatrix< value_t > *  block ( const uint     i,
+                                        const uint     j,
+                                        const matop_t  op ) const          { return ( op == apply_normal
+                                                                                      ? _blocks[(j*_block_rows)+i]
+                                                                                      : _blocks[(i*_block_rows)+j] ); }
 
     //! set matrix block at block index (\a i,\a j) to matrix \a A
-    void                  set_block ( const uint  i,
-                                      const uint  j,
-                                      TMatrix *   A )
+    void                        set_block ( const uint             i,
+                                            const uint             j,
+                                            TMatrix< value_t > *   A )
     {
         _blocks[(j*_block_rows)+i] = A;
 
@@ -173,32 +173,24 @@ public:
     }
 
     //! replace matrix block \a A by matrix \a B (don't delete A !)
-    void                  replace_block ( TMatrix * A, TMatrix * B );
+    void                  replace_block ( TMatrix< value_t > * A,
+                                          TMatrix< value_t > * B );
     
     //! delete block (i,j)
-    void                  delete_block ( const uint i, const uint j )
+    void                  delete_block  ( const uint i, const uint j )
     {
         delete _blocks[(j*_block_rows)+i];
         _blocks[(j*_block_rows)+i] = nullptr;
     }
     
     //! return subblock of matrix corresponding to block cluster \a t
-    TMatrix *             bc_block ( const TBlockCluster * t ) const;
+    TMatrix< value_t > *  bc_block ( const TBlockCluster * t ) const;
 
     //! return subblock of matrix corresponding to block cluster (\a tau, \a sigma)
-    TMatrix *             bc_block ( const TCluster * tau, const TCluster * sigma ) const;
+    TMatrix< value_t > *  bc_block ( const TCluster * tau, const TCluster * sigma ) const;
 
     //! clear pointers to all sub blocks
     void                  clear_blocks ();
-    
-    //! convert data to real valued representation (if possible)
-    virtual void          to_real    ();
-
-    //! convert data to complex valued representation (if possible)
-    virtual void          to_complex ();
-
-    //! make value type of this and all sub blocks consistent
-    virtual void          adjust_value_type ();
     
     //! return true, if matrix is blocked
     virtual bool          is_blocked () const { return true; }
@@ -222,40 +214,29 @@ public:
 
     /////////////////////////////////////////////////
     //
-    // BLAS-routines (real valued)
+    // BLAS-routines
     //
 
+    //! transpose matrix
+    virtual void transpose ();
+    
+    //! conjugate matrix coefficients
+    virtual void conjugate ();
+    
     //! compute this ≔ α·this
-    virtual void scale ( const real alpha );
+    virtual void scale ( const value_t alpha );
     
     //! compute this ≔ this + α · matrix
-    virtual void add ( const real alpha, const TMatrix * matrix );
+    virtual void add ( const value_t alpha, const TMatrix< value_t > * matrix );
     
     //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void mul_vec ( const real      alpha,
-                           const TVector * x,
-                           const real      beta,
-                           TVector       * y,
-                           const matop_t   op = MATOP_NORM ) const;
+    virtual void mul_vec ( const value_t               alpha,
+                           const TVector< value_t > *  x,
+                           const value_t               beta,
+                           TVector< value_t > *        y,
+                           const matop_t               op = apply_normal ) const;
+    using TMatrix< value_t >::mul_vec;
         
-    /////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
-    //
-
-    //! compute this ≔ α·this
-    virtual void cscale ( const complex alpha );
-    
-    //! compute this ≔ this + α · matrix
-    virtual void cadd ( const complex alpha, const TMatrix * matrix );
-
-    //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void cmul_vec ( const complex   alpha,
-                            const TVector * x,
-                            const complex   beta,
-                            TVector       * y,
-                            const matop_t   op = MATOP_NORM ) const;
-    
     ///////////////////////////////////////////////////////////
     //
     // linear operator mapping
@@ -263,16 +244,12 @@ public:
 
     //! same as above but only the dimension of the vector spaces is tested,
     //! not the corresponding index sets
-    virtual void  apply_add   ( const real                       alpha,
-                                const BLAS::Vector< real > &     x,
-                                BLAS::Vector< real > &           y,
-                                const matop_t                    op = apply_normal ) const;
-    virtual void  apply_add   ( const complex                    alpha,
-                                const BLAS::Vector< complex > &  x,
-                                BLAS::Vector< complex > &        y,
+    virtual void  apply_add   ( const value_t                    alpha,
+                                const BLAS::Vector< value_t > &  x,
+                                BLAS::Vector< value_t > &        y,
                                 const matop_t                    op = apply_normal ) const;
 
-    using TMatrix::apply_add;
+    using TMatrix< value_t >::apply_add;
 
     /////////////////////////////////////////////////
     //
@@ -286,24 +263,18 @@ public:
         for ( uint i = 0; i < block_rows(); i++ )
             for ( uint j = 0; j < block_cols(); j++ )
             {
-                const TMatrix  * A_ij = block(i,j);
+                const TMatrix< value_t >  * A_ij = block(i,j);
             
                 if ( A_ij == nullptr )
                     continue;
             
                 if ( ! IS_TYPE( A_ij, TBlockMatrix ) )
-                    leaf_list.push_back( const_cast< TMatrix * >( A_ij ) );
+                    leaf_list.push_back( const_cast< TMatrix< value_t > * >( A_ij ) );
                 else
                     cptrcast( A_ij, TBlockMatrix )->collect_leaves( leaf_list );
             }// for
     }
 
-    //! transpose matrix
-    virtual void transpose ();
-    
-    //! conjugate matrix coefficients
-    virtual void conjugate ();
-    
     //! truncate all rank-blocks in matrix to accuracy \a acc
     virtual void truncate ( const TTruncAcc & acc );
     
@@ -311,53 +282,53 @@ public:
     virtual void print ( const uint ofs = 0 ) const;
     
     //! return matrix of same class (but no content)
-    virtual auto create () const -> std::unique_ptr< TMatrix >
+    virtual auto create () const -> std::unique_ptr< TMatrix< value_t > >
     {
-        return std::make_unique< TBlockMatrix >();
+        return std::make_unique< TBlockMatrix< value_t > >();
     }
 
     //! return copy of matrix
-    virtual auto copy         () const -> std::unique_ptr< TMatrix >;
+    virtual auto copy         () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! copy matrix wrt. accuracy \a acc and optional coarsening
     virtual auto copy         ( const TTruncAcc & acc,
-                                const bool        coarsen = false ) const -> std::unique_ptr< TMatrix >;
+                                const bool        coarsen = false ) const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! return structural copy of matrix
-    virtual auto copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! copy matrix into \a A
-    virtual void copy_to      ( TMatrix * A ) const;
+    virtual void copy_to      ( TMatrix< value_t > *  A ) const;
 
     //! copy matrix into \a A with accuracy \a acc and optional coarsening
-    virtual void copy_to      ( TMatrix         * A,
-                                const TTruncAcc & acc,
-                                const bool        coarsen = false ) const;
+    virtual void copy_to      ( TMatrix< value_t > *  A,
+                                const TTruncAcc &     acc,
+                                const bool            coarsen = false ) const;
 
     //! return size in bytes used by this object
     virtual size_t byte_size () const;
 
     //! copy complete structural information from given matrix
-    virtual void copy_struct_from ( const TMatrix * M );
+    virtual void copy_struct_from ( const TMatrix< value_t > *  M );
     
     //
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TBlockMatrix, TMatrix )
+    HPRO_RTTI_DERIVED( TBlockMatrix, TMatrix< value_t > )
 
     //
     // serialisation
     //
 
     //! read data from stream \a s and copy to matrix
-    virtual void read  ( TByteStream & s );
+    virtual void read  ( TByteStream &  s );
 
     //! use data from stream \a s to build matrix
-    virtual void build ( TByteStream & s );
+    virtual void build ( TByteStream &  s );
 
     //! write data to stream \a s
-    virtual void write ( TByteStream & s ) const;
+    virtual void write ( TByteStream &  s ) const;
 
     //! returns size of object in bytestream
     virtual size_t bs_size () const;
@@ -370,6 +341,6 @@ public:
     virtual void check_data () const;
 };
 
-}// namespace
+}// namespace Hpro
 
-#endif  // __HLIB_TBLOCKMATRIX_HH
+#endif  // __HPRO_TBLOCKMATRIX_HH

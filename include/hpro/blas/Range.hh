@@ -1,11 +1,11 @@
-#ifndef __HLIB_BLAS_RANGE_HH
-#define __HLIB_BLAS_RANGE_HH
+#ifndef __HPRO_BLAS_RANGE_HH
+#define __HPRO_BLAS_RANGE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Range.hh
 // Description : implements class for index set with stride
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
@@ -13,7 +13,7 @@
 #include "hpro/base/error.hh"
 #include "hpro/cluster/TIndexSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -73,6 +73,6 @@ public:
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_RANGE_HH
+#endif  // __HPRO_BLAS_RANGE_HH

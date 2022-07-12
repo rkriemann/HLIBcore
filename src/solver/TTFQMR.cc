@@ -1,15 +1,25 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TTFQMR.cc
 // Description : class implementing TFQMR
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/solver/TTFQMR.hh"
 
-namespace HLIB
+namespace Hpro
 {
+
+// import from TSolver
+void
+solve_mp ( const TSolver &       solver,
+           const std::string &   solver_name,
+           any_const_operator_t  A,
+           any_vector_t          x,
+           any_const_vector_t    b,
+           any_const_operator_t  W,
+           TSolverInfo *         info );
 
 namespace
 {
@@ -17,16 +27,17 @@ namespace
 //
 // actual TFQMR iteration
 //
-template <typename T>
+template < typename value_t,
+           typename value_pre_t >
 void
-tfqmr ( const TLinearOperator *  A,
-        TVector *                x,
-        const TVector *          b,
-        const TLinearOperator *  W,
-        TSolverInfo *            info,
-        const TSolver *          solver )
+tfqmr ( const TLinearOperator< value_t > *      A,
+        TVector< value_t > *                    x,
+        const TVector< value_t > *              b,
+        const TLinearOperator< value_pre_t > *  W,
+        TSolverInfo *                           info,
+        const TSolver *                         solver )
 {
-    using  real_t = typename  real_type< T >::type_t;
+    using  real_t = real_type_t< value_t >;
 
     uint    it;
     real_t  norm   = 0;
@@ -46,20 +57,20 @@ tfqmr ( const TLinearOperator *  A,
 
     if ( W != nullptr )
     {
-        apply_add( real(-1), A, x, r0.get() );
+        apply_add( value_t(-1), A, x, r0.get() );
 
         if ( solver->use_exact_residual() )
             norm = norm_0 = r0->norm2();
         
         apply( W, r0.get(), t.get() );
-        r0->assign( real(1), t.get() );
+        r0->assign( value_t(1), t.get() );
 
         if ( ! solver->use_exact_residual() )
             norm = norm_0 = r0->norm2();
     }// if
     else
     {
-        apply_add( real(-1), A, x, r0.get() );
+        apply_add( value_t(-1), A, x, r0.get() );
         norm = norm_0 = r0->norm2();
     }// else
 
@@ -80,14 +91,14 @@ tfqmr ( const TLinearOperator *  A,
         apply( A, y.get(), v.get() );
     }// else
 
-    t->assign( real(1), v.get() );
+    t->assign( value_t(1), v.get() );
     
     d->scale( 0 );
     
-    real  tau   = r0->norm2();
-    real  theta = 0;
-    T     eta   = 0;
-    T     rho   = tdot<T>( r0.get(), r0.get() );
+    real_t   tau   = r0->norm2();
+    real_t   theta = 0;
+    value_t  eta   = 0;
+    value_t  rho   = dot( r0.get(), r0.get() );
 
     if ( info != nullptr )
         info->append( 0, norm );
@@ -97,9 +108,9 @@ tfqmr ( const TLinearOperator *  A,
     it = 0;
     while ( ! converged )
     {
-        auto  sigma = tdot<T>( r0.get(), v.get() );
+        auto  sigma = dot( r0.get(), v.get() );
 
-        if ( sigma == T(0) )
+        if ( sigma == value_t(0) )
         {
             if ( info != nullptr )
                 info->set_status( failed );
@@ -111,7 +122,7 @@ tfqmr ( const TLinearOperator *  A,
         
         auto  alpha = rho / sigma;
 
-        if ( alpha == T(0) )
+        if ( alpha == value_t(0) )
         {
             if ( info != nullptr )
                 info->set_status( failed );
@@ -142,12 +153,12 @@ tfqmr ( const TLinearOperator *  A,
                 }// else
             }// else
 
-            axpy<T>( -alpha, t.get(), w.get() );
+            axpy< value_t >( -alpha, t.get(), w.get() );
             
             auto  theta_old = theta;
             auto  eta_old   = eta;
 
-            if ( tau == real(0) )
+            if ( tau == real_t(0) )
             {
                 if ( info != nullptr )
                     info->set_status( failed );
@@ -158,22 +169,22 @@ tfqmr ( const TLinearOperator *  A,
             }// if
             
             theta   = w->norm2() / tau;
-            auto  c = real(1) / std::sqrt( 1 + theta * theta );
+            auto  c = real_t(1) / std::sqrt( 1 + theta * theta );
             tau     = tau * theta * c;
             eta     = c*c * alpha;
 
             // d = y + (θ²η/α)d
-            scale<T>( Math::square( theta_old ) * eta_old / alpha, d.get() );
-            d->axpy( real(1), y.get() );
+            scale< value_t >( Math::square( theta_old ) * eta_old / alpha, d.get() );
+            d->axpy( value_t(1), y.get() );
 
             // x = x + η d
-            axpy<T>( eta, d.get(), x );
+            axpy< value_t >( eta, d.get(), x );
 
             // norm (approximation)
             if ( solver->use_exact_residual() )
             {
                 apply( A, x, rr.get() );
-                rr->axpy( real(-1), b );
+                rr->axpy( value_t(-1), b );
                 norm = rr->norm2();
             }// if
             else
@@ -194,11 +205,11 @@ tfqmr ( const TLinearOperator *  A,
             if ( m == 1 )
             {
                 // y = y - αv
-                axpy<T>( -alpha, v.get(), y.get() );
+                axpy< value_t >( -alpha, v.get(), y.get() );
             }// if
         }// for
 
-        if ( rho == T(0) )
+        if ( rho == value_t(0) )
         {
             if ( info != nullptr )
                 info->set_status( failed );
@@ -208,18 +219,18 @@ tfqmr ( const TLinearOperator *  A,
             return;
         }// if
         
-        auto  rho_new = tdot<T>( r0.get(), w.get() );
+        auto  rho_new = dot( r0.get(), w.get() );
         auto  beta    = rho_new / rho;
 
         rho = rho_new;
         
         // y' = w + βy
-        scale<T>( beta, y.get() );
-        axpy<T>( T(1), w.get(), y.get() );
+        scale< value_t >( beta, y.get() );
+        axpy< value_t >( value_t(1), w.get(), y.get() );
         
         // v = Ay' + β( Ay + β v ) = Ay' + βAy + β²v
-        scale<T>( beta*beta, v.get() );
-        axpy<T>( beta, t.get(), v.get() );
+        scale< value_t >( beta*beta, v.get() );
+        axpy< value_t >( beta, t.get(), v.get() );
 
         if ( W != nullptr )
         {
@@ -231,7 +242,7 @@ tfqmr ( const TLinearOperator *  A,
             apply( A, y.get(), t.get() );
         }// else
 
-        axpy<T>( real(1), t.get(), v.get() );
+        axpy< value_t >( value_t(1), t.get(), v.get() );
         
         ++it;
     }// while
@@ -259,21 +270,62 @@ TTFQMR::~TTFQMR ()
 //
 // the real solving
 //
+template < typename value_t,
+           typename value_pre_t >
 void
-TTFQMR::solve ( const TLinearOperator *  A,
-                TVector *                x,
-                const TVector *          b,
-                const TLinearOperator *  W,
-                TSolverInfo *            info ) const
+TTFQMR::solve ( const TLinearOperator< value_t > *     A,
+                TVector< value_t > *                   x,
+                const TVector< value_t > *             b,
+                const TLinearOperator< value_pre_t > * W,
+                TSolverInfo *                          info ) const
 {
     if ( x == nullptr ) HERROR( ERR_ARG, "(TTFQMR) solve", "x = nullptr" );
     if ( b == nullptr ) HERROR( ERR_ARG, "(TTFQMR) solve", "b = nullptr" );
     if ( A == nullptr ) HERROR( ERR_ARG, "(TTFQMR) solve", "A = nullptr" );
     
-    if ( A->is_complex() )
-        tfqmr<complex>( A, x, b, W, info, this );
-    else
-        tfqmr<real>( A, x, b, W, info, this );
+    tfqmr( A, x, b, W, info, this );
 }
 
-}// namespace HLIB
+//
+// generic implementation for "virtual" solve method
+//
+void
+TTFQMR::solve ( any_const_operator_t  A,
+                any_vector_t          x,
+                any_const_vector_t    b,
+                any_const_operator_t  W,
+                TSolverInfo *         info ) const
+{
+    solve_mp( *this, "TTFQMR", A, x, b, W, info );
+}
+
+template < typename value_t > using opptr_t = TLinearOperator< value_t > *;
+
+void
+TTFQMR::solve ( any_const_operator_t  A,
+             any_vector_t          x,
+             any_const_vector_t    b,
+             TSolverInfo *         info ) const
+{
+    using std::get;
+    
+    if (( A.index() != x.index() ) ||
+        ( A.index() != b.index() ))
+        HERROR( ERR_ARG, "(TTFQMR) solve", "A, x and b have different value type" );
+
+    switch ( A.index() )
+    {
+        case 0: this->solve( get< 0 >( A ), get< 0 >( x ), get< 0 >( b ), opptr_t< float >( nullptr ), info ); break;
+        case 1: this->solve( get< 1 >( A ), get< 1 >( x ), get< 1 >( b ), opptr_t< double >( nullptr ), info ); break;
+        case 2: this->solve( get< 2 >( A ), get< 2 >( x ), get< 2 >( b ), opptr_t< std::complex< float > >( nullptr ), info ); break;
+        case 3: this->solve( get< 3 >( A ), get< 3 >( x ), get< 3 >( b ), opptr_t< std::complex< double > >( nullptr ), info ); break;
+
+        default:
+            HERROR( ERR_ARG, "(TTFQMR) solve", "A, x and b have unsupported value type" );
+    }// switch
+}
+
+// instantiate solve method
+HPRO_INST_SOLVE_METHOD( TTFQMR )
+
+}// namespace Hpro

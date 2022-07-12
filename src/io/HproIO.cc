@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : HLibIO.cc
 // Description : HLIB-format IO classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstring>
@@ -30,7 +30,7 @@
 #include "hpro/io/TMatrixIO.hh"
 #include "hpro/io/TCoordIO.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace B = BLAS;
@@ -51,9 +51,6 @@ namespace
 
 // for automatic swapping of bytes
 #define BYTE_SWAP( t )  { if ( byteswap ) swap_bytes( t ); }
-
-// define for reading old files (with old TPermutation)
-//#define OLD_PERM
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -123,7 +120,7 @@ get_id ()
     int                ret_val    = 0;
 
     {
-        std::lock_guard< std::mutex >  lock( id_mutex );
+        std::scoped_lock  lock( id_mutex );
 
         ret_val = id_counter++;
     }
@@ -134,31 +131,31 @@ get_id ()
 //
 // template functions for reading and writing data
 //
-template <class T>
-T
+template < typename value_t >
+value_t
 hlib_read ( std::istream &  in,
             const bool      byteswap )
 {
-    T  val;
+    value_t  val;
     
-    in.read( reinterpret_cast< char * >( & val ), sizeof(T) );
+    in.read( reinterpret_cast< char * >( & val ), sizeof(value_t) );
     BYTE_SWAP( val );
 
     return val;
 }
 
-template <class T>
+template < typename value_t >
 void
 hlib_read ( std::istream &  in,
-            T *             data,
+            value_t *       data,
             const uint      nelem,
             const bool      byteswap )
 {
     if ( nelem > 0 )
     {
-        in.read( reinterpret_cast< char * >( data ), sizeof(T)*nelem );
+        in.read( reinterpret_cast< char * >( data ), sizeof(value_t)*nelem );
     
-        if ( byteswap && ( sizeof(T) > 1 ))
+        if ( byteswap && ( sizeof(value_t) > 1 ))
         {
             for ( uint i = 0; i < nelem; i++ )
                 BYTE_SWAP( data[i] );
@@ -185,32 +182,32 @@ hlib_read ( std::istream &  in,
 //     }// if
 // }
 
-template <class T>
+template < typename value_t >
 void
-hlib_read ( std::istream &    in,
-            const bool        byteswap,
-            B::Matrix< T > &  mat )
+hlib_read ( std::istream &          in,
+            const bool              byteswap,
+            B::Matrix< value_t > &  mat )
 {
     for ( idx_t  j = 0; j < idx_t( mat.ncols() ); ++j )
     {
         for ( idx_t  i = 0; i < idx_t( mat.nrows() ); ++i )
         {
-            mat( i, j ) = hlib_read< T >( in, byteswap );
+            mat( i, j ) = hlib_read< value_t >( in, byteswap );
         }// for
     }// for
 }
 
-template <class T>
+template < typename value_t >
 void
 hlib_write ( std::ostream &  out,
-             const T         data )
+             const value_t   data )
 {
-    out.write( reinterpret_cast< const char * >( & data ), sizeof(T) );
+    out.write( reinterpret_cast< const char * >( & data ), sizeof(value_t) );
 }
 
 template <>
 void
-hlib_write ( std::ostream &  out, const real  data )
+hlib_write ( std::ostream &  out, const float  data )
 {
     double  t = double( data );
     
@@ -219,17 +216,26 @@ hlib_write ( std::ostream &  out, const real  data )
 
 template <>
 void
-hlib_write ( std::ostream &  out, const complex  data )
+hlib_write ( std::ostream &  out, const std::complex< float >  data )
 {
-    double  t[2] = { double( data.real() ), double( data.imag() ) };
+    double  t[2] = { double( std::real( data ) ), double( std::imag( data ) ) };
     
     out.write( reinterpret_cast< const char * >( & t ), sizeof(t) );
 }
 
-template <class T>
+template <>
 void
-hlib_write ( std::ostream &          out,
-             const B::Matrix< T > &  mat )
+hlib_write ( std::ostream &  out, const std::complex< double >  data )
+{
+    double  t[2] = { double( std::real( data ) ), double( std::imag( data ) ) };
+    
+    out.write( reinterpret_cast< const char * >( & t ), sizeof(t) );
+}
+
+template < typename value_t >
+void
+hlib_write_mat ( std::ostream &                out,
+                 const B::Matrix< value_t > &  mat )
 {
     for ( idx_t  j = 0; j < idx_t( mat.ncols() ); ++j )
     {
@@ -289,17 +295,19 @@ read_header ( std::istream &  in,
 //
 // forward decl.
 //
+template < typename value_t >
 void
-write_mat  ( std::ostream &   out,
-             const TMatrix *  A );
+write_mat  ( std::ostream &             out,
+             const TMatrix< value_t > * A );
 
 //
 // write header for matrices
 //
+template < typename value_t >
 void
-write_mat_header ( std::ostream &   out,
-                   const TMatrix *  A,
-                   uint             type )
+write_mat_header ( std::ostream &             out,
+                   const TMatrix< value_t > * A,
+                   uint                       type )
 {
     uint16_t  ltype      = uint16_t(type);
     int32_t   id         = int32_t(A->id());
@@ -308,7 +316,7 @@ write_mat_header ( std::ostream &   out,
     uint32_t  proc_first = uint32_t(A->procs().first());
     uint32_t  proc_last  = uint32_t(A->procs().last());
     uint8_t   form       = uint8_t(A->form());
-    uint8_t   is_complex = uint8_t(A->is_complex());
+    uint8_t   is_complex = uint8_t(is_complex_type< value_t >::value);
     uint32_t  rows       = uint32_t(A->rows());
     uint32_t  cols       = uint32_t(A->cols());
 
@@ -327,8 +335,10 @@ write_mat_header ( std::ostream &   out,
 //
 // special write methods
 //
+template < typename value_t >
 void
-write_mat_block  ( std::ostream &  out, const TBlockMatrix * B )
+write_mat_block  ( std::ostream &                   out,
+                   const TBlockMatrix< value_t > *  B )
 {
     const bool      sym        = B->is_symmetric() || B->is_hermitian();
     const uint32_t  block_rows = B->block_rows();
@@ -358,40 +368,38 @@ write_mat_block  ( std::ostream &  out, const TBlockMatrix * B )
     }// else
 }
 
+template < typename value_t >
 void
-write_mat_dense  ( std::ostream &  out, const TDenseMatrix * D )
+write_mat_dense  ( std::ostream &                   out,
+                   const TDenseMatrix< value_t > *  D )
 {
+    using  real_t = real_type_t< value_t >;
+    
     const size_t  rows       = D->rows();
     const size_t  cols       = D->cols();
-    const bool    is_complex = D->is_complex();
 
     write_mat_header( out, D, HMFILE_MAT_DENSE );
 
-    if ( is_complex )
+    if ( sizeof(real_t) == sizeof(double) )
+        out.write( reinterpret_cast< const char * >( D->blas_mat().data() ), sizeof(value_t) * rows * cols );
+    else
     {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( D->blas_cmat().data() ), sizeof(complex) * rows * cols );
-        else
+        if ( is_complex_type< value_t >::value )
         {
             for ( idx_t  j = 0; j < idx_t(cols); ++j )
                 for ( idx_t  i = 0; i < idx_t(rows); ++i )
                 {
-                    const double z[2] = { D->blas_cmat()(i,j).real(), D->blas_cmat()(i,j).imag() }; 
+                    const double z[2] = { std::real( D->blas_mat()(i,j) ), std::imag( D->blas_mat()(i,j) ) }; 
                     
                     out.write( reinterpret_cast< const char * >( z ), 2 * sizeof(double) );
                 }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( D->blas_rmat().data() ), sizeof(real) * rows * cols );
+        }// if
         else
         {
             for ( idx_t  j = 0; j < idx_t(cols); ++j )
                 for ( idx_t  i = 0; i < idx_t(rows); ++i )
                 {
-                    const double f = D->blas_rmat()(i,j);
+                    const double  f = std::real( D->blas_mat()(i,j) );
                 
                     out.write( reinterpret_cast< const char * >( & f ), sizeof(double) );
                 }// for
@@ -399,28 +407,32 @@ write_mat_dense  ( std::ostream &  out, const TDenseMatrix * D )
     }// else
 }
 
+template < typename value_t >
 void
-write_mat_rank ( std::ostream &  out, const TRkMatrix * R )
+write_mat_rank ( std::ostream &                out,
+                 const TRkMatrix< value_t > *  R )
 {
+    using  real_t = real_type_t< value_t >;
+    
     const uint32_t  rank = uint32_t(R->rank());
 
     write_mat_header( out, R, HMFILE_MAT_RANK );
 
     out.write( reinterpret_cast< const char * >( & rank ), sizeof(uint32_t) );
 
-    if ( R->is_complex() )
+    if ( sizeof(real_t) == sizeof(double) )
     {
-        if ( sizeof(real) == sizeof(double) )
-        {
-            out.write( reinterpret_cast< const char * >( R->blas_cmat_A().data() ), sizeof(complex) * R->rows() * rank );
-            out.write( reinterpret_cast< const char * >( R->blas_cmat_B().data() ), sizeof(complex) * R->cols() * rank );
-        }// if
-        else
+        out.write( reinterpret_cast< const char * >( R->blas_mat_A().data() ), sizeof(value_t) * R->rows() * rank );
+        out.write( reinterpret_cast< const char * >( R->blas_mat_B().data() ), sizeof(value_t) * R->cols() * rank );
+    }// if
+    else
+    {
+        if ( is_complex_type< value_t >::value )
         {
             for ( idx_t  k = 0; k < idx_t(R->rank()); ++k )
                 for ( idx_t  i = 0; i < idx_t(R->rows()); ++i )
                 {
-                    const double z[2] = { R->blas_cmat_A()(i,k).real(), R->blas_cmat_A()(i,k).imag() };
+                    const double z[2] = { std::real( R->blas_mat_A()(i,k) ), std::imag( R->blas_mat_A()(i,k) ) };
                     
                     out.write( reinterpret_cast< const char * >( z ), 2 * sizeof(double) );
                 }// for
@@ -428,25 +440,17 @@ write_mat_rank ( std::ostream &  out, const TRkMatrix * R )
             for ( idx_t  k = 0; k < idx_t(R->rank()); ++k )
                 for ( idx_t  i = 0; i < idx_t(R->cols()); ++i )
                 {
-                    const double z[2] = { R->blas_cmat_B()(i,k).real(), R->blas_cmat_B()(i,k).imag() };
+                    const double z[2] = { std::real( R->blas_mat_B()(i,k) ), std::imag( R->blas_mat_B()(i,k) ) };
                     
                     out.write( reinterpret_cast< const char * >( z ), 2 * sizeof(double) );
                 }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-        {
-            out.write( reinterpret_cast< const char * >( R->blas_rmat_A().data() ), sizeof(real) * R->rows() * rank );
-            out.write( reinterpret_cast< const char * >( R->blas_rmat_B().data() ), sizeof(real) * R->cols() * rank );
         }// if
         else
         {
             for ( idx_t  k = 0; k < idx_t(R->rank()); ++k )
                 for ( idx_t  i = 0; i < idx_t(R->rows()); ++i )
                 {
-                    const double f = R->blas_rmat_A()(i,k);
+                    const double  f = std::real( R->blas_mat_A()(i,k) );
                     
                     out.write( reinterpret_cast< const char * >( & f ), sizeof(double) );
                 }// for
@@ -454,7 +458,7 @@ write_mat_rank ( std::ostream &  out, const TRkMatrix * R )
             for ( idx_t  k = 0; k < idx_t(R->rank()); ++k )
                 for ( idx_t  i = 0; i < idx_t(R->cols()); ++i )
                 {
-                    const double f = R->blas_rmat_B()(i,k);
+                    const double  f = std::real( R->blas_mat_B()(i,k) );
                     
                     out.write( reinterpret_cast< const char * >( & f ), sizeof(double) );
                 }// for
@@ -462,11 +466,14 @@ write_mat_rank ( std::ostream &  out, const TRkMatrix * R )
     }// else
 }
 
+template < typename value_t >
 void
-write_mat_sparse ( std::ostream &  out, const TSparseMatrix * S )
+write_mat_sparse ( std::ostream &                    out,
+                   const TSparseMatrix< value_t > *  S )
 {
-    const bool      is_complex = S->is_complex();
-    const uint32_t  nnz        = uint32_t(S->n_non_zero());
+    using  real_t = real_type_t< value_t >;
+    
+    const uint32_t  nnz = uint32_t(S->n_non_zero());
 
     write_mat_header( out, S, HMFILE_MAT_SPARSE );
                
@@ -474,9 +481,9 @@ write_mat_sparse ( std::ostream &  out, const TSparseMatrix * S )
 
     if ( sizeof(idx_t) == sizeof(int32_t) )
     {
-        out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix * >( S )->rowptr(0) ),
+        out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix< value_t > * >( S )->rowptr(0) ),
                    sizeof(int32_t) * (S->rows() + 1) );
-        out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix * >( S )->colind(0) ), sizeof(int32_t) * nnz );
+        out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix< value_t > * >( S )->colind(0) ), sizeof(int32_t) * nnz );
     }// if
     else
     {
@@ -493,36 +500,21 @@ write_mat_sparse ( std::ostream &  out, const TSparseMatrix * S )
         }// for
     }// else
     
-    if ( is_complex )
-    {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix * >( S )->ccoeff(0) ),
-                       sizeof(complex) * nnz );
-        else
-        {
-            for ( idx_t  i = 0; i < idx_t(nnz); i++ )
-            {
-                hlib_write< complex >( out, S->ccoeff(i) );
-            }// for
-        }// else
-    }// if
+    if ( sizeof(real_t) == sizeof(double) )
+        out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix< value_t > * >( S )->coeff(0) ),
+                   sizeof(value_t) * nnz );
     else
     {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( & const_cast< TSparseMatrix * >( S )->rcoeff(0) ),
-                       sizeof(real) * nnz );
-        else
+        for ( idx_t  i = 0; i < idx_t(nnz); i++ )
         {
-            for ( idx_t  i = 0; i < idx_t(nnz); i++ )
-            {
-                hlib_write< real >( out, S->rcoeff(i) );
-            }// for
-        }// else
+            hlib_write< value_t >( out, S->coeff(i) );
+        }// for
     }// else
 }
 
 void
-write_mat_perm ( std::ostream &  out, const TPermutation * P )
+write_mat_perm ( std::ostream &        out,
+                 const TPermutation *  P )
 {
     const uint32_t  n = uint32_t(P->size());
     
@@ -536,8 +528,10 @@ write_mat_perm ( std::ostream &  out, const TPermutation * P )
     }// for
 }
 
+template < typename value_t >
 void
-write_mat_h ( std::ostream &  out, const THMatrix * H )
+write_mat_h ( std::ostream &               out,
+              const THMatrix< value_t > *  H )
 {
     const bool      sym        = H->is_symmetric() || H->is_hermitian();
     const uint32_t  block_rows = H->block_rows();
@@ -579,15 +573,18 @@ write_mat_h ( std::ostream &  out, const THMatrix * H )
     }// else
 }
 
+template < typename value_t >
 void
-write_mat_zero ( std::ostream &  out, const TZeroMatrix * M )
+write_mat_zero ( std::ostream &                  out,
+                 const TZeroMatrix< value_t > *  M )
 {
     write_mat_header( out, M, HMFILE_MAT_ZERO );
 }
 
+template < typename value_t >
 void
-write_mat ( std::ostream &   out,
-            const TMatrix *  A )
+write_mat ( std::ostream &              out,
+            const TMatrix< value_t > *  A )
 {
     if ( A == nullptr )
     {
@@ -595,26 +592,28 @@ write_mat ( std::ostream &   out,
 
         out.write( reinterpret_cast< const char * >( & type ), sizeof(type) );
     }// if
-    else if ( IS_TYPE( A, THMatrix       ) ) write_mat_h(       out, cptrcast( A, THMatrix       ) );
-    else if ( IS_TYPE( A, TBlockMatrix   ) ) write_mat_block(   out, cptrcast( A, TBlockMatrix   ) );
-    else if ( IS_TYPE( A, TDenseMatrix   ) ) write_mat_dense(   out, cptrcast( A, TDenseMatrix   ) );
-    else if ( IS_TYPE( A, TRkMatrix      ) ) write_mat_rank(    out, cptrcast( A, TRkMatrix      ) );
-    else if ( IS_TYPE( A, TSparseMatrix  ) ) write_mat_sparse(  out, cptrcast( A, TSparseMatrix  ) );
-    else if ( IS_TYPE( A, TZeroMatrix    ) ) write_mat_zero(    out, cptrcast( A, TZeroMatrix    ) );
+    else if ( IS_TYPE( A, THMatrix       ) ) write_mat_h(       out, cptrcast( A, THMatrix< value_t >       ) );
+    else if ( IS_TYPE( A, TBlockMatrix   ) ) write_mat_block(   out, cptrcast( A, TBlockMatrix< value_t >   ) );
+    else if ( IS_TYPE( A, TDenseMatrix   ) ) write_mat_dense(   out, cptrcast( A, TDenseMatrix< value_t >   ) );
+    else if ( IS_TYPE( A, TRkMatrix      ) ) write_mat_rank(    out, cptrcast( A, TRkMatrix< value_t >      ) );
+    else if ( IS_TYPE( A, TSparseMatrix  ) ) write_mat_sparse(  out, cptrcast( A, TSparseMatrix< value_t >  ) );
+    else if ( IS_TYPE( A, TZeroMatrix    ) ) write_mat_zero(    out, cptrcast( A, TZeroMatrix< value_t >    ) );
     else
-        HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) write", A->typestr() );
+        HERROR( ERR_MAT_TYPE, "(THproMatrixIO) write", A->typestr() );
 }
 
 namespace LinOp
 {
 
+template < typename value_t >
 void
-write ( std::ostream &           out,
-        const TLinearOperator *  A );
+write ( std::ostream &                      out,
+        const TLinearOperator< value_t > *  A );
 
+template < typename value_t >
 void
-write ( std::ostream &           out,
-        const TLinearOperator *  A )
+write ( std::ostream &                      out,
+        const TLinearOperator< value_t > *  A )
 {
     if ( A == nullptr )
     {
@@ -622,21 +621,21 @@ write ( std::ostream &           out,
 
         out.write( reinterpret_cast< const char * >( & type ), sizeof(type) );
     }// if
-    else if ( dynamic_cast< const TMatrix * >( A ) != nullptr )
+    else if ( dynamic_cast< const TMatrix< value_t > * >( A ) != nullptr )
     {
-        const TMatrix *  M = cptrcast( A, TMatrix );
+        const TMatrix< value_t > *  M = cptrcast( A, TMatrix< value_t > );
         
-        if      ( IS_TYPE( M, THMatrix       ) ) write_mat_h(       out, cptrcast( M, THMatrix       ) );
-        else if ( IS_TYPE( M, TBlockMatrix   ) ) write_mat_block(   out, cptrcast( M, TBlockMatrix   ) );
-        else if ( IS_TYPE( M, TDenseMatrix   ) ) write_mat_dense(   out, cptrcast( M, TDenseMatrix   ) );
-        else if ( IS_TYPE( M, TRkMatrix      ) ) write_mat_rank(    out, cptrcast( M, TRkMatrix      ) );
-        else if ( IS_TYPE( M, TSparseMatrix  ) ) write_mat_sparse(  out, cptrcast( M, TSparseMatrix  ) );
-        else if ( IS_TYPE( M, TZeroMatrix    ) ) write_mat_zero(    out, cptrcast( M, TZeroMatrix    ) );
+        if      ( IS_TYPE( M, THMatrix       ) ) write_mat_h(       out, cptrcast( M, THMatrix< value_t >       ) );
+        else if ( IS_TYPE( M, TBlockMatrix   ) ) write_mat_block(   out, cptrcast( M, TBlockMatrix< value_t >   ) );
+        else if ( IS_TYPE( M, TDenseMatrix   ) ) write_mat_dense(   out, cptrcast( M, TDenseMatrix< value_t >   ) );
+        else if ( IS_TYPE( M, TRkMatrix      ) ) write_mat_rank(    out, cptrcast( M, TRkMatrix< value_t >      ) );
+        else if ( IS_TYPE( M, TSparseMatrix  ) ) write_mat_sparse(  out, cptrcast( M, TSparseMatrix< value_t >  ) );
+        else if ( IS_TYPE( M, TZeroMatrix    ) ) write_mat_zero(    out, cptrcast( M, TZeroMatrix< value_t >    ) );
         else
-            HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) write", M->typestr() );
+            HERROR( ERR_MAT_TYPE, "(THproMatrixIO) write", M->typestr() );
     }// if
     else
-        HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) write", "" );
+        HERROR( ERR_MAT_TYPE, "(THproMatrixIO) write", "" );
 }
 
 }// namespace LinOp
@@ -652,17 +651,21 @@ write ( std::ostream &           out,
 //
 // forward decl.
 //
-TMatrix *
-read_mat  ( std::istream &  in, bool byteswap, const int version );
+template < typename value_t >
+TMatrix< value_t > *
+read_mat  ( std::istream &  in,
+            bool            byteswap,
+            const int       version );
 
 //
 // read matrix header
 //
+template < typename value_t >
 void
-read_mat_header ( std::istream &  in,
-                  TMatrix *       A,
-                  bool            byteswap,
-                  const int       version )
+read_mat_header ( std::istream &        in,
+                  TMatrix< value_t > *  A,
+                  bool                  byteswap,
+                  const int             version )
 {
     uint32_t   row_ofs    = 0;
     uint32_t   col_ofs    = 0;
@@ -687,7 +690,6 @@ read_mat_header ( std::istream &  in,
         A->set_ofs( row_ofs, col_ofs );
         A->set_procs( ps( proc_first, proc_last ) );
         A->set_form( form );
-        A->set_complex( is_complex );
     }// if
     else
     {
@@ -700,17 +702,22 @@ read_mat_header ( std::istream &  in,
         A->set_ofs( row_ofs, col_ofs );
         A->set_procs( ps_single( NET::pid() ) );
         A->set_form( form );
-        A->set_complex( is_complex );
     }// else
+
+    if ( is_complex && ! is_complex_type< value_t >::value )
+        HERROR( ERR_REAL_CMPLX, "(HLibIO) read_mat_header", "complex valued data but real value requested" );
 }
 
 //
 // special read methods
 //
-TMatrix *
-read_mat_block  ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat_block  ( std::istream &  in,
+                  bool            byteswap,
+                  const int       version )
 {
-    auto      A = make_unique< TBlockMatrix >();
+    auto      A = make_unique< TBlockMatrix< value_t > >();
     uint32_t  rows, cols;
     uint32_t  block_rows, block_cols;
 
@@ -727,22 +734,27 @@ read_mat_block  ( std::istream &  in, bool byteswap, const int version )
     {
         for ( uint i = 0; i < block_rows; i++ )
             for ( uint j = 0; j < block_cols; j++ )
-                A->set_block( i, j, read_mat( in, byteswap, version ) );
+                A->set_block( i, j, read_mat< value_t >( in, byteswap, version ) );
     }// if
     else
     {
         for ( uint i = 0; i < block_rows; i++ )
             for ( uint j = 0; j <= i; j++ )
-                A->set_block( i, j, read_mat( in, byteswap, version ) );
+                A->set_block( i, j, read_mat< value_t >( in, byteswap, version ) );
     }// else
     
     return A.release();
 }
 
-TMatrix *
-read_mat_dense  ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat_dense  ( std::istream &  in,
+                  bool            byteswap,
+                  const int       version )
 {
-    auto      A = make_unique< TDenseMatrix >();
+    using  real_t = real_type_t< value_t >;
+
+    auto      A = make_unique< TDenseMatrix< value_t > >();
     uint32_t  rows, cols;
 
     read_mat_header( in, A.get(), byteswap, version );
@@ -751,11 +763,11 @@ read_mat_dense  ( std::istream &  in, bool byteswap, const int version )
 
     A->set_size( rows, cols );
 
-    if ( A->is_complex() )
+    if ( sizeof(real_t) == sizeof(double) )
+        hlib_read<value_t>( in, A->blas_mat().data(), rows*cols, byteswap );
+    else
     {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<complex>( in, A->blas_cmat().data(), rows*cols, byteswap );
-        else
+        if ( is_complex_type< value_t >::value )
         {
             for ( idx_t  j = 0; j < idx_t(cols); j++ )
                 for ( idx_t  i = 0; i < idx_t(rows); i++ )
@@ -764,29 +776,29 @@ read_mat_dense  ( std::istream &  in, bool byteswap, const int version )
 
                     hlib_read<double>( in, z, 2, byteswap );
                     
-                    A->blas_cmat()(i,j) = complex( real(z[0]), real(z[1]) );
+                    A->blas_mat()(i,j) = get_value< value_t >::compose( z[0], z[1] );
                 }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<real>( in, A->blas_rmat().data(), rows*cols, byteswap );
+        }// if
         else
         {
             for ( idx_t  j = 0; j < idx_t(cols); j++ )
                 for ( idx_t  i = 0; i < idx_t(rows); i++ )
-                    A->blas_rmat()(i,j) = real(hlib_read<double>( in, byteswap ));
+                    A->blas_mat()(i,j) = value_t( hlib_read<double>( in, byteswap ) );
         }// else
     }// else
     
     return A.release();
 }
 
-TMatrix *
-read_mat_rank ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat_rank ( std::istream &  in,
+                bool            byteswap,
+                const int       version )
 {
-    auto      A = make_unique< TRkMatrix >();
+    using  real_t = real_type_t< value_t >;
+
+    auto      A = make_unique< TRkMatrix< value_t > >();
     uint32_t  rows, cols, rank;
 
     read_mat_header( in, A.get(), byteswap, version );
@@ -796,60 +808,57 @@ read_mat_rank ( std::istream &  in, bool byteswap, const int version )
 
     A->set_size( rows, cols, rank );
 
-    if ( A->is_complex() )
+    if ( sizeof(real_t) == sizeof(double) )
     {
-        if ( sizeof(real) == sizeof(double) )
-        {
-            hlib_read<complex>( in, A->blas_cmat_A().data(), rank*rows, byteswap );
-            hlib_read<complex>( in, A->blas_cmat_B().data(), rank*cols, byteswap );
-        }// if
-        else
-        {
-            for ( idx_t  k = 0; k < idx_t(rank); k++ )
-                for ( idx_t  i = 0; i < idx_t(rows); i++ )
-                {
-                    double z[2];
-
-                    hlib_read<double>( in, z, 2, byteswap );
-                    A->blas_cmat_A()(i,k) = complex( real(z[0]), real(z[1]) );
-                }// for
-
-            for ( idx_t  k = 0; k < idx_t(rank); k++ )
-                for ( idx_t  i = 0; i < idx_t(cols); i++ )
-                {
-                    double z[2];
-
-                    hlib_read<double>( in, z, 2, byteswap );
-                    A->blas_cmat_B()(i,k) = complex( real(z[0]), real(z[1]) );
-                }// for
-        }// else
+        hlib_read< value_t >( in, A->blas_mat_A().data(), rank*rows, byteswap );
+        hlib_read< value_t >( in, A->blas_mat_B().data(), rank*cols, byteswap );
     }// if
     else
     {
-        if ( sizeof(real) == sizeof(double) )
+        if ( is_complex_type< value_t >::value )
         {
-            hlib_read<real>( in, A->blas_rmat_A().data(), rank*rows, byteswap );
-            hlib_read<real>( in, A->blas_rmat_B().data(), rank*cols, byteswap );
+            for ( idx_t  k = 0; k < idx_t(rank); k++ )
+                for ( idx_t  i = 0; i < idx_t(rows); i++ )
+                {
+                    double z[2];
+
+                    hlib_read<double>( in, z, 2, byteswap );
+                    A->blas_mat_A()(i,k) = get_value< value_t >::compose( z[0], z[1] );
+                }// for
+
+            for ( idx_t  k = 0; k < idx_t(rank); k++ )
+                for ( idx_t  i = 0; i < idx_t(cols); i++ )
+                {
+                    double z[2];
+
+                    hlib_read<double>( in, z, 2, byteswap );
+                    A->blas_mat_B()(i,k) = get_value< value_t >::compose( z[0], z[1] );
+                }// for
         }// if
         else
         {
             for ( idx_t  k = 0; k < idx_t(rank); k++ )
                 for ( idx_t  i = 0; i < idx_t(rows); i++ )
-                    A->blas_rmat_A()(i,k) = real( hlib_read<double>( in, byteswap ) );
+                    A->blas_mat_A()(i,k) = value_t( hlib_read<double>( in, byteswap ) );
 
             for ( idx_t  k = 0; k < idx_t(rank); k++ )
                 for ( idx_t  i = 0; i < idx_t(cols); i++ )
-                    A->blas_rmat_B()(i,k) = real( hlib_read<double>( in, byteswap ) );
+                    A->blas_mat_B()(i,k) = value_t( hlib_read<double>( in, byteswap ) );
         }// else
     }// if
 
     return A.release();
 }
 
-TMatrix *
-read_mat_sparse ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat_sparse ( std::istream &  in,
+                  bool            byteswap,
+                  const int       version )
 {
-    auto      A = make_unique< TSparseMatrix >();
+    using  real_t = real_type_t< value_t >;
+
+    auto      A = make_unique< TSparseMatrix< value_t > >();
     uint32_t  rows, cols, nnz;
 
     read_mat_header( in, A.get(), byteswap, version );
@@ -866,29 +875,24 @@ read_mat_sparse ( std::istream &  in, bool byteswap, const int version )
     for ( uint32_t  i = 0; i < nnz; i++ )
         A->colind(i) = hlib_read<int32_t>( in, byteswap );
 
-    if ( A->is_complex() )
+    if ( sizeof(real_t) == sizeof(double) )
+        hlib_read< value_t >( in, & A->coeff(0), nnz, byteswap );
+    else
     {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<complex>( in, & A->ccoeff(0), nnz, byteswap );
-        else
+        if ( is_complex_type< value_t >::value )
         {
             for ( idx_t  i = 0; i < idx_t( nnz ); i++ )
             {
                 double z[2];
 
                 hlib_read<double>( in, z, 2, byteswap );
-                A->ccoeff(i) = complex( real(z[0]), real(z[1]) );
+                A->coeff(i) = get_value< value_t >::compose( z[0], z[1] );
             }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<real>( in, & A->rcoeff(0), nnz, byteswap );
+        }// if
         else
         {
             for ( idx_t  i = 0; i < idx_t( nnz ); i++ )
-                A->rcoeff(i) = real(hlib_read<double>( in, byteswap ));
+                A->coeff(i) = value_t( hlib_read<double>( in, byteswap ) );
         }// else
     }// else
         
@@ -901,21 +905,8 @@ read_mat_perm  ( std::istream &  in, bool byteswap, const int )
     auto      P = make_unique< TPermutation >();
     uint32_t  size;
 
-#ifdef OLD_PERM
-    hlib_read<uint16_t>( in, byteswap );
-    hlib_read<uint32_t>( in, byteswap );
-    hlib_read<uint32_t>( in, byteswap );
-    hlib_read<uint8_t>(  in, byteswap );
-    hlib_read<uint8_t>(  in, byteswap );
-#endif
-    
     size = hlib_read<uint32_t>( in, byteswap );
 
-#ifdef OLD_PERM
-    hlib_read<uint32_t>( in, byteswap );
-    hlib_read<double>( in, byteswap );
-#endif
-    
     P->resize( size );
 
     for ( uint32_t  i = 0; i < size; i++ )
@@ -924,10 +915,13 @@ read_mat_perm  ( std::istream &  in, bool byteswap, const int )
     return P.release();
 }
 
-TMatrix *
-read_mat_h ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat_h ( std::istream &  in,
+             bool            byteswap,
+             const int       version )
 {
-    auto      H = make_unique< THMatrix >();
+    auto      H = make_unique< THMatrix< value_t > >();
     uint32_t  rows, cols;
     uint32_t  block_rows, block_cols;
     bool      has_perm;
@@ -946,15 +940,15 @@ read_mat_h ( std::istream &  in, bool byteswap, const int version )
     {
         // TODO: check correct type (permutation)
         {
-            auto  P_e2i = unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
-            auto  P_i2e = unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
+            auto  P_e2i = std::unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
+            auto  P_i2e = std::unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
             
             H->set_row_perm( * P_e2i.get(), * P_i2e.get() );
         }
 
         {
-            auto  P_e2i = unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
-            auto  P_i2e = unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
+            auto  P_e2i = std::unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
+            auto  P_i2e = std::unique_ptr< TPermutation >( read_mat_perm( in, byteswap, version ) );
             
             H->set_col_perm( * P_e2i.get(), * P_i2e.get() );
         }
@@ -964,13 +958,13 @@ read_mat_h ( std::istream &  in, bool byteswap, const int version )
     {
         for ( uint i = 0; i < block_rows; i++ )
             for ( uint j = 0; j < block_cols; j++ )
-                H->set_block( i, j, read_mat( in, byteswap, version ) );
+                H->set_block( i, j, read_mat< value_t >( in, byteswap, version ) );
     }// if
     else
     {
         for ( uint i = 0; i < block_rows; i++ )
             for ( uint j = 0; j <= i; j++ )
-                H->set_block( i, j, read_mat( in, byteswap, version ) );
+                H->set_block( i, j, read_mat< value_t >( in, byteswap, version ) );
     }// else
     
     H->comp_min_max_idx();
@@ -978,10 +972,13 @@ read_mat_h ( std::istream &  in, bool byteswap, const int version )
     return H.release();
 }
 
-TZeroMatrix *
-read_mat_zero  ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TZeroMatrix< value_t > *
+read_mat_zero  ( std::istream &  in,
+                 bool            byteswap,
+                 const int       version )
 {
-    auto      M = make_unique< TZeroMatrix >();
+    auto      M = make_unique< TZeroMatrix< value_t > >();
     uint32_t  rows, cols;
 
     read_mat_header( in, M.get(), byteswap, version );
@@ -993,32 +990,35 @@ read_mat_zero  ( std::istream &  in, bool byteswap, const int version )
     return M.release();
 }
 
-TMatrix *
-read_mat  ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TMatrix< value_t > *
+read_mat  ( std::istream &  in,
+            bool            byteswap,
+            const int       version )
 {
-    uint16_t   type = HMFILE_NULL;
-    TMatrix *  M = nullptr;
+    uint16_t              type = HMFILE_NULL;
+    TMatrix< value_t > *  M    = nullptr;
     
     type = hlib_read<uint16_t>( in, byteswap );
 
     if      ( type == HMFILE_NULL        ) M = nullptr;
-    else if ( type == HMFILE_MAT_H       ) M = read_mat_h(       in, byteswap, version );
-    else if ( type == HMFILE_MAT_BLOCK   ) M = read_mat_block(   in, byteswap, version );
-    else if ( type == HMFILE_MAT_DENSE   ) M = read_mat_dense(   in, byteswap, version );
-    else if ( type == HMFILE_MAT_RANK    ) M = read_mat_rank(    in, byteswap, version );
-    else if ( type == HMFILE_MAT_SPARSE  ) M = read_mat_sparse(  in, byteswap, version );
+    else if ( type == HMFILE_MAT_H       ) M = read_mat_h< value_t >(       in, byteswap, version );
+    else if ( type == HMFILE_MAT_BLOCK   ) M = read_mat_block< value_t >(   in, byteswap, version );
+    else if ( type == HMFILE_MAT_DENSE   ) M = read_mat_dense< value_t >(   in, byteswap, version );
+    else if ( type == HMFILE_MAT_RANK    ) M = read_mat_rank< value_t >(    in, byteswap, version );
+    else if ( type == HMFILE_MAT_SPARSE  ) M = read_mat_sparse< value_t >(  in, byteswap, version );
     else if ( version >= 2 )
     {
-        if ( type == HMFILE_MAT_ZERO    ) M = read_mat_zero(    in, byteswap, version );
+        if ( type == HMFILE_MAT_ZERO    ) M = read_mat_zero< value_t >(    in, byteswap, version );
     }// if
     else if ( version == 1 )
     {
-        if      ( type == HMFILE_MAT_PERM    ) HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "unsupported in v2.0" );
-        else if ( type == HMFILE_MAT_FAC     ) HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "unsupported in v2.0" );
-        else if ( type == HMFILE_MAT_FACINV  ) HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "unsupported in v2.0" );
+        if      ( type == HMFILE_MAT_PERM    ) HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "unsupported in v2.0" );
+        else if ( type == HMFILE_MAT_FAC     ) HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "unsupported in v2.0" );
+        else if ( type == HMFILE_MAT_FACINV  ) HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "unsupported in v2.0" );
     }// if
     else
-        HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "" );
+        HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "" );
 
     return M;
 }
@@ -1026,13 +1026,17 @@ read_mat  ( std::istream &  in, bool byteswap, const int version )
 namespace LinOp
 {
 
-TLinearOperator *
+template < typename value_t >
+TLinearOperator< value_t > *
 read  ( std::istream &  in,
         bool            byteswap,
         const int       version );
 
-TLinearOperator *
-read  ( std::istream &  in, bool byteswap, const int version )
+template < typename value_t >
+TLinearOperator< value_t > *
+read  ( std::istream &  in,
+        bool            byteswap,
+        const int       version )
 {
     uint16_t type = HMFILE_NULL;
     
@@ -1040,22 +1044,23 @@ read  ( std::istream &  in, bool byteswap, const int version )
 
     if      ( type == HMFILE_NULL        ) return nullptr;
     // Matrices
-    else if ( type == HMFILE_MAT_H       ) return read_mat_h(        in, byteswap, version );
-    else if ( type == HMFILE_MAT_BLOCK   ) return read_mat_block(    in, byteswap, version );
-    else if ( type == HMFILE_MAT_DENSE   ) return read_mat_dense(    in, byteswap, version );
-    else if ( type == HMFILE_MAT_RANK    ) return read_mat_rank(     in, byteswap, version );
-    else if ( type == HMFILE_MAT_SPARSE  ) return read_mat_sparse(   in, byteswap, version );
+    else if ( type == HMFILE_MAT_H       ) return read_mat_h< value_t >(        in, byteswap, version );
+    else if ( type == HMFILE_MAT_BLOCK   ) return read_mat_block< value_t >(    in, byteswap, version );
+    else if ( type == HMFILE_MAT_DENSE   ) return read_mat_dense< value_t >(    in, byteswap, version );
+    else if ( type == HMFILE_MAT_RANK    ) return read_mat_rank< value_t >(     in, byteswap, version );
+    else if ( type == HMFILE_MAT_SPARSE  ) return read_mat_sparse< value_t >(   in, byteswap, version );
+    // linear Operators
     // Rest
     else if ( version >= 2 )
     {
-        if      ( type == HMFILE_MAT_ZERO ) return read_mat_zero(    in, byteswap, version );
+        if      ( type == HMFILE_MAT_ZERO ) return read_mat_zero< value_t >(    in, byteswap, version );
     }// if
     else if ( version == 1 )
     {
-        if ( type == HMFILE_MAT_PERM ) HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "old permutation unsupported in v2.0" );
+        if ( type == HMFILE_MAT_PERM ) HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "old permutation unsupported in v2.0" );
     }// if
     else
-        HERROR( ERR_MAT_TYPE, "(THLibMatrixIO) read", "" );
+        HERROR( ERR_MAT_TYPE, "(THproMatrixIO) read", "" );
     
     return nullptr;
 }
@@ -1070,15 +1075,20 @@ read  ( std::istream &  in, bool byteswap, const int version )
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+template < typename value_t >
 void
-write_vec ( std::ostream &  out, const TVector * v );
+write_vec ( std::ostream &              out,
+            const TVector< value_t > *  v );
 
+template < typename value_t >
 void
-write_vec_header ( std::ostream &  out, const TVector * v, const uint type )
+write_vec_header ( std::ostream &              out,
+                   const TVector< value_t > *  v,
+                   const uint                  type )
 {
     uint16_t  ltype      = uint16_t(type);
     uint32_t  ofs        = uint32_t(v->ofs());
-    uint8_t   is_complex = uint8_t(v->is_complex());
+    uint8_t   is_complex = uint8_t(is_complex_type< value_t >::value);
     uint32_t  size       = uint32_t(v->size());
 
     out.write( reinterpret_cast< const char * >( & ltype ),      sizeof(uint16_t) );
@@ -1087,8 +1097,10 @@ write_vec_header ( std::ostream &  out, const TVector * v, const uint type )
     out.write( reinterpret_cast< const char * >( & size ),       sizeof(uint32_t) );
 }
 
+template < typename value_t >
 void
-write_vec_block ( std::ostream &  out, const TBlockVector * v )
+write_vec_block ( std::ostream &                   out,
+                  const TBlockVector< value_t > *  v )
 {
     uint32_t  blocks = v->n_blocks();
     
@@ -1100,37 +1112,35 @@ write_vec_block ( std::ostream &  out, const TBlockVector * v )
         write_vec( out, v->block(i) );
 }
 
+template < typename value_t >
 void
-write_vec_scalar ( std::ostream &  out, const TScalarVector * v )
+write_vec_scalar ( std::ostream &                    out,
+                   const TScalarVector< value_t > *  v )
 {
-    uint32_t  size       = uint32_t(v->size());
-    bool      is_complex = v->is_complex();
+    using  real_t = real_type_t< value_t >;
+
+    uint32_t  size = uint32_t(v->size());
 
     write_vec_header( out, v, HMFILE_VEC_SCALAR );
 
-    if ( is_complex )
+    if ( sizeof(real_t) == sizeof(double) )
+        out.write( reinterpret_cast< const char * >( v->blas_vec().data() ), sizeof(value_t) * size );
+    else
     {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( v->blas_cvec().data() ), sizeof(complex) * size );
-        else
+        if ( is_complex_type< value_t >::value )
         {
             for ( uint i = 0; i < size; i++ )
             {
-                const double z[2] = { v->centry(i).real(), v->centry(i).imag() };
+                const double z[2] = { std::real( v->entry(i) ), std::imag( v->entry(i) ) };
                 
                 out.write( reinterpret_cast< const char * >( z ), sizeof(double) * 2 );
             }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-            out.write( reinterpret_cast< const char * >( v->blas_rvec().data() ), sizeof(real) * size );
+        }// if
         else
         {
             for ( uint i = 0; i < size; i++ )
             {
-                const double f = v->entry(i);
+                const double  f = std::real( v->entry(i) );
                 
                 out.write( reinterpret_cast< const char * >( & f ), sizeof(double) );
             }// for
@@ -1138,8 +1148,10 @@ write_vec_scalar ( std::ostream &  out, const TScalarVector * v )
     }// else
 }
 
+template < typename value_t >
 void
-write_vec ( std::ostream &  out, const TVector * v )
+write_vec ( std::ostream &              out,
+            const TVector< value_t > *  v )
 {
     if ( v == nullptr )
     {
@@ -1147,10 +1159,10 @@ write_vec ( std::ostream &  out, const TVector * v )
 
         out.write( reinterpret_cast< const char * >( & type ), sizeof(uint16_t) );
     }// if
-    else if ( IS_TYPE( v, TBlockVector  ) ) write_vec_block(  out, cptrcast( v, TBlockVector  ) );
-    else if ( IS_TYPE( v, TScalarVector ) ) write_vec_scalar( out, cptrcast( v, TScalarVector ) );
+    else if ( IS_TYPE( v, TBlockVector  ) ) write_vec_block(  out, cptrcast( v, TBlockVector< value_t >  ) );
+    else if ( IS_TYPE( v, TScalarVector ) ) write_vec_scalar( out, cptrcast( v, TScalarVector< value_t > ) );
     else
-        HERROR( ERR_VEC_TYPE, "(THLibVectorIO) write", v->typestr() );
+        HERROR( ERR_VEC_TYPE, "(THproVectorIO) write", v->typestr() );
 }
 
 //////////////////////////////////////////////////////////////
@@ -1161,14 +1173,16 @@ write_vec ( std::ostream &  out, const TVector * v )
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-TVector *
+template < typename value_t >
+TVector< value_t > *
 read_vec ( std::istream &  in,
            const bool      byteswap );
 
+template < typename value_t >
 void
-read_vec_header ( std::istream &  in,
-                  TVector *       v,
-                  const bool      byteswap )
+read_vec_header ( std::istream &        in,
+                  TVector< value_t > *  v,
+                  const bool            byteswap )
 {
     uint32_t  ofs        = 0;
     bool      is_complex = false;
@@ -1177,15 +1191,18 @@ read_vec_header ( std::istream &  in,
     is_complex = hlib_read<uint8_t>(  in, byteswap ) != 0;
 
     v->set_ofs( ofs );
-    v->set_complex( is_complex );
+
+    if ( is_complex && ! is_complex_type< value_t >::value )
+        HERROR( ERR_REAL_CMPLX, "(HLibIO) read_vec_header", "complex valued data but real value requested" );
 }
 
-TVector *
+template < typename value_t >
+TVector< value_t > *
 read_vec_block ( std::istream &  in,
                  const bool      byteswap )
 {
-    TBlockVector * v = new TBlockVector;
-    uint32_t       blocks;
+    auto      v = new TBlockVector< value_t >();
+    uint32_t  blocks;
 
     read_vec_header( in, v, byteswap );
     hlib_read<uint32_t>( in, byteswap ); // overread size
@@ -1194,53 +1211,52 @@ read_vec_block ( std::istream &  in,
     v->set_block_struct( blocks );
 
     for ( uint i = 0; i < blocks; i++ )
-        v->set_block( i, read_vec( in, byteswap ) );
+        v->set_block( i, read_vec< value_t >( in, byteswap ) );
     
     return v;
 }
 
-TVector *
+template < typename value_t >
+TVector< value_t > *
 read_vec_scalar ( std::istream &  in,
                   const bool      byteswap )
 {
-    TScalarVector * v = new TScalarVector;
-    uint32_t        size;
+    using  real_t = real_type_t< value_t >;
+
+    auto      v = new TScalarVector< value_t >();
+    uint32_t  size;
 
     read_vec_header( in, v, byteswap );
     size = hlib_read<uint32_t>( in, byteswap );
 
     v->set_size( size );
 
-    if ( v->is_complex() )
+    if ( sizeof(real_t) == sizeof(double) )
+        hlib_read< value_t >( in, v->blas_vec().data(), size, byteswap );
+    else
     {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<complex>( in, v->blas_cvec().data(), size, byteswap );
-        else
+        if ( is_complex_type< value_t >::value )
         {
             for ( idx_t  i = 0; i < idx_t(size); i++ )
             {
                 double  z[2];
 
                 hlib_read<double>( in, z, 2, byteswap );
-                v->blas_cvec()(i) = complex( real(z[0]), real(z[1]) );
+                v->blas_vec()(i) = get_value< value_t >::compose( z[0], z[1] );
             }// for
-        }// else
-    }// if
-    else
-    {
-        if ( sizeof(real) == sizeof(double) )
-            hlib_read<real>( in, v->blas_rvec().data(), size, byteswap );
+        }// if
         else
         {
             for ( idx_t  i = 0; i < idx_t(size); i++ )
-                v->blas_rvec()(i) = real(hlib_read<double>( in, byteswap ));
+                v->blas_vec()(i) = value_t( hlib_read<double>( in, byteswap ) );
         }// else
     }// else
     
     return v;
 }
 
-TVector *
+template < typename value_t >
+TVector< value_t > *
 read_vec ( std::istream &  in,
            const bool      byteswap )
 {
@@ -1249,10 +1265,10 @@ read_vec ( std::istream &  in,
     type = hlib_read<uint16_t>( in, byteswap );
 
     if      ( type == HMFILE_NULL       ) return nullptr;
-    else if ( type == HMFILE_VEC_BLOCK  ) return read_vec_block(  in, byteswap );
-    else if ( type == HMFILE_VEC_SCALAR ) return read_vec_scalar( in, byteswap );
+    else if ( type == HMFILE_VEC_BLOCK  ) return read_vec_block< value_t >(  in, byteswap );
+    else if ( type == HMFILE_VEC_SCALAR ) return read_vec_scalar< value_t >( in, byteswap );
     else
-        HERROR( ERR_VEC_TYPE, "(THLibVectorIO) read", "" );
+        HERROR( ERR_VEC_TYPE, "(THproVectorIO) read", "" );
     
     return nullptr;
 }
@@ -1262,7 +1278,7 @@ read_vec ( std::istream &  in,
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 // 
-// class THLibMatrixIO
+// class THproMatrixIO
 //
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1270,15 +1286,16 @@ read_vec ( std::istream &  in,
 //
 // write matrix with name
 //
+template < typename value_t >
 void
-THLibMatrixIO::write ( const TMatrix *      A,
-                       const std::string &  filename ) const
+THproMatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &         filename ) const
 {
     if ( A == nullptr )
-        HERROR( ERR_ARG, "(THLibMatrixIO) write", "argument is nullptr" );
-    
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+        HERROR( ERR_ARG, "(THproMatrixIO) write", "argument is nullptr" );
+
+    auto            out_ptr = open_write( filename );
+    std::ostream &  out     = * out_ptr.get();
 
     write_header( out );
 
@@ -1286,20 +1303,21 @@ THLibMatrixIO::write ( const TMatrix *      A,
     // write matrix
     //
     
-    HLIB::write_mat( out, A );
+    Hpro::write_mat( out, A );
 }
 
 //
 // read matrix from file
 //
-unique_ptr< TMatrix >
-THLibMatrixIO::read ( const std::string &  filename ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+THproMatrixIO::read ( const std::string &  filename ) const
 {
     if ( ! boost::filesystem::exists( filename ) )
-        HERROR( ERR_FNEXISTS, "(THLibMatrixIO) read", filename );
+        HERROR( ERR_FNEXISTS, "(THproMatrixIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
     
     //
     // read (or skip) header
@@ -1310,21 +1328,22 @@ THLibMatrixIO::read ( const std::string &  filename ) const
 
     read_header( in, byteswap, version );
     
-    return unique_ptr< TMatrix >( HLIB::read_mat( in, byteswap, version ) );
+    return std::unique_ptr< TMatrix< value_t > >( Hpro::read_mat< value_t >( in, byteswap, version ) );
 }
 
 //
 // write matrix with name
 //
+template < typename value_t >
 void
-THLibMatrixIO::write_linop ( const TLinearOperator *  A,
-                             const std::string &      filename ) const
+THproMatrixIO::write_linop ( const TLinearOperator< value_t > *  A,
+                             const std::string &                 filename ) const
 {
     if ( A == nullptr )
-        HERROR( ERR_ARG, "(THLibMatrixIO) write_linop", "argument is nullptr" );
+        HERROR( ERR_ARG, "(THproMatrixIO) write_linop", "argument is nullptr" );
     
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    auto            out_ptr = open_write( filename );
+    std::ostream &  out     = * out_ptr.get();
 
     write_header( out );
 
@@ -1338,11 +1357,12 @@ THLibMatrixIO::write_linop ( const TLinearOperator *  A,
 //
 // read matrix from file
 //
-unique_ptr< TLinearOperator >
-THLibMatrixIO::read_linop ( const std::string &  filename ) const
+template < typename value_t >
+std::unique_ptr< TLinearOperator< value_t > >
+THproMatrixIO::read_linop ( const std::string &  filename ) const
 {
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
     
     //
     // read (or skip) header
@@ -1353,13 +1373,24 @@ THLibMatrixIO::read_linop ( const std::string &  filename ) const
 
     read_header( in, byteswap, version );
     
-    return unique_ptr< TLinearOperator >( LinOp::read( in, byteswap, version ) );
+    return std::unique_ptr< TLinearOperator< value_t > >( LinOp::read< value_t >( in, byteswap, version ) );
 }
+
+#define INST_MATRIXIO( type )                   \
+    template void THproMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > THproMatrixIO::read< type > ( const std::string & ) const; \
+    template void THproMatrixIO::write_linop< type > ( const TLinearOperator< type > *, const std::string & ) const; \
+    template std::unique_ptr< TLinearOperator< type > > THproMatrixIO::read_linop< type > ( const std::string & ) const;
+
+INST_MATRIXIO( float )
+INST_MATRIXIO( double )
+INST_MATRIXIO( std::complex< float > )
+INST_MATRIXIO( std::complex< double > )
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 // 
-// class THLibVectorIO
+// class THproVectorIO
 //
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1367,15 +1398,16 @@ THLibMatrixIO::read_linop ( const std::string &  filename ) const
 //
 // write vector to file <filename>
 //
+template < typename value_t >
 void
-THLibVectorIO::write ( const TVector *      v,
-                       const std::string &  filename ) const
+THproVectorIO::write ( const TVector< value_t > *  v,
+                       const std::string &         filename ) const
 {
     if ( v == nullptr )
-        HERROR( ERR_ARG, "(THLibVectorIO) write_vector", "vector is nullptr" );
+        HERROR( ERR_ARG, "(THproVectorIO) write_vector", "vector is nullptr" );
     
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    auto            out_ptr = open_write( filename );
+    std::ostream &  out     = * out_ptr.get();
 
     write_header( out );
 
@@ -1383,20 +1415,21 @@ THLibVectorIO::write ( const TVector *      v,
     // write vector
     //
 
-    HLIB::write_vec( out, v );
+    Hpro::write_vec( out, v );
 }
 
 //
 // read vector from file <filename>
 //
-unique_ptr< TVector >
-THLibVectorIO::read ( const std::string & filename ) const
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+THproVectorIO::read ( const std::string & filename ) const
 {
     if ( ! boost::filesystem::exists( filename ) )
-        HERROR( ERR_FNEXISTS, "(THLibVectorIO) read", filename );
+        HERROR( ERR_FNEXISTS, "(THproVectorIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
 
     //
     // read (or skip) header
@@ -1407,13 +1440,22 @@ THLibVectorIO::read ( const std::string & filename ) const
 
     read_header( in, byteswap, version );
     
-    return unique_ptr< TVector >( HLIB::read_vec( in, byteswap ) );
+    return std::unique_ptr< TVector< value_t > >( Hpro::read_vec< value_t >( in, byteswap ) );
 }
+
+#define INST_VECTORIO( type )                   \
+    template void THproVectorIO::write< type > ( const TVector< type > *, const std::string & ) const; \
+    template std::unique_ptr< TVector< type > > THproVectorIO::read< type > ( const std::string & ) const;
+
+INST_VECTORIO( float )
+INST_VECTORIO( double )
+INST_VECTORIO( std::complex< float > )
+INST_VECTORIO( std::complex< double > )
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 // 
-// class THLibCoordIO
+// class THproCoordIO
 //
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1422,14 +1464,14 @@ THLibVectorIO::read ( const std::string & filename ) const
 // write vertices to <filename>
 //
 void
-THLibCoordIO::write ( const TCoordinate *  coo,
+THproCoordIO::write ( const TCoordinate *  coo,
                       const std::string &  filename ) const
 {
     if ( coo == nullptr )
-        HERROR( ERR_ARG, "(THLibCoordIO) write", "coordinates are nullptr" );
+        HERROR( ERR_ARG, "(THproCoordIO) write", "coordinates are nullptr" );
     
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    auto            out_ptr = open_write( filename );
+    std::ostream &  out     = * out_ptr.get();
 
     write_header( out );
 
@@ -1456,14 +1498,14 @@ THLibCoordIO::write ( const TCoordinate *  coo,
 //
 // read vertices from <filename>
 //
-unique_ptr< TCoordinate >
-THLibCoordIO::read ( const std::string & filename ) const
+std::unique_ptr< TCoordinate >
+THproCoordIO::read ( const std::string & filename ) const
 {
     if ( ! boost::filesystem::exists( filename ) )
-        HERROR( ERR_FNEXISTS, "(THLibCoordIO) read", filename );
+        HERROR( ERR_FNEXISTS, "(THproCoordIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
 
     //
     // read (or skip) header
@@ -1484,7 +1526,7 @@ THLibCoordIO::read ( const std::string & filename ) const
     const uint16_t  dim       = hlib_read<uint16_t>( in, byteswap );
 
     if ( type != HMFILE_COORD_VTX )
-        HERROR( ERR_NOT_IMPL, "(THLibCoordIO) read", "only supporting pure vertex data" );
+        HERROR( ERR_NOT_IMPL, "(THproCoordIO) read", "only supporting pure vertex data" );
     
     //
     // now read coordinates according to <type> info
@@ -1507,4 +1549,72 @@ THLibCoordIO::read ( const std::string & filename ) const
     return make_unique< TCoordinate >( vertices, dim );
 }
 
-}// namespace
+/////////////////////////////////////////////////////////////////
+//
+// explicit template instantiation
+//
+/////////////////////////////////////////////////////////////////
+
+variant_id_t
+hpro_guess_value_type ( const std::string &  filename )
+{
+    if ( ! boost::filesystem::exists( filename ) )
+        HERROR( ERR_FNEXISTS, "hpro_guess_value_type", filename );
+    
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
+    
+    //
+    // read (or skip) header
+    //
+    
+    bool      byteswap = false;
+    uint16_t  version;
+
+    read_header( in, byteswap, version );
+
+    auto  type = hlib_read<uint16_t>( in, byteswap );
+    
+    bool  is_complex = false;
+
+    if (( type == 100 ) || ( type == 101 ))
+    {
+        //
+        // vectors
+        //
+        
+        hlib_read<uint32_t>( in, byteswap );
+        is_complex = hlib_read<uint8_t>(  in, byteswap ) != 0;
+    }// if
+    else if (( type > 0 ) && ( type < 100 ))
+    {
+        //
+        // matrices
+        //
+        
+        if ( version >= 2 )
+        {
+            hlib_read<int32_t>(  in, byteswap );
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint8_t>(  in, byteswap );
+            is_complex = hlib_read<uint8_t>( in, byteswap ) != 0;
+        }// if
+        else
+        {
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint32_t>( in, byteswap );
+            hlib_read<uint8_t>(  in, byteswap );
+            is_complex = hlib_read<uint8_t>( in, byteswap ) != 0;
+        }// else
+    }// else
+
+    if ( is_complex )
+        return COMPLEX_FP64;
+    else
+        return REAL_FP64;
+}
+
+}// namespace Hpro

@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMFitSched.cc
 // Description : provides multifit scheduling algorithm
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <algorithm>
@@ -13,7 +13,7 @@
 
 #include "scheduler.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -225,4 +225,4 @@ TMFitSched::ffd ( double                   cmax,
     return last_bin;
 }
 
-}// namespace
+}// namespace Hpro

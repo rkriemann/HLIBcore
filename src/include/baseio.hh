@@ -1,11 +1,11 @@
-#ifndef __HLIB_BASEIO_HH
-#define __HLIB_BASEIO_HH
+#ifndef __HPRO_BASEIO_HH
+#define __HPRO_BASEIO_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : baseio.hh
 // Description : basic IO related functions and classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <istream>
@@ -15,8 +15,9 @@
 #include <boost/cstdint.hpp>
 
 #include "hpro/base/types.hh"
+#include "hpro/base/traits.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////////////////
@@ -52,10 +53,10 @@ swap_bytes  ( T &  data );
 // compression
 //
 
-std::istream *
+std::unique_ptr< std::istream >
 open_read  ( const std::string &  filename );
 
-std::ostream *
+std::unique_ptr< std::ostream >
 open_write ( const std::string &  filename );
 
 ///////////////////////////////////////////////////
@@ -73,8 +74,8 @@ extension ( const std::string &  filename );
 
 enum fmt_t {
         FMT_UNKNOWN,
-        FMT_HLIB,
-        FMT_HLIB_GRID,
+        FMT_HPRO,
+        FMT_HPRO_GRID,
         FMT_OCTAVE,
         FMT_SAMG,
         FMT_MATLAB,
@@ -128,6 +129,40 @@ std::string
 add_extension ( const std::string &  filename,
                 const std::string &  suffix );
 
-}// namespace HLIB
+///////////////////////////////////////////////////
+//
+// compose any of float, double, std::complex< float >
+// or std::complex< double > without known what to expect
+//
 
-#endif  // __HLIB_BASEIO_HH
+template < typename value_t >
+struct get_value
+{
+    static value_t compose ( real_type_t< value_t >  re,
+                             real_type_t< value_t >  /* im */ )
+    {
+        return re;
+    }
+};
+
+template <>
+struct get_value< std::complex< float > >
+{
+    static std::complex< float > compose ( float  re, float  im )
+    {
+        return std::complex< float >( re, im );
+    }
+};
+
+template <>
+struct get_value< std::complex< double > >
+{
+    static std::complex< double > compose ( double  re, double  im )
+    {
+        return std::complex< double >( re, im );
+    }
+};
+
+}// namespace Hpro
+
+#endif  // __HPRO_BASEIO_HH

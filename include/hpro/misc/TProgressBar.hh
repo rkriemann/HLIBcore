@@ -1,11 +1,11 @@
-#ifndef __HLIB_TPROGRESSBAR_HH
-#define __HLIB_TPROGRESSBAR_HH
+#ifndef __HPRO_TPROGRESSBAR_HH
+#define __HPRO_TPROGRESSBAR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TProgressBar.hh
 // Description : class for showing the progress in various formats
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
@@ -13,7 +13,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/parallel/TMutex.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -335,6 +335,6 @@ struct TProgressBarAutoFinish
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TPROGRESSBAR_HH
+#endif  // __HPRO_TPROGRESSBAR_HH

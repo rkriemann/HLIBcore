@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_VSX_HH
-#define __HLIB_PACKED_VSX_HH
+#ifndef __HPRO_PACKED_VSX_HH
+#define __HPRO_PACKED_VSX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_vsx.hh
 // Description : datatype for packed (vector) operations using VSX
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -258,5 +258,5 @@ zdiv ( const packed< double, ISA_VSX >  a,
 
 #endif // __VSX__
 
-#endif // __HLIB_PACKED_VSX_HH
+#endif // __HPRO_PACKED_VSX_HH
 

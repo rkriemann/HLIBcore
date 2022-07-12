@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGridIO.cc
 // Description : contains grid input/output classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstdio>
@@ -26,7 +26,7 @@
 #define sscanf  sscanf_s
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace fs = boost::filesystem;
@@ -74,7 +74,7 @@ TAutoGridIO::read  ( const string & filename ) const
         
     switch ( guess_format( filename ) )
     {
-        case FMT_HLIB_GRID : gio = make_unique< THLibGridIO >(); break;
+        case FMT_HPRO_GRID : gio = make_unique< THLibGridIO >(); break;
         case FMT_PLY       : gio = make_unique< TPlyGridIO >(); break;
         case FMT_SURFMESH  : gio = make_unique< TSurfMeshGridIO >(); break;
         case FMT_GMSH      : gio = make_unique< TGMSHGridIO >(); break;
@@ -98,7 +98,7 @@ TAutoGridIO::write  ( const TGrid *   grid,
         
     switch ( guess_format( filename ) )
     {
-        case FMT_HLIB_GRID : gio = make_unique< THLibGridIO >(); break;
+        case FMT_HPRO_GRID : gio = make_unique< THLibGridIO >(); break;
         case FMT_PLY       : gio = make_unique< TPlyGridIO >(); break;
         case FMT_SURFMESH  : gio = make_unique< TSurfMeshGridIO >(); break;
         case FMT_GMSH      : gio = make_unique< TGMSHGridIO >(); break;

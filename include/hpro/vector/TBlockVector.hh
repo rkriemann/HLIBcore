@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBLOCKVECTOR_HH
-#define __HLIB_TBLOCKVECTOR_HH
+#ifndef __HPRO_TBLOCKVECTOR_HH
+#define __HPRO_TBLOCKVECTOR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBlockVector.hh
 // Description : class for a vector build out of other vectors
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -13,7 +13,7 @@
 #include "hpro/base/System.hh"
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -24,11 +24,16 @@ DECLARE_TYPE( TBlockVector );
 //! \class   TBlockVector
 //! \brief   Class for a blocked, scalar vector
 //!
-class TBlockVector : public TVector
+template < typename T_value >
+class TBlockVector : public TVector< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+    
 private:
     //! individual vector blocks
-    std::vector< TVector * >  _blocks;
+    std::vector< TVector< value_t > * >  _blocks;
 
 public:
     
@@ -45,9 +50,9 @@ public:
 
     //! construct block vector over index set \a ais and
     //! with subblocks \a ablocks
-    TBlockVector ( const TIndexSet &                 ais,
-                   const std::vector< TVector * > &  ablocks )
-            : TVector( ais.first() )
+    TBlockVector ( const TIndexSet &                            ais,
+                   const std::vector< TVector< value_t > * > &  ablocks )
+            : TVector< value_t >( ais.first() )
             , _blocks( ablocks )
     {}
 
@@ -60,30 +65,22 @@ public:
     //
 
     //! return size of vector
-    virtual size_t   size              () const;
+    virtual size_t              size              () const;
 
     //! return number of blocks
-    virtual uint     n_blocks          () const { return uint(_blocks.size()); }
+    virtual uint                n_blocks          () const { return uint(_blocks.size()); }
 
     //! access single vector block
-    TVector *        block             ( const uint i )       { return _blocks[i]; }
+    TVector< value_t > *        block             ( const uint i )       { return _blocks[i]; }
 
     //! access single vector block
-    const TVector *  block             ( const uint i ) const { return _blocks[i]; }
+    const TVector< value_t > *  block             ( const uint i ) const { return _blocks[i]; }
 
     //! set single vector block
-    void             set_block         ( const uint i, TVector * v );
+    void                        set_block         ( const uint i, TVector< value_t > * v );
     
     //! setup block structure of vector
-    void             set_block_struct  ( const uint i );
-
-protected:
-
-    //! convert data to real valued representation
-    virtual void     to_real    ();
-
-    //! convert data to complex valued representation
-    virtual void     to_complex ();
+    void                        set_block_struct  ( const uint i );
 
 public:
     ////////////////////////////////////////////////
@@ -92,68 +89,45 @@ public:
     //
 
     //! return i'th entry
-    virtual real          entry  ( const idx_t  i ) const;
-
-    //! return i'th entry
-    virtual const complex centry ( const idx_t  i ) const;
+    virtual value_t  entry      ( const idx_t  i ) const;
 
     //! set i'th entry
-    virtual void set_entry  ( const idx_t  i, const real      f );
-
-    //! set i'th entry
-    virtual void set_centry ( const idx_t  i, const complex   f );
+    virtual void     set_entry  ( const idx_t  i, const value_t   f );
 
     //////////////////////////////////////////////////
     //
-    // BLAS-routines (real valued)
-    //
-
-    //! fill with constant
-    virtual void fill ( const real f );
-    
-    //! fill with random numbers
-    virtual void fill_rand ( const uint seed );
-
-    //! set this ≔ this + α · x
-    virtual void axpy ( const real alpha, const TVector * x );
-
-    //! set this ≔ α · this
-    virtual void scale ( const real alpha );
-
-    //! set this ≔ α · x
-    virtual void assign ( const real alpha, const TVector * x );
-
-    //! compute ‖·‖₂
-    virtual real norm2 () const { return Math::sqrt( dot( this ).real() ); }
-
-    //! compute ‖·‖∞
-    virtual real norm_inf () const;
-
-    //////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
+    // BLAS-routines
     //
 
     //! conjugate entries
-    virtual void conjugate ();
+    virtual void     conjugate ();
         
     //! fill with constant
-    virtual void cfill     ( const complex & f );
+    virtual void     fill   ( const value_t f );
     
-    //! set this ≔ α · this
-    virtual void cscale    ( const complex & alpha );
-
-    //! set this ≔ α · x
-    virtual void cassign   ( const complex & alpha, const TVector * x );
+    //! fill with random numbers
+    virtual void     fill_rand ( const uint seed );
 
     //! set this ≔ this + α · x
-    virtual void caxpy     ( const complex & f, const TVector * x );
+    virtual void     axpy   ( const value_t alpha, const TVector< value_t > *  x );
+
+    //! set this ≔ α · this
+    virtual void     scale  ( const value_t alpha );
+
+    //! set this ≔ α · x
+    virtual void     assign ( const value_t alpha, const TVector< value_t > *  x );
 
     // return dot product <this,x> = this^H x
-    virtual complex dot    ( const TVector * x ) const;
+    virtual value_t  dot    ( const TVector< value_t > *  x ) const;
 
     // return dot product <this,x> = this^T x
-    virtual complex dotu   ( const TVector * x ) const;
+    virtual value_t  dotu   ( const TVector< value_t > *  x ) const;
+
+    //! compute ‖·‖₂
+    virtual real_t   norm2  () const { return Math::sqrt( std::real( dot( this ) ) ); }
+
+    //! compute ‖·‖∞
+    virtual real_t   norm_inf () const;
 
     ///////////////////////////////////////////////
     //
@@ -172,10 +146,10 @@ public:
     //
 
     //! return copy of vector
-    virtual auto  copy  () const -> std::unique_ptr< TVector >;
+    virtual auto  copy  () const -> std::unique_ptr< TVector< value_t > >;
     
     //! return object of same class
-    virtual auto  create () const -> std::unique_ptr< TVector > { return std::make_unique< TBlockVector >(); }
+    virtual auto  create () const -> std::unique_ptr< TVector< value_t > > { return std::make_unique< TBlockVector< value_t > >(); }
 
     //
     // output
@@ -185,9 +159,9 @@ public:
     virtual void print ( const uint ofs = 0 ) const;
 
     
-    HLIB_RTTI_DERIVED( TBlockVector, TVector )
+    HPRO_RTTI_DERIVED( TBlockVector, TVector< value_t > )
 };
 
 }// namespace
 
-#endif  // __HLIB_TBLOCKVECTOR_HH
+#endif  // __HPRO_TBLOCKVECTOR_HH

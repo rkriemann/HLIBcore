@@ -1,11 +1,11 @@
-#ifndef __HLIB_TFNSPACE_HH
-#define __HLIB_TFNSPACE_HH
+#ifndef __HPRO_TFNSPACE_HH
+#define __HPRO_TFNSPACE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TFnSpace.hh
 // Description : implements function spaces over grids
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -16,7 +16,7 @@
 
 #include "hpro/bem/TGrid.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////////////////////
@@ -31,8 +31,16 @@ namespace HLIB
 // local class type
 DECLARE_TYPE( TFnSpace );
 
+template < typename T_value = double >
 class TFnSpace : public TTypeInfo
 {
+public:
+    //
+    // value type of basis function
+    //
+
+    using  value_t = T_value;
+    
 protected:
     // grid the function space lives on
     const TGrid *           _grid;
@@ -266,8 +274,36 @@ public:
 
     //! evaluate function \a fn at all index positions on grid
     //! and build corresponding vector
-    template < typename T_val >
-    std::unique_ptr< TScalarVector >  eval ( const TBEMFunction< T_val > * fn ) const;
+    template < typename bemfn_t >
+    std::unique_ptr< TScalarVector< value_type_t< bemfn_t > > >
+    eval ( const bemfn_t *  fn ) const
+    {
+        using fn_value_t = value_type_t< bemfn_t >;
+        
+        if ( fn == nullptr )
+            HERROR( ERR_ARG, "(TFnSpace) eval", "given function is nullptr" );
+
+        //
+        // build vector
+        //
+
+        auto  v = std::make_unique< TScalarVector< fn_value_t > >( this->n_indices(), 0 );
+    
+        for ( uint i = 0; i < this->n_indices(); i++ )
+        {
+            // get index position
+            const auto  t = index_coord( i );
+
+            // get normal at index (only valid for constant ansatz)
+            const auto  n = _grid->tri_normal( _supp_list_ptr[i] );
+
+            // evaluate
+            v->set_entry( i, fn->eval( t, n ) );
+        }// for
+
+        return v;
+    }
+        
     
     ////////////////////////////////////////////////////////
     //
@@ -284,7 +320,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_BASE( TFnSpace );
+    HPRO_RTTI_BASE( TFnSpace );
 };
 
 /////////////////////////////////////////////////////////////////
@@ -298,15 +334,18 @@ public:
 // local class type
 DECLARE_TYPE( TConstFnSpace );
 
-class TConstFnSpace : public TFnSpace
+template < typename T_value = double >
+class TConstFnSpace : public TFnSpace< T_value >
 {
 public:
     //
     // value type of basis function
     //
 
-    using  value_t = real;
+    using  value_t = T_value;
     
+    static_assert( std::is_floating_point< value_t >::value, "only supporting floating point type" );
+
 public:
     ////////////////////////////////////////////////////////
     //
@@ -354,7 +393,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TConstFnSpace, TFnSpace );
+    HPRO_RTTI_DERIVED( TConstFnSpace, TFnSpace< value_t > );
 
 protected:
     ////////////////////////////////////////////////////////
@@ -377,15 +416,18 @@ protected:
 
 DECLARE_TYPE( TLinearFnSpace );
 
-class TLinearFnSpace : public TFnSpace
+template < typename T_value = double >
+class TLinearFnSpace : public TFnSpace< T_value >
 {
 public:
     //
     // value type of basis function
     //
 
-    using  value_t = real;
-    
+    using  value_t = T_value;
+
+    static_assert( std::is_floating_point< value_t >::value, "only supporting floating point type" );
+        
 public:
     ////////////////////////////////////////////////////////
     //
@@ -452,7 +494,7 @@ public:
     // RTTI
     //
     
-    HLIB_RTTI_DERIVED( TLinearFnSpace, TFnSpace );
+    HPRO_RTTI_DERIVED( TLinearFnSpace, TFnSpace< value_t > );
 
 protected:
     ////////////////////////////////////////////////////////

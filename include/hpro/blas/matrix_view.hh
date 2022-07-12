@@ -1,11 +1,11 @@
-#ifndef __HLIB_BLAS_MATRIX_VIEW_HH
-#define __HLIB_BLAS_MATRIX_VIEW_HH
+#ifndef __HPRO_BLAS_MATRIX_VIEW_HH
+#define __HPRO_BLAS_MATRIX_VIEW_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Matrix.hh
 // Description : provides transposed and adjoint matrix views
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/traits.hh"
@@ -13,7 +13,7 @@
 #include "hpro/blas/types.hh"
 #include "hpro/blas/MatrixBase.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -30,10 +30,10 @@ conjugate ( const matop_t   op )
 {
     switch ( op )
     {
-        case MATOP_NORM  : HERROR( ERR_CONSISTENCY, "conjugate", "conjugate not supported" );
-        case MATOP_TRANS : return MATOP_ADJ ;
-        case MATOP_ADJ   : return MATOP_TRANS;
-        default          : HERROR( ERR_CONSISTENCY, "conjugate", "unknown matrix operation" );
+        case apply_normal     : HERROR( ERR_CONSISTENCY, "conjugate", "conjugate not supported" );
+        case apply_transposed : return apply_adjoint ;
+        case apply_adjoint    : return apply_transposed;
+        default               : HERROR( ERR_CONSISTENCY, "conjugate", "unknown matrix operation" );
     }// switch
 }
 
@@ -48,10 +48,10 @@ transposed ( const matop_t   op )
 {
     switch ( op )
     {
-        case MATOP_NORM  : return MATOP_TRANS ;
-        case MATOP_TRANS : return MATOP_NORM ;
-        case MATOP_ADJ   : HERROR( ERR_CONSISTENCY, "transposed", "conjugate not supported" );
-        default          : HERROR( ERR_CONSISTENCY, "transposed", "unknown matrix operation" );
+        case apply_normal     : return apply_transposed ;
+        case apply_transposed : return apply_normal ;
+        case apply_adjoint    : HERROR( ERR_CONSISTENCY, "transposed", "conjugate not supported" );
+        default               : HERROR( ERR_CONSISTENCY, "transposed", "unknown matrix operation" );
     }// switch
 }
 
@@ -66,10 +66,10 @@ adjoint ( const matop_t   op )
 {
     switch ( op )
     {
-        case MATOP_NORM  : return MATOP_ADJ ;
-        case MATOP_TRANS : HERROR( ERR_CONSISTENCY, "adjoint", "conjugate not supported" );
-        case MATOP_ADJ   : return MATOP_NORM;
-        default          : HERROR( ERR_CONSISTENCY, "adjoint", "unknown matrix operation" );
+        case apply_normal     : return apply_adjoint ;
+        case apply_transposed : HERROR( ERR_CONSISTENCY, "adjoint", "conjugate not supported" );
+        case apply_adjoint    : return apply_normal;
+        default               : HERROR( ERR_CONSISTENCY, "adjoint", "unknown matrix operation" );
     }// switch
 }
 
@@ -346,7 +346,7 @@ public:
                     return BLAS_NORMAL;
             }// switch
         }// if
-        else if ( _op == MATOP_ADJ )
+        else if ( _op == apply_adjoint )
         {
             switch ( _mat.blas_view() )
             {
@@ -418,6 +418,6 @@ mat_view ( const matop_t  op,
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_MATRIX_VIEW_HH
+#endif  // __HPRO_BLAS_MATRIX_VIEW_HH

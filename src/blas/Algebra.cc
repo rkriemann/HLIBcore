@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Algebra.cc
 // Description : provide linear algebra functions for BLAS matrices and vectors
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -11,6 +11,7 @@
 #include <atomic>
 #include <random>
 #include <tuple>
+#include <mutex>
 
 #include "hpro/base/config.hh"
 
@@ -18,7 +19,7 @@
 
 #include "hpro/blas/Algebra.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -78,7 +79,7 @@ namespace LOGGING
 #define  HAS_LOGGING
 
 using  mutex_t = std::mutex;
-using  lock_t  = std::lock_guard;
+using  lock_t  = std::scoped_lock;
 
 #  define  DEF_COUNTER( counter ) \
     std::atomic< size_t >  n##counter( 0 ); \
@@ -194,10 +195,10 @@ rand ( const typename real_type< T >::type_t  max )
 }
 
 template <>
-Complex< float >
-rand< Complex< float > > ( const float  max )
+std::complex< float >
+rand< std::complex< float > > ( const float  max )
 {
-    return Complex< float >( rand< float >( max ), rand< float >( max ) );
+    return std::complex< float >( rand< float >( max ), rand< float >( max ) );
 }
 
 }// namespace anonymous
@@ -783,7 +784,7 @@ ldlh   ( T1 &  A )
             for ( idx_t  jj = j+1; jj < n; ++jj )
             {
                 // for ( idx_t  ii = jj; ii < n; ++ii )
-                //     A( ii, jj ) -= A( ii, j ) * d_j * HLIB::conj( A( jj, j ) );
+                //     A( ii, jj ) -= A( ii, j ) * d_j * Hpro::conj( A( jj, j ) );
                 
                 const value_t           f = d_j * Math::conj( A( jj, j ) );
                 Vector< value_t >  col_j(  A, Range( jj, n-1 ), j );
@@ -946,7 +947,7 @@ tsqr  ( T1 &                              A,
 
     const size_t  nrows   = A.nrows();
     const size_t  ncols   = A.ncols();
-    const bool    use_tbb = ( nrows*ncols >= 8192*8 );
+    const bool    use_tbb = false;
     const size_t  ntile   = std::max( ntile2 > 0
                                       ? ntile2                // use user provided value
                                       : (use_tbb
@@ -2630,13 +2631,13 @@ svd_double< float > ( Matrix< float > &  U,
 
 template <>
 void
-svd_double< Complex< float > > ( Matrix< Complex< float > > &  U,
-                                 Vector< float > &             S,
-                                 Matrix< Complex< float > > &  V )
+svd_double< std::complex< float > > ( Matrix< std::complex< float > > &  U,
+                                      Vector< float > &             S,
+                                      Matrix< std::complex< float > > &  V )
 {
-    Matrix< Complex< double > >  Ud( U.nrows(), U.ncols() );
+    Matrix< std::complex< double > >  Ud( U.nrows(), U.ncols() );
     Vector< double >             Sd;
-    Matrix< Complex< double > >  Vd;
+    Matrix< std::complex< double > >  Vd;
 
     for ( idx_t  j = 0; j < idx_t(U.ncols()); ++j )
         for ( idx_t  i = 0; i < idx_t(U.nrows()); ++i )
@@ -2648,20 +2649,20 @@ svd_double< Complex< float > > ( Matrix< Complex< float > > &  U,
         S = Vector< float >( Sd.length() );
     
     if ( V.nrows() * V.ncols() != Vd.nrows() * Vd.ncols() )
-        V = Matrix< Complex< float > >( Vd.nrows(), Vd.ncols() );
+        V = Matrix< std::complex< float > >( Vd.nrows(), Vd.ncols() );
     
     for ( idx_t  j = 0; j < idx_t(Ud.ncols()); ++j )
         for ( idx_t  i = 0; i < idx_t(Ud.nrows()); ++i )
-            U( i, j ) = Complex< float >( float(std::real( Ud( i, j ) )),
-                                          float(std::imag( Ud( i, j ) )) );
+            U( i, j ) = std::complex< float >( float(std::real( Ud( i, j ) )),
+                                               float(std::imag( Ud( i, j ) )) );
     
     for ( idx_t  i = 0; i < idx_t(Sd.length()); ++i )
         S( i ) = float( Sd( i ) );
     
     for ( idx_t  j = 0; j < idx_t(Vd.ncols()); ++j )
         for ( idx_t  i = 0; i < idx_t(Vd.nrows()); ++i )
-            V( i, j ) = Complex< float >( float(std::real( Vd( i, j ) )),
-                                          float(std::imag( Vd( i, j ) )) );
+            V( i, j ) = std::complex< float >( float(std::real( Vd( i, j ) )),
+                                               float(std::imag( Vd( i, j ) )) );
 }
 
 
@@ -4492,4 +4493,4 @@ reset_statistics ()
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro

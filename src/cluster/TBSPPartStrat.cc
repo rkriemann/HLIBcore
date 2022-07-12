@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : bsp_part_strat.cc
 // Description : partitioning strategies for geometrical clustering
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <algorithm>
@@ -14,7 +14,7 @@
 
 #include "hpro/cluster/TBSPPartStrat.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -634,9 +634,9 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 //
 // ctor
 //
-
-TNDBSPPartStrat::TNDBSPPartStrat ( const TSparseMatrix *         S,
-                                   const edgecut_weights_mode_t  edgecut_weights_mode )
+template < typename value_t >
+TNDBSPPartStrat< value_t >::TNDBSPPartStrat ( const TSparseMatrix< value_t > *  S,
+                                              const edgecut_weights_mode_t      edgecut_weights_mode )
         : _sparse_mat( S ),
           _use_edgecut_weights( edgecut_weights_mode == edgecut_weights_on )
 {
@@ -647,14 +647,15 @@ TNDBSPPartStrat::TNDBSPPartStrat ( const TSparseMatrix *         S,
 //
 // basic method to partition given indexset
 //
+template < typename value_t >
 void
-TNDBSPPartStrat::partition ( const TCoordinate * coord,
-                             const TNodeSet  &   dofs,
-                             TNodeSet &          left,
-                             TNodeSet &          right,
-                             const TBBox &       bbox,
-                             vector< TBBox > &   son_bbox,
-                             const uint ) const
+TNDBSPPartStrat< value_t >::partition ( const TCoordinate * coord,
+                                        const TNodeSet  &   dofs,
+                                        TNodeSet &          left,
+                                        TNodeSet &          right,
+                                        const TBBox &       bbox,
+                                        vector< TBBox > &   son_bbox,
+                                        const uint ) const
 {
     using  idxmap_t = unordered_map< idx_t, idx_t >;
     
@@ -672,7 +673,6 @@ TNDBSPPartStrat::partition ( const TCoordinate * coord,
     vector< node_t >  arr_dof( dofs.nnodes() );
     set< idx_t >      local;
     vector< idx_t >   left_nodes( dofs.nnodes() );
-    const bool        is_complex = _sparse_mat->is_complex();
     vector< idx_t >   loc2glo( ndofs );
     idxmap_t          glo2loc;
     idx_t             pos = 0;
@@ -736,12 +736,7 @@ TNDBSPPartStrat::partition ( const TCoordinate * coord,
                     if ( part[ glo2loc[ neigh ] ] == 1 )
                     {
                         if ( _use_edgecut_weights )
-                        {
-                            if ( is_complex )
-                                edgecut += Math::abs( _sparse_mat->ccoeff( l ) );
-                            else
-                                edgecut += Math::abs( _sparse_mat->rcoeff( l ) );
-                        }// if
+                            edgecut += Math::abs( _sparse_mat->coeff( l ) );
                         else
                             edgecut++;
                     }// if
@@ -822,6 +817,15 @@ TNDBSPPartStrat::partition ( const TCoordinate * coord,
         son_bbox[1].min()[min_ec_dim] = mid;
     }
 }
+
+//
+// explicit template instantiation
+//
+
+template class TNDBSPPartStrat< float >;
+template class TNDBSPPartStrat< double >;
+template class TNDBSPPartStrat< std::complex< float > >;
+template class TNDBSPPartStrat< std::complex< double > >;
 
 ////////////////////////////////////////////////////////////
 //

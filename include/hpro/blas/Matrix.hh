@@ -1,20 +1,23 @@
-#ifndef __HLIB_BLAS_MATRIX_HH
-#define __HLIB_BLAS_MATRIX_HH
+#ifndef __HPRO_BLAS_MATRIX_HH
+#define __HPRO_BLAS_MATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Matrix.hh
 // Description : implements dense matrix class for BLAS operations
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
+#include <type_traits>
+
+#include "hpro/base/traits.hh"
 #include "hpro/base/error.hh"
 
 #include "hpro/blas/MemBlock.hh"
 #include "hpro/blas/MatrixBase.hh"
 #include "hpro/blas/Vector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -32,6 +35,9 @@ namespace BLAS
 template < typename T_value >
 class Matrix : public MatrixBase< Matrix< T_value > >, public MemBlock< T_value >
 {
+    // ensure only floating point types (or complex version)
+    static_assert( std::is_floating_point< T_value >::value || is_complex_type< T_value >::value );
+    
 public:
     //! internal value type
     using  value_t = T_value;
@@ -95,14 +101,14 @@ public:
     }
 
     //! copy constructor for other matrix types
-    template < typename T_matrix >
-    Matrix ( const T_matrix &  M )
-            : MemBlock<value_t>()
-            , _length{ 0, 0 }
-            , _stride{ 0, 0 }
-    {
-        (*this) = M;
-    }
+    // template < typename T_matrix >
+    // Matrix ( const T_matrix & M )
+    //         : MemBlock<value_t>()
+    //         , _length{ 0, 0 }
+    //         , _stride{ 0, 0 }
+    // {
+    //     (*this) = M;
+    // }
     
     //! move constructor
     Matrix ( Matrix &&  M ) noexcept
@@ -139,42 +145,6 @@ public:
                 _stride[1] = r2.stride() * M.col_stride();
             
                 super_t::init( M.data() + r1.first() * M.row_stride() + r2.first() * M.col_stride() );
-                break;
-
-            case copy_value :
-                super_t::alloc_wo_value( _length[0] * _length[1] );
-                _stride[0] = 1;
-                _stride[1] = _length[0];
-
-                for ( idx_t j = 0; j < idx_t( _length[1] ); j++ )
-                    for ( idx_t i = 0; i < idx_t( _length[0] ); i++ )
-                        (*this)(i,j) = M( r1.first() + i * idx_t( r1.stride() ),
-                                          r2.first() + j * idx_t( r2.stride() ) );
-                break;
-        }// switch
-    }
-
-    //! special version for matrix views as above version leads to infinite loop
-    //! only copy_value is supported!
-    template < typename T_matrix >
-    Matrix ( const MatrixBase< T_matrix > &  M,
-             const Range &        ar1,
-             const Range &        ar2,
-             const copy_policy_t  p = copy_reference )
-            : MemBlock<value_t>()
-            , _length{ 0, 0 }
-            , _stride{ 0, 0 }
-    {
-        const Range  r1( ar1 == Range::all ? M.row_range() : ar1 );
-        const Range  r2( ar2 == Range::all ? M.col_range() : ar2 );
-        
-        _length[0] = r1.size() / r1.stride();
-        _length[1] = r2.size() / r2.stride();
-
-        switch ( p )
-        {
-            case copy_reference :
-                HERROR( ERR_NOT_IMPL, "(Matrix) ctor", "copy_reference not supported" );
                 break;
 
             case copy_value :
@@ -361,11 +331,38 @@ struct is_matrix< Matrix< T > >
 //
 // return real copy of given matrix
 //
-template < typename T >
-Matrix< T >
-copy ( const Matrix< T > &  M )
+template < typename value_t >
+Matrix< value_t >
+copy ( const Matrix< value_t > &  M )
 {
     return M.copy();
+}
+
+//!
+//! convert between different dataypes 
+//!
+template < typename dest_value_t,
+           typename src_value_t >
+Matrix< dest_value_t >
+convert ( const Matrix< src_value_t > &  M )
+{
+    // prevent complex to real conversion
+    static_assert( ! is_complex_type< src_value_t >::value || is_complex_type< dest_value_t >::value,
+                   "can not convert complex to real type" );
+    
+    if constexpr ( std::is_same< dest_value_t, src_value_t >::value )
+        return M.copy();
+    else
+    {
+        auto  T = Matrix< dest_value_t >( M.nrows(), M.ncols() );
+
+        const size_t  n = M.nrows() * M.ncols();
+
+        for ( size_t  i = 0; i < n; ++i )
+            T.data()[i] = dest_value_t( M.data()[i] );
+
+        return T;
+    }// else
 }
 
 //
@@ -414,11 +411,11 @@ write ( const BLAS::Matrix< T > &  M,
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro
 
 //
 // include matrix views
 //
 #include "hpro/blas/matrix_view.hh"
 
-#endif  // __HLIB_BLAS_MATRIX_HH
+#endif  // __HPRO_BLAS_MATRIX_HH

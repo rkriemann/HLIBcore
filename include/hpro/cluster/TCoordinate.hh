@@ -1,11 +1,11 @@
-#ifndef __HLIB_TCOORDINATE_HH
-#define __HLIB_TCOORDINATE_HH
+#ifndef __HPRO_TCOORDINATE_HH
+#define __HPRO_TCOORDINATE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordinate.hh
 // Description : class for encapsulating coordinate data
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 
 #include "hpro/cluster/TBBox.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //! options for handling coordinate data
@@ -160,4 +160,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TCOORDINATE_HH
+#endif  // __HPRO_TCOORDINATE_HH

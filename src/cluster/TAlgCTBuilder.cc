@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TAlgCTBuilder.cc
 // Description : class for algebraic clustertree construction
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -16,7 +16,7 @@
 
 #include "hpro/cluster/TAlgCTBuilder.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -34,9 +34,6 @@ namespace
 //
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-
-// nodeset functions
-// #define FOREACH( i, set )  for ( size_t  i = 0; i < (set).n_nodes(); i++ )
 
 // for debugging
 #define PRINT if ( false )
@@ -65,33 +62,6 @@ const idx_t   UNDEF_PERM   = -1;
 // minimal size for parallel calls
 const size_t  MIN_PAR_SIZE = 250;
 
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-//
-// local functions
-//
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-//
-// compute minimal absolut value of the matrix coefficients which is bigger than zero
-//
-// real
-// min_abs_value ( const TSparseMatrix *  S );
-
-//
-// return absolute value of sparse matrix entry
-//
-inline
-real
-abs_entry ( const TSparseMatrix *  S,
-            const idx_t            i,
-            const idx_t            j )
-{
-    if ( S->is_complex() ) return Math::abs( S->centry( i, j ) );
-    else                   return Math::abs( S->entry( i, j ) );
-}
-    
 }// namespace anonymous
 
 
@@ -144,16 +114,11 @@ TAlgCTBuilder::set_edge_weights_mode ( const edge_weights_mode_t  edge_weights_m
 // build tree out of sparse matrix
 //
 unique_ptr< TClusterTree >
-TAlgCTBuilder::build ( const TSparseMatrix * S,
-                       const idx_t           idx_ofs ) const
+TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
+                       const idx_t                idx_ofs ) const
 {
-    if ( S == nullptr )
-        return nullptr;
-
-    if ( ! IS_TYPE( S, TSparseMatrix ) )
-        HERROR( ERR_MAT_NSPARSE, "(TAlgCTBuilder) build", "only sparse matrices supported" );
-            
-    const size_t  maxid = S->rows();
+    const auto    nrows = std::visit( [] ( auto && S_ptr ) { return S_ptr->nrows(); }, S );
+    const size_t  maxid = nrows;
     TPermutation  perm( maxid );
 
     for ( size_t  i = 0; i < maxid; ++i )
@@ -176,13 +141,14 @@ TAlgCTBuilder::build ( const TSparseMatrix * S,
     // look for highly connected nodes and remove them
     //
 
-    const size_t    nnodes = S->rows();
+    const size_t    nnodes = nrows;
     vector< bool >  node_mask;
     list< node_t >  high_deg_nodes;
 
     if ( _high_deg_fac > 0 )
     {
-        const size_t  avg_degree = S->avg_entries_per_row();
+        const size_t  avg_degree = std::visit( [] ( auto && S_ptr ) { return S_ptr->avg_entries_per_row(); }, S );
+        auto          rowptr     = std::visit( [] ( auto && S_ptr ) { return S_ptr->rowptr(); }, S );
         const size_t  max_degree = _high_deg_fac * avg_degree;
         size_t        nmasked    = 0;
 
@@ -190,7 +156,7 @@ TAlgCTBuilder::build ( const TSparseMatrix * S,
         
         for ( node_t  node = 0; node < node_t( nnodes ); ++node )
         {
-            const size_t  degree = S->rowptr(node+1) - S->rowptr(node);
+            const size_t  degree = rowptr[node+1] - rowptr[node];
             
             if ( degree > max_degree )
             {
@@ -209,13 +175,11 @@ TAlgCTBuilder::build ( const TSparseMatrix * S,
     // build graph (without masked nodes)
     //
     
-    unique_ptr< TGraph >  G( _edge_weights_mode == edge_weights_off ?
-                             make_unique< TGraph >( S, node_mask ) :
-                             (
-                                 _edge_weights_mode == edge_weights_on ?
-                                 make_unique< TEWGraph >( S, node_mask, false ) :
-                                 make_unique< TEWGraph >( S, node_mask, true )
-                              )
+    unique_ptr< TGraph >  G( _edge_weights_mode == edge_weights_off
+                             ? std::make_unique< TGraph >( S, node_mask )
+                             : ( _edge_weights_mode == edge_weights_on
+                                 ? std::make_unique< TEWGraph >( S, node_mask, false )
+                                 : std::make_unique< TEWGraph >( S, node_mask, true ) )
                              );
 
     ////////////////////////////////////////////////////////////////////
@@ -223,7 +187,7 @@ TAlgCTBuilder::build ( const TSparseMatrix * S,
     // compute clustertree
     //
 
-    auto  root = divide( * G.get(), 0, perm, idx_ofs, n_min, S, uint(nnodes / 2) );
+    auto  root = divide( *G, 0, perm, idx_ofs, n_min, S, uint(nnodes / 2) );
 
     if ( root.get() == nullptr )
         HERROR( ERR_NULL, "(TAlgCTBuilder) build", "root cluster is NULL" );
@@ -291,13 +255,13 @@ TAlgCTBuilder::build ( const TSparseMatrix * S,
 // divide a given graph and build corresponding cluster tree
 //
 unique_ptr< TCluster >
-TAlgCTBuilder::divide ( const TGraph &        graph,
-                        const uint            lvl,
-                        TPermutation &        perm,
-                        const idx_t           idx_ofs,
-                        const uint            n_min,
-                        const TSparseMatrix * S,
-                        const uint            max_lvl ) const
+TAlgCTBuilder::divide ( const TGraph &             graph,
+                        const uint                 lvl,
+                        TPermutation &             perm,
+                        const idx_t                idx_ofs,
+                        const uint                 n_min,
+                        any_const_sparse_matrix_t  S,
+                        const uint                 max_lvl ) const
 {
     PRINT graph.print( "graph.dot" );
     
@@ -439,6 +403,7 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
 
     if ( sccs.size() > 1 )
     {
+        #if 1
         //
         // partition components directly
         //
@@ -467,6 +432,66 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
                     right.append( node );
             }// if
         }// for
+
+        #else
+        
+        //
+        // reorder SCCs by putting single node SCCs back
+        //
+
+        size_t              nsingle = 0;
+        list< TNodeSet * >  scc_ptr;
+                
+        for ( const auto &  scc : sccs )
+        {
+            if ( scc.nnodes() == 1 )
+                nsingle++;
+            else
+                scc_ptr.push_back( & scc );
+        }// for
+
+        TNodeSet  singlenodes( nsingle );
+                
+        if ( nsingle > 0 )
+        {
+            for ( const auto &  scc : sccs )
+            {
+                if ( scc.nnodes() == 1 )
+                    singlenodes.append( scc[0] );
+            }// for
+
+            scc_ptr.push_back( & singlenodes );
+        }// if
+                
+        //
+        // partition components directly
+        //
+
+        TMFitSched      sched;
+        vector< int >   part;
+        vector< real >  costs( scc.size(), 0.0 );
+        uint            i = 0;
+
+        for ( auto  scc : scc_ptr )
+            costs[i++] = scc->nnodes();
+
+        sched.schedule( 2, part, costs );
+
+        i = 0;
+        for ( auto  scc : scc_ptr )
+        {
+            if ( part[i++] == 0 )
+            {
+                for ( auto  node : * scc )
+                    left.append( node );
+            }// if
+            else
+            {
+                for ( auto  node : * scc )
+                    right.append( node );
+            }// if
+        }// for
+        #endif
     }// if
     else
     {
@@ -501,10 +526,10 @@ TAlgCTBuilder::build_leaf ( const TGraph &  graph,
 // - called in "build" for each given <S>
 //
 uint
-TAlgCTBuilder::adjust_n_min ( const TSparseMatrix * S ) const
+TAlgCTBuilder::adjust_n_min ( any_const_sparse_matrix_t  S ) const
 {
-    const size_t  max_per_row = S->max_entries_per_row();
-    const size_t  avg_per_row = S->avg_entries_per_row();
+    const size_t  max_per_row = std::visit( [] ( auto &&  S_ptr ) { return S_ptr->max_entries_per_row(); }, S );
+    const size_t  avg_per_row = std::visit( [] ( auto &&  S_ptr ) { return S_ptr->avg_entries_per_row(); }, S );
     const size_t  n_min       = (max_per_row > 2 * avg_per_row ? avg_per_row : max_per_row);
 
     return uint( n_min < 20 ? 20 : n_min );
@@ -514,12 +539,44 @@ TAlgCTBuilder::adjust_n_min ( const TSparseMatrix * S ) const
 // analyze connections between subgraphs <left> and <right>
 // and swap if necessary
 //
-void
-TAlgCTBuilder::check_flow ( const TGraph &         graph,
-                            TNodeSet &             left,
-                            TNodeSet &             right,
-                            const TSparseMatrix *  S ) const
+namespace
 {
+
+template < typename value_t >
+std::pair< size_t, real_type_t< value_t > >
+count_conn ( const TNodeSet &                  nodes,
+             const TSparseMatrix< value_t > *  S,
+             const TGraph &                    graph,
+             const std::vector< uint > &       label )
+{
+    size_t  edgecut      = 0;
+    auto    connectivity = real_type_t< value_t >( 0 );
+            
+    for ( auto  node : nodes )
+    {
+        for ( auto  neigh : graph.adj_nodes( node ) )
+        {
+            if ( label[ node ] != label[ neigh ] )
+            {
+                connectivity += Math::abs( S->entry( graph.global_name()[node], graph.global_name()[neigh] ) );
+                ++edgecut;
+            }// if
+        }// for
+    }// for
+
+    return { edgecut, connectivity };
+}
+
+}// namespace anonymous
+
+void
+TAlgCTBuilder::check_flow ( const TGraph &             graph,
+                            TNodeSet &                 left,
+                            TNodeSet &                 right,
+                            any_const_sparse_matrix_t  S ) const
+{
+    using real_t = double;
+    
     ////////////////////////////////////////////////////////////////////
     //
     // sum up connections between individual sets and order accordingly
@@ -527,38 +584,15 @@ TAlgCTBuilder::check_flow ( const TGraph &         graph,
 
     size_t         n_edgecut1    = 0;
     size_t         n_edgecut2    = 0;
-    real           left_to_right = 0.0;
-    real           right_to_left = 0.0;
+    real_t         left_to_right = 0.0;
+    real_t         right_to_left = 0.0;
     vector< uint > label( graph.nnodes() );
     
     for ( auto  node : left  ) label[ node ] = LEFT;
     for ( auto  node : right ) label[ node ] = RIGHT;
 
-    auto  count_conn = 
-        [S,&graph,&label] ( const TNodeSet &  nodes ) -> std::pair< size_t, real >
-        {
-            size_t  edgecut      = 0;
-            real    connectivity = 0;
-            
-            for ( auto  node : nodes )
-            {
-                for ( auto  neigh : graph.adj_nodes( node ) )
-                {
-                    if ( label[ node ] != label[ neigh ] )
-                    {
-                        connectivity += abs_entry( S,
-                                                   graph.global_name()[node],
-                                                   graph.global_name()[neigh] );
-                        ++edgecut;
-                    }// if
-                }// for
-            }// for
-
-            return std::pair< size_t, real >( edgecut, connectivity );
-        };
-
-    std::tie( n_edgecut1, left_to_right ) = count_conn( left  );
-    std::tie( n_edgecut2, right_to_left ) = count_conn( right );
+    std::visit( [&] ( auto && S_ptr ) { std::tie( n_edgecut1, left_to_right ) = count_conn( left,  S_ptr, graph, label ); }, S );
+    std::visit( [&] ( auto && S_ptr ) { std::tie( n_edgecut2, right_to_left ) = count_conn( right, S_ptr, graph, label ); }, S );
 
     PRINT
     {
@@ -575,62 +609,4 @@ TAlgCTBuilder::check_flow ( const TGraph &         graph,
         std::swap( left, right );
 }
 
-namespace
-{
-
-//
-// compute minimal absolute value of the matrix coefficients which is bigger than zero
-//
-// real
-// min_abs_value ( const TSparseMatrix *  S )
-// {
-//     const size_t  nnz = S->n_non_zero();
-//     real          min_value = 0.0;
-//     bool          is_init   = false;
-    
-//     if ( S->is_complex() )
-//     {
-//         for( size_t i = 0; i < nnz; i++ )
-//         {
-//             real  value = Math::abs( S->ccoeff( i ) );
-
-//             if ( value > 0 )
-//             {
-//                 if ( is_init )
-//                     min_value = min( min_value, value );
-//                 else
-//                 {
-//                     min_value = value;
-//                     is_init   = true;
-//                 }// else
-//             }// if
-//         }// for
-//     }
-//     else
-//     {
-//         for( size_t i = 0; i < nnz; i++ )
-//         {
-//             real  value = Math::abs( S->coeff( i ) );
-
-//             if ( value > 0 )
-//             {
-//                 if ( is_init )
-//                     min_value = min( min_value, value );
-//                 else
-//                 {
-//                     min_value = value;
-//                     is_init   = true;
-//                 }// else
-//             }// if
-//         }// for
-//     }// else
-
-//     if ( min_value == real(0) )
-//         HERROR( ERR_CONSISTENCY, "min_abs_val", "no minimal absolute value bigger than zero found" );
-
-//     return min_value;
-// }
-
-}// namespace anonymous
-
-}// namespace HLIB
+}// namespace Hpro

@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_NEON_HH
-#define __HLIB_PACKED_NEON_HH
+#ifndef __HPRO_PACKED_NEON_HH
+#define __HPRO_PACKED_NEON_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_neon.hh
 // Description : datatype for packed (vector) operations using NEON
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@
 
 #include <arm_neon.h>
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -168,9 +168,9 @@ struct packed< float, ISA_NEON >
     packed ( const value_t  f ) : x( simd_traits< float, ISA_NEON >::fill( f ) ) {}
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif // __ARM_NEON__
 
-#endif // __HLIB_PACKED_NEON_HH
+#endif // __HPRO_PACKED_NEON_HH
 

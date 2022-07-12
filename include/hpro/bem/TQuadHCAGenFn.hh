@@ -1,11 +1,11 @@
-#ifndef __HLIB_TQUADHCAGENFN_HH
-#define __HLIB_TQUADHCAGENFN_HH
+#ifndef __HPRO_TQUADHCAGENFN_HH
+#define __HPRO_TQUADHCAGENFN_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TQuadHCAGenFn.hh
 // Description : class providing HCA functionality for BEM bilinear forms
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -13,23 +13,24 @@
 #include "hpro/algebra/TLowRankApx.hh"
 #include "hpro/bem/TFnSpace.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
 //! quadrature rule for single triangle in "vectorised" form
 //! - size of x, y, w ≥ npts due to possible padding
 //!
+template < typename value_t >
 struct tri_quad_rule_t
 {
     // number of quadrature points
-    size_t                npts;
+    size_t                   npts;
     
     // decoupled x and y coordinates of quadrature points
-    std::vector< real >   x, y;
+    std::vector< value_t >   x, y;
     
     // quadrature weights
-    std::vector< real >   w;
+    std::vector< value_t >   w;
 };
 
 //!
@@ -42,8 +43,8 @@ struct tri_quad_rule_t
 //!
 template < typename  T_ansatzsp,
            typename  T_testsp,
-           typename  T_val >
-class TQuadHCAGenFn : public TPermHCAGeneratorFn< T_val >
+           typename  T_value >
+class TQuadHCAGenFn : public TPermHCAGeneratorFn< T_value >
 {
 public:
     //
@@ -51,8 +52,11 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = T_val;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
+    using  quad_rule_vec_t = std::vector< tri_quad_rule_t< real_t > >;
+    
     //!
     //! statistics
     //!
@@ -72,19 +76,19 @@ public:
 
 protected:
     // ansatz space
-    const ansatzsp_t *              _ansatz_sp;
+    const ansatzsp_t *  _ansatz_sp;
     
     // test space
-    const testsp_t *                _test_sp;
+    const testsp_t *    _test_sp;
     
     // quadrature order to use
-    const uint                      _quad_order;
+    const uint          _quad_order;
     
     // cache for quadratur points and weights
-    std::vector< tri_quad_rule_t >  _quad_rules_cache;
+    quad_rule_vec_t     _quad_rules_cache;
 
     // statistics record
-    stat_t *                        _stat;
+    stat_t *            _stat;
     
 public:
     //!
@@ -134,7 +138,7 @@ protected:
     //
     
     // return quadrature points for preset order
-    const tri_quad_rule_t *  get_quad_rule  ()  const
+    const tri_quad_rule_t< real_t > *  get_quad_rule  ()  const
     {
         return  & _quad_rules_cache[_quad_order];
     }
@@ -142,7 +146,7 @@ protected:
     // return quadrature points for order \a order
     // - \a order must not be larger than order in ctor
     //
-    const tri_quad_rule_t *  get_quad_rule  ( const uint  order ) const
+    const tri_quad_rule_t< real_t > *  get_quad_rule  ( const uint  order ) const
     {
         if ( order >= _quad_rules_cache.size() )
             HERROR( ERR_ARG, "(TQuadHCAGenFn) get_quad_rule", "order exceeds maximal order in ctor" );
@@ -157,18 +161,18 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t               tri_idx,
-                             const T3Point &           y,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< value_t > &  values ) const = 0;
+    virtual void  eval_dx  ( const idx_t                        tri_idx,
+                             const T3Point &                    y,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const = 0;
     
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &           x,
-                             const idx_t               tri_idx,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< value_t > &  values ) const = 0;
+    virtual void  eval_dy  ( const T3Point &                    x,
+                             const idx_t                        tri_idx,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const = 0;
     
 };
 
@@ -183,8 +187,8 @@ protected:
 //!
 template < typename  T_ansatzsp,
            typename  T_testsp,
-           typename  T_val >
-class TInvarBasisQuadHCAGenFn : public TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >
+           typename  T_value >
+class TInvarBasisQuadHCAGenFn : public TQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -192,7 +196,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = T_val;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
     //
     // inherit from base class
@@ -202,8 +207,8 @@ public:
     //
     // value types of basis functions
     //
-    using  ansatz_value_t = typename ansatzsp_t::value_t;
-    using  test_value_t   = typename testsp_t::value_t;
+    using  ansatz_value_t = value_type_t< ansatzsp_t >;
+    using  test_value_t   = value_type_t< testsp_t >;
     
 protected:
     
@@ -272,6 +277,6 @@ protected:
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TQUADHCAGENFN_HH
+#endif  // __HPRO_TQUADHCAGENFN_HH

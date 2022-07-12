@@ -1,17 +1,17 @@
-#ifndef __HLIB_TBEMFUNCTION_HH
-#define __HLIB_TBEMFUNCTION_HH
+#ifndef __HPRO_TBEMFUNCTION_HH
+#define __HPRO_TBEMFUNCTION_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBEMFunction.hh
 // Description : classes for evaluating functions on grids
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/base/TPoint.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ///////////////////////////////////////////////////////////////
@@ -122,4 +122,4 @@ public:
     
 }// namespace
 
-#endif  // __HLIB_TBEMFUNCTION_HH
+#endif  // __HPRO_TBEMFUNCTION_HH

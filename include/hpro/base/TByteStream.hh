@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBYTESTREAM_HH
-#define __HLIB_TBYTESTREAM_HH
+#ifndef __HPRO_TBYTESTREAM_HH
+#define __HPRO_TBYTESTREAM_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TByteStream.hh
 // Description : class for a byte stream
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <stddef.h>
@@ -13,7 +13,7 @@
 #include "hpro/base/error.hh"
 #include "hpro/base/types.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -137,4 +137,4 @@ public:
 
 }// namespace
 
-#endif // __HLIB_TBYTESTREAM_HH
+#endif // __HPRO_TBYTESTREAM_HH

@@ -1,18 +1,18 @@
-#ifndef __HLIB_TSTREAMABLE_HH
-#define __HLIB_TSTREAMABLE_HH
+#ifndef __HPRO_TSTREAMABLE_HH
+#define __HPRO_TSTREAMABLE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TStreamable.hh
 // Description : baseclass for all streamable classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/base/TByteStream.hh"
 #include "hpro/parallel/TProcSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -72,4 +72,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TSTREAMABLE_HH
+#endif  // __HPRO_TSTREAMABLE_HH

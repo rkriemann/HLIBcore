@@ -1,11 +1,11 @@
-#ifndef __HLIB_TPSPRINTER_HH
-#define __HLIB_TPSPRINTER_HH
+#ifndef __HPRO_TPSPRINTER_HH
+#define __HPRO_TPSPRINTER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TPSPrinter.hh
 // Description : class for a 2d PostScipt printer
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
@@ -15,7 +15,7 @@
 
 #include "T2DPrinter.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -131,4 +131,4 @@ protected:
 
 }// namespace
 
-#endif  // __HLIB_TPSPRINTER_HH
+#endif  // __HPRO_TPSPRINTER_HH

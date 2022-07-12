@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TStreamable.cc
 // Description : baseclass for all streamable classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
@@ -11,7 +11,7 @@
 
 #include "hpro/base/TStreamable.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////////////////////////////////
@@ -168,4 +168,4 @@ scatter_bs ( const TProcSet & ps,
 
 }// namespace anonymous
 
-}// namespace HLIB
+}// namespace Hpro

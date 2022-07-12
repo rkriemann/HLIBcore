@@ -1,18 +1,18 @@
-#ifndef __HLIB_T2DPRINTER_HH
-#define __HLIB_T2DPRINTER_HH
+#ifndef __HPRO_T2DPRINTER_HH
+#define __HPRO_T2DPRINTER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : T2DPrinter.hh
 // Description : baseclass for all 2d printers
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 
 #include "colour.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -131,4 +131,4 @@ protected:
 
 }// namespace
 
-#endif  // __HLIB_T2DPRINTER_HH
+#endif  // __HPRO_T2DPRINTER_HH

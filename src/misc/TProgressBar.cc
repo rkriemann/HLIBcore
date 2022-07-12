@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TProgressBar.cc
 // Description : class for showing the progress in various formats
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -16,7 +16,7 @@
 
 #include "hpro/misc/TProgressBar.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::string;
@@ -587,4 +587,4 @@ TPartProgressBar::update ()
     // no update
 }
 
-}// namespace HLIB
+}// namespace Hpro

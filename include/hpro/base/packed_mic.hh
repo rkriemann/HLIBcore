@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_MIC_HH
-#define __HLIB_PACKED_MIC_HH
+#ifndef __HPRO_PACKED_MIC_HH
+#define __HPRO_PACKED_MIC_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_mic.hh
 // Description : datatype for packed (vector) operations using MIC
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@
 
 #include <immintrin.h>
 
-namespace HLIB
+namespace Hpro
 {
 
 template <>
@@ -113,8 +113,8 @@ struct packed< double, ISA_MIC >
              const value_t   h ) : x( _mm512_setr_pd( a, b, c, d, e, f, g, h ) ) {}
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif // __MIC__
 
-#endif // __HLIB_PACKED_MIC_HH
+#endif // __HPRO_PACKED_MIC_HH

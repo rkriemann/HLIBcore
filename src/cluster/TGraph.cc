@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGraph.cc
 // Description : classes for representing graphs
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <set>
@@ -14,7 +14,7 @@
 
 #include "hpro/cluster/TGraph.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -37,7 +37,7 @@ namespace
 // for log_base(·) 
 // (the smaller base, the more important are large weights)
 // - computed value due to bug in clang compiler
-const real  LOG_BASE = 0.405465108108164; // std::log( real(1.5) );
+const double  LOG_BASE = 0.405465108108164; // std::log( 1.5 );
     
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -56,9 +56,9 @@ T_weight
 transform_lin ( const T_coeff  coeff,
                 const T_coeff  base )
 {
-    if ( is_integer< T_weight >::value )
+    if ( std::is_integral< T_weight >::value )
     {
-        if ( is_float< T_coeff >::value )
+        if ( std::is_floating_point< T_coeff >::value )
         {
             if ( base == T_coeff(0) )
                 HERROR( ERR_CONSISTENCY, "transform_lin", "base parameter is zero" );
@@ -85,9 +85,9 @@ T_weight
 transform_log ( const T_coeff  coeff,
                 const T_coeff  base )
 {
-    if ( is_integer< T_weight >::value )
+    if ( std::is_integral< T_weight >::value )
     {
-        if ( is_float< T_coeff >::value )
+        if ( std::is_floating_point< T_coeff >::value )
         {
             if ( base == T_coeff(0) )
                 HERROR( ERR_CONSISTENCY, "transform_log", "base parameter is zero" );
@@ -122,138 +122,143 @@ transform_log ( const T_coeff  coeff,
 //
 // constructor
 //
-TGraph::TGraph ( const TSparseMatrix *        S,
+TGraph::TGraph ( any_const_sparse_matrix_t    S,
                  const std::vector< bool > &  node_mask )
 {
-    if ( S == nullptr )
-        return;
-    
-    ////////////////////////////////////////////////////////////////////
-    //
-    // construct undirected, e.g. symmetric, graph out of sparse matrix
-    // first copy structure from S to edge-data and add missing
-    // symmetry counterparts, then copy data into real graph
-    //
-
-    //
-    // build mapping from masked nodes to original names
-    //
-
-    const size_t      n_nodes    = S->rows();
-    const bool        has_mask  = ( node_mask.size() == n_nodes );
-    vector< node_t >  name_map( n_nodes );
-    node_t            node_name = 0;
-    size_t            nexcluded = 0;
-
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            ++nexcluded;
-        else
-            name_map[node] = node_name++;
-    }// for
-    
-    //
-    // compute edge information, with masked nodes removed
-    //
-
-    vector< size_t >  degrees( n_nodes );
-    size_t            n_edges = 0;
-    
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            continue;
-        
-        const idx_t  lb = S->rowptr(node);
-        const idx_t  ub = S->rowptr(node+1);
-            
-        for ( idx_t j = lb; j < ub; j++ )
+    std::visit(
+        [this,&node_mask] ( auto &&  S_ptr )
         {
-            const node_t  neigh = S->colind(j);
+            if ( S_ptr == nullptr )
+                return;
+    
+            ////////////////////////////////////////////////////////////////////
+            //
+            // construct undirected, e.g. symmetric, graph out of sparse matrix
+            // first copy structure from S to edge-data and add missing
+            // symmetry counterparts, then copy data into real graph
+            //
 
-            // no masked nodes or single loops
-            if (( has_mask && node_mask[neigh] ) || ( node == neigh ))
-                continue;
+            //
+            // build mapping from masked nodes to original names
+            //
+
+            const size_t      n_nodes   = S_ptr->nrows();
+            const bool        has_mask  = ( node_mask.size() == n_nodes );
+            vector< node_t >  name_map( n_nodes );
+            node_t            node_name = 0;
+            size_t            nexcluded = 0;
+
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+            {
+                if ( has_mask && node_mask[node] )
+                    ++nexcluded;
+                else
+                    name_map[node] = node_name++;
+            }// for
+    
+            //
+            // compute edge information, with masked nodes removed
+            //
+
+            vector< size_t >  degrees( n_nodes );
+            size_t            n_edges = 0;
+
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+            {
+                if ( has_mask && node_mask[node] )
+                    continue;
                 
-            ++degrees[node];
-            ++n_edges;
+                const auto  lb = S_ptr->rowptr(node);
+                const auto  ub = S_ptr->rowptr(node+1);
+            
+                for ( idx_t  j = lb; j < ub; j++ )
+                {
+                    const auto  neigh = S_ptr->colind(j);
 
-            // also add edge from neighbour if missing
-            if ( ! S->has_entry( neigh, node ) )
+                    // no masked nodes or single loops
+                    if (( has_mask && node_mask[neigh] ) || ( node == neigh ))
+                        continue;
+                
+                    ++degrees[node];
+                    ++n_edges;
+
+                    // also add edge from neighbour if missing
+                    if ( ! S_ptr->has_entry( neigh, node ) )
+                    {
+                        ++degrees[neigh];
+                        ++n_edges;
+                    }// if
+                }// for
+            }// for
+    
+            //
+            // build graph without masked nodes
+            //
+    
+            idx_t  pos = 0;
+    
+            init( n_nodes - nexcluded, n_edges, true );
+
+            // build adj_list_ptr-data first
+            for ( size_t  i = 0; i < n_nodes; i++ )
             {
-                ++degrees[neigh];
-                ++n_edges;
-            }// if
-        }// for
-    }// for
-    
-    //
-    // build graph without masked nodes
-    //
-    
-    idx_t  pos = 0;
-    
-    init( n_nodes - nexcluded, n_edges, true );
-
-    // build adj_list_ptr-data first
-    for ( size_t  i = 0; i < n_nodes; i++ )
-    {
-        if ( has_mask && node_mask[i] )
-            continue;
+                if ( has_mask && node_mask[i] )
+                    continue;
         
-        const node_t  node = name_map[i];
+                const node_t  node = name_map[i];
 
-        adj_list_ptr()[node] = pos;
-        pos                 += idx_t( degrees[i] );
-    }// for    
+                adj_list_ptr()[node] = pos;
+                pos                 += idx_t( degrees[i] );
+            }// for    
 
-    adj_list_ptr()[ n_nodes - nexcluded ] = pos;
+            adj_list_ptr()[ n_nodes - nexcluded ] = pos;
 
-    // now copy the edges (use <degrees> as counter)
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-        degrees[node] = 0;
+            // now copy the edges (use <degrees> as counter)
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+                degrees[node] = 0;
     
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            continue;
-        
-        const node_t  lnode = name_map[node];
-        const idx_t   lb    = S->rowptr(node);
-        const idx_t   ub    = S->rowptr(node+1);
-            
-        for ( idx_t  j = lb; j < ub; j++ )
-        {
-            const node_t  neigh = S->colind(j);
-
-            if (( has_mask && node_mask[ neigh ] ) || ( neigh == node ))
-                continue;
-
-            const node_t  lneigh = name_map[ neigh ];
-            const idx_t   idx    = adj_list_ptr()[lnode] + idx_t(degrees[lnode]);
-            
-            adj_nodes()[ idx ] = lneigh;
-            degrees[lnode]++;
-            
-            if ( ! S->has_entry( neigh, node ) )
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
             {
-                const idx_t  nidx = adj_list_ptr()[lneigh] + idx_t(degrees[lneigh]);
-
-                adj_nodes()[ nidx ] = lnode;
-                degrees[lneigh]++;
-            }// if
-        }// while
-    }// for
-
-    // add global names
-    for ( size_t  i = 0; i < n_nodes; i++ )
-    {
-        if ( has_mask && node_mask[i] )
-            continue;
+                if ( has_mask && node_mask[node] )
+                    continue;
         
-        global_name()[name_map[i]] = node_t(i);
-    }// for
+                const node_t  lnode = name_map[node];
+                const idx_t   lb    = S_ptr->rowptr(node);
+                const idx_t   ub    = S_ptr->rowptr(node+1);
+            
+                for ( idx_t  j = lb; j < ub; j++ )
+                {
+                    const node_t  neigh = S_ptr->colind(j);
+
+                    if (( has_mask && node_mask[ neigh ] ) || ( neigh == node ))
+                        continue;
+
+                    const node_t  lneigh = name_map[ neigh ];
+                    const idx_t   idx    = adj_list_ptr()[lnode] + idx_t(degrees[lnode]);
+            
+                    adj_nodes()[ idx ] = lneigh;
+                    degrees[lnode]++;
+            
+                    if ( ! S_ptr->has_entry( neigh, node ) )
+                    {
+                        const idx_t  nidx = adj_list_ptr()[lneigh] + idx_t(degrees[lneigh]);
+
+                        adj_nodes()[ nidx ] = lnode;
+                        degrees[lneigh]++;
+                    }// if
+                }// while
+            }// for
+
+            // add global names
+            for ( size_t  i = 0; i < n_nodes; i++ )
+            {
+                if ( has_mask && node_mask[i] )
+                    continue;
+        
+                global_name()[name_map[i]] = node_t(i);
+            }// for
+        },
+        S );
 }
 
 //
@@ -836,182 +841,183 @@ TGraph::operator = ( const TGraph & graph )
 //
 // constructor
 //
-TEWGraph::TEWGraph ( const TSparseMatrix *        S,
+TEWGraph::TEWGraph ( any_const_sparse_matrix_t    S,
                      const std::vector< bool > &  node_mask,
                      const bool                   sym_edge_weights )
 {
-    if ( S == nullptr || ( S->n_non_zero() == 0 ))
-        return;
-
-    ////////////////////////////////////////////////////////////////////
-    //
-    // construct undirected, e.g. symmetric, graph out of sparse matrix
-    // first copy structure from S to edge-data and add missing
-    // symmetry counterparts, then copy data into real graph
-    //
-
-    //
-    // build mapping from masked nodes to original names
-    //
-
-    const bool        is_complex = S->is_complex();
-    const size_t      n_nodes     = S->rows();
-    const bool        has_mask   = ( node_mask.size() == n_nodes );
-    vector< node_t >  name_map( n_nodes );
-    node_t            node_name  = 0;
-    size_t            nexcluded  = 0;
-
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            ++nexcluded;
-        else
-            name_map[node] = node_name++;
-    }// for
-    
-    //
-    // compute edge information, with masked nodes removed;
-    // also: determine minimal coefficient (wrt. absolute value)
-    // for edge weights
-    //
-
-    vector< size_t >  degrees( n_nodes );
-    size_t            n_edges  = 0;
-    real              min_val = real(0);
-    
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            continue;
-        
-        const idx_t  lb = S->rowptr(node);
-        const idx_t  ub = S->rowptr(node+1);
-            
-        for ( idx_t j = lb; j < ub; j++ )
+    std::visit(
+        [this,&node_mask,sym_edge_weights] ( auto &&  S_ptr )
         {
-            const node_t  neigh = S->colind(j);
-
-            // no masked nodes or single loops
-            if (( has_mask && node_mask[neigh] ) || ( node == neigh ))
-                continue;
-                
-            ++degrees[node];
-            ++n_edges;
-
-            // update minimal coefficient
-            const real  val = ( is_complex ? Math::abs( S->ccoeff( j ) ) : Math::abs( S->rcoeff( j ) ) );
-
-            if ( val > real(0) )
-            {
-                if ( min_val == 0 ) min_val = val;
-                else                min_val = std::min( min_val, val );
-            }// if
-            
-            // also add edge from neighbour if missing
-            if ( ! S->has_entry( neigh, node ) )
-            {
-                ++degrees[neigh];
-                ++n_edges;
-            }// if
-        }// for
-    }// for
+            using  value_t = typename std::remove_pointer_t< std::decay_t< decltype(S_ptr) > >::value_t;
+            using  real_t  = real_type_t< value_t >;
     
-    //
-    // build graph without masked nodes
-    //
-    
-    idx_t  pos = 0;
-    
-    init( n_nodes - nexcluded, n_edges, true );
+            if ( S_ptr == nullptr || ( S_ptr->n_non_zero() == 0 ) )
+                return;
 
-    // build adj_list_ptr-data first
-    for ( size_t  i = 0; i < n_nodes; i++ )
-    {
-        if ( has_mask && node_mask[i] )
-            continue;
-        
-        const node_t  node = name_map[i];
-
-        adj_list_ptr()[node] = pos;
-        pos                 += idx_t( degrees[i] );
-    }// for    
-
-    adj_list_ptr()[ n_nodes - nexcluded ] = pos;
-
-    // now copy the edges (use <degrees> as counter)
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-        degrees[node] = 0;
-    
-    for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
-    {
-        if ( has_mask && node_mask[node] )
-            continue;
-        
-        const node_t  lnode      = name_map[node];
-        const idx_t   lb         = S->rowptr(node);
-        const idx_t   ub         = S->rowptr(node+1);
-        const real    coeff_node = ( is_complex ?
-                                     Math::abs( S->centry( node, node ) ) :
-                                     Math::abs( S->entry(  node, node ) ) );
-            
-        for ( idx_t  j = lb; j < ub; j++ )
-        {
-            const node_t  neigh = S->colind(j);
-
-            if (( has_mask && node_mask[ neigh ] ) || ( neigh == node ))
-                continue;
-
-            const real      coeff_neigh = ( is_complex ?
-                                            Math::abs( S->centry( neigh, neigh ) ) :
-                                            Math::abs( S->entry(  neigh, neigh ) ) );
-            const node_t    lneigh = name_map[ neigh ];
-            const idx_t     idx    = adj_list_ptr()[lnode] + idx_t(degrees[lnode]);
-            const real      coeff  = ( is_complex ? Math::abs( S->ccoeff( j ) ) : Math::abs( S->rcoeff(  j ) ) );
-
-            // transform the real valued coefficients to values of type 'weight_t'
-            //           │    γ · |a_ij|   │
-            // weight =  │ ─────────────── │, with γ = 80.000 (see transform_lin)
-            //           │ |a_ii| + |a_jj| │
+            ////////////////////////////////////////////////////////////////////
             //
-            const weight_t  weight = transform_lin< weight_t, real >( Math::abs( coeff / ( coeff_node + coeff_neigh ) ), 1.0 );
-            // const weight_t  weight = transform_log< weight_t, real >( coeff, min_val );
-            
-            adj_nodes()[ idx ] = lneigh;
-            set_edge_weight( idx, weight );
-            degrees[lnode]++;
-            
-            if ( ! S->has_entry( neigh, node ) )
-            {
-                const idx_t  nidx = adj_list_ptr()[lneigh] + idx_t(degrees[lneigh]);
+            // construct undirected, e.g. symmetric, graph out of sparse matrix
+            // first copy structure from S to edge-data and add missing
+            // symmetry counterparts, then copy data into real graph
+            //
 
-                adj_nodes()[ nidx ] = lnode;
-                if ( sym_edge_weights )
-                    set_edge_weight( nidx, weight );      // symmetric weight
+            //
+            // build mapping from masked nodes to original names
+            //
+
+            const size_t      n_nodes    = S_ptr->rows();
+            const bool        has_mask   = ( node_mask.size() == n_nodes );
+            vector< node_t >  name_map( n_nodes );
+            node_t            node_name  = 0;
+            size_t            nexcluded  = 0;
+
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+            {
+                if ( has_mask && node_mask[node] )
+                    ++nexcluded;
                 else
-                    set_edge_weight( nidx, weight_t(0) ); // unsymmetric weight
-                degrees[lneigh]++;
-            }// if
-            else if ( sym_edge_weights )
-            {
-                // use maximal weight of both edges
-                const real      ncoeff  = ( is_complex
-                                            ? Math::abs( S->centry( neigh, node ) )
-                                            : Math::abs( S->entry(  neigh, node ) ) );
-                const weight_t  nweight = transform_log< weight_t, real >( ncoeff, min_val );
-                
-                set_edge_weight( idx, std::max( weight, nweight ) );
-            }// if
-        }// while
-    }// for
+                    name_map[node] = node_name++;
+            }// for
+    
+            //
+            // compute edge information, with masked nodes removed;
+            // also: determine minimal coefficient (wrt. absolute value)
+            // for edge weights
+            //
 
-    // add global names
-    for ( size_t  i = 0; i < n_nodes; i++ )
-    {
-        if ( has_mask && node_mask[i] )
-            continue;
+            vector< size_t >  degrees( n_nodes );
+            size_t            n_edges = 0;
+            real_t            min_val = real_t(0);
+    
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+            {
+                if ( has_mask && node_mask[node] )
+                    continue;
         
-        global_name()[name_map[i]] = node_t(i);
-    }// for
+                const idx_t  lb = S_ptr->rowptr(node);
+                const idx_t  ub = S_ptr->rowptr(node+1);
+            
+                for ( idx_t j = lb; j < ub; j++ )
+                {
+                    const node_t  neigh = S_ptr->colind(j);
+
+                    // no masked nodes or single loops
+                    if (( has_mask && node_mask[neigh] ) || ( node == neigh ))
+                        continue;
+                
+                    ++degrees[node];
+                    ++n_edges;
+
+                    // update minimal coefficient
+                    const auto  val = Math::abs( S_ptr->coeff( j ) );
+
+                    if ( val > real_t(0) )
+                    {
+                        if ( min_val == 0 ) min_val = val;
+                        else                min_val = std::min( min_val, val );
+                    }// if
+            
+                    // also add edge from neighbour if missing
+                    if ( ! S_ptr->has_entry( neigh, node ) )
+                    {
+                        ++degrees[neigh];
+                        ++n_edges;
+                    }// if
+                }// for
+            }// for
+    
+            //
+            // build graph without masked nodes
+            //
+    
+            idx_t  pos = 0;
+    
+            init( n_nodes - nexcluded, n_edges, true );
+
+            // build adj_list_ptr-data first
+            for ( size_t  i = 0; i < n_nodes; i++ )
+            {
+                if ( has_mask && node_mask[i] )
+                    continue;
+        
+                const node_t  node = name_map[i];
+
+                adj_list_ptr()[node] = pos;
+                pos                 += idx_t( degrees[i] );
+            }// for    
+
+            adj_list_ptr()[ n_nodes - nexcluded ] = pos;
+
+            // now copy the edges (use <degrees> as counter)
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+                degrees[node] = 0;
+    
+            for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
+            {
+                if ( has_mask && node_mask[node] )
+                    continue;
+        
+                const node_t  lnode      = name_map[node];
+                const idx_t   lb         = S_ptr->rowptr(node);
+                const idx_t   ub         = S_ptr->rowptr(node+1);
+                const auto    coeff_node = Math::abs( S_ptr->entry( node, node ) );
+            
+                for ( idx_t  j = lb; j < ub; j++ )
+                {
+                    const node_t  neigh = S_ptr->colind(j);
+
+                    if (( has_mask && node_mask[ neigh ] ) || ( neigh == node ))
+                        continue;
+
+                    const auto      coeff_neigh = Math::abs( S_ptr->entry( neigh, neigh ) );
+                    const node_t    lneigh = name_map[ neigh ];
+                    const idx_t     idx    = adj_list_ptr()[lnode] + idx_t(degrees[lnode]);
+                    const auto      coeff  = Math::abs( S_ptr->coeff( j ) );
+
+                    // transform the real valued coefficients to values of type 'weight_t'
+                    //           │    γ · |a_ij|   │
+                    // weight =  │ ─────────────── │, with γ = 80.000 (see transform_lin)
+                    //           │ |a_ii| + |a_jj| │
+                    //
+                    const weight_t  weight = transform_lin< weight_t, real_t >( Math::abs( coeff / ( coeff_node + coeff_neigh ) ), 1.0 );
+                    // const weight_t  weight = transform_log< weight_t, real_t >( coeff, min_val );
+            
+                    adj_nodes()[ idx ] = lneigh;
+                    set_edge_weight( idx, weight );
+                    degrees[lnode]++;
+            
+                    if ( ! S_ptr->has_entry( neigh, node ) )
+                    {
+                        const idx_t  nidx = adj_list_ptr()[lneigh] + idx_t(degrees[lneigh]);
+
+                        adj_nodes()[ nidx ] = lnode;
+                        if ( sym_edge_weights )
+                            set_edge_weight( nidx, weight );      // symmetric weight
+                        else
+                            set_edge_weight( nidx, weight_t(0) ); // unsymmetric weight
+                        degrees[lneigh]++;
+                    }// if
+                    else if ( sym_edge_weights )
+                    {
+                        // use maximal weight of both edges
+                        const auto      ncoeff  = Math::abs( S_ptr->entry( neigh, node ) );
+                        const weight_t  nweight = transform_log< weight_t, real_t >( ncoeff, min_val );
+                
+                        set_edge_weight( idx, std::max( weight, nweight ) );
+                    }// if
+                }// while
+            }// for
+
+            // add global names
+            for ( size_t  i = 0; i < n_nodes; i++ )
+            {
+                if ( has_mask && node_mask[i] )
+                    continue;
+        
+                global_name()[name_map[i]] = node_t(i);
+            }// for
+        },
+        S );
 }
 
 //
@@ -1096,4 +1102,4 @@ TEWGraph::write ( const std::string &  filename ) const
     }// for
 }
 
-}// namespace HLIB
+}// namespace Hpro

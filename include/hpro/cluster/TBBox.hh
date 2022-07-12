@@ -1,17 +1,17 @@
-#ifndef __HLIB_TBBOX_HH
-#define __HLIB_TBBOX_HH
+#ifndef __HPRO_TBBOX_HH
+#define __HPRO_TBBOX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBBox.hh
 // Description : class for a axis aligned bounding box 
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/base/TPoint.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////////////////////
@@ -120,4 +120,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TBBOX_HH
+#endif  // __HPRO_TBBOX_HH

@@ -1,18 +1,18 @@
-#ifndef __HLIB_TBSHMBUILDER_HH
-#define __HLIB_TBSHMBUILDER_HH
+#ifndef __HPRO_TBSHMBUILDER_HH
+#define __HPRO_TBSHMBUILDER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBSHMBuilder.hh
 // Description : class for building h-matrices out of bytestreams
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/TByteStream.hh"
 
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -33,7 +33,8 @@ public:
     // construct matrix out of given bytestream
     //
 
-    virtual std::unique_ptr< TMatrix >  build ( TByteStream & bs ) const;
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >  build ( TByteStream & bs ) const;
 
 protected:
     //
@@ -41,9 +42,10 @@ protected:
     //
 
     // return matrix corresponding to given type
-    std::unique_ptr< TMatrix >  build_matrix ( uint t ) const;
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >  build_matrix ( uint t ) const;
 };
 
 }// namespace
 
-#endif // __HLIB_TBSHMBUILDER_HH
+#endif // __HPRO_TBSHMBUILDER_HH

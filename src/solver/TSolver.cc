@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TSolver.cc
 // Description : base-class for all iterative solvers
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -14,10 +14,71 @@
 
 #include "hpro/solver/TSolver.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
+
+void
+solve_mp ( const TSolver &       solver,
+           const std::string &   solver_name,
+           any_const_operator_t  A,
+           any_vector_t          x,
+           any_const_vector_t    b,
+           any_const_operator_t  W,
+           TSolverInfo *         info )
+{
+    using std::get;
+    
+    if (( A.index() != x.index() ) || ( A.index() != b.index() ))
+        HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x and b have different value type" );
+
+    switch ( W.index() )
+    {
+        case REAL_FP32 :
+            switch ( A.index() )
+            {
+                case REAL_FP32 : solver.solve( get< REAL_FP32 >( A ), get< REAL_FP32 >( x ), get< REAL_FP32 >( b ), get< REAL_FP32 >( W ), info ); break;
+                case REAL_FP64 : solver.solve( get< REAL_FP64 >( A ), get< REAL_FP64 >( x ), get< REAL_FP64 >( b ), get< REAL_FP32 >( W ), info ); break;
+                default:
+                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
+            }// switch
+            break;
+            
+        case REAL_FP64 :
+            switch ( A.index() )
+            {
+                case REAL_FP32 : solver.solve( get< REAL_FP32 >( A ), get< REAL_FP32 >( x ), get< REAL_FP32 >( b ), get< REAL_FP64 >( W ), info ); break;
+                case REAL_FP64 : solver.solve( get< REAL_FP64 >( A ), get< REAL_FP64 >( x ), get< REAL_FP64 >( b ), get< REAL_FP64 >( W ), info ); break;
+                default:
+                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
+            }// switch
+            break;
+            
+        case COMPLEX_FP32 :
+            switch ( A.index() )
+            {
+                case COMPLEX_FP32 : solver.solve( get< COMPLEX_FP32 >( A ), get< COMPLEX_FP32 >( x ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP32 >( W ), info ); break;
+                case COMPLEX_FP64 : solver.solve( get< COMPLEX_FP64 >( A ), get< COMPLEX_FP64 >( x ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP32 >( W ), info ); break;
+                default:
+                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
+            }// switch
+            break;
+            
+        case COMPLEX_FP64 :
+            switch ( A.index() )
+            {
+                case COMPLEX_FP32 : solver.solve( get< COMPLEX_FP32 >( A ), get< COMPLEX_FP32 >( x ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP64 >( W ), info ); break;
+                case COMPLEX_FP64 : solver.solve( get< COMPLEX_FP64 >( A ), get< COMPLEX_FP64 >( x ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP64 >( W ), info ); break;
+                default:
+                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
+            }// switch
+            break;
+
+        default :
+            HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
+    }// switch
+}
 
 ////////////////////////////////////////////////
 //
@@ -28,8 +89,7 @@ TSolver::TSolver ( const TStopCriterion &  stop_crit )
         : _stop_criterion( stop_crit )
         , _initialise_start_value( CFG::Solver::init_start_value )
         , _use_exact_residual( CFG::Solver::use_exact_residual )
-{
-}
+{}
 
 TSolver::~TSolver ()
 {}
@@ -66,8 +126,8 @@ TSolver::set_stop_crit ( const TStopCriterion &  stop_crit )
 //
 bool
 TSolver::stopped ( const uint     it, 
-                   const real     norm, 
-                   const real     norm0, 
+                   const double     norm, 
+                   const double     norm0, 
                    TSolverInfo *  info ) const
 {
     return _stop_criterion.stopped( it, norm, norm0, info );
@@ -77,15 +137,91 @@ TSolver::stopped ( const uint     it,
 // initialises start value of iteration
 //
 void
-TSolver::set_start_value ( TVector *                x,
-                           const TVector *          b,
-                           const TLinearOperator *  W ) const
+TSolver::set_start_value ( any_vector_t          x,
+                           any_const_vector_t    b ) const
 {
-    if ( _initialise_start_value )
+    using std::get;
+
+    if ( ! _initialise_start_value )
+        return;
+    
+    if ( x.index() != b.index() )
+        HERROR( ERR_ARG, "(TSolver) set_start_value", "x and b are of different type" );
+                    
+    switch ( x.index() )
     {
-        if ( W != nullptr ) apply( W, b, x );
-        else                x->assign( real(1), b );
+        case 0 : get< 0 >( x )->assign( float(1), get< 0 >( b ) ); break;
+        case 1 : get< 1 >( x )->assign( double(1), get< 1 >( b ) ); break;
+        case 2 : get< 2 >( x )->assign( std::complex< float >(1), get< 2 >( b ) ); break;
+        case 3 : get< 3 >( x )->assign( std::complex< double >(1), get< 3 >( b ) ); break;
+        default:
+            HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector value type" );
+    }// switch
+}
+void
+TSolver::set_start_value ( any_vector_t          x,
+                           any_const_vector_t    b,
+                           any_const_operator_t  W ) const
+{
+    using std::get;
+    
+    if ( ! _initialise_start_value )
+        return;
+    
+    if ( x.index() != b.index() )
+        HERROR( ERR_ARG, "(TSolver) set_start_value", "x and b are of different type" );
+
+    if ( std::visit( [] ( auto &&  W_ptr ) { return ( W_ptr == nullptr ? true : false ); }, W ) )
+    {
+        set_start_value( x, b );
+        return;
     }// if
+        
+    switch ( W.index() )
+    {
+        case REAL_FP32 :
+            switch ( x.index() )
+            {
+                case REAL_FP32 : apply( get< REAL_FP32 >( W ), get< REAL_FP32 >( b ), get< REAL_FP32 >( x ) ); break;
+                case REAL_FP64 : apply( get< REAL_FP32 >( W ), get< REAL_FP64 >( b ), get< REAL_FP64 >( x ) ); break;
+                default:
+                    HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector/matrix type" );
+            }// switch
+            break;
+            
+        case REAL_FP64 :
+            switch ( x.index() )
+            {
+                case REAL_FP32 : apply( get< REAL_FP64 >( W ), get< REAL_FP32 >( b ), get< REAL_FP32 >( x ) ); break;
+                case REAL_FP64 : apply( get< REAL_FP64 >( W ), get< REAL_FP64 >( b ), get< REAL_FP64 >( x ) ); break;
+                default:
+                    HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector/matrix type" );
+            }// switch
+            break;
+            
+        case COMPLEX_FP32 :
+            switch ( x.index() )
+            {
+                case COMPLEX_FP32 : apply( get< COMPLEX_FP32 >( W ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP32 >( x ) ); break;
+                case COMPLEX_FP64 : apply( get< COMPLEX_FP32 >( W ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP64 >( x ) ); break;
+                default:
+                    HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector/matrix type" );
+            }// switch
+            break;
+            
+        case COMPLEX_FP64 :
+            switch ( x.index() )
+            {
+                case COMPLEX_FP32 : apply( get< COMPLEX_FP64 >( W ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP32 >( x ) ); break;
+                case COMPLEX_FP64 : apply( get< COMPLEX_FP64 >( W ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP64 >( x ) ); break;
+                default:
+                    HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector/matrix type" );
+            }// switch
+            break;
+
+        default :
+            HERROR( ERR_ARG, "(TSolver) set_start_value", "unknown vector/matrix type" );
+    };
 }
 
 /////////////////////////////////////////////////////////////
@@ -101,8 +237,6 @@ TSolver::set_start_value ( TVector *                x,
 //
 TSolverInfo::TSolverInfo ( const bool  astore_hist,
                            const bool  aprint )
-        : _flag0( false )
-        , _flag1( false )
 {
     reset();
 
@@ -112,7 +246,7 @@ TSolverInfo::TSolverInfo ( const bool  astore_hist,
 
 void
 TSolverInfo::append ( const uint  it,
-                      const real  residual_norm )
+                      const double  residual_norm )
 {
     //
     // reset info if first entry
@@ -125,14 +259,14 @@ TSolverInfo::append ( const uint  it,
     // at least store first entry for future computations
     //
 
-    real  old_resnorm = -1;
+    double  old_resnorm = -1;
 
     if ( ! history().empty() && _store_hist )
     {
         old_resnorm = history().back().res_norm;
     }// if
 
-    const real  reduction = residual_norm / old_resnorm;
+    const double  reduction = residual_norm / old_resnorm;
     
     if ( history().empty() || _store_hist )
     {
@@ -142,45 +276,105 @@ TSolverInfo::append ( const uint  it,
     }// if
     
     // update entries
-    real  res_norm0 = history().front().res_norm;
+    double  res_norm0 = history().front().res_norm;
 
     _n_iter    = it;
     _res_norm  = residual_norm;
 
     if ( it > 0 )
-        _conv_rate = std::pow( residual_norm / res_norm0, real(1) / real(it) );
+        _conv_rate = std::pow( residual_norm / res_norm0, double(1) / double(it) );
 
     
     if ( _print )
     {
+        const bool  use_unicode = false;
+        const bool  use_color   = false;
+                              
         if ( it == 0 )
         {
-            if ( _store_hist )
-                cout << boost::format( "%|=6| | %|=13| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
-                     << endl
-                     << "-------+---------------+---------------+---------------"
-                     << endl;
+            if ( use_unicode )
+            {
+                if ( _store_hist )
+                    cout << boost::format( "%|=6| │ %|=13| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
+                         << endl
+                         << "───────┼───────────────┼───────────────┼───────────────"
+                         << endl;
+                else
+                    cout << boost::format( "%|=6| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "rate"
+                         << endl
+                         << "───────┼───────────────┼───────────────"
+                         << endl;
+            }// if
             else
-                cout << boost::format( "%|=6| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "rate"
-                     << endl
-                     << "-------+---------------+---------------"
-                     << endl;
+            {
+                if ( _store_hist )
+                    cout << boost::format( "%|=6| | %|=13| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
+                         << endl
+                         << "-------+---------------+---------------+---------------"
+                         << endl;
+                else
+                    cout << boost::format( "%|=6| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "rate"
+                         << endl
+                         << "-------+---------------+---------------"
+                         << endl;
+            }// else
         }// if
         
-        cout << boost::format( "%|6| | %13.4e | " ) % it % residual_norm;
+        if ( use_unicode )
+            cout << boost::format( "%|6| │ %13.4e │ " ) % it % residual_norm;
+        else
+            cout << boost::format( "%|6| | %13.4e | " ) % it % residual_norm;
 
         if ( it > 0 )
         {
-            if ( _store_hist )
-                cout << boost::format( "%13.4e | %13.4e " ) % reduction % _conv_rate;
+            if ( use_color )
+            {
+                if ( _store_hist )
+                {
+                    if ( reduction <= 1 )
+                        cout << boost::format( "%13.4e " ) % reduction;
+                    else
+                        cout << boost::format( "%13.4e " ) % reduction;
+
+                    cout << "│ ";
+                    
+                    if ( _conv_rate <= 1 )
+                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                    else
+                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                }// if
+                else
+                {
+                    if ( _conv_rate <= 1 )
+                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                    else
+                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                }// else
+            }// if
             else
-                cout << boost::format( "%13.4e" ) % _conv_rate;
+            {
+                if ( use_unicode )
+                {
+                    if ( _store_hist )
+                        cout << boost::format( "%13.4e │ %13.4e " ) % reduction % _conv_rate;
+                    else
+                        cout << boost::format( "%13.4e" ) % _conv_rate;
+                }// if
+                else
+                {
+                    if ( _store_hist )
+                        cout << boost::format( "%13.4e | %13.4e " ) % reduction % _conv_rate;
+                    else
+                        cout << boost::format( "%13.4e" ) % _conv_rate;
+                }// else
+            }// else
         }// if
         else
         {
             if ( _store_hist )
             {
-                cout << "              |               ";
+                if ( use_unicode ) cout << "              │               ";
+                else               cout << "              |               ";
             }// if
         }// else
 
@@ -196,8 +390,8 @@ TSolverInfo::reset ()
 {
     _status     = iterating;
     _n_iter     = 0;
-    _conv_rate  = real(0);
-    _res_norm   = real(0);
+    _conv_rate  = double(0);
+    _res_norm   = double(0);
 
     _history.clear();
 }
@@ -214,16 +408,52 @@ TSolverInfo::to_string () const
     {
         ostringstream  str;
 
-        if ( has_converged() )
-            str << solver() << " : converged after " << n_iter() << " steps"
-                << " with rate = " << boost::format( "%.4e" ) % conv_rate();
-        else if ( has_diverged() )
-            str << solver() << " : diverged after " << n_iter() << " steps";
-        else if ( has_failed() )
-            str << solver() << " : failed after " << n_iter() << " steps";
+        const bool  use_color   = false;
+
+        if ( use_color )
+        {
+            if ( has_converged() )
+                str << solver()
+                    << " : "
+                    << "converged"
+                    << " after "
+                    << n_iter() << " steps"
+                    << " with "
+                    << "rate = " << boost::format( "%.4e" ) % conv_rate();
+            else if ( has_diverged() )
+                str << solver()
+                    << " : "
+                    << "diverged"
+                    << " after "
+                    << n_iter() << " steps";
+            else if ( has_failed() )
+                str << solver()
+                    << " : "
+                    << "failed"
+                    << " after "
+                    << n_iter() << " steps";
+            else
+                str << solver()
+                    << " : "
+                    << "not converged"
+                    << " after "
+                    << n_iter() << " steps"
+                    << " with "
+                    << "rate = " << boost::format( "%.4e" ) % conv_rate();
+        }// if
         else
-            str << solver() << " : not converged after " << n_iter() << " steps"
-                << " with rate = " << boost::format( "%.4e" ) % conv_rate();
+        {
+            if ( has_converged() )
+                str << solver() << " : converged after " << n_iter() << " steps"
+                    << " with rate = " << boost::format( "%.4e" ) % conv_rate();
+            else if ( has_diverged() )
+                str << solver() << " : diverged after " << n_iter() << " steps";
+            else if ( has_failed() )
+                str << solver() << " : failed after " << n_iter() << " steps";
+            else
+                str << solver() << " : not converged after " << n_iter() << " steps"
+                    << " with rate = " << boost::format( "%.4e" ) % conv_rate();
+        }// else
         
         str << " ( |Ax-b| = " << boost::format( "%.4e" ) % res_norm() << " )";
 
@@ -266,9 +496,9 @@ TSolverInfo::print_gnuplot ( std::ostream &  os )
 /////////////////////////////////////////////////////////////
 
 TStopCriterion::TStopCriterion ( const uint  amax_iter,
-                                 const real  aabs_res_red,
-                                 const real  arel_res_red,
-                                 const real  arel_res_growth )
+                                 const double  aabs_res_red,
+                                 const double  arel_res_red,
+                                 const double  arel_res_growth )
         : max_iter( amax_iter )
         , abs_res_reduct( aabs_res_red )
         , rel_res_reduct( arel_res_red )
@@ -313,8 +543,8 @@ TStopCriterion::operator =  ( TStopCriterion &&  stop_crit )
 //
 bool
 TStopCriterion::stopped ( const uint     it,
-                          const real     norm,
-                          const real     norm0,
+                          const double     norm,
+                          const double     norm0,
                           TSolverInfo *  info ) const
 {
     if (( max_iter > 0 ) && ( it >= max_iter ))
@@ -357,7 +587,7 @@ TStopCriterion::stopped ( const uint     it,
 std::string
 TStopCriterion::to_string () const
 {
-    return HLIB::to_string( "stop( max steps = %d, absolute reduction = %.4e, relative reduction = %.4e )",
+    return Hpro::to_string( "stop( max steps = %d, absolute reduction = %.4e, relative reduction = %.4e )",
                             max_iter, abs_res_reduct, rel_res_reduct );
 }
 
@@ -435,7 +665,7 @@ max_steps ( const uint  steps )
 }
 
 TStopCriterion 
-relative_reduction  ( const real  red )
+relative_reduction  ( const double  red )
 {
     TStopCriterion  res;
 
@@ -448,7 +678,7 @@ relative_reduction  ( const real  red )
 }
 
 TStopCriterion 
-absolute_reduction  ( const real  red )
+absolute_reduction  ( const double  red )
 {
     TStopCriterion  res;
 
@@ -460,4 +690,4 @@ absolute_reduction  ( const real  red )
     return res;
 }
 
-}// namespace HLIB
+}// namespace Hpro

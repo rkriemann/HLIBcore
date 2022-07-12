@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TClusterVis.cc
 // Description : classes for cluster tree and block cluster tree visualisation
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <fstream>
@@ -23,7 +23,7 @@
 
 #include "hpro/io/TClusterVis.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -1336,4 +1336,4 @@ print_gv ( const TBlockCluster *  cl,
 }
 
 
-}// namespace HLIB
+}// namespace Hpro

@@ -1,11 +1,11 @@
-#ifndef __HLIB_BLAS_MEMBLOCK_HH
-#define __HLIB_BLAS_MEMBLOCK_HH
+#ifndef __HPRO_BLAS_MEMBLOCK_HH
+#define __HPRO_BLAS_MEMBLOCK_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : MemBlock.hh
 // Description : class for a reference countable memory block
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstdlib>
@@ -14,14 +14,14 @@
 
 #include "hpro/base/System.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // enable (=1) for debugging
-#define HLIB_MEMBLOCK_REF_COUNT  0
+#define HPRO_MEMBLOCK_REF_COUNT  0
 
 // enable memory debugging (see also Mem::malloc/free)
-#define HLIB_DEBUG_MALLOC        0
+#define HPRO_DEBUG_MALLOC        0
 
 //!
 //! indicates copy policy
@@ -47,7 +47,7 @@ public:
     //! internal value type
     using  value_t = T_value;
 
-    #if HLIB_MEMBLOCK_REF_COUNT == 1
+    #if HPRO_MEMBLOCK_REF_COUNT == 1
     //! for debugging: reference counter type
     using  count_t = std::atomic< size_t >;
     #endif
@@ -61,7 +61,7 @@ protected:
     //! indicates, this object is owner of memory block
     bool        _is_owner;
 
-    #if HLIB_MEMBLOCK_REF_COUNT == 1
+    #if HPRO_MEMBLOCK_REF_COUNT == 1
     //! for debugging: reference counter and owner of data
     count_t     _nreferences;
     MemBlock *  _owner;
@@ -78,7 +78,7 @@ public:
     MemBlock  () noexcept
             : _data( nullptr )
             , _is_owner( false )
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             , _nreferences( 0 )
             , _owner( nullptr )
             #endif
@@ -88,7 +88,7 @@ public:
     MemBlock  ( const size_t  n )
             : _data( nullptr )
             , _is_owner( false )
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             , _nreferences( 0 )
             , _owner( nullptr )
             #endif
@@ -100,12 +100,12 @@ public:
     MemBlock  ( const MemBlock &  b )
             : _data( b._data )
             , _is_owner( false )
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             , _nreferences( 0 )
             , _owner( b._owner )
             #endif
     {
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         add_ref_owner();
         #endif
     }
@@ -114,11 +114,11 @@ public:
     MemBlock  ( MemBlock &&  b ) noexcept
             : _data( b._data )
             , _is_owner( b._is_owner )
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             , _owner( b._owner )
             #endif
     {
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         _nreferences = b._nreferences;
         
         if ( b._is_owner )
@@ -135,12 +135,12 @@ public:
     {
         if ( _is_owner )
         {
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             if ( _nreferences != 0 )
                 HERROR( ERR_CONSISTENCY, "(MemBlock) dtor", "freeing data with references" );
             #endif
             
-            #if HLIB_DEBUG_MALLOC == 1
+            #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
             delete[] _data;
@@ -154,7 +154,7 @@ public:
         _data     = b._data;
         _is_owner = false;
         
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         del_ref_owner();
         
         _owner = b._owner;
@@ -170,7 +170,7 @@ public:
         _data     = b._data;
         _is_owner = b._is_owner;  // only owner if b was owner
         
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         del_ref_owner();
 
         if ( b._is_owner )
@@ -198,28 +198,28 @@ public:
     {
         if ( _is_owner )
         {
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             if ( _nreferences != 0 )
                 HERROR( ERR_CONSISTENCY, "(MemBlock) init", "freeing data with references" );
 
             _owner = nullptr;
             #endif
             
-            #if HLIB_DEBUG_MALLOC == 1
+            #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
             delete[] _data;
             #endif
         }// if
 
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         del_ref_owner();
         #endif
 
         _data     = ptr;
         _is_owner = ais_owner;
 
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         if ( ais_owner )
         {
             _owner       = this;
@@ -242,14 +242,14 @@ public:
         
         if ( _is_owner )
         {
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             if ( _nreferences != 0 )
                 HERROR( ERR_CONSISTENCY, "(MemBlock) init", "freeing data with references" );
 
             _owner = nullptr;
             #endif
             
-            #if HLIB_DEBUG_MALLOC == 1
+            #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
             delete[] _data;
@@ -259,7 +259,7 @@ public:
         _data     = b._data;
         _is_owner = ais_owner;
 
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         if ( ais_owner && b._is_owner )
         {
             b._owner     = this;
@@ -295,28 +295,28 @@ public:
         
         if ( _is_owner )
         {
-            #if HLIB_MEMBLOCK_REF_COUNT == 1
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
             if ( _nreferences != 0 )
                 HERROR( ERR_CONSISTENCY, "(MemBlock) alloc_wo_value", "freeing data with references" );
 
             _owner = nullptr;
             #endif
             
-            #if HLIB_DEBUG_MALLOC == 1
+            #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
             delete[] _data;
             #endif
         }// if
         
-        #if HLIB_DEBUG_MALLOC == 1
+        #if HPRO_DEBUG_MALLOC == 1
         _data     = static_cast< value_t * >( Mem::alloc( sizeof(value_t) * n ) );
         #else
         _data     = new value_t[n];
         #endif
         _is_owner = true;
 
-        #if HLIB_MEMBLOCK_REF_COUNT == 1
+        #if HPRO_MEMBLOCK_REF_COUNT == 1
         _owner       = this;
         _nreferences = 0;
         #endif
@@ -335,7 +335,7 @@ public:
     //! return is_owner status
     bool            is_owner () const noexcept { return _is_owner; }
     
-    #if HLIB_MEMBLOCK_REF_COUNT == 1
+    #if HPRO_MEMBLOCK_REF_COUNT == 1
 
     //
     // reference counting
@@ -372,6 +372,6 @@ public:
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_MEMBLOCK_HH
+#endif  // __HPRO_MEMBLOCK_HH

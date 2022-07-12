@@ -1,20 +1,19 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TChacoAlgPartStrat.cc
 // Description : class for algebraic clustertree construction with Chaco
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
 
 #include <stdio.h>
 
-#include "hlib-config.h"
-
+#include "hpro/config.h"
 #include "hpro/cluster/TAlgPartStrat.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -145,4 +144,4 @@ TChacoAlgPartStrat::partition ( const TGraph &  graph,
     }// for
 }
 
-}// namespace HLIB
+}// namespace Hpro

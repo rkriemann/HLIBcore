@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordIO.cc
 // Description : classes for coordinate input/output
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,12 +14,13 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include "baseio.hh"
 
 #include "hpro/io/TCoordIO.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -66,9 +67,10 @@ TAutoCoordIO::write ( const TCoordinate * coo, const string & filename ) const
     switch ( guess_format( filename ) )
     {
         case FMT_SAMG   : cio = make_unique< TSAMGCoordIO >();   break;
-        case FMT_HLIB   : cio = make_unique< THLibCoordIO >();   break;
+        case FMT_HPRO   : cio = make_unique< THLibCoordIO >();   break;
         case FMT_MATLAB : cio = make_unique< TMatlabCoordIO >(); break;
         case FMT_MTX    : cio = make_unique< TMMCoordIO >();     break;
+        case FMT_GMSH   : cio = make_unique< TGMSHCoordIO >();   break;
 
         case FMT_UNKNOWN :
         default:
@@ -96,9 +98,10 @@ TAutoCoordIO::read  ( const string & filename ) const
     switch ( guess_format( filename ) )
     {
         case FMT_SAMG   : cio = make_unique< TSAMGCoordIO >();   break;
-        case FMT_HLIB   : cio = make_unique< THLibCoordIO >();   break;
+        case FMT_HPRO   : cio = make_unique< THLibCoordIO >();   break;
         case FMT_MATLAB : cio = make_unique< TMatlabCoordIO >(); break;
         case FMT_MTX    : cio = make_unique< TMMCoordIO >();     break;
+        case FMT_GMSH   : cio = make_unique< TGMSHCoordIO >();   break;
 
         case FMT_UNKNOWN :
         default:
@@ -448,4 +451,117 @@ TPLTMGCoordIO::read ( const string & filename ) const
     return make_unique< TCoordinate >( vertices, dim );
 }
 
-}// namespace HLIB
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+//
+// TGMSHCoordIO
+//
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
+//
+// read in a grid from a file
+//
+
+unique_ptr< TCoordinate >
+TGMSHCoordIO::read ( const string & filename ) const
+{
+    if ( ! fs::exists( filename ) )
+        HERROR( ERR_FNEXISTS, "(TGMSHCoordIO) read", filename );
+    
+    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
+    std::istream &              in = * in_ptr.get();
+
+    /////////////////////////////////////////////////////////////////
+    //
+    // file format
+    //
+
+    string            line( size_t(1024), '\0' );
+    vector< string >  parts;
+
+    std::getline( in, line );
+    boost::trim_right( line );
+
+    if ( line != "$MeshFormat" )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "file not in GMSH format" );
+        
+    std::getline( in, line );
+    split( line, " \t", parts );
+
+    if ( parts.size() != 3 )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "file not in GMSH format" );
+    
+    if ( int( str_to_dbl( parts[0] ) ) != 2 )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "unsupported format version" );
+
+    std::getline( in, line );
+    boost::trim_right( line );
+
+    if ( line != "$EndMeshFormat" )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "file not in GMSH format" );
+
+    /////////////////////////////////////////////////////////////////
+    //
+    // read vertices
+    //
+
+    size_t             nvertices = 0;
+    vector< T3Point >  vertices;
+    
+    std::getline( in, line );
+    boost::trim_right( line );
+
+    if ( line != "$Nodes" )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "file not in GMSH format" );
+
+    std::getline( in, line );
+
+    nvertices = str_to_int( line );
+    vertices.resize( nvertices );
+
+    for ( size_t  i = 0; i < nvertices; ++i )
+    {
+        std::getline( in, line );
+        split( line, " \t", parts );
+        
+        if ( parts.size() < 4 )
+            HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "wrong vertex format" );
+
+        //
+        // read vertex coordinates
+        //
+
+        int     id;
+        double  x, y, z;
+
+        sscanf( line.c_str(), "%d %lf %lf %lf", & id, & x, & y, & z );
+
+        id--;
+        if ( id >= int(nvertices) )
+            HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "vertex ID > no. of vertices" );
+            
+        //
+        // append vertex
+        //
+        
+        vertices[ id ] = T3Point( x, y, z );
+    }// for
+
+    std::getline( in, line );
+    boost::trim_right( line );
+
+    if ( line != "$EndNodes" )
+        HERROR( ERR_GRID_FORMAT, "(TGMSHCoordIO) read", "file not in GMSH format" );
+
+    return make_unique< TCoordinate >( vertices );
+}
+
+void
+TGMSHCoordIO::write  ( const TCoordinate *,
+                       const string & ) const
+{
+    HERROR( ERR_NOT_IMPL, "", "" );
+}
+
+}// namespace Hpro

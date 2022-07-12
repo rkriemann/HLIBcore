@@ -1,16 +1,16 @@
-#ifndef __HLIB_TCONSTEDGEFNSPACE_HH
-#define __HLIB_TCONSTEDGEFNSPACE_HH
+#ifndef __HPRO_TCONSTEDGEFNSPACE_HH
+#define __HPRO_TCONSTEDGEFNSPACE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TConstEdgeFnSpace.hh
 // Description : function space for constant normal linear tangential (CN/LT) edge elements
 // Author      : Ronald Kriemann, Jonas Ballani
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TFnSpace.hh"
 
-namespace HLIB
+namespace Hpro
 {
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -24,7 +24,7 @@ namespace HLIB
 // local class type
 DECLARE_TYPE( TConstEdgeFnSpace );
 
-class TConstEdgeFnSpace : public TFnSpace
+class TConstEdgeFnSpace : public TFnSpace< T2Point >
 {
 public:
     //
@@ -67,8 +67,8 @@ public:
     }
     
     //! return local index in triangle \a tri for basis function \a phi
-    idx_t   triangle_index  ( const idx_t  phi,
-                              const idx_t  tri ) const
+    idx_t  triangle_index  ( const idx_t  phi,
+                             const idx_t  tri ) const
     {
         if      ( _tri_idx[ _tri_idx_ptr[ tri ] ]     == phi ) return 0;
         else if ( _tri_idx[ _tri_idx_ptr[ tri ] + 1 ] == phi ) return 1;
@@ -78,8 +78,8 @@ public:
     }
     
     //! return local index in triangle \a tri for basis function \a phi
-    idx_t   triangle_index  ( const idx_t                phi,
-                              const TGrid::triangle_t &  tri ) const
+    idx_t  triangle_index  ( const idx_t                phi,
+                             const TGrid::triangle_t &  tri ) const
     {
         const idx_t tri_idx0 = _supp_list[ _supp_list_ptr[phi] ];
         const idx_t tri_idx1 = _supp_list[ _supp_list_ptr[phi] + 1 ];
@@ -115,9 +115,9 @@ public:
    
     //! evaluate basis function with triangle local index \a i at
     //! unit coordinate ( \a s, \a t )
-    value_t    eval_basis_unit  ( const idx_t    i,
-                                  const double   s,
-                                  const double   t ) const
+    value_t  eval_basis_unit  ( const idx_t    i,
+                                const double   s,
+                                const double   t ) const
     {
         switch ( i )
         {
@@ -149,8 +149,8 @@ public:
                       std::vector< T3Point > &        values ) const;
                      
     // scaling factor for basis function i on triangle tri = +/-0.5 * |e|/|tri|
-    real  scaling_factor_basis ( const idx_t  i,
-                                 const idx_t  tri ) const;
+    double  scaling_factor_basis ( const idx_t  i,
+                                   const idx_t  tri ) const;
                                 
     // transform quadrature points on reference triangle to general triangle
     // defined by its vertices
@@ -162,7 +162,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TConstEdgeFnSpace, TFnSpace );
+    HPRO_RTTI_DERIVED( TConstEdgeFnSpace, TFnSpace );
 
 protected:
     

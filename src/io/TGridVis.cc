@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGridVis.cc
 // Description : grid visualisation classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,8 +14,8 @@
 #include <boost/filesystem.hpp>
 
 #include "hpro/blas/Algebra.hh"
-
 #include "hpro/cluster/TBBox.hh"
+#include "hpro/bem/TConstEdgeFnSpace.hh"
 
 #include "baseio.hh"
 #include "TPSPrinter.hh"
@@ -23,7 +23,7 @@
 
 #include "hpro/io/TGridVis.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -58,7 +58,7 @@ minmax ( const T3Point & u, TBBox & bbox );
 // print 3D rectangle
 //
 void
-draw_rect ( T2DPrinter * prn, const TIsoProjection & P,
+draw_rect ( T2DPrinter & prn, const TIsoProjection & P,
             const T3Point & n,
             const T3Point & u0, const T3Point & u1,
             const T3Point & u2, const T3Point & u3 );
@@ -219,22 +219,22 @@ public:
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-TGridVis::TGridVis ()
+TGridVisBase::TGridVisBase ()
         : _min_fn_val(0)
         , _max_fn_val(0)
         , _cmap( "default" )
 {}
 
 void
-TGridVis::set_func_value_interval ( const double  minval,
-                                    const double  maxval )
+TGridVisBase::set_func_value_interval ( const double  minval,
+                                        const double  maxval )
 {
     _min_fn_val = minval;
     _max_fn_val = std::max( maxval, minval ); // ensure maxval >= minval
 }
 
 void
-TGridVis::set_colourmap ( const std::string &  cmap )
+TGridVisBase::set_colourmap ( const std::string &  cmap )
 {
     _cmap = cmap;
 }
@@ -252,19 +252,19 @@ TGridVis::set_colourmap ( const std::string &  cmap )
 //
 
 T2DGridVis::T2DGridVis ()
-        : _view( T3Point( 1, 0, 0 ) ),
-          _lighting( false ),
-          _draw_bbox( false ),
-          _draw_axis( false ),
-          _draw_contour( true )
+        : _view( T3Point( 1, 0, 0 ) )
+        , _lighting( false )
+        , _draw_bbox( false )
+        , _draw_axis( false )
+        , _draw_contour( true )
 {}
 
 T2DGridVis::T2DGridVis ( const T3Point aview_dir )
-        : _view( aview_dir ),
-          _lighting( false ),
-          _draw_bbox( false ),
-          _draw_axis( false ),
-          _draw_contour( true )
+        : _view( aview_dir )
+        , _lighting( false )
+        , _draw_bbox( false )
+        , _draw_axis( false )
+        , _draw_contour( true )
 {
     if ( _view.norm2() < Limits::epsilon<double>() )
         _view = T3Point( 1, 0, 0 );
@@ -331,26 +331,37 @@ T2DGridVis::draw_contour ( const bool  b )
 
     return *this;
 }
-    
+
+///////////////////////////////////////////////////////////////////////////
 //
-// print <grid> to file <filename>
+// general printing method for 2D printers
 //
-void
-T2DGridVis::print ( const TGrid *  grid,
-                    const string & filename ) const
+
+namespace
 {
-    print( grid, nullptr, nullptr, filename );
-}
 
 //
 // print grid with colours according to values in given vector
 //
+template < typename printer_t,
+           typename fnspace_t,
+           typename value_t >
 void
-T2DGridVis::print ( const TGrid *     grid,
-                    const TFnSpace *  fnspace,
-                    const TVector *   vec,
-                    const string &    filename ) const
+print ( const T2DGridVis &          vis,
+        const TGrid *               grid,
+        const fnspace_t *           fnspace,
+        const TVector< value_t > *  vec,
+        const string &              filename,
+        const T3Point               view_dir,
+        const bool                  do_lighting,
+        const bool                  draw_bbox,
+        const bool                  draw_axis,
+        const bool                  draw_contour )
 {
+    static_assert( std::is_floating_point< value_t >::value );
+    
+    using  real_t = value_t;
+    
     //
     // first check if there is anything to print
     //
@@ -361,17 +372,14 @@ T2DGridVis::print ( const TGrid *     grid,
     if (( vec != nullptr ) && (  fnspace == nullptr ))
         HERROR( ERR_ARG, "(T2DGridVis) print", "function space is nullptr" );
     
-    if (( vec != nullptr ) && (  vec->is_complex() ))
-        HERROR( ERR_ARG, "(T2DGridVis) print", "real-valued vector expected" );
-
     const bool  use_vec_value = (( vec != nullptr ) && ( fnspace != nullptr ));
 
     //
     // determine minimal and maximal values
     //
 
-    real  minval = min_func_value();
-    real  maxval = max_func_value();
+    real_t  minval = vis.min_func_value();
+    real_t  maxval = vis.max_func_value();
 
     if ( use_vec_value && ( minval != maxval ))
     {
@@ -380,7 +388,7 @@ T2DGridVis::print ( const TGrid *     grid,
         
         for ( uint i = 1; i < vec->size(); i++ )
         {
-            const real val = vec->entry( i );
+            const auto  val = vec->entry( i );
             
             minval = std::min( minval, val );
             maxval = std::max( maxval, val );
@@ -397,7 +405,7 @@ T2DGridVis::print ( const TGrid *     grid,
     //
 
     // TPoint          n( 1, -1, 1 );
-    TIsoProjection  P( _view ); 
+    TIsoProjection  P( view_dir ); 
     T3Point         u, v;
 
     //
@@ -452,23 +460,23 @@ T2DGridVis::print ( const TGrid *     grid,
     // create printer with calculated bounding box
     //
 
-    unique_ptr< T2DPrinter >  prn( get_printer( uint(mag*len_x), uint(mag*len_y), filename ) );
+    auto  prn = printer_t( uint(mag*len_x), uint(mag*len_y), filename );
 
-    prn->begin();
-    prn->scale( 1.0, -1.0 );
-    prn->scale( mag, mag );
-    prn->translate( -proj_bbox.min()[0], -proj_bbox.max()[1] );
+    prn.begin();
+    prn.scale( 1.0, -1.0 );
+    prn.scale( mag, mag );
+    prn.translate( -proj_bbox.min()[0], -proj_bbox.max()[1] );
 
-    // prn->set_line_width( std::min( len_x, len_y ) / 250.0 );
-    prn->set_line_width( 1.0 / (100.0 * mag) );
+    // prn.set_line_width( std::min( len_x, len_y ) / 250.0 );
+    prn.set_line_width( 1.0 / (100.0 * mag) );
 
     //
     // print back of bounding box
     //
 
-    if ( _draw_bbox )
+    if ( draw_bbox )
     {
-        const T3Point  mn( -_view[0], -_view[1], -_view[2] );
+        const T3Point  mn( -view_dir[0], -view_dir[1], -view_dir[2] );
         const T3Point  u0( bbox.min()[0], bbox.min()[1], bbox.min()[2] );
         const T3Point  u1( bbox.max()[0], bbox.min()[1], bbox.min()[2] );
         const T3Point  u2( bbox.max()[0], bbox.min()[1], bbox.max()[2] );
@@ -478,47 +486,47 @@ T2DGridVis::print ( const TGrid *     grid,
         const T3Point  u6( bbox.max()[0], bbox.max()[1], bbox.max()[2] );
         const T3Point  u7( bbox.min()[0], bbox.max()[1], bbox.max()[2] );
 
-        prn->set_gray( 128 );
+        prn.set_gray( 128 );
 
-        draw_rect( prn.get(), P, mn, u0, u1, u2, u3 ); // front
-        draw_rect( prn.get(), P, mn, u1, u5, u6, u2 ); // right
-        draw_rect( prn.get(), P, mn, u5, u4, u7, u6 ); // back
-        draw_rect( prn.get(), P, mn, u4, u0, u3, u7 ); // left
-        draw_rect( prn.get(), P, mn, u3, u2, u6, u7 ); // up
-        draw_rect( prn.get(), P, mn, u0, u4, u5, u1 ); // down
+        draw_rect( prn, P, mn, u0, u1, u2, u3 ); // front
+        draw_rect( prn, P, mn, u1, u5, u6, u2 ); // right
+        draw_rect( prn, P, mn, u5, u4, u7, u6 ); // back
+        draw_rect( prn, P, mn, u4, u0, u3, u7 ); // left
+        draw_rect( prn, P, mn, u3, u2, u6, u7 ); // up
+        draw_rect( prn, P, mn, u0, u4, u5, u1 ); // down
     }// if               
 
     //
     // print coordinate system
     //
 
-    if ( _draw_axis )
+    if ( draw_axis )
     {
         double  mind = bbox.max()[0] - bbox.min()[0];
 
         for ( uint i = 1; i < 3; i++ )
             mind = std::min( mind, bbox.max()[i]-bbox.min()[i] );
 
-        prn->set_font( "Helvetica-Bold", std::min( len_x, len_y ) / 25.0 );
-        // prn->set_line_width( std::min( len_x, len_y ) / 100.0 );
+        prn.set_font( "Helvetica-Bold", std::min( len_x, len_y ) / 25.0 );
+        // prn.set_line_width( std::min( len_x, len_y ) / 100.0 );
 
-        prn->set_rgb( 255, 0, 0 );
+        prn.set_rgb( 255, 0, 0 );
         u = T3Point( bbox.min() ) + T3Point( mind, 0, 0 );
         P.project( u, v );
         P.project( T3Point( bbox.min() ), u );
-        prn->draw_line( u[0], u[1], v[0], v[1] );
+        prn.draw_line( u[0], u[1], v[0], v[1] );
 
-        prn->set_rgb( 0, 192, 0 );
+        prn.set_rgb( 0, 192, 0 );
         u = T3Point( bbox.min() ) + T3Point( 0, mind, 0 );
         P.project( u, v );
         P.project( T3Point( bbox.min() ), u );
-        prn->draw_line( u[0], u[1], v[0], v[1] );
+        prn.draw_line( u[0], u[1], v[0], v[1] );
 
-        prn->set_rgb( 0, 0, 255 );
+        prn.set_rgb( 0, 0, 255 );
         u = T3Point( bbox.min() ) + T3Point( 0, 0, mind );
         P.project( u, v );
         P.project( T3Point( bbox.min() ), u );
-        prn->draw_line( u[0], u[1], v[0], v[1] );
+        prn.draw_line( u[0], u[1], v[0], v[1] );
     }// if
     
     //
@@ -574,7 +582,7 @@ T2DGridVis::print ( const TGrid *     grid,
     // print coloured triangles
     //
 
-    unique_ptr< TColourMap >  cmap( HLIB::colourmap( this->colourmap(), 1000 ) );
+    unique_ptr< TColourMap >  cmap( Hpro::colourmap( vis.colourmap(), 1000 ) );
     
     T3Point        t0, t1, t2;
     T3Point        v0, v1, v2;
@@ -582,12 +590,12 @@ T2DGridVis::print ( const TGrid *     grid,
     colour_t       colour   = rgb( 180, 200, 220 );  // base colour of triangles
     colour_t       ambient  = rgb( 20, 20, 20 );     // ambient light colour
     double         diff_fac = 0.95;                  // diffusion coefficient of triangles
-    T3Point        light( _view );                   // position of light (viewing point)
+    T3Point        light( view_dir );                // position of light (viewing point)
 
     light *= -10.0;
         
-    // prn->set_line_width( std::min( len_x, len_y ) / 100000.0 );
-    prn->set_rgb( 0, 0, 0 );
+    // prn.set_line_width( std::min( len_x, len_y ) / 100000.0 );
+    prn.set_rgb( 0, 0, 0 );
 
     for ( uint i = 0; i < vis_triangles.size(); i++ )
     {
@@ -607,14 +615,14 @@ T2DGridVis::print ( const TGrid *     grid,
             // approximation due to limited functionality in TFnSpace)
             //
         
-            real  val         = 0;
-            auto  tri_indices = fnspace->triangle_indices( tri_idx );
+            double  val         = 0;
+            auto    tri_indices = fnspace->triangle_indices( tri_idx );
 
             for ( auto  idx : tri_indices )
                 val += vec->entry( idx );
 
             if ( tri_indices.size() > 0 )
-                val *= real(1) / real(tri_indices.size());
+                val *= double(1) / double(tri_indices.size());
 
             tri_col = cmap->fentry( (val - minval) / (maxval - minval) );
         }// if
@@ -625,7 +633,7 @@ T2DGridVis::print ( const TGrid *     grid,
         // do lighting
         //
             
-        if ( _lighting )
+        if ( do_lighting )
         {
             double    angle = 0;
             colour_t  col1;
@@ -669,13 +677,13 @@ T2DGridVis::print ( const TGrid *     grid,
         P.project( t1, v1 );
         P.project( t2, v2 );
 
-        prn->set_colour( tri_col );
-        prn->fill_triangle( v0[0], v0[1], v1[0], v1[1], v2[0], v2[1] );
+        prn.set_colour( tri_col );
+        prn.fill_triangle( v0[0], v0[1], v1[0], v1[1], v2[0], v2[1] );
 
-        if ( _draw_contour )
+        if ( draw_contour )
         {
-            prn->set_gray( 0 );
-            prn->draw_triangle( v0[0], v0[1], v1[0], v1[1], v2[0], v2[1] );
+            prn.set_gray( 0 );
+            prn.draw_triangle( v0[0], v0[1], v1[0], v1[1], v2[0], v2[1] );
         }// if
     }// for
 
@@ -683,9 +691,9 @@ T2DGridVis::print ( const TGrid *     grid,
     // print front of bounding box
     //
 
-    if ( _draw_bbox )
+    if ( draw_bbox )
     {
-        const T3Point  mn( _view[0], _view[1], _view[2] );
+        const T3Point  mn( view_dir[0], view_dir[1], view_dir[2] );
         const T3Point  u0( bbox.min()[0], bbox.min()[1], bbox.min()[2] );
         const T3Point  u1( bbox.max()[0], bbox.min()[1], bbox.min()[2] );
         const T3Point  u2( bbox.max()[0], bbox.min()[1], bbox.max()[2] );
@@ -695,30 +703,56 @@ T2DGridVis::print ( const TGrid *     grid,
         const T3Point  u6( bbox.max()[0], bbox.max()[1], bbox.max()[2] );
         const T3Point  u7( bbox.min()[0], bbox.max()[1], bbox.max()[2] );
 
-        prn->set_gray( 128 );
-        // prn->set_line_width( std::min( len_x, len_y ) / 250.0 );
+        prn.set_gray( 128 );
+        // prn.set_line_width( std::min( len_x, len_y ) / 250.0 );
 
-        draw_rect( prn.get(), P, mn, u0, u1, u2, u3 ); // front
-        draw_rect( prn.get(), P, mn, u1, u5, u6, u2 ); // right
-        draw_rect( prn.get(), P, mn, u5, u4, u7, u6 ); // back
-        draw_rect( prn.get(), P, mn, u4, u0, u3, u7 ); // left
-        draw_rect( prn.get(), P, mn, u3, u2, u6, u7 ); // up
-        draw_rect( prn.get(), P, mn, u0, u4, u5, u1 ); // down
+        draw_rect( prn, P, mn, u0, u1, u2, u3 ); // front
+        draw_rect( prn, P, mn, u1, u5, u6, u2 ); // right
+        draw_rect( prn, P, mn, u5, u4, u7, u6 ); // back
+        draw_rect( prn, P, mn, u4, u0, u3, u7 ); // left
+        draw_rect( prn, P, mn, u3, u2, u6, u7 ); // up
+        draw_rect( prn, P, mn, u0, u4, u5, u1 ); // down
     }// if               
 
-    prn->end();
+    prn.end();
 }
+
+}// namespace anonymous
 
 //
 // Postscript Format
 //
-T2DPrinter *
-TPSGridVis::get_printer ( const double         width,
-                          const double         height,
-                          const std::string &  filename ) const
+void
+TPSGridVis::print ( const TGrid *        grid,
+                    const std::string &  filename ) const
 {
-    return new TPSPrinter( uint(width), uint(height), add_extension( filename, "eps" ) );
+    Hpro::print< TPSPrinter, TConstFnSpace< float >, float >( *this, grid, nullptr, nullptr, filename, _view, _lighting, _draw_bbox, _draw_axis, _draw_contour );
 }
+
+template < typename fnspace_t,
+           typename value_t >
+void TPSGridVis::print ( const TGrid *              grid,
+                         const fnspace_t *          fnspace,
+                         const TVector< value_t > * vec,
+                         const std::string &        filename ) const
+{
+    Hpro::print< TPSPrinter, fnspace_t, value_t >( *this, grid, fnspace, vec, filename, _view, _lighting, _draw_bbox, _draw_axis, _draw_contour );
+}
+
+#define INST_PS( type1, type2 )                                         \
+    template                                                            \
+    void TPSGridVis::print< type1, type2 > ( const TGrid *            , \
+                                             const type1 * ,            \
+                                             const TVector< type2 > *  , \
+                                             const std::string &      ) const;
+
+INST_PS( TFnSpace< float >, float )
+INST_PS( TFnSpace< double >, double )
+INST_PS( TConstFnSpace< float >, float )
+INST_PS( TConstFnSpace< double >, double )
+INST_PS( TLinearFnSpace< float >, float )
+INST_PS( TLinearFnSpace< double >, double )
+INST_PS( TConstEdgeFnSpace, double )
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -815,12 +849,18 @@ TVTKGridVis::print ( const TGrid *   grid,
 //
 // print grid with colours according to values in given vector
 //
+template < typename fnspace_t,
+           typename value_t >
 void
-TVTKGridVis::print ( const TGrid *     grid,
-                     const TFnSpace *  fnspace,
-                     const TVector *   vec,
-                     const string &    filename ) const
+TVTKGridVis::print ( const TGrid *              grid,
+                     const fnspace_t *          fnspace,
+                     const TVector< value_t > * vec,
+                     const string &             filename ) const
 {
+    static_assert( std::is_floating_point< value_t >::value );
+    
+    using  real_t = value_t;
+
     //
     // first check if there is anything to print
     //
@@ -831,17 +871,14 @@ TVTKGridVis::print ( const TGrid *     grid,
     if (( vec != nullptr ) && (  fnspace == nullptr ))
         HERROR( ERR_ARG, "(TVTKGridVis) print", "function space is nullptr" );
     
-    if (( vec != nullptr ) && (  vec->is_complex() ))
-        HERROR( ERR_ARG, "(TVTKGridVis) print", "real-valued vectors expected" );
-        
     const bool  use_vec_value = (( vec != nullptr ) && ( fnspace != nullptr ));
     
     //
     // determine minimal and maximal values
     //
 
-    real  minval = min_func_value();
-    real  maxval = max_func_value();
+    real_t  minval = min_func_value();
+    real_t  maxval = max_func_value();
 
     if ( use_vec_value && ( minval == maxval ))
     {
@@ -850,7 +887,7 @@ TVTKGridVis::print ( const TGrid *     grid,
         
         for ( uint i = 1; i < vec->size(); i++ )
         {
-            const real  val = vec->entry( i );
+            const auto  val = vec->entry( i );
             
             minval = std::min( minval, val );
             maxval = std::max( maxval, val );
@@ -917,7 +954,7 @@ TVTKGridVis::print ( const TGrid *     grid,
     out << "CELL_DATA " << grid->n_triangles() << std::endl
         << "COLOR_SCALARS cellcolour 3" << std::endl;
         
-    unique_ptr< TColourMap >  cmap( HLIB::colourmap( this->colourmap(), 1000 ) );
+    unique_ptr< TColourMap >  cmap( Hpro::colourmap( this->colourmap(), 1000 ) );
     
     for ( uint  i = 0; i < grid->n_triangles(); ++i )
     {
@@ -948,6 +985,21 @@ TVTKGridVis::print ( const TGrid *     grid,
     }// if
 }
 
+#define INST_VTK( type1, type2 )                                        \
+    template                                                            \
+    void TVTKGridVis::print< type1 > ( const TGrid *            ,       \
+                                       const type1 * ,                  \
+                                       const TVector< type2 > *  ,      \
+                                       const string &            ) const;
+
+INST_VTK( TFnSpace< float >, float )
+INST_VTK( TFnSpace< double >, double )
+INST_VTK( TFnSpace< T2Point >, double )
+INST_VTK( TConstFnSpace< float >, float )
+INST_VTK( TConstFnSpace< double >, double )
+INST_VTK( TLinearFnSpace< float >, float )
+INST_VTK( TLinearFnSpace< double >, double )
+INST_VTK( TConstEdgeFnSpace, double )
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -977,10 +1029,13 @@ minmax ( const T3Point & u, TBBox & bbox )
 // print 3D rectangle
 //
 void
-draw_rect ( T2DPrinter * prn, const TIsoProjection & P,
-            const T3Point & n,
-            const T3Point & u0, const T3Point & u1,
-            const T3Point & u2, const T3Point & u3 )
+draw_rect ( T2DPrinter &           prn,
+            const TIsoProjection & P,
+            const T3Point &        n,
+            const T3Point &        u0,
+            const T3Point &        u1,
+            const T3Point &        u2,
+            const T3Point &        u3 )
 {
     T3Point  w1( u0 ), w2( u0 ); 
 
@@ -999,19 +1054,19 @@ draw_rect ( T2DPrinter * prn, const TIsoProjection & P,
     
     P.project( u0, w1 );
     P.project( u1, w2 );
-    prn->draw_line( w1[0], w1[1], w2[0], w2[1] );
+    prn.draw_line( w1[0], w1[1], w2[0], w2[1] );
 
     w1 = w2;
     P.project( u2, w2 );
-    prn->draw_line( w1[0], w1[1], w2[0], w2[1] );
+    prn.draw_line( w1[0], w1[1], w2[0], w2[1] );
     
     w1 = w2;
     P.project( u3, w2 );
-    prn->draw_line( w1[0], w1[1], w2[0], w2[1] );
+    prn.draw_line( w1[0], w1[1], w2[0], w2[1] );
     
     w1 = w2;
     P.project( u0, w2 );
-    prn->draw_line( w1[0], w1[1], w2[0], w2[1] );
+    prn.draw_line( w1[0], w1[1], w2[0], w2[1] );
 }
 
 }// namespace anonymous
@@ -1037,5 +1092,4 @@ print_vtk ( const TGrid *        grid,
     vis.print( grid, filename );
 }
 
-
-}// namespace HLIB
+}// namespace Hpro

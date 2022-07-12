@@ -1,11 +1,11 @@
-#ifndef __HLIB_TNODESET_HH
-#define __HLIB_TNODESET_HH
+#ifndef __HPRO_TNODESET_HH
+#define __HPRO_TNODESET_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TNodeSet.hh
 // Description : class for representing a set of nodes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstring>
@@ -13,7 +13,7 @@
 
 #include "hpro/base/types.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -169,6 +169,6 @@ public:
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TNODESET_HH
+#endif  // __HPRO_TNODESET_HH

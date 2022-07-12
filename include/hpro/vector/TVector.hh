@@ -1,19 +1,22 @@
-#ifndef __HLIB_TVECTOR_HH
-#define __HLIB_TVECTOR_HH
+#ifndef __HPRO_TVECTOR_HH
+#define __HPRO_TVECTOR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TVector.hh
 // Description : baseclass for all vector-classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
+#include <variant>
+
+#include "hpro/base/traits.hh"
 #include "hpro/base/System.hh"
 #include "hpro/base/TStreamable.hh"
 #include "hpro/base/TTypeInfo.hh"
 #include "hpro/cluster/TIndexSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////////////
@@ -29,17 +32,19 @@ DECLARE_TYPE( TVector );
 //! \class   TVector
 //! \brief   Base class for all vectors defining basic interface.
 //!
+template < typename T_value >
 class TVector : public TStreamable, public TTypeInfo
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+    
 protected:
     //@cond
     
     //! first index vector represents
     idx_t  _ofs;
 
-    //! flag indicating real of complex values
-    bool   _complex;
-    
     //@endcond
     
 public:
@@ -49,16 +54,13 @@ public:
     //
 
     //! construct real or complex valued vector with first index \a offset
-    TVector ( const idx_t         offset      = 0,
-              const value_type_t  avalue_type = real_valued )
+    TVector ( const idx_t  offset      = 0 )
             : _ofs(offset)
-            , _complex( avalue_type == complex_valued )
     {}
 
     //! copy constructor
-    TVector ( const TVector &  v )
+    TVector ( const TVector< value_t > &  v )
             : _ofs(0)
-            , _complex(false)
     {
         assign( 1.0, & v );
     }
@@ -66,6 +68,20 @@ public:
     //! dtor
     virtual ~TVector () {}
 
+    ////////////////////////////////////////////////
+    //! \{
+    //!
+    //! \name value type information
+    //!
+    
+    //! return true, if field type is complex valued
+    virtual bool  is_complex  () const { return is_complex_type< value_t >::value; }
+    
+    //! return true, if field type is real valued
+    virtual bool  is_real     () const { return ! is_complex(); }
+    
+    //!\}
+    
     ////////////////////////////////////////////////
     //! \{
     //!
@@ -86,44 +102,6 @@ public:
 
     //!\}
 
-    ///////////////////////////////////////////
-    //! \{
-    //!
-    //! \name management of field type
-    //!
-
-    //! return value type of vector
-    value_type_t  value_type  () const { return ( is_complex() ? complex_valued : real_valued ); }
-    
-    //! return true if vector is complex valued
-    bool          is_complex  () const { return _complex; }
-
-    //! change between real and complex valued representation
-    void set_complex ( const bool b )
-    {
-        if ( b == _complex )
-            return;
-
-        if ( b ) to_complex();
-        else     to_real();
-        
-        _complex = b;
-    }
-
-    //! \}
-    
-protected:
-
-    //! @cond INCLUDE_PROT_PRIV
-    
-    //! convert data to real representation if possible
-    virtual void to_real    () = 0;
-
-    //! convert data to complex representation if possible
-    virtual void to_complex () = 0;
-
-    //! @endcond
-    
 public:
     ////////////////////////////////////////////////
     //! \{
@@ -132,64 +110,17 @@ public:
     //!
 
     //! return i'th entry
-    virtual real          entry  ( const idx_t  i ) const;
-
-    //! return i'th entry
-    virtual const complex centry ( const idx_t  i ) const;
+    virtual value_t  entry  ( const idx_t  i ) const;
 
     //! set \a i'th entry
-    virtual void set_entry  ( const idx_t  i, const real     f );
-
-    //! set \a i'th entry
-    virtual void set_centry ( const idx_t  i, const complex  f );
+    virtual void set_entry  ( const idx_t  i, const value_t  f );
 
     //! \}
 
     ////////////////////////////////////////////////
     //! \{
     //!
-    //! \name BLAS functionality (real valued)
-    //!
-
-    //! fill with constant
-    virtual void fill ( const real )
-    { HERROR( ERR_NOT_IMPL, "(TVector) fill", "" ); }
-
-    //! fill with random numbers
-    virtual void fill_rand ( const uint )
-    { HERROR( ERR_NOT_IMPL, "(TVector) fill_rand", "" ); }
-
-    //! scale vector by constant factor
-    virtual void scale ( const real )
-    { HERROR( ERR_NOT_IMPL, "(TVector) scale", "" ); }
-
-    //! this ≔ f · vector
-    virtual void assign ( const real, const TVector * )
-    { HERROR( ERR_NOT_IMPL, "(TVector) assign", "" ); }
-
-    //! copy operator for all vectors
-    TVector &  operator = ( const TVector & v )
-    {
-        assign( real(1), & v );
-        return *this;
-    }
-    
-    //! return euclidean norm
-    virtual real norm2 () const { return Math::sqrt( dot( this ).real() ); }
-
-    //! return infimum norm
-    virtual real norm_inf () const { HERROR( ERR_NOT_IMPL, "(TVector) norm_inf", "" ); }
-    
-    //! this ≔ this + α·x
-    virtual void axpy ( const real, const TVector * )
-    { HERROR( ERR_NOT_IMPL, "(TVector) axpy", "" ); }
-    
-    //! \}
-    
-    ////////////////////////////////////////////////
-    //! \{
-    //!
-    //! \name BLAS functionality (complex valued)
+    //! \name BLAS functionality
     //!
 
     //! conjugate entries
@@ -197,28 +128,45 @@ public:
     { HERROR( ERR_NOT_IMPL, "(TVector) conjugate", "" ); }
         
     //! fill with constant
-    virtual void cfill ( const complex & )
-    { HERROR( ERR_NOT_IMPL, "(TVector) cfill", "" ); }
+    virtual void fill ( const value_t )
+    { HERROR( ERR_NOT_IMPL, "(TVector) fill", "" ); }
+
+    //! fill with random numbers
+    virtual void fill_rand ( const uint )
+    { HERROR( ERR_NOT_IMPL, "(TVector) fill_rand", "" ); }
 
     //! scale vector by constant factor
-    virtual void cscale ( const complex & )
-    { HERROR( ERR_NOT_IMPL, "(TVector) cscale", "" ); }
+    virtual void scale ( const value_t )
+    { HERROR( ERR_NOT_IMPL, "(TVector) scale", "" ); }
 
     //! this ≔ f · vector
-    virtual void cassign ( const complex &, const TVector * )
-    { HERROR( ERR_NOT_IMPL, "(TVector) cassign", "" ); }
+    virtual void assign ( const value_t, const TVector< value_t > * )
+    { HERROR( ERR_NOT_IMPL, "(TVector) assign", "" ); }
 
+    //! copy operator for all vectors
+    TVector< value_t > &  operator = ( const TVector< value_t > & v )
+    {
+        assign( value_t(1), & v );
+        return *this;
+    }
+    
     //! return dot-product, \f$<x,y> = x^H · y\f$, where \f$x\f$ = this
-    virtual complex dot  ( const TVector * ) const
+    virtual value_t dot  ( const TVector< value_t > * ) const
     { HERROR( ERR_NOT_IMPL, "(TVector) dot", "" ); }
 
     //! return dot-product, \f$<x,y> = x^T · y\f$, where \f$x\f$ = this
-    virtual complex dotu ( const TVector * ) const
+    virtual value_t dotu ( const TVector< value_t > * ) const
     { HERROR( ERR_NOT_IMPL, "(TVector) dotu", "" ); }
 
+    //! return euclidean norm
+    virtual real_t  norm2 () const { return Math::sqrt( std::real( dot( this ) ) ); }
+
+    //! return infimum norm
+    virtual real_t  norm_inf () const { HERROR( ERR_NOT_IMPL, "(TVector) norm_inf", "" ); }
+    
     //! this ≔ this + α·x
-    virtual void caxpy ( const complex &, const TVector * )
-    { HERROR( ERR_NOT_IMPL, "(TVector) caxpy", "" ); }
+    virtual void axpy ( const value_t, const TVector< value_t > * )
+    { HERROR( ERR_NOT_IMPL, "(TVector) axpy", "" ); }
     
     //! \}
     
@@ -233,7 +181,7 @@ public:
     //
     
     //! return size in bytes used by this object
-    virtual size_t  byte_size  () const { return sizeof(_ofs) + sizeof(_complex); }
+    virtual size_t  byte_size  () const { return sizeof(_ofs); }
 
     //! return size in bytes used by this distributed object,
     //! i.e. of all distributed sub vectors
@@ -244,10 +192,10 @@ public:
     //
 
     //! return copy of vector
-    virtual auto  copy    () const -> std::unique_ptr< TVector > = 0;
+    virtual auto  copy    () const -> std::unique_ptr< TVector< value_t > > = 0;
     
     //! assign local values to vector \a x
-    virtual void  copy_to ( TVector * x ) const
+    virtual void  copy_to ( TVector< value_t > * x ) const
     {
         if ( x == nullptr )
             HERROR( ERR_ARG, "(TVector) copy_to", "vector is NULL" );
@@ -255,20 +203,20 @@ public:
     }
     
     //! return object of same class
-    virtual auto  create  () const -> std::unique_ptr< TVector > = 0;
+    virtual auto  create  () const -> std::unique_ptr< TVector< value_t > > = 0;
 
     //
     // restriction
     //
 
     //! create vector restricted to real part of coefficients
-    virtual auto restrict_re  () const -> std::unique_ptr< TVector >;
+    virtual auto restrict_re  () const -> std::unique_ptr< TVector< real_t > >;
 
     //! create vector restricted to imaginary part of coefficients
-    virtual auto restrict_im  () const -> std::unique_ptr< TVector >;
+    virtual auto restrict_im  () const -> std::unique_ptr< TVector< real_t > >;
     
     //! create vector restricted to absolute value of coefficients
-    virtual auto restrict_abs () const -> std::unique_ptr< TVector >;
+    virtual auto restrict_abs () const -> std::unique_ptr< TVector< real_t > >;
     
     //
     // serialisation
@@ -304,10 +252,27 @@ public:
     //! print vector to stdout
     virtual void print ( const uint ofs = 0 ) const;
 
-    HLIB_RTTI_BASE( TVector )
+    HPRO_RTTI_BASE( TVector )
     
     //! \}
 };
+
+//////////////////////////////////////////////////////////
+//
+// variant version of vectors
+//
+
+using any_vector_t = std::variant<
+    TVector< float > *,
+    TVector< double > *,
+    TVector< std::complex< float > > *,
+    TVector< std::complex< double > > * >;
+    
+using any_const_vector_t = std::variant<
+    const TVector< float > *,
+    const TVector< double > *,
+    const TVector< std::complex< float > > *,
+    const TVector< std::complex< double > > * >;
 
 //////////////////////////////////////////////////////////
 //
@@ -315,16 +280,76 @@ public:
 //
 
 //! return dot product <x,y> = x^H · y
-inline complex dot      ( const TVector * x, const TVector * y ) { return x->dot( y );   }
+template < typename value_t >
+value_t  dot  ( const TVector< value_t > *  x,
+                const TVector< value_t > *  y )
+{
+    if ( x == nullptr )
+        HERROR( ERR_ARG, "dot", "x is null" );
+    
+    return x->dot( y );
+}
+
+template < typename value_t >
+value_t  dot  ( const TVector< value_t > &  x,
+                const TVector< value_t > &  y )
+{
+    return x.dot( &y );
+}
 
 //! return dot product <x,y> = x^T · y
-inline complex dotu     ( const TVector * x, const TVector * y ) { return x->dotu( y );  }
+template < typename value_t >
+value_t  dotu  ( const TVector< value_t > *  x,
+                 const TVector< value_t > *  y )
+{
+    if ( x == nullptr )
+        HERROR( ERR_ARG, "dotu", "x is null" );
+    
+    return x->dotu( y );
+}
+
+template < typename value_t >
+value_t  dotu  ( const TVector< value_t > &  x,
+                 const TVector< value_t > &  y )
+{
+    return x.dotu( &y );
+}
 
 //! return euclidean norm of \a x
-inline real    norm_2   ( const TVector * x )                    { return x->norm2();    }
+template < typename value_t >
+typename real_type< value_t >::type_t
+norm_2  ( const TVector< value_t > *  x )
+{
+    if ( x == nullptr )
+        HERROR( ERR_ARG, "norm_2", "x is null" );
+    
+    return x->norm2();
+}
+
+template < typename value_t >
+typename real_type< value_t >::type_t
+norm_2  ( const TVector< value_t > &  x )
+{
+    return x.norm2();
+}
 
 //! return infimum norm of \a x
-inline real    norm_inf ( const TVector * x )                    { return x->norm_inf(); }
+template < typename value_t >
+typename real_type< value_t >::type_t
+norm_inf  ( const TVector< value_t > *  x )
+{
+    if ( x == nullptr )
+        HERROR( ERR_ARG, "norm_inf", "x is null" );
+    
+    return x->norm_inf();
+}
+
+template < typename value_t >
+typename real_type< value_t >::type_t
+norm_inf  ( const TVector< value_t > &  x )
+{
+    return x.norm_inf();
+}
 
 //////////////////////////////////////////////////////////
 //
@@ -334,57 +359,68 @@ inline real    norm_inf ( const TVector * x )                    { return x->nor
 //
 // scale
 //
-template <typename T> void
-scale ( const T alpha, TVector * x );
+template < typename value_t >
+void
+scale ( const value_t         alpha,
+        TVector< value_t > *  x )
+{
+    x->scale( alpha );
+}
 
-template <> inline void
-scale<real>    ( const real     alpha, TVector * x )
-{ x->scale( alpha ); }
-
-template <> inline void
-scale<complex> ( const complex  alpha, TVector * x )
-{ x->cscale( alpha ); }
+template < typename value_t >
+void
+scale ( const value_t         alpha,
+        TVector< value_t > &  x )
+{
+    if ( x == nullptr )
+        HERROR( ERR_ARG, "scale", "x is null" );
     
+    x->scale( alpha );
+}
 
 //
 // axpy
 //
-template <typename T> void
-axpy ( const T alpha, const TVector * x, TVector * y );
+template < typename value_t >
+void
+axpy ( const value_t               alpha,
+       const TVector< value_t > *  x,
+       TVector< value_t > *        y )
+{
+    if ( y == nullptr )
+        HERROR( ERR_ARG, "axpy", "y is null" );
+    
+    y->axpy( alpha, x );
+}
 
-template <> inline void
-axpy<real>    ( const real     alpha, const TVector * x, TVector * y )
-{ y->axpy( alpha, x ); }
-
-template <> inline void
-axpy<complex> ( const complex  alpha, const TVector * x, TVector * y )
-{ y->caxpy( alpha, x ); }
-
+template < typename value_t >
+void
+axpy ( const value_t               alpha,
+       const TVector< value_t > &  x,
+       TVector< value_t > &        y )
+{
+    y.axpy( alpha, x );
+}
 
 //
-// dot product
+// copy vectors
 //
-template <typename T>  T
-tdot ( const TVector * x, const TVector * y );
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+copy ( const TVector< value_t > *  v )
+{
+    if ( v == nullptr )
+        HERROR( ERR_ARG, "copy", "vector is null" );
+    
+    return v->copy();
+}
 
-template <> inline real
-tdot<real>    ( const TVector * x, const TVector * y )
-{ return std::real( dot( x, y ) ); }
-
-template <> inline complex
-tdot<complex> ( const TVector * x, const TVector * y )
-{ return dot( x, y ); }
-
-template <typename T>  T
-tdotu ( const TVector * x, const TVector * y );
-
-template <> inline real
-tdotu<real>    ( const TVector * x, const TVector * y )
-{ return std::real( dotu( x, y ) ); }
-
-template <> inline complex
-tdotu<complex> ( const TVector * x, const TVector * y )
-{ return dotu( x, y ); }
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+copy ( const TVector< value_t > &  v )
+{
+    return v.copy();
+}
 
 //////////////////////////////////////////////////////////
 //
@@ -397,12 +433,13 @@ namespace DBG
 //
 // write vector to file
 //
-void write ( const TVector *      v,
-             const std::string &  filename,
-             const std::string &  vecname );
+template < typename value_t >
+void write ( const TVector< value_t > *  v,
+             const char *                filename,
+             const char *                vecname );
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TVECTOR_HH
+#endif  // __HPRO_TVECTOR_HH

@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBEMBF.cc
 // Description : classes for bilinearforms in BEM-applications
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <set>
@@ -17,7 +17,7 @@
 
 #include "hpro/bem/TQuadBEMBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -27,12 +27,14 @@ namespace B = BLAS;
 //
 // ctor
 //
-template < typename T_ansatzsp, typename T_testsp, typename T_val >
-TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::TQuadBEMBF ( const T_ansatzsp *  aansatzsp,
-                                                        const T_testsp *    atestsp,
-                                                        const uint          aorder,
-                                                        const bool          dist_ada )
-        : TBEMBF< T_ansatzsp, T_testsp, T_val >( aansatzsp, atestsp )
+template < typename ansatzsp_t,
+           typename testsp_t,
+           typename value_t >
+TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::TQuadBEMBF ( const ansatzsp_t *  aansatzsp,
+                                                          const testsp_t *    atestsp,
+                                                          const uint          aorder,
+                                                          const bool          dist_ada )
+        : TBEMBF< ansatzsp_t, testsp_t, value_t >( aansatzsp, atestsp )
         , _quad_order( aorder )
         , _quad_dist_adaptive( dist_ada )
 {
@@ -59,7 +61,7 @@ TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::TQuadBEMBF ( const T_ansatzsp *  aans
             //
 
             const size_t  npts        = rule.size();
-            const size_t  padded_npts = CFG::Mach::simd_padded_size< real >( npts );
+            const size_t  padded_npts = CFG::Mach::simd_padded_size< real_t >( npts );
 
             _quad_rules[ ncommon ][ order ].npts = npts;
             
@@ -113,11 +115,13 @@ TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::TQuadBEMBF ( const T_ansatzsp *  aans
 // in \a row_ind and \a col_ind can be arbitrary, e.g. must not be
 // contiguous
 //
-template < typename T_ansatzsp, typename T_testsp, typename T_val >
+template < typename ansatzsp_t,
+           typename testsp_t,
+           typename value_t >
 void
-TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::eval  ( const vector< idx_t > &,
-                                                   const vector< idx_t > &,
-                                                   BLAS::Matrix< T_val > & ) const
+TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx_t > &,
+                                                     const vector< idx_t > &,
+                                                     BLAS::Matrix< value_t > & ) const
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
@@ -126,10 +130,12 @@ TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::eval  ( const vector< idx_t > &,
 // reorder triangle vertices such that common vertices are ordered
 // from 0,…,#common-1; number of common vertices is returned
 //
-template < typename T_ansatzsp, typename T_testsp, typename T_val >
+template < typename ansatzsp_t,
+           typename testsp_t,
+           typename value_t >
 uint
-TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::reorder_common ( idx_t *  vtx0idxs,
-                                                            idx_t *  vtx1idxs ) const
+TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::reorder_common ( idx_t *  vtx0idxs,
+                                                              idx_t *  vtx1idxs ) const
 {
     //
     // count number of common vertices
@@ -161,11 +167,13 @@ TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::reorder_common ( idx_t *  vtx0idxs,
 //
 // adjust quadrature order depending on diameter and distance of triangles
 //
-template < typename T_ansatzsp, typename T_testsp, typename T_val >
+template < typename ansatzsp_t,
+           typename testsp_t,
+           typename value_t >
 uint
-TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::adjust_order ( const idx_t *  vtx0idxs,
-                                                          const idx_t *  vtx1idxs,
-                                                          const uint     order ) const
+TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::adjust_order ( const idx_t *  vtx0idxs,
+                                                            const idx_t *  vtx1idxs,
+                                                            const uint     order ) const
 {
     const TGrid *  ansatz_grid = this->ansatz_space()->grid();
     const TGrid *  test_grid   = this->test_space()->grid();
@@ -249,15 +257,18 @@ TQuadBEMBF< T_ansatzsp, T_testsp, T_val >::adjust_order ( const idx_t *  vtx0idx
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-template class TQuadBEMBF< TConstFnSpace,  TConstFnSpace,  real >;
-template class TQuadBEMBF< TConstFnSpace,  TConstFnSpace,  complex >;
-template class TQuadBEMBF< TConstFnSpace,  TLinearFnSpace, real >;
-template class TQuadBEMBF< TConstFnSpace,  TLinearFnSpace, complex >;
-template class TQuadBEMBF< TLinearFnSpace, TConstFnSpace,  real >;
-template class TQuadBEMBF< TLinearFnSpace, TConstFnSpace,  complex >;
-template class TQuadBEMBF< TLinearFnSpace, TLinearFnSpace, real >;
-template class TQuadBEMBF< TLinearFnSpace, TLinearFnSpace, complex >;
+#define INST_ALL( type1, type2 )                                        \
+    template class TQuadBEMBF< TConstFnSpace< type1 >,  TConstFnSpace< type1 >,  type2 >; \
+    template class TQuadBEMBF< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class TQuadBEMBF< TLinearFnSpace< type1 >, TConstFnSpace< type1 >,  type2 >; \
+    template class TQuadBEMBF< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >;
 
-template class TQuadBEMBF< TConstEdgeFnSpace, TConstEdgeFnSpace, complex >;
+INST_ALL( float,  float )
+INST_ALL( double, double )
+INST_ALL( float,  std::complex< float > )
+INST_ALL( double, std::complex< double > )
+
+template class TQuadBEMBF< TConstEdgeFnSpace, TConstEdgeFnSpace, std::complex< float > >;
+template class TQuadBEMBF< TConstEdgeFnSpace, TConstEdgeFnSpace, std::complex< double > >;
 
 }// namespace

@@ -1,11 +1,11 @@
-#ifndef __HLIB_TSPARSEMATRIX_HH
-#define __HLIB_TSPARSEMATRIX_HH
+#ifndef __HPRO_TSPARSEMATRIX_HH
+#define __HPRO_TSPARSEMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TSparseMatrix.hh
 // Description : class for a sparse matrix
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -25,8 +25,13 @@ DECLARE_TYPE( TSparseMatrix );
 //! \class    TSparseMatrix
 //! \brief    Class for a sparse matrix stored in compressed row storage format.
 //
-class TSparseMatrix : public TMatrix
+template < typename T_value >
+class TSparseMatrix : public TMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+
 private:
     //! number of rows in matrix
     size_t                  _rows;
@@ -44,11 +49,8 @@ private:
     //! column indices for all coefficients; indices are local, i.e. ∈ [0,cols()-1]
     std::vector< idx_t >    _colind;
 
-    //! matrix coefficients (real valued)
-    std::vector< real >     _rcoeff;
-
-    //! matrix coefficients (complex valued)
-    std::vector< complex >  _ccoeff;
+    //! matrix coefficients
+    std::vector< value_t >  _coeff;
 
 public:
     ///////////////////////////////////////////
@@ -76,7 +78,7 @@ public:
     
     //! construct sparse matrix with size defined by block cluster \a bct
     TSparseMatrix ( const TBlockCluster * bct = nullptr )
-            : TMatrix( bct )
+            : TMatrix< value_t >( bct )
             , _rows(0)
             , _cols(0)
     {
@@ -110,73 +112,54 @@ public:
     //! return number of non-zero elements
     size_t        n_non_zero   () const { return _colind.size(); }
 
-    //! convert coefficients to real valued representation (if possible)
-    virtual void  to_real      ();
-
-    //! convert coefficients to complex valued representation
-    virtual void  to_complex   ();
-
+    //! return row pointer array
+    const idx_t *  rowptr      () const { return _rowptr.data(); }
+    
+    //! return column index array
+    const idx_t *  colind      () const { return _colind.data(); }
+    
     /////////////////////////////////////////////////
     //
     // manage stored entries
     //
 
-    //! return matrix coefficient a_ij (real valued)
-    virtual real           entry      ( const idx_t    i,
-                                        const idx_t    j ) const;
+    //! return matrix coefficient a_ij
+    virtual value_t  entry      ( const idx_t    i,
+                                  const idx_t    j ) const;
 
-    //! return matrix coefficient a_ij (complex valued)
-    virtual const complex  centry     ( const idx_t    i,
-                                        const idx_t    j ) const;
-
-    //! set matrix coefficient a_ij if existent (real valued)
-    virtual void           set_entry  ( const idx_t    i,
-                                        const idx_t    j,
-                                        const real     c );
-
-    //! set matrix coefficient a_ij if existent (complex valued)
-    virtual void           set_entry  ( const idx_t    i,
-                                        const idx_t    j,
-                                        const complex  c );
+    //! set matrix coefficient a_ij if existent
+    virtual void     set_entry  ( const idx_t    i,
+                                  const idx_t    j,
+                                  const value_t  c );
     
-    //! add \a c to matrix coefficient a_ij if existent (real valued)
-    virtual void           add_entry  ( const idx_t    i,
-                                        const idx_t    j,
-                                        const real     c );
-
-    //! add \a c to matrix coefficient a_ij if existent (complex valued)
-    virtual void           add_entry  ( const idx_t    i,
-                                        const idx_t    j,
-                                        const complex  c );
-
+    //! add \a c to matrix coefficient a_ij if existent
+    virtual void     add_entry  ( const idx_t    i,
+                                  const idx_t    j,
+                                  const value_t  c );
+    
     //! return true if entry (\a i, \a j) exists
-    virtual bool           has_entry  ( const idx_t    i,
-                                        const idx_t    j ) const;
+    virtual bool     has_entry  ( const idx_t    i,
+                                  const idx_t    j ) const;
 
 
     //! sort matrix coefficients per row with respect to column
-    void sort_entries ();
+    void  sort_entries ();
 
     
     //! return \a i'th row pointer (constant)
-    idx_t          rowptr ( const idx_t  i ) const { return _rowptr[i]; }
+    idx_t      rowptr ( const idx_t  i ) const { return _rowptr[i]; }
     //! return \a i'th row pointer 
-    idx_t &        rowptr ( const idx_t  i ) { return _rowptr[i]; }
+    idx_t &    rowptr ( const idx_t  i )       { return _rowptr[i]; }
     
     //! return \a i'th column index (constant)
-    idx_t          colind ( const idx_t  i ) const { return _colind[i]; }
+    idx_t      colind ( const idx_t  i ) const { return _colind[i]; }
     //! return \a i'th column index
-    idx_t &        colind ( const idx_t  i ) { return _colind[i]; }
+    idx_t &    colind ( const idx_t  i )       { return _colind[i]; }
     
-    //! return \a i'th coefficient (real valued, constant)
-    real           rcoeff  ( const idx_t  i ) const { return _rcoeff[i]; }
-    //! return \a i'th coefficient (real valued)
-    real &         rcoeff  ( const idx_t  i ) { return _rcoeff[i]; }
-    
-    //! return \a i'th coefficient (complex valued, constant)
-    const complex  ccoeff ( const idx_t  i ) const { return _ccoeff[i]; }
-    //! return \a i'th coefficient (complex valued)
-    complex &      ccoeff ( const idx_t  i ) { return _ccoeff[i]; }
+    //! return \a i'th coefficient (constant)
+    value_t    coeff  ( const idx_t  i ) const { return _coeff[i]; }
+    //! return \a i'th coefficient
+    value_t &  coeff  ( const idx_t  i )       { return _coeff[i]; }
 
     
     //! permute entries in sparse matrix according to \a rowperm (for rows)
@@ -195,13 +178,13 @@ public:
     size_t max_entries_per_row () const;
 
     //! return true if matrix contains zero or elements < ε on diagonal
-    bool   has_diag_zero       ( const real  eps = 0.0 );
+    bool   has_diag_zero       ( const real_t  eps = 0.0 );
 
     //! return true if S is (weakly) diagonally dominant
     bool   is_diag_dom         ( const bool  weak = false );
     
     //! return factor α, such that S + α·I is diagonally dominant (this = S)
-    real   diag_dom_factor     ();
+    real_t diag_dom_factor     ();
         
     //! perform some tests on the matrix (for debugging)
     void   check_matrix        () const;
@@ -212,30 +195,30 @@ public:
     //
 
     //! import CRS data into local matrix
-    template <typename T_idx, typename T_val>
-    void import_crs  ( const size_t   nrows,
-                       const size_t   ncols,
-                       const size_t   nnonzero,
-                       const T_idx *  rowptr,
-                       const T_idx *  colind,
-                       const T_val *  coeffs );
+    template < typename T_idx >
+    void import_crs  ( const size_t     nrows,
+                       const size_t     ncols,
+                       const size_t     nnonzero,
+                       const T_idx *    rowptr,
+                       const T_idx *    colind,
+                       const value_t *  coeffs );
 
     //! import CCS data into local matrix
-    template <typename T_idx, typename T_val>
-    void import_ccs  ( const size_t   nrows,
-                       const size_t   ncols,
-                       const size_t   nnonzero,
-                       const T_idx *  colptr,
-                       const T_idx *  rowind,
-                       const T_val *  coeffs );
+    template <typename T_idx >
+    void import_ccs  ( const size_t     nrows,
+                       const size_t     ncols,
+                       const size_t     nnonzero,
+                       const T_idx *    colptr,
+                       const T_idx *    rowind,
+                       const value_t *  coeffs );
 
     //! export internal data to CCS format (real valued);
     //! if \a use_sym is true, only the lower triangular part is exported
-    template <typename T_idx, typename T_val>
-    void export_ccs  ( std::vector< T_idx > &  colptr,
-                       std::vector< T_idx > &  rowind,
-                       std::vector< T_val > &  coeffs,
-                       const bool              use_sym ) const;
+    template < typename T_idx >
+    void export_ccs  ( std::vector< T_idx > &    colptr,
+                       std::vector< T_idx > &    rowind,
+                       std::vector< value_t > &  coeffs,
+                       const bool                use_sym ) const;
 
     /////////////////////////////////////////////////
     //
@@ -243,17 +226,19 @@ public:
     //
 
     //! compute this ≔ α·this
-    virtual void scale ( const real alpha );
+    virtual void scale   ( const value_t alpha );
     
     //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void mul_vec ( const real      alpha,
-                           const TVector * x,
-                           const real      beta,
-                           TVector       * y,
-                           const matop_t   op = MATOP_NORM ) const;
+    virtual void mul_vec ( const value_t               alpha,
+                           const TVector< value_t > *  x,
+                           const value_t               beta,
+                           TVector< value_t > *        y,
+                           const matop_t               op = apply_normal ) const;
+    using TMatrix< value_t >::mul_vec;
 
     //! compute this ≔ this + α · matrix
-    virtual void add ( const real alpha, const TMatrix * matrix );
+    virtual void add     ( const value_t               alpha,
+                           const TMatrix< value_t > *  matrix );
         
     //! transpose matrix
     virtual void transpose ();
@@ -261,24 +246,6 @@ public:
     //! conjugate matrix coefficients
     virtual void conjugate ();
     
-    /////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
-    //
-
-    //! compute this ≔ α·this
-    virtual void cscale ( const complex  alpha );
-    
-    //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void cmul_vec ( const complex   alpha,
-                            const TVector * x,
-                            const complex   beta,
-                            TVector       * y,
-                            const matop_t   op = MATOP_NORM ) const;
-
-    //! compute this ≔ this + α · matrix
-    virtual void cadd ( const complex a, const TMatrix * matrix );
-        
     /////////////////////////////////////////////////
     //
     // truncation and restriction
@@ -291,8 +258,9 @@ public:
     }
 
     //! restrict sparse matrix to block index set \a rowis × \a colis
-    std::unique_ptr< TSparseMatrix >  restrict ( const TIndexSet &  rowis,
-                                                 const TIndexSet &  colis ) const;
+    std::unique_ptr< TSparseMatrix< value_t > >
+    restrict ( const TIndexSet &  rowis,
+               const TIndexSet &  colis ) const;
     
     //! restrict sparse matrix to block index set \a rowis × \a colis
     //! which is given in a different ordering
@@ -300,20 +268,21 @@ public:
     //!   while \a colperm permutes the local column indices to the ordering of colis
     //! - the returned matrix has the same ordering as \a rowis and \a colis
     //! 
-    std::unique_ptr< TSparseMatrix >  restrict ( const TIndexSet &     rowis,
-                                                 const TPermutation *  rowperm,
-                                                 const TIndexSet &     colis,
-                                                 const TPermutation *  colperm ) const;
+    std::unique_ptr< TSparseMatrix< value_t > >
+    restrict ( const TIndexSet &     rowis,
+               const TPermutation *  rowperm,
+               const TIndexSet &     colis,
+               const TPermutation *  colperm ) const;
         
     //! return number of coefficients in sub block index set \a rowis × \a colis
-    size_t           restrict_nonzeroes ( const TIndexSet &  rowis,
-                                          const TIndexSet &  colis ) const;
+    size_t  restrict_nonzeroes ( const TIndexSet &  rowis,
+                                 const TIndexSet &  colis ) const;
     
     //! return number of coefficients in sub block index set \a rowis × \a colis
-    size_t           restrict_nonzeroes ( const TIndexSet &     rowis,
-                                          const TPermutation *  rowperm,
-                                          const TIndexSet &     colis,
-                                          const TPermutation *  colperm ) const;
+    size_t  restrict_nonzeroes ( const TIndexSet &     rowis,
+                                 const TPermutation *  rowperm,
+                                 const TIndexSet &     colis,
+                                 const TPermutation *  colperm ) const;
     
     /////////////////////////////////////////////////
     //
@@ -349,27 +318,27 @@ public:
     //
     
     //! return matrix of same class (but no content)
-    virtual auto  create       () const -> std::unique_ptr< TMatrix >
+    virtual auto  create       () const -> std::unique_ptr< TMatrix< value_t > >
     {
-        return std::make_unique< TSparseMatrix >();
+        return std::make_unique< TSparseMatrix< value_t > >();
     }
     
     //! return copy of matrix
-    virtual auto  copy         () const -> std::unique_ptr< TMatrix >;
-    using TMatrix::copy;
+    virtual auto  copy         () const -> std::unique_ptr< TMatrix< value_t > >;
+    using TMatrix< value_t >::copy;
 
     //! return structural copy of matrix
-    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! copy matrix into matrix \a A
-    virtual void  copy_to      ( TMatrix * A ) const;
-    using TMatrix::copy_to;
+    virtual void  copy_to      ( TMatrix< value_t > * A ) const;
+    using TMatrix< value_t >::copy_to;
 
     //
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TSparseMatrix, TMatrix )
+    HPRO_RTTI_DERIVED( TSparseMatrix, TMatrix< value_t > )
 
     //! return size in bytes used by this object
     virtual size_t byte_size () const;
@@ -387,33 +356,37 @@ public:
 
 //////////////////////////////////////////////////////////
 //
+// variant version of linear operator
+//
+
+using any_sparse_matrix_t = std::variant<
+    TSparseMatrix< float > *,
+    TSparseMatrix< double > *,
+    TSparseMatrix< std::complex< float > > *,
+    TSparseMatrix< std::complex< double > > * >;
+    
+using any_const_sparse_matrix_t = std::variant<
+    const TSparseMatrix< float > *,
+    const TSparseMatrix< double > *,
+    const TSparseMatrix< std::complex< float > > *,
+    const TSparseMatrix< std::complex< double > > * >;
+    
+//////////////////////////////////////////////////////////
+//
 // template wrappers
 //
 
 //
 // wrapper for rcoeff/ccoeff
 //
-template <typename T>
-T
-coeff ( const TSparseMatrix *  S,
-        const idx_t            i );
-
-template <>
-inline real
-coeff<real>  ( const TSparseMatrix *  S,
-               const idx_t            i )
+template < typename value_t >
+value_t
+coeff ( const TSparseMatrix< value_t > *  S,
+        const idx_t                       i )
 {
-    return S->rcoeff( i );
+    return S->coeff( i );
 }
 
-template <>
-inline complex
-coeff<complex>  ( const TSparseMatrix *  S,
-                  const idx_t            i )
-{
-    return S->ccoeff( i );
-}
+}// namespace Hpro
 
-}// namespace HLIB
-
-#endif  // __HLIB_TSPARSEMATRIX_HH
+#endif  // __HPRO_TSPARSEMATRIX_HH

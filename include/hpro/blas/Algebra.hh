@@ -1,11 +1,11 @@
-#ifndef __HLIB_BLAS_ALGEBRA_HH
-#define __HLIB_BLAS_ALGEBRA_HH
+#ifndef __HPRO_BLAS_ALGEBRA_HH
+#define __HPRO_BLAS_ALGEBRA_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Algebra.hh
 // Description : provide linear algebra functions for BLAS matrices and vectors
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <type_traits>
@@ -40,13 +40,13 @@
 
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
 {
 
-#if HLIB_BLAS_TESTS == 1 || HLIB_DEBUG == 1
+#if HPRO_BLAS_TESTS == 1 || HPRO_DEBUG == 1
 #  define HASSERT_BLAS( cond, code, fnname, msg )   { if ( ! ( cond ) ) HERROR( code, fnname, msg ); }
 #else
 #  define HASSERT_BLAS( cond, code, fnname, msg )
@@ -1037,9 +1037,6 @@ prod ( const T1    alpha,
     HASSERT_BLAS( A.nrows() == C.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
     HASSERT_BLAS( B.ncols() == C.ncols(), ERR_MAT_SIZE, "(BLAS) prod", "" );
     HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( A.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( B.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( C.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
     
     MKL_SEQ_START;
     
@@ -1111,8 +1108,6 @@ prod ( const T1    alpha,
        const T3 &  B )
 {
     HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( A.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( B.col_stride() != 0,    ERR_MAT_SIZE, "(BLAS) prod", "" );
     
     using  value_t = T1;
 
@@ -1981,6 +1976,6 @@ reset_statistics ();
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_ALGEBRA_HH
+#endif  // __HPRO_BLAS_ALGEBRA_HH

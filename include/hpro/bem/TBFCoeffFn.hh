@@ -1,17 +1,17 @@
-#ifndef __HLIB_BEM_TBFCOEFFFN_H
-#define __HLIB_BEM_TBFCOEFFFN_H
+#ifndef __HPRO_BEM_TBFCOEFFFN_H
+#define __HPRO_BEM_TBFCOEFFFN_H
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBFCoeffFn.hh
 // Description : matrix coefficient functions for bilinear forms
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/matrix/TCoeffFn.hh"
 #include "hpro/bem/TBEMBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 ////////////////////////////////////////////////////////////////////
@@ -89,6 +89,6 @@ public:
     DISABLE_COPY_OP( TBFCoeffFn );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BEM_TBFCOEFFFN_H
+#endif  // __HPRO_BEM_TBFCOEFFFN_H

@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordVis.cc
 // Description : coordinate visualisation classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <fstream>
@@ -18,7 +18,7 @@
 
 #include "hpro/io/TCoordVis.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -428,12 +428,15 @@ TVTKCoordVis::print ( const TCoordinate *     coord,
 // them as defined by the coefficients of the sparse matrix \a S
 // - the ordering of \a S is assumed to be equal to \a coord
 //
+template < typename value_t >
 void
-TVTKCoordVis::print ( const TCoordinate *    coord,
-                      const TSparseMatrix *  S,
-                      const string &         filename,
-                      const coltype_t        col_type ) const
+TVTKCoordVis::print ( const TCoordinate *               coord,
+                      const TSparseMatrix< value_t > *  S,
+                      const string &                    filename,
+                      const coltype_t                   col_type ) const
 {
+    using  real_t = real_type_t< value_t >;
+    
     unique_ptr< std::ostream >  out_ptr( open_write( add_extension( filename, "vtk" ) ) );
     std::ostream &              out = * out_ptr.get();
 
@@ -538,47 +541,25 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
     // for edge color, determine minimal and maximal value and 
     // use colourmap
 
-    real  min_val = Limits::max< real >();
-    real  max_val = 0.0;
+    real_t  min_val = Limits::max< real_t >();
+    real_t  max_val = 0.0;
         
-    if ( S->is_complex() )
+    for ( size_t  row = 0; row < S->rows(); ++row )
     {
-        for ( size_t  row = 0; row < S->rows(); ++row )
+        const idx_t  lb = S->rowptr( row );
+        const idx_t  ub = S->rowptr( row+1 );
+        
+        for ( idx_t  j = lb; j < ub; ++j )
         {
-            const idx_t  lb = S->rowptr( row );
-            const idx_t  ub = S->rowptr( row+1 );
-
-            for ( idx_t  j = lb; j < ub; ++j )
-            {
-                const idx_t  neigh = S->colind( j );
-
-                if ( idx_t(row) == neigh )
-                    continue;
-
-                min_val = min( min_val, Math::abs( S->ccoeff( j ) ) );
-                max_val = max( max_val, Math::abs( S->ccoeff( j ) ) );
-            }// for
+            const idx_t  neigh = S->colind( j );
+            
+            if ( idx_t(row) == neigh )
+                continue;
+            
+            min_val = min( min_val, Math::abs( S->coeff( j ) ) );
+            max_val = max( max_val, Math::abs( S->coeff( j ) ) );
         }// for
-    }// if
-    else
-    {
-        for ( size_t  row = 0; row < S->rows(); ++row )
-        {
-            const idx_t  lb = S->rowptr( row );
-            const idx_t  ub = S->rowptr( row+1 );
-
-            for ( idx_t  j = lb; j < ub; ++j )
-            {
-                const idx_t  neigh = S->colind( j );
-
-                if ( idx_t(row) == neigh )
-                    continue;
-
-                min_val = min( min_val, Math::abs( S->coeff( j ) ) );
-                max_val = max( max_val, Math::abs( S->coeff( j ) ) );
-            }// for
-        }// for
-    }// else
+    }// for
 
     if ( col_type == TVTKCoordVis::LOG_COLOUR )
     {
@@ -587,7 +568,7 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
     }// if
     
     THotColourMap  cmap( 1000 );
-    const real     val_diff = max_val - min_val;
+    const real_t   val_diff = max_val - min_val;
 
     if ( val_diff == 0.0 )
     {
@@ -619,23 +600,11 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
                 // remark: the if below is to ensure same egde order as before
                 if (( neigh < idx_t(row) ) || (( neigh > idx_t(row) ) && is_nonsym && ! S->has_entry( neigh, idx_t(row) )))
                 {
-                    real  val = 0.0;
-                    
                     // use maximal value of edges if two are present
-                    if ( S->is_complex() )
-                    {
-                        val = Math::abs( S->ccoeff( j ) );
+                    auto  val = Math::abs( S->coeff( j ) );
                         
-                        if ( S->has_entry( neigh, row ) )
-                            val = max( val, Math::abs( S->centry( neigh, idx_t(row) ) ) );
-                    }// if
-                    else
-                    {
-                        val = Math::abs( S->coeff( j ) );
-                        
-                        if ( S->has_entry( neigh, row ) )
-                            val = max( val, Math::abs( S->entry( neigh, idx_t(row) ) ) );
-                    }// else
+                    if ( S->has_entry( neigh, row ) )
+                        val = max( val, Math::abs( S->entry( neigh, idx_t(row) ) ) );
 
                     if ( col_type == TVTKCoordVis::LOG_COLOUR )
                         val = Math::log( val );
@@ -716,25 +685,14 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
     // for edge color, determine minimal and maximal value and 
     // use colourmap
 
-    real  min_val = Limits::max< real >();
-    real  max_val = 0.0;
+    real_t  min_val = Limits::max< real_t >();
+    real_t  max_val = 0.0;
         
-    if ( S->is_complex() )
+    for ( idx_t  i = 0; i < idx_t(S->n_non_zero()); ++i )
     {
-        for ( idx_t  i = 0; i < idx_t(S->n_non_zero()); ++i )
-        {
-            min_val = std::min( min_val, real( Math::abs( S->ccoeff( i ) ) ) );
-            max_val = std::max( max_val, real( Math::abs( S->ccoeff( i ) ) ) );
-        }// if
+        min_val = std::min( min_val, Math::abs( S->coeff( i ) ) );
+        max_val = std::max( max_val, Math::abs( S->coeff( i ) ) );
     }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(S->n_non_zero()); ++i )
-        {
-            min_val = std::min( min_val, real( Math::abs( S->rcoeff( i ) ) ) );
-            max_val = std::max( max_val, real( Math::abs( S->rcoeff( i ) ) ) );
-        }// if
-    }// else
 
     if ( col_type == TVTKCoordVis::LOG_COLOUR )
     {
@@ -743,7 +701,7 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
     }// if
     
     THotColourMap  cmap( 1000 );
-    const real     val_diff = max_val - min_val;
+    const real_t   val_diff = max_val - min_val;
 
     if ( val_diff == 0.0 )
     {
@@ -771,22 +729,14 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
             for ( auto  j = lb; j < ub; ++j )
             {
                 const auto  neigh = S->colind( j );
-                auto        val   = S->rcoeff( j );
+                auto        val   = Math::abs( S->coeff( j ) );
 
                 // remark: the if below is to ensure same egde order as before
                 if (( neigh < row ) || (( neigh > row ) && is_nonsym && ! S->has_entry( neigh, row )))
                 {
                     // use maximal value of edges if two are present
-                    if ( S->is_complex() )
-                    {
-                        if ( S->has_entry( neigh, row ) )
-                            val = std::max( val, real( Math::abs( S->centry( neigh, row ) ) ) );
-                    }// if
-                    else
-                    {
-                        if ( S->has_entry( neigh, row ) )
-                            val = std::max( val, real( Math::abs( S->entry( neigh, row ) ) ) );
-                    }// else
+                    if ( S->has_entry( neigh, row ) )
+                        val = std::max( val, Math::abs( S->entry( neigh, row ) ) );
 
                     if ( col_type == TVTKCoordVis::LOG_COLOUR )
                         val = Math::log( val );
@@ -804,6 +754,19 @@ TVTKCoordVis::print ( const TCoordinate *    coord,
 
 #endif
 }
+
+#define INST_VTKPRINT( type ) \
+    template \
+    void \
+    TVTKCoordVis::print< type > ( const TCoordinate *           , \
+                                  const TSparseMatrix< type > * , \
+                                  const string &                , \
+                                  const coltype_t                ) const;
+
+INST_VTKPRINT( float )
+INST_VTKPRINT( double )
+INST_VTKPRINT( std::complex< float > )
+INST_VTKPRINT( std::complex< double > )
 
 //
 // functional versions

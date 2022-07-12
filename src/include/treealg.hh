@@ -1,18 +1,18 @@
-#ifndef __HLIB_TREEALG_HH
-#define __HLIB_TREEALG_HH
+#ifndef __HPRO_TREEALG_HH
+#define __HPRO_TREEALG_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : treealg.hh
 // Description : provides tree algorithms
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include <hpro/base/basetypes.hh>
+#include "hpro/base/basetypes.hh"
 
 #include "list.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace Tree
@@ -121,6 +121,6 @@ nleaves ( const T * node )
 
 }// namespace Tree
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TREEALG_HH
+#endif  // __HPRO_TREEALG_HH

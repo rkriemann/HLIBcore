@@ -1,17 +1,17 @@
-#ifndef __HLIB_TINDEXSET_HH
-#define __HLIB_TINDEXSET_HH
+#ifndef __HPRO_TINDEXSET_HH
+#define __HPRO_TINDEXSET_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TIndexSet.hh
 // Description : class for an indexset
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/types.hh"
 #include "hpro/base/String.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -229,8 +229,8 @@ public:
     std::string to_string () const
     {
         if ( size() == 0 ) return "{}";
-        if ( size() == 1 ) return HLIB::to_string( "{%d}", _first );
-        else               return HLIB::to_string( "{%d:%d}", _first, _last );
+        if ( size() == 1 ) return Hpro::to_string( "{%d}", _first );
+        else               return Hpro::to_string( "{%d:%d}", _first, _last );
     }
 
     //! return size in bytes used by this object
@@ -492,6 +492,6 @@ is_intersecting ( const TBlockIndexSet &  is0,
               is_intersecting( is0.col_is(), is1.col_is() ) );
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TINDEXSET_HH
+#endif  // __HPRO_TINDEXSET_HH

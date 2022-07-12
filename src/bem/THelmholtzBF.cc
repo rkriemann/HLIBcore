@@ -1,12 +1,13 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : THelmholtzBF.cc
 // Description : bilinear forms for Helmholtz operator
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
+#include <iostream> // DEBUG
 
 #include "hpro/base/packed.hh"
 
@@ -14,7 +15,7 @@
 
 #include "hpro/bem/THelmholtzBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -29,106 +30,70 @@ namespace B = BLAS;
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-template < typename T_ansatzsp,
-           typename T_testsp >
-void
-helmholtz_slp_omp ( const TGrid::triangle_t &   tri0,
-                    const TGrid::triangle_t &   tri1,
-                    const tripair_quad_rule_t * rule,
-                    const complex               ikappa,
-                    const T_ansatzsp *          ansatz_sp,
-                    const T_testsp *            test_sp,
-                    std::vector< complex > &    values );
-
-template < typename T_ansatzsp,
-           typename T_testsp >
-void
-helmholtz_dlp_omp ( const idx_t                 tri1_id,
-                    const TGrid::triangle_t &   tri0,
-                    const TGrid::triangle_t &   tri1,
-                    const tripair_quad_rule_t * rule,
-                    const complex               ikappa,
-                    const T_ansatzsp *          ansatz_sp,
-                    const T_testsp *            test_sp,
-                    std::vector< complex > &    values );
-
-
 #define  HELMHOLTZ_SLP( suffix )                                        \
-    template < typename  T_ansatzsp,                                    \
+    template < typename  value_t,                                       \
+               typename  T_ansatzsp,                                    \
                typename  T_testsp,                                      \
                typename  T_packed >                                     \
     void                                                                \
-    helmholtz_slp_##suffix ( const TGrid::triangle_t &  tri0,           \
-                             const TGrid::triangle_t &  tri1,           \
-                             const tripair_quad_rule_t *  rule,         \
-                             const complex              ikappa,         \
-                             const T_ansatzsp *         ansatz_sp,      \
-                             const T_testsp *           test_sp,        \
-                             vector< complex > &        values )
+    helmholtz_slp_##suffix ( const TGrid::triangle_t &                             tri0, \
+                             const TGrid::triangle_t &                             tri1, \
+                             const tripair_quad_rule_t< real_type_t< value_t > > * rule, \
+                             const value_t                                         ikappa, \
+                             const T_ansatzsp *                                    ansatz_sp, \
+                             const T_testsp *                                      test_sp, \
+                             vector< value_t > &                                   values )
 
 HELMHOLTZ_SLP( simd );
 HELMHOLTZ_SLP( re_simd );
 HELMHOLTZ_SLP( im_simd );
 
 #define  HELMHOLTZ_DLP( suffix )                                        \
-    template < typename  T_ansatzsp,                                    \
+    template < typename  value_t,                                       \
+               typename  T_ansatzsp,                                    \
                typename  T_testsp,                                      \
                typename  T_packed >                                     \
     void                                                                \
-    helmholtz_dlp_##suffix ( const idx_t                tri1_id,        \
-                             const TGrid::triangle_t &  tri0,           \
-                             const TGrid::triangle_t &  tri1,           \
-                             const tripair_quad_rule_t *  rule,         \
-                             const complex              ikappa,         \
-                             const T_ansatzsp *         ansatz_sp,      \
-                             const T_testsp *           test_sp,        \
-                             vector< complex > &        values )
+    helmholtz_dlp_##suffix ( const idx_t                                           tri1_id, \
+                             const bool                                            adjoint, \
+                             const TGrid::triangle_t &                             tri0, \
+                             const TGrid::triangle_t &                             tri1, \
+                             const tripair_quad_rule_t< real_type_t< value_t > > * rule, \
+                             const value_t                                         ikappa, \
+                             const T_ansatzsp *                                    ansatz_sp, \
+                             const T_testsp *                                      test_sp, \
+                             vector< value_t > &                                   values )
 
 HELMHOLTZ_DLP( simd );
 HELMHOLTZ_DLP( re_simd );
 HELMHOLTZ_DLP( im_simd );
 
 #define  HELMHOLTZ_SLP_HCA( suffix )                                    \
-    template < typename  T_packed >                                     \
+    template < typename value_t, typename  T_packed >                   \
     void                                                                \
-    helmholtz_slp_eval_dx_##suffix ( const complex &            ikappa, \
-                                     const tri_quad_rule_t &    quad_rule, \
-                                     const T3Point              x[3],   \
-                                     const T3Point &            y,      \
-                                     vector< complex > &        values )
+    helmholtz_slp_eval_dx_##suffix ( const value_t &      ikappa,       \
+                                     const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule, \
+                                     const T3Point        x[3],         \
+                                     const T3Point &      y,            \
+                                     vector< value_t > &  values )
 
 HELMHOLTZ_SLP_HCA( simd );
 HELMHOLTZ_SLP_HCA( re_simd );
 HELMHOLTZ_SLP_HCA( im_simd );
 
 #define  HELMHOLTZ_DLP_HCA( suffix )                                    \
-    template < typename  T_packed >                                     \
+    template < typename value_t, typename  T_packed >                   \
     void                                                                \
-    helmholtz_dlp_eval_dy_##suffix ( const complex &            ikappa, \
-                                     const tri_quad_rule_t &    quad_rule, \
-                                     const T3Point &            x,      \
-                                     const T3Point              y[3],   \
-                                     const T3Point &            normal, \
-                                     vector< complex > &        values )
+    helmholtz_dlp_eval_dy_##suffix ( const value_t &      ikappa, \
+                                     const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule, \
+                                     const T3Point &      x, \
+                                     const T3Point        y[3], \
+                                     const T3Point &      normal, \
+                                     vector< value_t > &  values )
 
 HELMHOLTZ_DLP_HCA( simd );
 HELMHOLTZ_DLP_HCA( re_simd );
 HELMHOLTZ_DLP_HCA( im_simd );
-
-namespace
-{
-
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-//
-// local constants
-//
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-
-const real ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
-
-}// namespace anonymous
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -142,16 +107,21 @@ const real ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
 // standard evaluation of Helmholtz SLP kernel
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  value_t >
 void
-helmholtz_slp_flt ( const TGrid::triangle_t &   tri0,
-                    const TGrid::triangle_t &   tri1,
-                    const tripair_quad_rule_t * rule,
-                    const complex               ikappa,
-                    const T_ansatzsp *          ansatz_sp,
-                    const T_testsp *            test_sp,
-                    vector< complex > &         values )
+helmholtz_slp_flt ( const TGrid::triangle_t &                             tri0,
+                    const TGrid::triangle_t &                             tri1,
+                    const tripair_quad_rule_t< real_type_t< value_t > > * rule,
+                    const value_t                                         ikappa,
+                    const T_ansatzsp *                                    ansatz_sp,
+                    const T_testsp *                                      test_sp,
+                    vector< value_t > &                                   values )
 {
+    using real_t  = real_type_t< value_t >;
+
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+    
     const size_t   n_pts = rule->npts;
     const T3Point  v00( ansatz_sp->grid()->vertex( tri0.vtx[0] ) );
     const T3Point  v01( ansatz_sp->grid()->vertex( tri0.vtx[1] ) );
@@ -174,7 +144,8 @@ helmholtz_slp_flt ( const TGrid::triangle_t &   tri0,
         // transform coordinates
         const T3Point  x    = a0 * v00 + a1 * v01 + a2 * v02;
         const T3Point  y    = b0 * v10 + b1 * v11 + b2 * v12;
-        const auto     dist = real( dot( x-y ) );
+        const auto     xmy  = x - y;
+        const auto     dist = real_t( dot( xmy, xmy ) );
 
         // e^( i * kappa * |x-y| ) / |x-y|
         values[ i ] = ( ONE_OVER_4PI * Math::exp( ikappa * Math::sqrt( dist ) ) * Math::rsqrt( dist ) );
@@ -185,98 +156,99 @@ helmholtz_slp_flt ( const TGrid::triangle_t &   tri0,
 // ctor
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-THelmholtzSLPBF< T_ansatzsp, T_testsp >::THelmholtzSLPBF ( const complex       kappa,
-                                                           const ansatzsp_t *  aansatzsp,
-                                                           const testsp_t *    atestsp,
-                                                           const uint          quad_order )
-        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, complex >( aansatzsp, atestsp, quad_order ),
-          _ikappa( complex( 0, 1 ) * kappa )
+           typename  T_testsp,
+           typename  T_value >
+THelmholtzSLPBF< T_ansatzsp, T_testsp, T_value >::THelmholtzSLPBF ( const value_t       kappa,
+                                                                    const ansatzsp_t *  aansatzsp,
+                                                                    const testsp_t *    atestsp,
+                                                                    const uint          quad_order )
+        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
+        , _ikappa( value_t( 0, 1 ) * kappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
             
             HINFO( "(THelmholtzSLPBF) using AVX512F kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
             
             HINFO( "(THelmholtzSLPBF) using MIC kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
             
             HINFO( "(THelmholtzSLPBF) using AVX2 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
             
             HINFO( "(THelmholtzSLPBF) using AVX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
             
             HINFO( "(THelmholtzSLPBF) using SSE3 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
             
             HINFO( "(THelmholtzSLPBF) using VSX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
             
             HINFO( "(THelmholtzSLPBF) using NEON kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else
         {
-            HINFO( "(THelmholtzSLPBF) using OpenMP kernel" );
+            HINFO( "(THelmholtzSLPBF) using standard kernel" );
             
-            _kernel_fn = helmholtz_slp_omp;
+            _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
         }// else
     }// if
     else
     {
         HINFO( "(THelmholtzSLPBF) using standard kernel" );
             
-        _kernel_fn = helmholtz_slp_flt;
+        _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
     }// else
 }
 
@@ -284,14 +256,15 @@ THelmholtzSLPBF< T_ansatzsp, T_testsp >::THelmholtzSLPBF ( const complex       k
 // eval kernel function at quadrature points
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  T_value >
 void
-THelmholtzSLPBF< T_ansatzsp, T_testsp >::eval_kernel ( const                       idx_t,
-                                                       const                       idx_t,
-                                                       const TGrid::triangle_t &   tri0,
-                                                       const TGrid::triangle_t &   tri1,
-                                                       const tripair_quad_rule_t * rule,
-                                                       std::vector< complex > &    values ) const
+THelmholtzSLPBF< T_ansatzsp, T_testsp, T_value >::eval_kernel ( const idx_t                        /* tri0idx */,
+                                                                const idx_t                        /* tri1idx */,
+                                                                const TGrid::triangle_t &             tri0,
+                                                                const TGrid::triangle_t &             tri1,
+                                                                const tripair_quad_rule_t< real_t > * rule,
+                                                                std::vector< value_t > &              values ) const
 {
     _kernel_fn( tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
 }
@@ -300,11 +273,12 @@ THelmholtzSLPBF< T_ansatzsp, T_testsp >::eval_kernel ( const                    
 // return format of bilinear form, e.g. symmetric
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  T_value >
 matform_t
-THelmholtzSLPBF< T_ansatzsp, T_testsp >::format () const
+THelmholtzSLPBF< T_ansatzsp, T_testsp, T_value >::format () const
 {
-    if ( ( cptrcast( this->ansatz_space(), TFnSpace ) == cptrcast( this->test_space(), TFnSpace ) ) ||
+    if ( ( reinterpret_cast< const void * >( this->ansatz_space() ) == reinterpret_cast< const void * >( this->test_space() ) ) ||
          (( this->ansatz_space()->type() == this->test_space()->type() ) &&
           ( this->ansatz_space()->grid() == this->test_space()->grid() )) )
         return symmetric;
@@ -327,17 +301,24 @@ THelmholtzSLPBF< T_ansatzsp, T_testsp >::format () const
 // standard evaluation of Helmholtz DLP kernel
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  value_t >
 void
-helmholtz_dlp_flt ( const idx_t                 tri1_id,
-                    const TGrid::triangle_t &   tri0,
-                    const TGrid::triangle_t &   tri1,
-                    const tripair_quad_rule_t * rule,
-                    const complex               ikappa,
-                    const T_ansatzsp *          ansatz_sp,
-                    const T_testsp *            test_sp,
-                    vector< complex > &         values )
+helmholtz_dlp_flt ( const idx_t                                           tri_id,
+                    const bool                                            adjoint,
+                    const TGrid::triangle_t &                             tri0,
+                    const TGrid::triangle_t &                             tri1,
+                    const tripair_quad_rule_t< real_type_t< value_t > > * rule,
+                    const value_t                                         ikappa,
+                    const T_ansatzsp *                                    ansatz_sp,
+                    const T_testsp *                                      test_sp,
+                    vector< value_t > &                                   values )
 {
+    using real_t  = real_type_t< value_t >;
+
+    constexpr real_t  ONE          = real_t(1);
+    constexpr real_t  ONE_OVER_4PI = ONE / (real_t(4) * Math::pi< real_t >());
+
     const size_t   n_pts = rule->npts;
     const T3Point  v00( ansatz_sp->grid()->vertex( tri0.vtx[0] ) );
     const T3Point  v01( ansatz_sp->grid()->vertex( tri0.vtx[1] ) );
@@ -345,25 +326,29 @@ helmholtz_dlp_flt ( const idx_t                 tri1_id,
     const T3Point  v10( test_sp->grid()->vertex( tri1.vtx[0] ) );
     const T3Point  v11( test_sp->grid()->vertex( tri1.vtx[1] ) );
     const T3Point  v12( test_sp->grid()->vertex( tri1.vtx[2] ) );
-    const T3Point  n( test_sp->grid()->tri_normal( tri1_id ) );
+        
 
     #pragma omp simd
     for ( size_t  i = 0; i < n_pts; i++ )
     {
-        const double  a1 = rule->x1[i];
-        const double  a2 = rule->y1[i];
-        const double  a0 = 1.0 - a1 - a2;
+        const real_t  a1 = rule->x1[i];
+        const real_t  a2 = rule->y1[i];
+        const real_t  a0 = 1.0 - a1 - a2;
         
-        const double  b1 = rule->x2[i];
-        const double  b2 = rule->y2[i];
-        const double  b0 = 1.0 - b1 - b2;
+        const real_t  b1 = rule->x2[i];
+        const real_t  b2 = rule->y2[i];
+        const real_t  b0 = 1.0 - b1 - b2;
 
         // u = y - x
-        const T3Point  x      = a0 * v00 + a1 * v01 + a2 * v02;
-        const T3Point  y      = b0 * v10 + b1 * v11 + b2 * v12;
-        const T3Point  ymx    = y - x;
-        const double   sqdist = real( dot( ymx ) );       // |y-x|²
+        const auto    x      = a0 * v00 + a1 * v01 + a2 * v02;
+        const auto    y      = b0 * v10 + b1 * v11 + b2 * v12;
+        const auto    ymx    = ( adjoint ? x - y : y - x );
+        const auto    sqdist = real_t( dot( ymx, ymx ) );       // |y-x|²
 
+        const auto    n      = ( adjoint
+                                 ? ansatz_sp->grid()->tri_normal( tri_id, tri0, a1, a2 )
+                                 : test_sp->grid()->tri_normal( tri_id, tri1, b1, b2 ) );
+        
         //
         //   (i·κ·|x-y|)
         // e            (i·κ·|x-y| - 1) <n,y-x>
@@ -371,12 +356,15 @@ helmholtz_dlp_flt ( const idx_t                 tri1_id,
         //                |x-y|³
         //
 
-        const auto  dist      = Math::sqrt( sqdist );     // |y-x|
-        const auto  cudist    = real( sqdist * dist );    // |y-x|³
-        const auto  n_dot_ymx = real( dot( n, ymx ) );    // <n(y),y-x>
-        const auto  ikymx     = ikappa * real( dist );    // i · κ · |x-y|
-        
-        values[ i ] = ONE_OVER_4PI * Math::exp( ikymx ) * ( ikymx - real(1) ) * n_dot_ymx / cudist;
+        const real_t  dist      = Math::sqrt( sqdist );       // |y-x|
+        const auto    cudist    = real_t( sqdist * dist );    // |y-x|³
+        const auto    n_dot_ymx = real_t( dot( n, ymx ) );    // <n(y),y-x>
+        const auto    ikymx     = ikappa * real_t( dist );    // i · κ · |x-y|
+
+        if ( adjoint )
+            values[ i ] = ONE_OVER_4PI * Math::exp( ikymx ) * ( ONE - ikymx ) * n_dot_ymx / cudist;
+        else
+            values[ i ] = ONE_OVER_4PI * Math::exp( ikymx ) * ( ikymx - ONE ) * n_dot_ymx / cudist;
     }// for
 }
 
@@ -384,98 +372,101 @@ helmholtz_dlp_flt ( const idx_t                 tri1_id,
 // ctor
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-THelmholtzDLPBF< T_ansatzsp, T_testsp >::THelmholtzDLPBF ( const complex       kappa,
-                                                           const ansatzsp_t *  aansatzsp,
-                                                           const testsp_t *    atestsp,
-                                                           const uint          quad_order )
-        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, complex >( aansatzsp, atestsp, quad_order ),
-          _ikappa( complex( 0, 1 ) * kappa )
+           typename  T_testsp,
+           typename  T_value >
+THelmholtzDLPBF< T_ansatzsp, T_testsp, T_value >::THelmholtzDLPBF ( const value_t       kappa,
+                                                                    const ansatzsp_t *  aansatzsp,
+                                                                    const testsp_t *    atestsp,
+                                                                    const bool          adjoint,
+                                                                    const uint          quad_order )
+        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
+        , _adjoint( adjoint )
+        , _ikappa( value_t( 0, 1 ) * kappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
             
             HINFO( "(THelmholtzDLPBF) using AVX512F kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic  )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
             
             HINFO( "(THelmholtzDLPBF) using MIC kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
             
             HINFO( "(THelmholtzDLPBF) using AVX2 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
             
             HINFO( "(THelmholtzDLPBF) using AVX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
             
             HINFO( "(THelmholtzDLPBF) using SSE3 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
             
             HINFO( "(THelmholtzDLPBF) using VSX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
             
             HINFO( "(THelmholtzDLPBF) using NEON kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else
         {
-            HINFO( "(THelmholtzDLPBF) using OpenMP kernel" );
+            HINFO( "(THelmholtzDLPBF) using standard kernel" );
             
-            _kernel_fn = helmholtz_dlp_omp;
+            _kernel_fn = helmholtz_dlp_flt< ansatzsp_t, testsp_t, value_t >;
         }// else
     }// if
     else
     {
         HINFO( "(THelmholtzDLPBF) using standard kernel" );
             
-        _kernel_fn = helmholtz_dlp_flt;
+        _kernel_fn = helmholtz_dlp_flt< ansatzsp_t, testsp_t, value_t >;
     }// else
 }
 
@@ -483,25 +474,30 @@ THelmholtzDLPBF< T_ansatzsp, T_testsp >::THelmholtzDLPBF ( const complex       k
 // eval kernel function at quadrature points
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  T_value >
 void
-THelmholtzDLPBF< T_ansatzsp, T_testsp >::eval_kernel ( const                       idx_t,
-                                                       const idx_t                 tri1idx,
-                                                       const TGrid::triangle_t &   tri0,
-                                                       const TGrid::triangle_t &   tri1,
-                                                       const tripair_quad_rule_t * rule,
-                                                       std::vector< complex > &   values ) const
+THelmholtzDLPBF< T_ansatzsp, T_testsp, T_value >::eval_kernel ( const idx_t                           tri0idx,
+                                                                const idx_t                           tri1idx,
+                                                                const TGrid::triangle_t &             tri0,
+                                                                const TGrid::triangle_t &             tri1,
+                                                                const tripair_quad_rule_t< real_t > * rule,
+                                                                std::vector< value_t > &              values ) const
 {
-    _kernel_fn( tri1idx, tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
+    if ( _adjoint )
+        _kernel_fn( tri0idx, _adjoint, tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
+    else
+        _kernel_fn( tri1idx, _adjoint, tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
 }
 
 //
 // return format of bilinear form, e.g. symmetric
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  T_value >
 matform_t
-THelmholtzDLPBF< T_ansatzsp, T_testsp >::format () const
+THelmholtzDLPBF< T_ansatzsp, T_testsp, T_value >::format () const
 {
     return unsymmetric;
 }
@@ -519,13 +515,18 @@ THelmholtzDLPBF< T_ansatzsp, T_testsp >::format () const
 //
 // computes x-integral of SLP
 //
+template < typename value_t >
 void
-helmholtz_slp_eval_dx_flt ( const complex &          ikappa,
-                            const tri_quad_rule_t &  quad_rule,
-                            const T3Point            vx[3],
-                            const T3Point &          vy,
-                            vector< complex > &      values )
+helmholtz_slp_eval_dx_flt ( const value_t &                                   ikappa,
+                            const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
+                            const T3Point                                     vx[3],
+                            const T3Point &                                   vy,
+                            vector< value_t > &                               values )
 {
+    using real_t  = real_type_t< value_t >;
+
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+
     const size_t  npts = quad_rule.npts;
     
     #pragma omp simd
@@ -541,7 +542,7 @@ helmholtz_slp_eval_dx_flt ( const complex &          ikappa,
 
         // d = y - x
         const T3Point  xmy( vy - ( a0 * vx[0] + a1 * vx[1] + a2 * vx[2] ) );
-        const auto     ddotd = real( Math::sqrt( dot( xmy, xmy ) ) );
+        const auto     ddotd = real_t( Math::sqrt( dot( xmy, xmy ) ) );
 
         // e^( i * kappa * | x - y | ) / | x - y |
         values[k] = ONE_OVER_4PI * Math::exp( ikappa * ddotd ) / ddotd;
@@ -551,14 +552,19 @@ helmholtz_slp_eval_dx_flt ( const complex &          ikappa,
 //
 // computes y-integral of DLP
 //
+template < typename value_t >
 void
-helmholtz_dlp_eval_dy_flt ( const complex &          ikappa,
-                            const tri_quad_rule_t &  quad_rule,
-                            const T3Point &          vx,
-                            const T3Point            vy[3],
-                            const T3Point &          normal,
-                            vector< complex > &      values )
+helmholtz_dlp_eval_dy_flt ( const value_t &                                   ikappa,
+                            const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
+                            const T3Point &                                   vx,
+                            const T3Point                                     vy[3],
+                            const T3Point &                                   normal,
+                            vector< value_t > &                               values )
 {
+    using real_t  = real_type_t< value_t >;
+
+    constexpr real_t  ONE_OVER_4PI = real_t(1) / (real_t(4) * Math::pi< real_t >());
+
     const size_t  npts = quad_rule.npts;
     
     #pragma omp simd
@@ -574,7 +580,7 @@ helmholtz_dlp_eval_dy_flt ( const complex &          ikappa,
                 
         // d = y - x
         const T3Point  ymx( ( a0 * vy[0] + a1 * vy[1] + a2 * vy[2] ) - vx );
-        const auto     dist2  = real( dot( ymx, ymx ) );
+        const auto     dist2  = real_t( dot( ymx, ymx ) );
         const auto     dist   = Math::sqrt( dist2 );
         const auto     dist3  = dist * dist2;
         const auto     ikdist = ikappa * dist;
@@ -586,7 +592,7 @@ helmholtz_dlp_eval_dy_flt ( const complex &          ikappa,
         //                |x-y|³
         //
 
-        values[k] = ( ONE_OVER_4PI * ( Math::exp( ikdist ) * ( ikdist - real(1) ) * real(dot( normal, ymx )) )
+        values[k] = ( ONE_OVER_4PI * ( Math::exp( ikdist ) * ( ikdist - real_t(1) ) * real_t(dot( normal, ymx )) )
                       / dist3 );
     }// for
 }
@@ -603,101 +609,101 @@ helmholtz_dlp_eval_dy_flt ( const complex &          ikappa,
 // constructor
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-THelmholtzSLPGenFn< T_ansatzsp, T_testsp >::THelmholtzSLPGenFn ( const complex         kappa,
-                                                                 const ansatzsp_t *    ansatzsp,
-                                                                 const testsp_t *      testsp,
-                                                                 const TPermutation *  row_perm_i2e,
-                                                                 const TPermutation *  col_perm_i2e,
-                                                                 const uint            quad_order )
-        : TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, complex >( ansatzsp, testsp, quad_order,
-                                                                    row_perm_i2e, col_perm_i2e ),
-          _ikappa( complex( 0, 1 ) * kappa )
+           typename  T_testsp,
+           typename  T_value >
+THelmholtzSLPGenFn< T_ansatzsp, T_testsp, T_value >::THelmholtzSLPGenFn ( const value_t         kappa,
+                                                                          const ansatzsp_t *    ansatzsp,
+                                                                          const testsp_t *      testsp,
+                                                                          const TPermutation *  row_perm_i2e,
+                                                                          const TPermutation *  col_perm_i2e,
+                                                                          const uint            quad_order )
+        : TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, value_t >( ansatzsp, testsp, quad_order, row_perm_i2e, col_perm_i2e )
+        , _ikappa( value_t( 0, 1 ) * kappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
             
             HINFO( "(THelmholtzSLPGenFn) using AVX512F kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
             
             HINFO( "(THelmholtzSLPGenFn) using MIC kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
             
             HINFO( "(THelmholtzSLPGenFn) using AVX2 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
             
             HINFO( "(THelmholtzSLPGenFn) using AVX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
             
             HINFO( "(THelmholtzSLPGenFn) using SSE3 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
             
             HINFO( "(THelmholtzSLPGenFn) using VSX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
             
             HINFO( "(THelmholtzSLPGenFn) using NEON kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-            else                                        _eval_dxy_impl = helmholtz_slp_eval_dx_simd< packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _eval_dxy_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+            else                                          _eval_dxy_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
         }// if
         else
         {
             HINFO( "(THelmholtzSLPGenFn) using standard kernel" );
             
-            _eval_dxy_impl = helmholtz_slp_eval_dx_flt;
+            _eval_dxy_impl = helmholtz_slp_eval_dx_flt< value_t >;
         }// else
     }// if
     else
     {
         HINFO( "(THelmholtzSLPGenFn) using standard kernel" );
             
-        _eval_dxy_impl = helmholtz_slp_eval_dx_flt;
+        _eval_dxy_impl = helmholtz_slp_eval_dx_flt< value_t >;
     }// else
 }
         
@@ -713,187 +719,187 @@ THelmholtzSLPGenFn< T_ansatzsp, T_testsp >::THelmholtzSLPGenFn ( const complex  
 // constructor
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-THelmholtzDLPGenFn< T_ansatzsp, T_testsp >::THelmholtzDLPGenFn ( const complex         kappa,
-                                                                 const ansatzsp_t *    ansatzsp,
-                                                                 const testsp_t *      testsp,
-                                                                 const TPermutation *  row_perm_i2e,
-                                                                 const TPermutation *  col_perm_i2e,
-                                                                 const uint            quad_order )
-        : TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, complex >( ansatzsp, testsp, quad_order,
-                                                                    row_perm_i2e, col_perm_i2e ),
-          _ikappa( complex( 0, 1 ) * kappa )
+           typename  T_testsp,
+           typename  T_value >
+THelmholtzDLPGenFn< T_ansatzsp, T_testsp, T_value >::THelmholtzDLPGenFn ( const value_t         kappa,
+                                                                          const ansatzsp_t *    ansatzsp,
+                                                                          const testsp_t *      testsp,
+                                                                          const TPermutation *  row_perm_i2e,
+                                                                          const TPermutation *  col_perm_i2e,
+                                                                          const uint            quad_order )
+        : TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, value_t >( ansatzsp, testsp, quad_order, row_perm_i2e, col_perm_i2e )
+        , _ikappa( value_t( 0, 1 ) * kappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
             
             HINFO( "(THelmholtzDLPGenFn) using AVX512F kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
             
             HINFO( "(THelmholtzDLPGenFn) using MIC kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
             
             HINFO( "(THelmholtzDLPGenFn) using AVX2 kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
             
             HINFO( "(THelmholtzDLPGenFn) using AVX kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
             
             HINFO( "(THelmholtzDLPGenFn) using SSE3 kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
             
             HINFO( "(THelmholtzDLPGenFn) using VSX kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
             
             HINFO( "(THelmholtzDLPGenFn) using NEON kernel" );
             
-            if ( std::real( _ikappa ) == real(0) )
+            if ( std::real( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_re_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_re_simd< value_t, packed_t >;
             }// if
-            else if ( std::imag( _ikappa ) == real(0) )
+            else if ( std::imag( _ikappa ) == real_t(0) )
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_im_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_im_simd< value_t, packed_t >;
             }// if
             else
             {
-                _eval_dx_impl = helmholtz_slp_eval_dx_simd< packed_t >;
-                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< packed_t >;
+                _eval_dx_impl = helmholtz_slp_eval_dx_simd< value_t, packed_t >;
+                _eval_dy_impl = helmholtz_dlp_eval_dy_simd< value_t, packed_t >;
             }// else
         }// if
         else
         {
             HINFO( "(THelmholtzDLPGenFn) using standard kernel" );
             
-            _eval_dx_impl = helmholtz_slp_eval_dx_flt;
-            _eval_dy_impl = helmholtz_dlp_eval_dy_flt;
+            _eval_dx_impl = helmholtz_slp_eval_dx_flt< value_t >;
+            _eval_dy_impl = helmholtz_dlp_eval_dy_flt< value_t >;
         }// else
     }// if
     else
     {
         HINFO( "(THelmholtzDLPGenFn) using standard kernel" );
             
-        _eval_dx_impl = helmholtz_slp_eval_dx_flt;
-        _eval_dy_impl = helmholtz_dlp_eval_dy_flt;
+        _eval_dx_impl = helmholtz_slp_eval_dx_flt< value_t >;
+        _eval_dy_impl = helmholtz_dlp_eval_dy_flt< value_t >;
     }// if
 }
 
@@ -905,38 +911,42 @@ THelmholtzDLPGenFn< T_ansatzsp, T_testsp >::THelmholtzDLPGenFn ( const complex  
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-template class THelmholtzSLPBF< TConstFnSpace,  TConstFnSpace >;
-template class THelmholtzSLPBF< TConstFnSpace,  TLinearFnSpace >;
-template class THelmholtzSLPBF< TLinearFnSpace, TConstFnSpace >;
-template class THelmholtzSLPBF< TLinearFnSpace, TLinearFnSpace >;
+#define INST_ALL( type1, type2 )                                        \
+    template class THelmholtzSLPBF< TConstFnSpace< type1 >,  TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPBF< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPBF< TLinearFnSpace< type1 >, TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPBF< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >; \
+                                                                        \
+    template class THelmholtzDLPBF< TConstFnSpace< type1 >,  TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPBF< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPBF< TLinearFnSpace< type1 >, TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPBF< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >; \
+                                                                        \
+    template class THelmholtzSLPGenFn< TConstFnSpace< type1 >,  TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPGenFn< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPGenFn< TLinearFnSpace< type1 >, TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzSLPGenFn< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >; \
+                                                                        \
+    template class THelmholtzDLPGenFn< TConstFnSpace< type1 >,  TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPGenFn< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPGenFn< TLinearFnSpace< type1 >, TConstFnSpace< type1 >, type2 >; \
+    template class THelmholtzDLPGenFn< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >;
 
-template class THelmholtzDLPBF< TConstFnSpace,  TConstFnSpace >;
-template class THelmholtzDLPBF< TConstFnSpace,  TLinearFnSpace >;
-template class THelmholtzDLPBF< TLinearFnSpace, TConstFnSpace >;
-template class THelmholtzDLPBF< TLinearFnSpace, TLinearFnSpace >;
-
-template class THelmholtzSLPGenFn< TConstFnSpace,  TConstFnSpace >;
-template class THelmholtzSLPGenFn< TConstFnSpace,  TLinearFnSpace >;
-template class THelmholtzSLPGenFn< TLinearFnSpace, TConstFnSpace >;
-template class THelmholtzSLPGenFn< TLinearFnSpace, TLinearFnSpace >;
-
-template class THelmholtzDLPGenFn< TConstFnSpace,  TConstFnSpace >;
-template class THelmholtzDLPGenFn< TConstFnSpace,  TLinearFnSpace >;
-template class THelmholtzDLPGenFn< TLinearFnSpace, TConstFnSpace >;
-template class THelmholtzDLPGenFn< TLinearFnSpace, TLinearFnSpace >;
+INST_ALL( float, std::complex< float > )
+INST_ALL( double, std::complex< double > )
 
 //
 // instantiate Helmholtz for TConstEdgeFnSpace for MaxwellEFIE
 //
 template
 void
-helmholtz_slp_flt < TConstEdgeFnSpace, TConstEdgeFnSpace > (
-    const TGrid::triangle_t &   tri0,
-    const TGrid::triangle_t &   tri1,
-    const tripair_quad_rule_t * rule,
-    const complex               ikappa,
-    const TConstEdgeFnSpace *   ansatz_sp,
-    const TConstEdgeFnSpace *   test_sp,
-    vector< complex > &         values );
+helmholtz_slp_flt< TConstEdgeFnSpace, TConstEdgeFnSpace, std::complex< double > > (
+    const TGrid::triangle_t &                                            tri0,
+    const TGrid::triangle_t &                                            tri1,
+    const tripair_quad_rule_t< real_type_t< std::complex< double > > > * rule,
+    const std::complex< double >                                         ikappa,
+    const TConstEdgeFnSpace *                                            ansatz_sp,
+    const TConstEdgeFnSpace *                                            test_sp,
+    vector< std::complex< double > > &                                   values );
 
-}// namespace
+}// namespace Hpro

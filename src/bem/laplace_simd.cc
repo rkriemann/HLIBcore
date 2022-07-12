@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : laplace_simd.cc
 // Description : Laplace kernels using SIMD functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #if !defined(SIMD_ISA)
@@ -16,7 +16,7 @@
 
 #include "hpro/bem/TLaplaceBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -24,15 +24,48 @@ using std::vector;
 namespace
 {
 
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
 //
-// local constants
+// get normal direction for all quadrature points in vector data
 //
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
+template < typename  T_ansatzsp,
+           typename  T_packed >
+inline
+void
+get_normal ( const T_packed             va1,
+             const T_packed             va2,
+             const idx_t                tri_id,
+             const TGrid::triangle_t &  tri,
+             const T_ansatzsp *         func_sp,
+             T_packed                   vn[3] )
+{
+    using vpacked = T_packed;
+    using value_t = typename vpacked::value_t;
 
-const real  ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
+    const size_t   VECTOR_SIZE = vpacked::vector_size;
+    
+    //
+    // convert vector data to array
+    //
+    
+    value_t  a1[ VECTOR_SIZE ], a2[ VECTOR_SIZE ];
+    value_t  x[ VECTOR_SIZE ],  y[ VECTOR_SIZE ],  z[ VECTOR_SIZE ];
+
+    store( va1, a1 );
+    store( va2, a2 );
+    
+    for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
+    {
+        const auto  n = func_sp->grid()->tri_normal( tri_id, tri, a1[j], a2[j] );
+
+        x[j] = n.x();
+        y[j] = n.y();
+        z[j] = n.z();
+    }// for
+
+    vn[0] = load< vpacked >( x );
+    vn[1] = load< vpacked >( y );
+    vn[2] = load< vpacked >( z );
+}
 
 }// namespace anonymous
 
@@ -48,17 +81,18 @@ template < typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-laplace_slp_simd ( const TGrid::triangle_t &    tri0,
-                   const TGrid::triangle_t &    tri1,
-                   const tripair_quad_rule_t *  rule,
-                   vector< real > &             values,
-                   const T_ansatzsp *           ansatz_sp,
-                   const T_testsp *             test_sp )
+laplace_slp_simd ( const TGrid::triangle_t &                               tri0,
+                   const TGrid::triangle_t &                               tri1,
+                   const tripair_quad_rule_t< value_type_t< T_packed > > * rule,
+                   vector< value_type_t< T_packed > > &                    values,
+                   const T_ansatzsp *                                      ansatz_sp,
+                   const T_testsp *                                        test_sp )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
+    using value_t = value_type_t< T_packed >;
 
     const size_t   VECTOR_SIZE = vpacked::vector_size;
+    const value_t  ONE_OVER_4PI = value_t(1) / (value_t(4) * Math::pi< value_t >());
     
     const vpacked  vONE( 1.0 );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
@@ -135,7 +169,7 @@ laplace_slp_simd ( const TGrid::triangle_t &    tri0,
         store( mul( vONE_OVER_4PI, rsqrt( dot ) ), res );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[i+j] = real(res[j]);
+            values[i+j] = value_t(res[j]);
     }// for
 }
 
@@ -151,25 +185,29 @@ template < typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-laplace_dlp_simd ( const TGrid::triangle_t &  tri0,
-                   const TGrid::triangle_t &  tri1,
-                   const tripair_quad_rule_t * rule,
-                   vector< real > &           values,
-                   const T_ansatzsp *         ansatz_sp,
-                   const T_testsp *           test_sp,
-                   const T3Point &            n_vec )
+laplace_dlp_simd ( const idx_t                                             tri_id,
+                   const bool                                              adjoint,
+                   const TGrid::triangle_t &                               tri0,
+                   const TGrid::triangle_t &                               tri1,
+                   const tripair_quad_rule_t< value_type_t< T_packed > > * rule,
+                   vector< value_type_t< T_packed > > &                    values,
+                   const T_ansatzsp *                                      ansatz_sp,
+                   const T_testsp *                                        test_sp )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
+    using value_t = value_type_t< T_packed >;
 
-    const size_t   VECTOR_SIZE = vpacked::vector_size;
+    const size_t   VECTOR_SIZE  = vpacked::vector_size;
+    const value_t  ONE_OVER_4PI = value_t(1) / (value_t(4) * Math::pi< value_t >());
     
     const vpacked  vZERO( 0.0 );
     const vpacked  vONE(  1.0 );
     const vpacked  vONE_OVER_4PI( ONE_OVER_4PI );
 
     // set normal direction
-    const vpacked  n[3]     = { n_vec[0], n_vec[1], n_vec[2] };
+    const bool     has_vtx_normal = ( adjoint ? ansatz_sp->grid()->has_vtx_normal() : test_sp->grid()->has_vtx_normal() );
+    const auto     n_vec          = ( adjoint ? ansatz_sp->grid()->tri_normal( tri_id ) : test_sp->grid()->tri_normal( tri_id ) );
+    vpacked        n[3]           = { n_vec[0], n_vec[1], n_vec[2] };
 
     // load triangle coordinates
     const vpacked  t0[3][3] = { { ansatz_sp->grid()->vertex( tri0.vtx[0] )[0],
@@ -216,29 +254,49 @@ laplace_dlp_simd ( const TGrid::triangle_t &  tri0,
         // compute || y-x ||^2 and <n,y-x>
         //
 
+        if ( has_vtx_normal )
+        {
+            if ( adjoint )
+                get_normal( a1, a2, tri_id, tri0, ansatz_sp, n );
+            else
+                get_normal( b1, b2, tri_id, tri1, test_sp, n );
+        }// if
+        
         vpacked  dot( 0.0 );
         vpacked  ndu( 0.0 );
         vpacked  tmp1;
         
         // u0-v0
-        tmp1 =      muladd( a0, t0[0][0], muladd( a1, t0[1][0], mul( a2, t0[2][0] ) ) );
-        tmp1 = sub( muladd( b0, t1[0][0], muladd( b1, t1[1][0], mul( b2, t1[2][0] ) ) ), tmp1 );
+        if ( adjoint )
+            tmp1 = sub( muladd( a0, t0[0][0], muladd( a1, t0[1][0], mul( a2, t0[2][0] ) ) ),
+                        muladd( b0, t1[0][0], muladd( b1, t1[1][0], mul( b2, t1[2][0] ) ) ) );
+        else
+            tmp1 = sub( muladd( b0, t1[0][0], muladd( b1, t1[1][0], mul( b2, t1[2][0] ) ) ),
+                        muladd( a0, t0[0][0], muladd( a1, t0[1][0], mul( a2, t0[2][0] ) ) ) );
         
         // n_x * u_x
         ndu  = mul( n[0], tmp1 );
         dot  = mul( tmp1, tmp1 );
 
         // u1-v1
-        tmp1 =      muladd( a0, t0[0][1], muladd( a1, t0[1][1], mul( a2, t0[2][1] ) ) );
-        tmp1 = sub( muladd( b0, t1[0][1], muladd( b1, t1[1][1], mul( b2, t1[2][1] ) ) ), tmp1 );
+        if ( adjoint )
+            tmp1 = sub( muladd( a0, t0[0][1], muladd( a1, t0[1][1], mul( a2, t0[2][1] ) ) ),
+                        muladd( b0, t1[0][1], muladd( b1, t1[1][1], mul( b2, t1[2][1] ) ) ) );
+        else
+            tmp1 = sub( muladd( b0, t1[0][1], muladd( b1, t1[1][1], mul( b2, t1[2][1] ) ) ),
+                        muladd( a0, t0[0][1], muladd( a1, t0[1][1], mul( a2, t0[2][1] ) ) ) );
 
         // n_y * u_y
         ndu  = muladd( n[1], tmp1, ndu );
         dot  = muladd( tmp1, tmp1, dot );
 
         // u2-v2
-        tmp1 =      muladd( a0, t0[0][2], muladd( a1, t0[1][2], mul( a2, t0[2][2] ) ) );
-        tmp1 = sub( muladd( b0, t1[0][2], muladd( b1, t1[1][2], mul( b2, t1[2][2] ) ) ), tmp1 );
+        if ( adjoint )
+            tmp1 = sub( muladd( a0, t0[0][2], muladd( a1, t0[1][2], mul( a2, t0[2][2] ) ) ),
+                        muladd( b0, t1[0][2], muladd( b1, t1[1][2], mul( b2, t1[2][2] ) ) ) );
+        else
+            tmp1 = sub( muladd( b0, t1[0][2], muladd( b1, t1[1][2], mul( b2, t1[2][2] ) ) ),
+                        muladd( a0, t0[0][2], muladd( a1, t0[1][2], mul( a2, t0[2][2] ) ) ) );
 
         // n_z * u_z
         ndu  = muladd( n[2], tmp1, ndu );
@@ -256,7 +314,7 @@ laplace_dlp_simd ( const TGrid::triangle_t &  tri0,
         store( mul( ndu, mul( tmp0, vONE_OVER_4PI ) ), res );
         
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[i+j] = real(res[j]);
+            values[i+j] = value_t(res[j]);
     }// for
 }
 
@@ -270,15 +328,16 @@ laplace_dlp_simd ( const TGrid::triangle_t &  tri0,
 
 template < typename T_packed >
 void
-laplace_slp_eval_dx_simd ( const tri_quad_rule_t &   quad_rule,
-                           const T3Point             vx[3],
-                           const T3Point &           vy,
-                           vector< real > &          values )
+laplace_slp_eval_dx_simd ( const tri_quad_rule_t< value_type_t< T_packed > > & quad_rule,
+                           const T3Point                                       vx[3],
+                           const T3Point &                                     vy,
+                           vector< value_type_t< T_packed > > &                values )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
+    using value_t = value_type_t< T_packed >;
 
-    const size_t   VECTOR_SIZE = vpacked::vector_size;
+    const size_t   VECTOR_SIZE  = vpacked::vector_size;
+    const value_t  ONE_OVER_4PI = value_t(1) / (value_t(4) * Math::pi< value_t >());
     
     const vpacked  vZERO( 0.0 );
     const vpacked  vONE( 1.0 );
@@ -324,22 +383,23 @@ laplace_slp_eval_dx_simd ( const tri_quad_rule_t &   quad_rule,
         store< vpacked >( mul( vONE_OVER_4PI, rsqrt( d_dot_d ) ), res );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[k+j] = real(res[j]);
+            values[k+j] = double(res[j]);
     }// for
 }
 
 template < typename T_packed >
 void
-laplace_dlp_eval_dy_simd ( const tri_quad_rule_t &   quad_rule,
-                           const T3Point &           vx,
-                           const T3Point             vy[3],
-                           const T3Point &           normal,
-                           vector< real > &          values )
+laplace_dlp_eval_dy_simd ( const tri_quad_rule_t< value_type_t< T_packed > > & quad_rule,
+                           const T3Point &                                     vx,
+                           const T3Point                                       vy[3],
+                           const T3Point &                                     normal,
+                           vector< value_type_t< T_packed > > &                values )
 {
     using vpacked = T_packed;
-    using value_t = typename vpacked::value_t;
+    using value_t = value_type_t< T_packed >;
 
-    const size_t   VECTOR_SIZE = vpacked::vector_size;
+    const size_t   VECTOR_SIZE  = vpacked::vector_size;
+    const value_t  ONE_OVER_4PI = value_t(1) / (value_t(4) * Math::pi< value_t >());
     
     const vpacked  vZERO( 0.0 );
     const vpacked  vONE( 1.0 );
@@ -396,7 +456,7 @@ laplace_dlp_eval_dy_simd ( const tri_quad_rule_t &   quad_rule,
         store( mul( vONE_OVER_4PI, mul( n_dot_d, tmp1 ) ), res );
 
         for ( size_t  j = 0; j < VECTOR_SIZE; ++j )
-            values[k+j] = real(res[j]);
+            values[k+j] = double(res[j]);
     }// for
 }
 
@@ -408,52 +468,74 @@ laplace_dlp_eval_dy_simd ( const tri_quad_rule_t &   quad_rule,
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-#define  INST_LAPLACE_SLP_SIMD( T_value, T_ansatzsp, T_testsp )         \
+#define  INST_LAPLACE_SLP_SIMD( type, T_ansatzsp, T_testsp )         \
     template void                                                       \
-    laplace_slp_simd< T_ansatzsp, T_testsp, packed< T_value, SIMD_ISA > > (     \
-        const TGrid::triangle_t &   tri0,                               \
-        const TGrid::triangle_t &   tri1,                               \
-        const tripair_quad_rule_t * rule,                               \
-        vector< real > &            values,                             \
-        const T_ansatzsp *          ansatz_sp,                          \
-        const T_testsp *            test_sp );
+    laplace_slp_simd< T_ansatzsp, T_testsp, packed< type, SIMD_ISA > > ( \
+        const TGrid::triangle_t &           tri0, \
+        const TGrid::triangle_t &           tri1, \
+        const tripair_quad_rule_t< type > * rule, \
+        vector< type > &                    values, \
+        const T_ansatzsp *                  ansatz_sp, \
+        const T_testsp *                    test_sp );
 
-INST_LAPLACE_SLP_SIMD( real, TConstFnSpace,  TConstFnSpace )
-INST_LAPLACE_SLP_SIMD( real, TLinearFnSpace, TConstFnSpace )
-INST_LAPLACE_SLP_SIMD( real, TConstFnSpace,  TLinearFnSpace )
-INST_LAPLACE_SLP_SIMD( real, TLinearFnSpace, TLinearFnSpace )
+INST_LAPLACE_SLP_SIMD( float, TConstFnSpace< float >,  TConstFnSpace< float > )
+INST_LAPLACE_SLP_SIMD( float, TLinearFnSpace< float >, TConstFnSpace< float > )
+INST_LAPLACE_SLP_SIMD( float, TConstFnSpace< float >,  TLinearFnSpace< float > )
+INST_LAPLACE_SLP_SIMD( float, TLinearFnSpace< float >, TLinearFnSpace< float > )
+INST_LAPLACE_SLP_SIMD( double, TConstFnSpace< double >,  TConstFnSpace< double > )
+INST_LAPLACE_SLP_SIMD( double, TLinearFnSpace< double >, TConstFnSpace< double > )
+INST_LAPLACE_SLP_SIMD( double, TConstFnSpace< double >,  TLinearFnSpace< double > )
+INST_LAPLACE_SLP_SIMD( double, TLinearFnSpace< double >, TLinearFnSpace< double > )
 
-#define  INST_LAPLACE_DLP_SIMD( T_value, T_ansatzsp, T_testsp )         \
+#define  INST_LAPLACE_DLP_SIMD( type, T_ansatzsp, T_testsp )         \
     template void                                                       \
-    laplace_dlp_simd< T_ansatzsp, T_testsp, packed< T_value, SIMD_ISA > > ( \
-        const TGrid::triangle_t &   tri0,                               \
-        const TGrid::triangle_t &   tri1,                               \
-        const tripair_quad_rule_t * rule,                               \
-        vector< real > &            values,                             \
-        const T_ansatzsp *          ansatz_sp,                          \
-        const T_testsp *            test_sp,                            \
-        const T3Point &             n_vec );
+    laplace_dlp_simd< T_ansatzsp, T_testsp, packed< type, SIMD_ISA > > ( \
+        const idx_t                         tri_id, \
+        const bool                          adjoint, \
+        const TGrid::triangle_t &           tri0, \
+        const TGrid::triangle_t &           tri1, \
+        const tripair_quad_rule_t< type > * rule, \
+        vector< type > &                    values, \
+        const T_ansatzsp *                  ansatz_sp, \
+        const T_testsp *                    test_sp );
 
-INST_LAPLACE_DLP_SIMD( real, TConstFnSpace,  TConstFnSpace )
-INST_LAPLACE_DLP_SIMD( real, TLinearFnSpace, TConstFnSpace )
-INST_LAPLACE_DLP_SIMD( real, TConstFnSpace,  TLinearFnSpace )
-INST_LAPLACE_DLP_SIMD( real, TLinearFnSpace, TLinearFnSpace )
+INST_LAPLACE_DLP_SIMD( float, TConstFnSpace< float >,  TConstFnSpace< float > )
+INST_LAPLACE_DLP_SIMD( float, TLinearFnSpace< float >, TConstFnSpace< float > )
+INST_LAPLACE_DLP_SIMD( float, TConstFnSpace< float >,  TLinearFnSpace< float > )
+INST_LAPLACE_DLP_SIMD( float, TLinearFnSpace< float >, TLinearFnSpace< float > )
+INST_LAPLACE_DLP_SIMD( double, TConstFnSpace< double >,  TConstFnSpace< double > )
+INST_LAPLACE_DLP_SIMD( double, TLinearFnSpace< double >, TConstFnSpace< double > )
+INST_LAPLACE_DLP_SIMD( double, TConstFnSpace< double >,  TLinearFnSpace< double > )
+INST_LAPLACE_DLP_SIMD( double, TLinearFnSpace< double >, TLinearFnSpace< double > )
 
 template
 void
-laplace_slp_eval_dx_simd< packed< real, SIMD_ISA > >  ( const tri_quad_rule_t &   quad_rule,
-                                                        const T3Point             vx[3],
-                                                        const T3Point &           vy,
-                                                        vector< real > &          values );
+laplace_slp_eval_dx_simd< packed< float, SIMD_ISA > >  ( const tri_quad_rule_t< float > &   quad_rule,
+                                                         const T3Point                      vx[3],
+                                                         const T3Point &                    vy,
+                                                         vector< float > &                  values );
 template
 void
-laplace_dlp_eval_dy_simd< packed< real, SIMD_ISA > >  ( const tri_quad_rule_t &   quad_rule,
-                                                        const T3Point &           vx,
-                                                        const T3Point             vy[3],
-                                                        const T3Point &           normal,
-                                                        vector< real > &          values );
+laplace_slp_eval_dx_simd< packed< double, SIMD_ISA > >  ( const tri_quad_rule_t< double > & quad_rule,
+                                                          const T3Point                     vx[3],
+                                                          const T3Point &                   vy,
+                                                          vector< double > &                values );
+template
+void
+laplace_dlp_eval_dy_simd< packed< float, SIMD_ISA > >  ( const tri_quad_rule_t< float > &   quad_rule,
+                                                         const T3Point &                    vx,
+                                                         const T3Point                      vy[3],
+                                                         const T3Point &                    normal,
+                                                         vector< float > &                  values );
+template
+void
+laplace_dlp_eval_dy_simd< packed< double, SIMD_ISA > >  ( const tri_quad_rule_t< double > &  quad_rule,
+                                                          const T3Point &                    vx,
+                                                          const T3Point                      vy[3],
+                                                          const T3Point &                    normal,
+                                                          vector< double > &                 values );
 
-}// namespace HLIB
+}// namespace Hpro
 
 // Local Variables:
 // mode: c++

@@ -1,17 +1,17 @@
-#ifndef __HLIB_TEXPBF_HH
-#define __HLIB_TEXPBF_HH
+#ifndef __HPRO_TEXPBF_HH
+#define __HPRO_TEXPBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TEXPBF.hh
 // Description : bilinear forms for exponential kernel
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TQuadBEMBF.hh"
 #include "hpro/bem/TQuadHCAGenFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ////////////////////////////////////////////////////////////////
@@ -37,8 +37,9 @@ namespace HLIB
 //!          kernel \f[ e^{ - \|x-y\|_2} \f].
 //!
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-class TExpBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, real >
+           typename  T_testsp,
+           typename  T_value >
+class TExpBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -46,7 +47,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
 public:
     //////////////////////////////////////
@@ -67,12 +69,12 @@ protected:
     //
     // eval kernel function at quadrature points
     //
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< real > &        values ) const;
+    virtual void  eval_kernel  ( const idx_t                           tri0idx,
+                                 const idx_t                           tri1idx,
+                                 const TGrid::triangle_t &             tri0,
+                                 const TGrid::triangle_t &             tri1,
+                                 const tripair_quad_rule_t< real_t > * quad_rule,
+                                 std::vector< value_t > &              values ) const;
 
 private:
 
@@ -80,12 +82,12 @@ private:
     // kernel function impl.
     //
 
-    void  ( * _kernel_fn ) ( const TGrid::triangle_t &    tri0,
-                             const TGrid::triangle_t &    tri1,
-                             const tripair_quad_rule_t *  rule,
-                             std::vector< real > &        values,
-                             const ansatzsp_t *           ansatz_sp,
-                             const testsp_t *             test_sp );
+    void  ( * _kernel_fn ) ( const TGrid::triangle_t &             tri0,
+                             const TGrid::triangle_t &             tri1,
+                             const tripair_quad_rule_t< real_t > * rule,
+                             std::vector< value_t > &              values,
+                             const ansatzsp_t *                    ansatz_sp,
+                             const testsp_t *                      test_sp );
 
 };
 
@@ -102,9 +104,10 @@ private:
 //! \class   TExpGenFn
 //! \brief   kernel generator function for Exp Kernel
 //!
-template < typename T_ansatzsp,
-           typename T_testsp >
-class TExpGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, real >
+template < typename  T_ansatzsp,
+           typename  T_testsp,
+           typename  T_value >
+class TExpGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -112,7 +115,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     
     //
     // inherit from base class
@@ -125,10 +129,10 @@ private:
     // HCA function impl.
     //
 
-    void ( * _eval_dxy_impl ) ( const tri_quad_rule_t &   quad_rule,
-                                const T3Point             x[3],
-                                const T3Point &           y,
-                                std::vector< value_t > &  values );
+    void ( * _eval_dxy_impl ) ( const tri_quad_rule_t< real_t > & quad_rule,
+                                const T3Point                     x[3],
+                                const T3Point &                   y,
+                                std::vector< value_t > &          values );
     
 public:
     //
@@ -153,10 +157,10 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t               tri_idx,
-                             const T3Point &           y,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< value_t > &  values ) const
+    virtual void  eval_dx  ( const idx_t                       tri_idx,
+                             const T3Point &                   y,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -170,10 +174,10 @@ protected:
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &           x,
-                             const idx_t               tri_idx,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< value_t > &  values ) const
+    virtual void  eval_dy  ( const T3Point &                   x,
+                             const idx_t                       tri_idx,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->test_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -187,6 +191,6 @@ protected:
     DISABLE_COPY_OP( TExpGenFn );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TEXPBF_HH
+#endif  // __HPRO_TEXPBF_HH

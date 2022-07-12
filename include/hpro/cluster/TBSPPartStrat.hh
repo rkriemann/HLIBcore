@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBSPPARTSTRAT_HH
-#define __HLIB_TBSPPARTSTRAT_HH
+#ifndef __HPRO_TBSPPARTSTRAT_HH
+#define __HPRO_TBSPPARTSTRAT_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBSPPartStrat.hh
 // Description : partitioning strategies for geometrical clustering
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -17,7 +17,7 @@
 
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -137,21 +137,22 @@ public:
 //! \class    TNDBSPPartStrat
 //! \brief    Special partition strategy to optimized nested dissection clustering
 //!
+template < typename value_t >
 class TNDBSPPartStrat : public TBSPPartStrat
 {
 private:
     // sparse matrix containing connectivity information
-    const TSparseMatrix *  _sparse_mat;
+    const TSparseMatrix< value_t > *  _sparse_mat;
     
     // do/don't use weighted edge cut
-    const bool             _use_edgecut_weights;
+    const bool                        _use_edgecut_weights;
     
 public:
     //!
     //! ctor
     //!
-    TNDBSPPartStrat ( const TSparseMatrix *         S,
-                      const edgecut_weights_mode_t  edgecut_weights_mode = edgecut_weights_off );
+    TNDBSPPartStrat ( const TSparseMatrix< value_t > *  S,
+                      const edgecut_weights_mode_t      edgecut_weights_mode = edgecut_weights_off );
     
     //!
     //! partition \a dofs into sub sets
@@ -197,4 +198,4 @@ public:
 
 }// namespace
 
-#endif // __HLIB_TBSPPARTSTRAT_HH
+#endif // __HPRO_TBSPPARTSTRAT_HH

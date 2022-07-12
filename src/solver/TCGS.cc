@@ -1,15 +1,25 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCGS.cc
 // Description : class implementing CGS
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/solver/TCGS.hh"
 
-namespace HLIB
+namespace Hpro
 {
+
+// import from TSolver
+void
+solve_mp ( const TSolver &       solver,
+           const std::string &   solver_name,
+           any_const_operator_t  A,
+           any_vector_t          x,
+           any_const_vector_t    b,
+           any_const_operator_t  W,
+           TSolverInfo *         info );
 
 namespace
 {
@@ -17,19 +27,21 @@ namespace
 //
 // actual CGS iteration
 //
-template <typename T>
+template < typename value_t,
+           typename value_pre_t >
 void
-cgs ( const TLinearOperator *   A,
-      TVector *                 x,
-      const TVector *           b,
-      const TLinearOperator *   W,
-      TSolverInfo *             info,
-      const TSolver *           solver )
+cgs ( const TLinearOperator< value_t > *      A,
+      TVector< value_t > *                    x,
+      const TVector< value_t > *              b,
+      const TLinearOperator< value_pre_t > *  W,
+      TSolverInfo *                           info,
+      const TSolver *                         solver )
 {
-    using  real_t = typename  real_type< T >::type_t;
+    using  real_t = real_type_t< value_t >;
 
     uint    it;
-    real_t  norm = 0, norm_0 = 0;
+    real_t  norm   = 0;
+    real_t  norm_0 = 0;
 
     if ( info != nullptr )
         info->set_solver( "CGS" );
@@ -41,7 +53,7 @@ cgs ( const TLinearOperator *   A,
     auto  rt = b->copy(); // for exact residual
 
     // r0 = W( b - A x )
-    apply_add( real(-1), A, x, r0.get() );
+    apply_add( value_t(-1), A, x, r0.get() );
 
     if ( solver->use_exact_residual() )
         norm_0 = r0->norm2();
@@ -49,10 +61,10 @@ cgs ( const TLinearOperator *   A,
     if ( W != nullptr )
     {
         apply( W, r0.get(), r.get() );
-        r0->assign( real(1), r.get() );
+        r0->assign( value_t(1), r.get() );
     }// if
     else
-        r->assign( real(1), r0.get() );
+        r->assign( value_t(1), r0.get() );
 
     if ( ! solver->use_exact_residual() )
         norm_0 = r0->norm2();
@@ -82,19 +94,19 @@ cgs ( const TLinearOperator *   A,
         }// else
 
         // α = <rᵢ, r₀> / <Apᵢ, r₀>
-        auto  sigma = tdot<T>( t.get(), r0.get() );
-        auto  rho   = tdot<T>( r.get(), r0.get() );
+        auto  sigma = dot( t.get(), r0.get() );
+        auto  rho   = dot( r.get(), r0.get() );
         auto  alpha = rho / sigma;
 
         // q = u - αAp
         q->assign( 1.0, u.get() );
-        axpy<T>( -alpha, t.get(), q.get() );
+        axpy< value_t >( -alpha, t.get(), q.get() );
 
         // u = u + q
-        axpy<T>( 1.0, q.get(), u.get() );
+        axpy< value_t >( 1.0, q.get(), u.get() );
         
         // x = x + α(u + q)
-        axpy<T>( alpha, u.get(), x );
+        axpy< value_t >( alpha, u.get(), x );
 
         // r = r - α A (u + q)
         if ( W != nullptr )
@@ -113,7 +125,7 @@ cgs ( const TLinearOperator *   A,
         if ( solver->use_exact_residual() && ( W != nullptr ))
         {
             apply( A, x, rt.get() );
-            rt->axpy( real(-1), b );
+            rt->axpy( value_t(-1), b );
             norm = rt->norm2();
         }// if
         else
@@ -128,16 +140,16 @@ cgs ( const TLinearOperator *   A,
             break;
 
         
-        auto  beta = tdot<T>( r.get(), r0.get() ) / rho;
+        auto  beta = dot( r.get(), r0.get() ) / rho;
 
         // u = r + βq
         u->assign( 1.0, r.get() );
-        axpy<T>( beta, q.get(), u.get() );
+        axpy< value_t >( beta, q.get(), u.get() );
         
         // p = u + βq + β²p
-        scale<T>( beta*beta, p.get() );
-        axpy<T>( beta, q.get(), p.get() );
-        axpy<T>( T(1), u.get(), p.get() );
+        scale< value_t >( beta*beta, p.get() );
+        axpy< value_t >( beta, q.get(), p.get() );
+        axpy< value_t >( value_t(1), u.get(), p.get() );
     }// while
 }
 
@@ -163,21 +175,62 @@ TCGS::~TCGS ()
 //
 // the real solving
 //
+template < typename value_t,
+           typename value_pre_t >
 void
-TCGS::solve ( const TLinearOperator *  A,
-             TVector *                 x,
-             const TVector *           b,
-             const TLinearOperator *   W,
-             TSolverInfo *             info ) const
+TCGS::solve ( const TLinearOperator< value_t > *      A,
+              TVector< value_t > *                    x,
+              const TVector< value_t > *              b,
+              const TLinearOperator< value_pre_t > *  W,
+              TSolverInfo *                           info ) const
 {
     if ( x == nullptr ) HERROR( ERR_ARG, "(TCGS) solve", "x = nullptr" );
     if ( b == nullptr ) HERROR( ERR_ARG, "(TCGS) solve", "b = nullptr" );
     if ( A == nullptr ) HERROR( ERR_ARG, "(TCGS) solve", "A = nullptr" );
     
-    if ( A->is_complex() )
-        cgs<complex>( A, x, b, W, info, this );
-    else
-        cgs<real>( A, x, b, W, info, this );
+    cgs( A, x, b, W, info, this );
 }
 
-}// namespace HLIB
+//
+// generic implementation for "virtual" solve method
+//
+void
+TCGS::solve ( any_const_operator_t  A,
+              any_vector_t          x,
+              any_const_vector_t    b,
+              any_const_operator_t  W,
+              TSolverInfo *         info ) const
+{
+    solve_mp( *this, "TCGS", A, x, b, W, info );
+}
+
+template < typename value_t > using opptr_t = TLinearOperator< value_t > *;
+
+void
+TCGS::solve ( any_const_operator_t  A,
+             any_vector_t          x,
+             any_const_vector_t    b,
+             TSolverInfo *         info ) const
+{
+    using std::get;
+    
+    if (( A.index() != x.index() ) ||
+        ( A.index() != b.index() ))
+        HERROR( ERR_ARG, "(TCGS) solve", "A, x and b have different value type" );
+
+    switch ( A.index() )
+    {
+        case 0: this->solve( get< 0 >( A ), get< 0 >( x ), get< 0 >( b ), opptr_t< float >( nullptr ), info ); break;
+        case 1: this->solve( get< 1 >( A ), get< 1 >( x ), get< 1 >( b ), opptr_t< double >( nullptr ), info ); break;
+        case 2: this->solve( get< 2 >( A ), get< 2 >( x ), get< 2 >( b ), opptr_t< std::complex< float > >( nullptr ), info ); break;
+        case 3: this->solve( get< 3 >( A ), get< 3 >( x ), get< 3 >( b ), opptr_t< std::complex< double > >( nullptr ), info ); break;
+
+        default:
+            HERROR( ERR_ARG, "(TCGS) solve", "A, x and b have unsupported value type" );
+    }// switch
+}
+
+// instantiate solve method
+HPRO_INST_SOLVE_METHOD( TCGS )
+
+}// namespace Hpro

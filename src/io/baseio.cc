@@ -1,12 +1,12 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : baseio.cc
 // Description : basic IO related functions and classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #include <fstream>
 
@@ -33,7 +33,7 @@
 
 #include "baseio.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace fs = boost::filesystem;
@@ -144,7 +144,7 @@ swap_bytes<double> ( double & d )
 }
 
 template <> void
-swap_bytes< Complex< float > > ( Complex< float > & d )
+swap_bytes< std::complex< float > > ( std::complex< float > & d )
 {
     float  r = std::real( d );
     float  i = std::imag( d );
@@ -152,11 +152,11 @@ swap_bytes< Complex< float > > ( Complex< float > & d )
     swap_bytes< float >( r );
     swap_bytes< float >( i );
 
-    d = Complex< float >( r, i );
+    d = std::complex< float >( r, i );
 }
 
 template <> void
-swap_bytes< Complex< double > > ( Complex< double > & d )
+swap_bytes< std::complex< double > > ( std::complex< double > & d )
 {
     double  r = std::real( d );
     double  i = std::imag( d );
@@ -164,7 +164,7 @@ swap_bytes< Complex< double > > ( Complex< double > & d )
     swap_bytes< double >( r );
     swap_bytes< double >( i );
 
-    d = Complex< double >( r, i );
+    d = std::complex< double >( r, i );
 }
 
 ///////////////////////////////////////////////////
@@ -173,7 +173,7 @@ swap_bytes< Complex< double > > ( Complex< double > & d )
 // compression
 //
 
-std::istream *
+std::unique_ptr< std::istream >
 open_read ( const std::string &  filename )
 {
     if ( ! fs::exists( filename ) )
@@ -181,9 +181,9 @@ open_read ( const std::string &  filename )
     
 #if HAS_BOOST_IOSTREAMS == 1
     
-    io::filtering_istream *  in  = new io::filtering_istream;
-    fs::path                 filepath( filename );
-    string                   ext = filepath.extension().string();
+    auto      in  = std::make_unique< io::filtering_istream >();
+    fs::path  filepath( filename );
+    string    ext = filepath.extension().string();
 
     boost::to_lower( ext );
     
@@ -197,19 +197,19 @@ open_read ( const std::string &  filename )
 
 #else
 
-    return new std::ifstream( filename.c_str(), std::ios::in | std::ios::binary );
+    return std::make_unique< std::ifstream >( filename.c_str(), std::ios::in | std::ios::binary );
     
 #endif
 }
 
-std::ostream *
+std::unique_ptr< std::ostream >
 open_write ( const std::string &  filename )
 {
 #if HAS_BOOST_IOSTREAMS == 1
     
-    io::filtering_ostream *  out = new io::filtering_ostream;
-    fs::path                 filepath( filename );
-    string                   ext = filepath.extension().string();
+    auto      out = std::make_unique< io::filtering_ostream >();
+    fs::path  filepath( filename );
+    string    ext = filepath.extension().string();
     
     boost::to_lower( ext );
 
@@ -223,7 +223,7 @@ open_write ( const std::string &  filename )
 
 #else
 
-    return new std::ofstream( filename.c_str(), std::ios::out | std::ios::binary );
+    return std::make_unique< std::ofstream >( filename.c_str(), std::ios::out | std::ios::binary );
     
 #endif
 }
@@ -279,8 +279,8 @@ guess_format ( const string &  filename )
             //
 
             {
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
+                auto            in_ptr = open_read( filename );
+                std::istream &  in     = * in_ptr.get();
         
                 uint16_t  endian;
                 char      text[126];
@@ -305,7 +305,7 @@ guess_format ( const string &  filename )
                     {
                         // up to here, HLIBpro-type ("HM") and matrix-type is correct
                         // so we assume, it is a HLIBpro file
-                        return FMT_HLIB;
+                        return FMT_HPRO;
                     }// if
                 }// if
             }
@@ -315,8 +315,8 @@ guess_format ( const string &  filename )
             //
 
             {
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
+                auto            in_ptr = open_read( filename );
+                std::istream &  in     = * in_ptr.get();
         
                 int16_t  version, endian;
                 char     text[124];
@@ -367,12 +367,12 @@ guess_format ( const string &  filename )
             //
             
             {
-                const uchar                 format_signature[] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a };
-                const uint                  sign_size = sizeof( format_signature ) / sizeof( uchar );
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
-                uchar                       buf[ sign_size ];
-                bool                        is_hdf5 = true;
+                const uchar     format_signature[] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a };
+                const uint      sign_size = sizeof( format_signature ) / sizeof( uchar );
+                auto            in_ptr    = open_read( filename );
+                std::istream &  in        = * in_ptr.get();
+                uchar           buf[ sign_size ];
+                bool            is_hdf5 = true;
 
                 in.read( reinterpret_cast< char * >( buf ), sign_size );
 
@@ -389,8 +389,8 @@ guess_format ( const string &  filename )
             //
 
             {
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
+                auto            in_ptr = open_read( filename );
+                std::istream &  in     = * in_ptr.get();
         
                 string  line, mxtype;
             
@@ -419,8 +419,8 @@ guess_format ( const string &  filename )
             //
 
             {
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
+                auto            in_ptr = open_read( filename );
+                std::istream &  in     = * in_ptr.get();
         
                 string            line;
                 vector< string >  parts;
@@ -484,8 +484,8 @@ guess_format ( const string &  filename )
             //
 
             {
-                unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-                std::istream &              in = * in_ptr.get();
+                auto            in_ptr = open_read( filename );
+                std::istream &  in     = * in_ptr.get();
         
                 string  line;
 
@@ -510,7 +510,7 @@ guess_format ( const string &  filename )
                              ( line.find( "ne " ) != string::npos ) ||
                              ( line.find( "nt " ) != string::npos ))
                     {
-                        return FMT_HLIB_GRID;
+                        return FMT_HPRO_GRID;
                     }// if
                 }// for
             }
@@ -535,21 +535,45 @@ guess_format ( const string &  filename )
     else if (( ext == "mat" ) || ( ext == "m" ))
         return FMT_MATLAB;
     else if ( ext == "hm" )
-        return FMT_HLIB;
+        return FMT_HPRO;
     else if (( ext == "hdf" ) || ( ext == "h5" ) || ( ext == "hdf5" ))
         return FMT_HDF5;
     else if (( ext == "mtx" ) || ( ext == "mm" ))
         return FMT_MTX;
     else if ( ext == "tri"  )
-        return FMT_HLIB_GRID;
+        return FMT_HPRO_GRID;
     else if ( ext == "ply"  )
         return FMT_PLY;
     else if ( ext == "sur"  )
         return FMT_SURFMESH;
-    else if ( ext == "msh" )
+    else if (( ext == "msh" ) || ( ext == "gmsh" ) || ( ext == "gmsh2" ))
         return FMT_GMSH;
     else
         return FMT_UNKNOWN;
+}
+
+// external functions for corresponding formats
+variant_id_t hb_guess_value_type     ( const string &  filename );
+variant_id_t matlab_guess_value_type ( const string &  filename, const string &  name );
+variant_id_t hpro_guess_value_type   ( const string &  filename );
+variant_id_t mtx_guess_value_type    ( const string &  filename );
+
+variant_id_t
+guess_value_type ( const string &  filename,
+                   const string &  name )
+{
+    auto  fmt = guess_format( filename );
+
+    switch ( fmt )
+    {
+        case FMT_SAMG   : return REAL_FP64;
+        case FMT_HB     : return hb_guess_value_type( filename );
+        case FMT_MATLAB : return matlab_guess_value_type( filename, name );
+        case FMT_HPRO   : return hpro_guess_value_type( filename );
+        case FMT_MTX    : return mtx_guess_value_type( filename );
+        default         :
+            HERROR( ERR_FMT_UNKNOWN, "guess_value_type", filename );
+    }// switch
 }
 
 ///////////////////////////////////////////////////
@@ -647,4 +671,4 @@ add_extension ( const std::string &  filename,
     }// else
 }
 
-}// namespace HLIB
+}// namespace Hpro

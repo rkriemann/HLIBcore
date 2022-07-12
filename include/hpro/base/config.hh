@@ -1,11 +1,11 @@
-#ifndef __HLIB_BASE_CONFIG_HH
-#define __HLIB_BASE_CONFIG_HH
+#ifndef __HPRO_BASE_CONFIG_HH
+#define __HPRO_BASE_CONFIG_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : config.hh
 // Description : global variables
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
@@ -21,7 +21,7 @@
 //
 ///////////////////////////////////////////////////////////////////
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace CFG
@@ -103,10 +103,10 @@ extern bool                  use_gesvj;
 extern bool                  use_double_prec;
 
 // low-rank approximation method to use (default: SVD)
-extern HLIB::approx_t        approx_method;
+extern Hpro::approx_t        approx_method;
 
 // low-rank truncation method to use (default: SVD)
-extern HLIB::approx_t        trunc_method;
+extern Hpro::approx_t        trunc_method;
 
 // number of power iteration steps in randomized SVD
 extern uint                  power_steps;
@@ -270,7 +270,7 @@ extern bool            sort_updates;
 extern bool            sum_approx;
 
 // approximation method to use for sums
-extern HLIB::approx_t  sum_apx_type;
+extern Hpro::approx_t  sum_apx_type;
 
 // split leaf matrices during updates as long as destination is blocked
 extern bool            split_update;
@@ -302,13 +302,13 @@ namespace Solver
 extern uint            max_iter;
 
 // relative residual reduction, e.g., stop if |r_n| / |r_0| < ε
-extern real            rel_res_red;
+extern double          rel_res_red;
 
 // absolute residual reduction, e.g., stop if |r_n| < ε
-extern real            abs_res_red;
+extern double          abs_res_red;
 
 // relative residual growth (divergence), e.g., stop if |r_n| / |r_0| > ε
-extern real            rel_res_growth;
+extern double          rel_res_growth;
 
 // default restart for GMRES iteration
 extern uint            gmres_restart;
@@ -423,4 +423,4 @@ inline bool verbose ( const uint lvl ) { return CFG::verbose( lvl ); }
 
 }// namespace
 
-#endif // __HLIB_BASE_CONFIG_HH
+#endif // __HPRO_BASE_CONFIG_HH

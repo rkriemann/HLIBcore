@@ -1,22 +1,23 @@
-#ifndef __HLIB_TQUADBEMBF_HH
-#define __HLIB_TQUADBEMBF_HH
+#ifndef __HPRO_TQUADBEMBF_HH
+#define __HPRO_TQUADBEMBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TQuadBEMBF.hh
 // Description : classes for bilinearforms in BEM-applications using quadrature
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TBEMBF.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 //!
 //! \class  tripair_quad_rule_t
 //! \brief  holds quadrature rule with points and weights for two triangles
 //!
+template < typename value_t >
 struct tripair_quad_rule_t
 {
     // number of quadrature points
@@ -27,11 +28,11 @@ struct tripair_quad_rule_t
     std::vector< T2Point >  pts2;    // coord. of points in triangle 1
     
     // "vectorised" coordinates
-    std::vector< real >     x1, y1;  // coord. of points in triangle 1
-    std::vector< real >     x2, y2;  // coord. of points in triangle 2
+    std::vector< value_t >  x1, y1;  // coord. of points in triangle 1
+    std::vector< value_t >  x2, y2;  // coord. of points in triangle 2
 
     // weight
-    std::vector< real >     w;
+    std::vector< value_t >  w;
 };
 
 //!
@@ -44,8 +45,8 @@ struct tripair_quad_rule_t
 //!
 template < typename  T_ansatzsp,
            typename  T_testsp,
-           typename  T_val >
-class TQuadBEMBF : public TBEMBF< T_ansatzsp, T_testsp, T_val >
+           typename  T_value >
+class TQuadBEMBF : public TBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -53,14 +54,15 @@ public:
     //
     using  ansatzsp_t     = T_ansatzsp;
     using  testsp_t       = T_testsp;
-    using  value_t        = T_val;
-    using  ansatz_value_t = typename ansatzsp_t::value_t;
-    using  test_value_t   = typename testsp_t::value_t;
+    using  value_t        = T_value;
+    using  real_t         = real_type_t< value_t >;
+    using  ansatz_value_t = value_type_t< ansatzsp_t >;
+    using  test_value_t   = value_type_t< testsp_t >;
 
 protected:
     
     // type for storing quadrature points for different order and type
-    using  quad_rules_t = std::vector< std::vector< tripair_quad_rule_t > >;
+    using  quad_rules_t = std::vector< std::vector< tripair_quad_rule_t< real_t > > >;
 
 protected:
     //! @cond
@@ -121,8 +123,8 @@ protected:
                             const uint     order ) const;
     
     //! return quadrature rule for \a ncommon vertices and order \a order
-    const tripair_quad_rule_t *  quad_rule ( const uint  ncommon,
-                                             const uint  order ) const
+    const tripair_quad_rule_t< real_t > *  quad_rule ( const uint  ncommon,
+                                                       const uint  order ) const
     {
         return & _quad_rules[ ncommon ][ order ];
     }
@@ -134,12 +136,12 @@ protected:
     //! compute kernel at quadrature points in triangles \a tri0idx and \a tri1idx 
     //! with coordinate indices \a tri0 and \a tri1 using quadrature rule \a quad_rule;
     //! the results for all points are returned in \a values
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< value_t > &     values ) const = 0;
+    virtual void  eval_kernel  ( const idx_t                            tri0idx,
+                                 const idx_t                            tri1idx,
+                                 const TGrid::triangle_t &              tri0,
+                                 const TGrid::triangle_t &              tri1,
+                                 const tripair_quad_rule_t< real_t > *  quad_rule,
+                                 std::vector< value_t > &               values ) const = 0;
 
     DISABLE_COPY_OP( TQuadBEMBF );
 };
@@ -165,8 +167,9 @@ public:
     using  ansatzsp_t     = T_ansatzsp;
     using  testsp_t       = T_testsp;
     using  value_t        = T_val;
-    using  ansatz_value_t = typename ansatzsp_t::value_t;
-    using  test_value_t   = typename testsp_t::value_t;
+    using  real_t         = real_type_t< value_t >;
+    using  ansatz_value_t = value_type_t< ansatzsp_t >;
+    using  test_value_t   = value_type_t< testsp_t >;
 
 protected:
     
@@ -246,6 +249,6 @@ protected:
     DISABLE_COPY_OP( TInvarBasisQuadBEMBF );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TBEMBF_HH
+#endif  // __HPRO_TBEMBF_HH

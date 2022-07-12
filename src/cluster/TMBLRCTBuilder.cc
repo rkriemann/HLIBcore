@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMBLRCTBuilder.cc
 // Description : build clustertrees via MBLR
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -15,7 +15,7 @@
 
 #include "hpro/cluster/TBSPCTBuilder.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::list;
@@ -820,4 +820,4 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
     return cluster;
 }
 
-}// namespace HLIB
+}// namespace Hpro

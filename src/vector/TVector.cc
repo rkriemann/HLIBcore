@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TVector.cc
 // Description : baseclass for all vector-classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -14,7 +14,7 @@
 
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -25,26 +25,16 @@ using std::make_unique;
 // access entries
 //
 
-real
-TVector::entry  ( const idx_t ) const
+template < typename value_t >
+value_t
+TVector< value_t >::entry  ( const idx_t ) const
 {
     HERROR( ERR_NOT_IMPL, "(TVector) entry", "" );
 }
 
-const complex
-TVector::centry ( const idx_t ) const
-{
-    HERROR( ERR_NOT_IMPL, "(TVector) entry", "" );
-}
-
+template < typename value_t >
 void
-TVector::set_entry  ( const idx_t, const real )
-{
-    HERROR( ERR_NOT_IMPL, "(TVector) set_entry", "" );
-}
-
-void
-TVector::set_centry ( const idx_t, const complex  )
+TVector< value_t >::set_entry  ( const idx_t, const value_t )
 {
     HERROR( ERR_NOT_IMPL, "(TVector) set_entry", "" );
 }
@@ -58,8 +48,9 @@ TVector::set_centry ( const idx_t, const complex  )
 // return size in bytes used by this distributed object,
 // i.e. of all distributed sub matrices
 //
+template < typename value_t >
 size_t
-TVector::global_byte_size () const
+TVector< value_t >::global_byte_size () const
 {
     return byte_size();
 }
@@ -72,20 +63,23 @@ TVector::global_byte_size () const
 //
 // create vector restricted to real/imaginary part of coefficients
 //
+template < typename value_t >
 auto
-TVector::restrict_re () const -> std::unique_ptr< TVector >
+TVector< value_t >::restrict_re () const -> std::unique_ptr< TVector< real_t > >
 {
     HERROR( ERR_NOT_IMPL, "(TVector) restrict_re", "" );
 }
 
+template < typename value_t >
 auto
-TVector::restrict_im () const -> std::unique_ptr< TVector >
+TVector< value_t >::restrict_im () const -> std::unique_ptr< TVector< real_t > >
 {
     HERROR( ERR_NOT_IMPL, "(TVector) restrict_im", "" );
 }
     
+template < typename value_t >
 auto
-TVector::restrict_abs () const -> std::unique_ptr< TVector >
+TVector< value_t >::restrict_abs () const -> std::unique_ptr< TVector< real_t > >
 {
     HERROR( ERR_NOT_IMPL, "(TVector) restrict_abs", "" );
 }
@@ -95,8 +89,9 @@ TVector::restrict_abs () const -> std::unique_ptr< TVector >
 // serialisation
 //
 
+template < typename value_t >
 void
-TVector::read  ( TByteStream & s )
+TVector< value_t >::read  ( TByteStream & s )
 {
     typeid_t  t;
 
@@ -109,11 +104,11 @@ TVector::read  ( TByteStream & s )
                + ", expected " + typestr() );
     
     s.get( _ofs );
-    s.get( _complex );
 }
 
+template < typename value_t >
 void
-TVector::write ( TByteStream & s ) const
+TVector< value_t >::write ( TByteStream & s ) const
 {
     typeid_t  t = type();
 
@@ -121,16 +116,16 @@ TVector::write ( TByteStream & s ) const
     
     s.put( t );
     s.put( _ofs );
-    s.put( _complex );
 }
 
 //
 // returns size of object in bytestream
 //
+template < typename value_t >
 size_t
-TVector::bs_size () const
+TVector< value_t >::bs_size () const
 {
-    return TStreamable::bs_size() + sizeof(typeid_t) + sizeof(_ofs) + sizeof(bool);
+    return TStreamable::bs_size() + sizeof(typeid_t) + sizeof(_ofs);
 }
 
 //
@@ -141,15 +136,16 @@ TVector::bs_size () const
 // sum up nparts parallel copies
 // (if bs != nullptr it will be used)
 //
+template < typename value_t >
 void
-TVector::sum ( const TProcSet & ps,
-               const uint       pid,
-               const uint       parts,
-               TByteStream    * bs )
+TVector< value_t >::sum ( const TProcSet &  ps,
+                          const uint        pid,
+                          const uint        parts,
+                          TByteStream *     bs )
 {
-    unique_ptr< TVector >      v;
-    unique_ptr< TByteStream >  tbs;
-    uint                       nparts = parts;
+    unique_ptr< TVector< value_t > >  v;
+    unique_ptr< TByteStream >         tbs;
+    uint                              nparts = parts;
     
     if ( bs == nullptr )
     {
@@ -187,20 +183,20 @@ TVector::sum ( const TProcSet & ps,
             
             NET::dsend( psets[idx-1].master(), bs->data(), bs->size() );
         }// if
-
+        
         // and receive it at all "even" procs.
         if ( idx % 2 == 0 )
         {
             bs->set_size( NET::dprobe( psets[idx+1].master() ) );
             
             NET::drecv( psets[idx+1].master(), bs->data(), bs->size() );
-
+            
             if ( v.get() == nullptr )
-                v = unique_ptr< TVector >( create() );
+                v = unique_ptr< TVector< value_t > >( create() );
             
             v->read( * bs );
 
-            axpy( 1.0, v.get() );
+            axpy( value_t(1), v.get() );
         }// if
     }// while
 }
@@ -208,13 +204,14 @@ TVector::sum ( const TProcSet & ps,
 //
 // sum up all vectors in parallel machine defined by <procs>
 //
+template < typename value_t >
 void
-TVector::sum ( const TProcSet & procs )
+TVector< value_t >::sum ( const TProcSet & procs )
 {
-    unique_ptr< TVector >  v;
-    uint                   nparts = procs.size();
-    TByteStream            bs;
-    const uint             pid    = NET::pid();
+    unique_ptr< TVector< value_t > >  v;
+    uint                              nparts = procs.size();
+    TByteStream                       bs;
+    const uint                        pid    = NET::pid();
 
     LOG::print( "sum()" );
     
@@ -262,11 +259,11 @@ TVector::sum ( const TProcSet & procs )
             NET::drecv( psets[idx+1].master(), bs.data(), bs.size() );
 
             if ( v.get() == nullptr )
-                v = unique_ptr< TVector >( create() );
+                v = unique_ptr< TVector< value_t > >( create() );
             
             v->read( bs );
 
-            axpy( 1.0, v.get() );
+            axpy( value_t(1), v.get() );
         }// if
     }// while
 
@@ -283,15 +280,20 @@ TVector::sum ( const TProcSet & procs )
 //
 // stream output
 //
-
+template < typename value_t >
 void
-TVector::print ( const uint offset ) const
+TVector< value_t >::print ( const uint offset ) const
 {
     for ( uint i = 0; i < offset; i++ )
         std::cout << ' ';
 
     std::cout << typestr() << std::endl;
 }
+
+template class TVector< float >;
+template class TVector< double >;
+template class TVector< std::complex< float > >;
+template class TVector< std::complex< double > >;
 
 //////////////////////////////////////////////////////////
 //
@@ -304,16 +306,27 @@ namespace DBG
 //
 // write vector to file
 //
+template < typename value_t >
 void
-write ( const TVector *      v,
-        const std::string &  filename,
-        const std::string &  vecname )
+write ( const TVector< value_t > *  v,
+        const std::string &         filename,
+        const std::string &         vecname )
 {
     TMatlabVectorIO  vio;
 
     vio.write( v, filename, vecname );
 }
 
-}// namespace
+#define INST_WRITE( type ) \
+    template void write< type > ( const TVector< type > *, \
+                                  const std::string &,     \
+                                  const std::string & );
 
-}// namespace
+INST_WRITE( float )
+INST_WRITE( double )
+INST_WRITE( std::complex< float > )
+INST_WRITE( std::complex< double > )
+
+}// namespace DBG
+
+}// namespace Hpro

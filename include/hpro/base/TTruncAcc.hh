@@ -1,28 +1,31 @@
-#ifndef __HLIB_TTRUNCACC_HH
-#define __HLIB_TTRUNCACC_HH
+#ifndef __HPRO_TTRUNCACC_HH
+#define __HPRO_TTRUNCACC_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TTruncAcc.hh
 // Description : defines truncation accuracy for low-rank matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
 
 #include "hpro/base/types.hh"
+#include "hpro/base/traits.hh"
 #include "hpro/base/config.hh"
 #include "hpro/base/System.hh"
 #include "hpro/cluster/TIndexSet.hh"
 #include "hpro/blas/Vector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
 // forward decl.
 //
 class TBlockCluster;
+
+template < typename value_t >
 class TMatrix;
 
 //!
@@ -120,7 +123,8 @@ public:
     }
 
     //! return accuracy description for individual submatrix
-    virtual const TTruncAcc &  acc ( const TMatrix * ) const
+    template < typename value_t >
+    const TTruncAcc &  acc ( const TMatrix< value_t > * ) const
     {
         return *this;
     }
@@ -139,7 +143,8 @@ public:
     }
     
     //! abbreviation via () operator
-    const TTruncAcc &  operator () ( const TMatrix *  M ) const
+    template < typename value_t >
+    const TTruncAcc &  operator () ( const TMatrix< value_t > *  M ) const
     {
         return acc( M );
     }
@@ -323,7 +328,8 @@ public:
     virtual const TTruncAcc &  acc ( const TBlockCluster *  bc ) const;
 
     //! return accuracy description for individual subblock defined by matrix
-    virtual const TTruncAcc &  acc ( const TMatrix *        M  ) const;
+    template < typename value_t >
+    const TTruncAcc &  acc ( const TMatrix< value_t > *  M  ) const;
     
     //! return accuracy description for individual subblock
     virtual const TTruncAcc    acc ( const TIndexSet &      rowis,
@@ -374,9 +380,13 @@ private:
 //!   never throw away a singular value
 extern const TTruncAcc  acc_exact;
 
-//! global accuracy object for exact truncation up to machine precision
-extern const TTruncAcc  acc_machine;
+//! return accuracy object for exact truncation up to machine precision
+template < typename value_t >
+const TTruncAcc         acc_machine ()
+{
+    return TTruncAcc( Limits::epsilon< real_type_t< value_t > >(), 0.0 );
+}
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TTRUNCACC_HH
+#endif  // __HPRO_TTRUNCACC_HH

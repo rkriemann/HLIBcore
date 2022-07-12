@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMaxwellBF.cc
 // Description : bilinear forms for Maxwell operator
 // Author      : Ronald Kriemann, Jonas Ballani
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -18,7 +18,7 @@
 #include "hpro/bem/TMaxwellBF.hh"
 #include "hpro/bem/TConstEdgeFnSpace.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -37,32 +37,34 @@ namespace B = BLAS;
 // Helmholtz SLP kernels to be used in TMaxwellEFIEBF
 //
 template < typename  T_ansatzsp,
-           typename  T_testsp >
+           typename  T_testsp,
+           typename  value_t >
 void
-helmholtz_slp_flt ( const TGrid::triangle_t &    tri0,
-                    const TGrid::triangle_t &    tri1,
-                    const tripair_quad_rule_t *  rule,
-                    const complex                ikappa,
-                    const T_ansatzsp *           ansatz_sp,
-                    const T_testsp *             test_sp,
-                    vector< complex > &          values );
+helmholtz_slp_flt ( const TGrid::triangle_t &                             tri0,
+                    const TGrid::triangle_t &                             tri1,
+                    const tripair_quad_rule_t< real_type_t< value_t > > * rule,
+                    const value_t                                         ikappa,
+                    const T_ansatzsp *                                    ansatz_sp,
+                    const T_testsp *                                      test_sp,
+                    vector< value_t > &                                   values );
 
-#define  HELMHOLTZ_SLP_SIMD( suffix )                                   \
-    template < typename  T_ansatzsp,                                    \
+#define  HELMHOLTZ_SLP( suffix )                                        \
+    template < typename  value_t,                                       \
+               typename  T_ansatzsp,                                    \
                typename  T_testsp,                                      \
                typename  T_packed >                                     \
     void                                                                \
-    helmholtz_slp_##suffix ( const TGrid::triangle_t &  tri0,           \
-                             const TGrid::triangle_t &  tri1,           \
-                             const tripair_quad_rule_t *  rule,         \
-                             const complex              ikappa,         \
-                             const T_ansatzsp *         ansatz_sp,      \
-                             const T_testsp *           test_sp,        \
-                             vector< complex > &        values )
+    helmholtz_slp_##suffix ( const TGrid::triangle_t &                             tri0, \
+                             const TGrid::triangle_t &                             tri1, \
+                             const tripair_quad_rule_t< real_type_t< value_t > > * rule, \
+                             const value_t                                         ikappa, \
+                             const T_ansatzsp *                                    ansatz_sp, \
+                             const T_testsp *                                      test_sp, \
+                             vector< value_t > &                                   values )
 
-HELMHOLTZ_SLP_SIMD( simd );
-HELMHOLTZ_SLP_SIMD( re_simd );
-HELMHOLTZ_SLP_SIMD( im_simd );
+HELMHOLTZ_SLP( simd );
+HELMHOLTZ_SLP( re_simd );
+HELMHOLTZ_SLP( im_simd );
 
 //
 // Helmholtz DLP kernels to be used in TMaxwellMFIEBF
@@ -72,13 +74,13 @@ HELMHOLTZ_SLP_SIMD( im_simd );
                typename  T_testsp,                                      \
                typename  T_packed >                                     \
     void                                                                \
-    helmholtz_dlp_wo_normal_##suffix ( const TGrid::triangle_t &   tri0, \
-                                       const TGrid::triangle_t &   tri1, \
-                                       const tripair_quad_rule_t * rule, \
-                                       const complex               ikappa, \
-                                       const T_ansatzsp *          ansatz_sp, \
-                                       const T_testsp *            test_sp, \
-                                       vector< complex > &         values )
+    helmholtz_dlp_wo_normal_##suffix ( const TGrid::triangle_t &             tri0, \
+                                       const TGrid::triangle_t &             tri1, \
+                                       const tripair_quad_rule_t< double > * rule, \
+                                       const std::complex< double >          ikappa, \
+                                       const T_ansatzsp *                    ansatz_sp, \
+                                       const T_testsp *                      test_sp, \
+                                       vector< std::complex< double > > &    values )
 
 HELMHOLTZ_DLP_SIMD( simd );
 HELMHOLTZ_DLP_SIMD( re_simd );
@@ -95,7 +97,7 @@ namespace
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-const real ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
+const double ONE_OVER_4PI = double(1) / (double(4) * Math::pi< double >());
 
 }// namespace anonymous
 
@@ -112,101 +114,101 @@ const real ONE_OVER_4PI = real(1) / (real(4) * Math::pi< real >());
 // 
 template < typename  T_ansatzsp,
            typename  T_testsp >
-TMaxwellEFIEBF< T_ansatzsp, T_testsp >::TMaxwellEFIEBF ( const complex       kappa,
-                                                         const real          eta,
+TMaxwellEFIEBF< T_ansatzsp, T_testsp >::TMaxwellEFIEBF ( const value_t       kappa,
+                                                         const real_t        eta,
                                                          const ansatzsp_t *  aansatzsp,
                                                          const testsp_t *    atestsp,
                                                          const uint          quad_order )
-        : TQuadBEMBF< T_ansatzsp, T_testsp, complex >( aansatzsp, atestsp, quad_order ),
-          _ikappa( complex( 0, 1 ) * kappa ),
-          _eta( eta ),
-          _ikappa_times_eta( _ikappa * _eta ),
-          _eta_over_ikappa( _eta / _ikappa )
+        : TQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
+        , _ikappa( value_t( 0, 1 ) * kappa )
+        , _eta( eta )
+        , _ikappa_times_eta( _ikappa * _eta )
+        , _eta_over_ikappa( _eta / _ikappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
             
             HINFO( "(TMaxwellEFIEBF) using AVX512F kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
             
             HINFO( "(TMaxwellEFIEBF) using MIC kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
             
             HINFO( "(TMaxwellEFIEBF) using AVX2 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
             
             HINFO( "(TMaxwellEFIEBF) using AVX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                        _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
             
             HINFO( "(TMaxwellEFIEBF) using SSE3 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
             
             HINFO( "(TMaxwellEFIEBF) using VSX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
             
             HINFO( "(TMaxwellEFIEBF) using NEON kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_slp_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
         }// if
         else
         {
             HINFO( "(TMaxwellEFIEBF) using standard kernel" );
             
-            _kernel_fn = helmholtz_slp_flt;
+            _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
         }// else
     }// if
     else
     {
         HINFO( "(TMaxwellEFIEBF) using standard kernel" );
             
-        _kernel_fn = helmholtz_slp_flt;
+        _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
     }// else
 }
 
@@ -215,7 +217,7 @@ template < typename  T_ansatzsp,
 matform_t
 TMaxwellEFIEBF< T_ansatzsp, T_testsp >::format () const
 {
-    if ( ( cptrcast( this->ansatz_space(), TFnSpace ) == cptrcast( this->test_space(), TFnSpace ) ) ||
+    if ( ( reinterpret_cast< const void * >( this->ansatz_space() ) == reinterpret_cast< const void * >( this->test_space() ) ) ||
          (( this->ansatz_space()->type() == this->test_space()->type() ) &&
           ( this->ansatz_space()->grid() == this->test_space()->grid() )) )
         return symmetric;
@@ -233,14 +235,13 @@ template < typename  T_ansatzsp,
 void
 TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_ind,
                                                 const vector< idx_t > &    col_ind,
-                                                BLAS::Matrix< complex > &  values ) const
+                                                BLAS::Matrix< value_t > &  values ) const
 {
     //
     // local types for storing triangle sets and for
     // mapping indices to position in \a values
     //
 
-    using  real_t    = typename real_type< value_t >::type_t;
     using  tri_set_t = std::set< idx_t >;
     using  val_map_t = std::unordered_map< idx_t, idx_t >;
     
@@ -298,19 +299,13 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
 
     B::fill( value_t(0), values );
 
-    for ( tri_set_t::const_iterator  it0 = ansatz_triangles.begin();
-          it0 != ansatz_triangles.end();
-          ++it0 )
+    for ( auto  tri0idx : ansatz_triangles )
     {
-        const idx_t        tri0idx = (*it0);
         TGrid::triangle_t  tri0    = ansatz_grid->triangle( tri0idx );
         const real_t       J0      = real_t( ansatz_grid->tri_size( tri0idx ) );
 
-        for ( tri_set_t::const_iterator  it1 = test_triangles.begin();
-              it1 != test_triangles.end();
-              ++it1 )
+        for ( auto  tri1idx : test_triangles )
         {
-            const idx_t        tri1idx = (*it1);
             TGrid::triangle_t  tri1    = test_grid->triangle( tri1idx );
             const real_t       J1      = real_t( test_sp->grid()->tri_size( tri1idx ) );
 
@@ -319,9 +314,9 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
             // and determine points of triangles s.t. order is as expected
             //
 
-            const tripair_quad_rule_t * rule    = nullptr;
-            uint                        ncommon = this->reorder_common( tri0.vtx, tri1.vtx );
-            uint                        torder  = this->_quad_order;
+            const tripair_quad_rule_t< double > * rule    = nullptr;
+            uint                                  ncommon = this->reorder_common( tri0.vtx, tri1.vtx );
+            uint                                  torder  = this->_quad_order;
 
             if ( ncommon == 0 )
                 torder = this->adjust_order( tri0.vtx, tri1.vtx, torder );
@@ -382,7 +377,7 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
                         
                         for ( size_t  iv = 0; iv < npts; ++iv )
                         {
-                            const real_t  dot_phi = scale_phi * real( dot( phi0_values[iv], phi1_values[iv] ) );
+                            const real_t  dot_phi = scale_phi * real_t( dot( phi0_values[iv], phi1_values[iv] ) );
                             
                             value += real_t( rule->w[iv] ) * kernel_values[ iv ] * ( -_ikappa_times_eta * dot_phi - eik_div );
                         }// for
@@ -401,12 +396,12 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval_kernel ( const                       idx_t,
-                                                      const                       idx_t,
-                                                      const TGrid::triangle_t &   tri0,
-                                                      const TGrid::triangle_t &   tri1,
-                                                      const tripair_quad_rule_t * rule,
-                                                      std::vector< complex > &   values ) const
+TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval_kernel ( const                                 idx_t,
+                                                      const                                 idx_t,
+                                                      const TGrid::triangle_t &             tri0,
+                                                      const TGrid::triangle_t &             tri1,
+                                                      const tripair_quad_rule_t< double > * rule,
+                                                      std::vector< value_t > &              values ) const
 {
     _kernel_fn( tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
 }
@@ -426,7 +421,7 @@ template < typename T_ansatzsp, typename T_testsp >
 TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::TMaxwellEFIEMassBF ( const ansatzsp_t *  aansatzsp,
                                                                  const testsp_t *    atestsp,
                                                                  const uint          aorder )
-        : TBEMBF< T_ansatzsp, T_testsp, real >( aansatzsp, atestsp )
+        : TBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp )
 {
     //
     // build quad-points and weights
@@ -469,7 +464,7 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
             // integrate over test space
             //
 
-            real                value     = 0.0;
+            auto                value     = value_t(0);
             const auto          ansatz_sp = this->ansatz_space();
             const auto          test_sp   = this->test_space();
             auto                support_i = ansatz_sp->support(i);
@@ -482,7 +477,7 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 
             for ( auto  tri1 : support_j )
             {
-                const real  J1 = real( test_sp->grid()->tri_size( tri1 ) );
+                const auto  J1 = value_t( test_sp->grid()->tri_size( tri1 ) );
 
                 //
                 // test if support of ansatz function is disjoint
@@ -519,19 +514,19 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 
                 const bool  phi0_in_supp = ansatz_sp->eval_basis( i, t1, _quad_pts, phi0_values );
                 const bool  phi1_in_supp = test_sp->eval_basis(   j, t1, _quad_pts, phi1_values );
-                real        tvalue       = real(0);
+                auto        tvalue       = value_t(0);
 
                 if ( phi0_in_supp && phi1_in_supp )
                 {
-                    const real  scale_phi0 = ansatz_sp->scaling_factor_basis( i, tri1 );
-                    const real  scale_phi1 = test_sp->scaling_factor_basis(   j, tri1 );
-                    const real  scale_phi  = scale_phi0 * scale_phi1;
+                    const value_t  scale_phi0 = ansatz_sp->scaling_factor_basis( i, tri1 );
+                    const value_t  scale_phi1 = test_sp->scaling_factor_basis(   j, tri1 );
+                    const value_t  scale_phi  = scale_phi0 * scale_phi1;
 
                     for ( size_t  k = 0; k < npts; ++k )
                     {
-                        const real dot_phi = scale_phi * real( dot( phi0_values[k], phi1_values[k] ) );
+                        const value_t  dot_phi = scale_phi * value_t( dot( phi0_values[k], phi1_values[k] ) );
                         
-                        tvalue += real( _quad_wghts[k] ) * dot_phi;
+                        tvalue += value_t( _quad_wghts[k] ) * dot_phi;
                     }// for
                 }// if
 
@@ -557,14 +552,16 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &   tri0,
-                              const TGrid::triangle_t &   tri1,
-                              const tripair_quad_rule_t * rule,
-                              const complex               ikappa,
-                              const T_ansatzsp *          ansatz_sp,
-                              const T_testsp *            test_sp,
-                              vector< complex > &         values )
+helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &              tri0,
+                              const TGrid::triangle_t &              tri1,
+                              const tripair_quad_rule_t< double > *  rule,
+                              const std::complex< double >           ikappa,
+                              const T_ansatzsp *                     ansatz_sp,
+                              const T_testsp *                       test_sp,
+                              vector< std::complex< double > > &     values )
 {
+    using real_t = double;
+    
     const size_t   n_pts = rule->npts;
     const T3Point  v00( ansatz_sp->grid()->vertex( tri0.vtx[0] ) );
     const T3Point  v01( ansatz_sp->grid()->vertex( tri0.vtx[1] ) );
@@ -588,7 +585,7 @@ helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &   tri0,
         const T3Point  x      = a0 * v00 + a1 * v01 + a2 * v02;
         const T3Point  y      = b0 * v10 + b1 * v11 + b2 * v12;
         const T3Point  ymx    = y - x;
-        const auto     sqdist = real( dot( ymx ) );       // |y-x|²
+        const auto     sqdist = real_t( dot( ymx, ymx ) );       // |y-x|²
 
         //
         //   (i·κ·|x-y|)
@@ -601,7 +598,7 @@ helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &   tri0,
         const auto  cudist = sqdist * dist;            // |y-x|³
         const auto  ikymx  = ikappa * dist;            // i · κ · |x-y|
         
-        values[ i ] = ONE_OVER_4PI * Math::exp( ikymx ) * ( ikymx - real(1) ) / cudist;
+        values[ i ] = ONE_OVER_4PI * Math::exp( ikymx ) * ( ikymx - real_t(1) ) / cudist;
     }// for
 }
 
@@ -610,97 +607,97 @@ helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &   tri0,
 //
 template < typename  T_ansatzsp,
            typename  T_testsp >
-TMaxwellMFIEBF< T_ansatzsp, T_testsp >::TMaxwellMFIEBF ( const complex       kappa,
+TMaxwellMFIEBF< T_ansatzsp, T_testsp >::TMaxwellMFIEBF ( const value_t       kappa,
                                                          const ansatzsp_t *  aansatzsp,
                                                          const testsp_t *    atestsp,
                                                          const uint          quad_order )
-        : TQuadBEMBF< T_ansatzsp, T_testsp, complex >( aansatzsp, atestsp, quad_order ),
-          _ikappa( complex( 0, 1 ) * kappa )
+        : TQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
+        , _ikappa( value_t( 0, 1 ) * kappa )
 {
     if ( CFG::BEM::use_simd )
     {
         if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
         {
-            using  packed_t = packed< real, ISA_AVX512F >;
+            using  packed_t = packed< real_t, ISA_AVX512F >;
 
             HINFO( "(TMaxwellMFIEBF) using AVX512F kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
         {
-            using  packed_t = packed< real, ISA_MIC >;
+            using  packed_t = packed< real_t, ISA_MIC >;
 
             HINFO( "(TMaxwellMFIEBF) using MIC kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
         {
-            using  packed_t = packed< real, ISA_AVX2 >;
+            using  packed_t = packed< real_t, ISA_AVX2 >;
 
             HINFO( "(TMaxwellMFIEBF) using AVX2 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
         {
-            using  packed_t = packed< real, ISA_AVX >;
+            using  packed_t = packed< real_t, ISA_AVX >;
 
             HINFO( "(TMaxwellMFIEBF) using AVX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
         {
-            using  packed_t = packed< real, ISA_SSE3 >;
+            using  packed_t = packed< real_t, ISA_SSE3 >;
 
             HINFO( "(TMaxwellMFIEBF) using SSE3 kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
         {
-            using  packed_t = packed< real, ISA_VSX >;
+            using  packed_t = packed< real_t, ISA_VSX >;
 
             HINFO( "(TMaxwellMFIEBF) using VSX kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
         {
-            using  packed_t = packed< real, ISA_NEON >;
+            using  packed_t = packed< real_t, ISA_NEON >;
 
             HINFO( "(TMaxwellMFIEBF) using NEON kernel" );
             
-            if      ( std::real( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
+            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
+            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
+            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
         }// if
         else
         {
             HINFO( "(TMaxwellMFIEBF) using standard kernel" );
             
-            _kernel_fn = helmholtz_dlp_wo_normal_flt;
+            _kernel_fn = helmholtz_dlp_wo_normal_flt< T_ansatzsp, T_testsp >;
         }// else
     }// if
     else
     {
         HINFO( "(TMaxwellMFIEBF) using standard kernel" );
             
-        _kernel_fn = helmholtz_dlp_wo_normal_flt;
+        _kernel_fn = helmholtz_dlp_wo_normal_flt< T_ansatzsp, T_testsp >;
     }// else
 }
 
@@ -722,14 +719,13 @@ template < typename  T_ansatzsp,
 void
 TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_ind,
                                                 const vector< idx_t > &    col_ind,
-                                                BLAS::Matrix< complex > &  values ) const
+                                                BLAS::Matrix< value_t > &  values ) const
 {
     //
     // local types for storing triangle sets and for
     // mapping indices to position in \a values
     //
 
-    using  real_t    = typename real_type< value_t >::type_t;
     using  tri_set_t = std::set< idx_t >;
     using  val_map_t = std::unordered_map< idx_t, idx_t >;
 
@@ -789,20 +785,13 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
 
     B::fill( value_t(0), values );
 
-    for ( tri_set_t::const_iterator  it0 = ansatz_triangles.begin();
-          it0 != ansatz_triangles.end();
-          ++it0 )
+    for ( auto  tri0idx : ansatz_triangles )
     {
-        const idx_t        tri0idx = (*it0);
         TGrid::triangle_t  tri0    = ansatz_grid->triangle( tri0idx );
         const real_t       J0      = real_t( ansatz_grid->tri_size( tri0idx ) );
 
-        for ( tri_set_t::const_iterator  it1 = test_triangles.begin();
-              it1 != test_triangles.end();
-              ++it1 )
+        for ( auto  tri1idx : test_triangles )
         {
-            const idx_t  tri1idx = (*it1);
-
             // integral vanishes when integrating over identical triangles
             if ( tri1idx == tri0idx )
                 continue;
@@ -816,9 +805,9 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
             // and determine points of triangles s.t. order is as expected
             //
 
-            const tripair_quad_rule_t * rule    = nullptr;
-            uint                        ncommon = this->reorder_common( tri0.vtx, tri1.vtx );
-            uint                        torder  = this->_quad_order;
+            const tripair_quad_rule_t< double > * rule    = nullptr;
+            uint                                  ncommon = this->reorder_common( tri0.vtx, tri1.vtx );
+            uint                                  torder  = this->_quad_order;
 
             if ( ncommon == 0 )
                 torder = this->adjust_order( tri0.vtx, tri1.vtx, torder );
@@ -900,12 +889,12 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval_kernel ( const                       idx_t,
-                                                      const                       idx_t,
-                                                      const TGrid::triangle_t &   tri0,
-                                                      const TGrid::triangle_t &   tri1,
-                                                      const tripair_quad_rule_t * rule,
-                                                      std::vector< complex > &   values ) const
+TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval_kernel ( const                                 idx_t,
+                                                      const                                 idx_t,
+                                                      const TGrid::triangle_t &             tri0,
+                                                      const TGrid::triangle_t &             tri1,
+                                                      const tripair_quad_rule_t< double > * rule,
+                                                      std::vector< value_t > &              values ) const
 {
     _kernel_fn( tri0, tri1, rule, _ikappa, this->ansatz_space(), this->test_space(), values );
 }
@@ -925,7 +914,7 @@ template < typename T_ansatzsp, typename T_testsp >
 TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::TMaxwellMFIEMassBF ( const ansatzsp_t *  aansatzsp,
                                                                  const testsp_t *    atestsp,
                                                                  const uint          aorder )
-        : TBEMBF< T_ansatzsp, T_testsp, real >( aansatzsp, atestsp )
+        : TBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp )
 {
     //
     // build quad-points and weights
@@ -969,7 +958,7 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
             // integrate over test space
             //
 
-            real                value     = 0.0;
+            auto                value     = value_t(0);
             auto                ansatz_sp = this->ansatz_space();
             auto                test_sp   = this->test_space();
             auto                support_i = ansatz_sp->support(i);
@@ -982,7 +971,7 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 
             for ( auto  tri1 : support_j )
             {
-                const real  J1 = real( test_sp->grid()->tri_size( tri1 ) );
+                const auto  J1 = value_t( test_sp->grid()->tri_size( tri1 ) );
 
                 //
                 // test if support of ansatz function is disjoint
@@ -1009,7 +998,7 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 
                 TGrid::triangle_t  t1;
                 const size_t       npts   = _quad_pts.size();
-                real               tvalue = real(0);
+                auto               tvalue = value_t(0);
 
                 if ( phi0_values.size() < npts )
                 {
@@ -1022,9 +1011,9 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
                 ansatz_sp->eval_basis( i, t1, _quad_pts, phi0_values );
                 test_sp->eval_basis(   j, t1, _quad_pts, phi1_values );
 
-                const real     scale_phi0 = ansatz_sp->scaling_factor_basis( i, tri1 );
-                const real     scale_phi1 = test_sp->scaling_factor_basis(   j, tri1 );
-                const real     scale_phi  = scale_phi0 * scale_phi1;
+                const value_t  scale_phi0 = ansatz_sp->scaling_factor_basis( i, tri1 );
+                const value_t  scale_phi1 = test_sp->scaling_factor_basis(   j, tri1 );
+                const value_t  scale_phi  = scale_phi0 * scale_phi1;
                 const T3Point  n1         = test_sp->grid()->tri_normal( tri1 );
 
                 for ( size_t  k = 0; k < npts; ++k )
@@ -1032,7 +1021,7 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
                     const T3Point  n1_x_phi0 = cross( n1, phi0_values[k] );
                     const T3Point  n1_x_phi1 = cross( n1, phi1_values[k] );
 
-                    tvalue += real( _quad_wghts[k] * dot( n1_x_phi0, n1_x_phi1 ) );
+                    tvalue += value_t( _quad_wghts[k] * dot( n1_x_phi0, n1_x_phi1 ) );
                 }// for
                 tvalue *= scale_phi;
 

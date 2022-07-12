@@ -3,14 +3,14 @@
 // File        : TPoint.cc
 // Description : class for a n-dimensional vector
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <sstream>
 
 #include "hpro/base/TPoint.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 std::string
@@ -53,4 +53,4 @@ T2Point::to_string () const
     return tmp.str();
 }
 
-}// namespace HLIB
+}// namespace Hpro

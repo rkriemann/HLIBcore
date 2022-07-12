@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordinate.cc
 // Description : class for encapsulating coordinate data
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
 
 #include "hpro/cluster/TCoordinate.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 ////////////////////////////////////////////////////////

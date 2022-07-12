@@ -1,11 +1,11 @@
-#ifndef __HLIB_TALGCTBUILDER_HH
-#define __HLIB_TALGCTBUILDER_HH
+#ifndef __HPRO_TALGCTBUILDER_HH
+#define __HPRO_TALGCTBUILDER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TAlgCTBuilder.hh
 // Description : class for algebraic clustertree construction
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -17,7 +17,7 @@
 #include "hpro/cluster/TAlgPartStrat.hh"
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -76,17 +76,19 @@ public:
     //
 
     //! build cluster tree using connectivity in sparse matrix \a S
-    virtual std::unique_ptr< TClusterTree >  build   ( const TSparseMatrix * S,
-                                                       const idx_t           idx_ofs = 0 ) const;
+    std::unique_ptr< TClusterTree >
+    build   ( any_const_sparse_matrix_t  S,
+              const idx_t                idx_ofs = 0 ) const;
 
     //! divide graph \a graph and build corresponding cluster tree
-    virtual std::unique_ptr< TCluster >      divide  ( const TGraph &        graph,
-                                                       const uint            lvl,
-                                                       TPermutation &        perm,
-                                                       const idx_t           idx_ofs,
-                                                       const uint            n_min,
-                                                       const TSparseMatrix * S,
-                                                       const uint            max_lvl ) const;
+    virtual std::unique_ptr< TCluster >
+    divide  ( const TGraph &             graph,
+              const uint                 lvl,
+              TPermutation &             perm,
+              const idx_t                idx_ofs,
+              const uint                 n_min,
+              any_const_sparse_matrix_t  S,
+              const uint                 max_lvl ) const;
 
     //! compute graph bi-partitioning of \a graph and store result in \a left and \a right
     virtual void           partition     ( const TGraph &        graph,
@@ -100,18 +102,18 @@ protected:
                                            TNodeSet &            right ) const;
 
     //! build leaf node for indices in \a graph
-    virtual std::unique_ptr< TCluster >  build_leaf    ( const TGraph &        graph,
-                                                         const idx_t           idx_ofs,
-                                                         TPermutation &        perm ) const;
+    virtual std::unique_ptr< TCluster >  build_leaf  ( const TGraph &  graph,
+                                                       const idx_t     idx_ofs,
+                                                       TPermutation &  perm ) const;
     
     //! adjust n_min based on sparse matrix if default value of 0 was given in constructor
-    virtual uint           adjust_n_min  ( const TSparseMatrix * S ) const;
+    virtual uint           adjust_n_min  ( any_const_sparse_matrix_t S ) const;
 
     //! analyze connections between sub graphs \a left and \a right and swap if necessary
-    virtual void           check_flow    ( const TGraph &        graph,
-                                           TNodeSet &            left,
-                                           TNodeSet &            right,
-                                           const TSparseMatrix * S ) const;
+    virtual void           check_flow    ( const TGraph &             graph,
+                                           TNodeSet &                 left,
+                                           TNodeSet &                 right,
+                                           any_const_sparse_matrix_t  S ) const;
 
     DISABLE_COPY_OP( TAlgCTBuilder );
 };
@@ -128,7 +130,7 @@ private:
     const TAlgCTBuilder *  _alg_ct_builder;
 
     // mode for handling interface cluster tree depth
-    bool                   _sync_interface_depth;
+    bool                              _sync_interface_depth;
 
 protected:
     //!
@@ -194,18 +196,20 @@ public:
 
     //! divide graph \a graph and build corresponding cluster tree
     //! (instead of bipartition, also build vertex separator son)
-    virtual std::unique_ptr< TCluster >  divide  ( const TGraph &        graph,
-                                                   const uint            lvl,
-                                                   TPermutation &        perm,
-                                                   const idx_t           idx_ofs,
-                                                   const uint            n_min,
-                                                   const TSparseMatrix * S,
-                                                   const uint            max_lvl ) const;
+    virtual std::unique_ptr< TCluster >
+    divide  ( const TGraph &             graph,
+              const uint                 lvl,
+              TPermutation &             perm,
+              const idx_t                idx_ofs,
+              const uint                 n_min,
+              any_const_sparse_matrix_t  S,
+              const uint                 max_lvl ) const;
     
     //! partition graph using base algorithm
-    virtual void       partition  ( const TGraph &        graph,
-                                    TNodeSet &            left,
-                                    TNodeSet &            right ) const
+    virtual void
+    partition  ( const TGraph &        graph,
+                 TNodeSet &            left,
+                 TNodeSet &            right ) const
     {
         _alg_ct_builder->partition( graph, left, right );
     }
@@ -213,31 +217,34 @@ public:
 protected:
     
     //! divide vertex separator \a vtxsep using connectivity defined by \a graph
-    std::unique_ptr< TCluster >  divide_if ( const TGraph &   graph,
-                                             const TNodeSet & surrounding,
-                                             const TNodeSet & vtxsep,
-                                             const uint       lvl,
-                                             const idx_t      idx_ofs,
-                                             TPermutation &   perm,
-                                             const uint       max_lvl,
-                                             const uint       n_min,
-                                             const TOptClusterSize &  csize ) const;
+    std::unique_ptr< TCluster >
+    divide_if ( const TGraph &   graph,
+                const TNodeSet & surrounding,
+                const TNodeSet & vtxsep,
+                const uint       lvl,
+                const idx_t      idx_ofs,
+                TPermutation &   perm,
+                const uint       max_lvl,
+                const uint       n_min,
+                const TOptClusterSize &  csize ) const;
 
     //! build cluster tree for vertex separator \a graph
-    std::unique_ptr< TCluster >  divide_if ( const TGraph &           graph,
-                                             const uint               lvl,
-                                             TPermutation &           perm,
-                                             const idx_t              idx_ofs,
-                                             const uint               n_min,
-                                             const TSparseMatrix *    S,
-                                             const uint               max_lvl,
-                                             const TOptClusterSize &  csize ) const;
+    std::unique_ptr< TCluster >
+    divide_if ( const TGraph &             graph,
+                const uint                 lvl,
+                TPermutation &             perm,
+                const idx_t                idx_ofs,
+                const uint                 n_min,
+                any_const_sparse_matrix_t  S,
+                const uint                 max_lvl,
+                const TOptClusterSize &    csize ) const;
     
     //! build leaf node for indices in \a nodes
-    virtual std::unique_ptr< TCluster >  build_leaf ( const TGraph &   graph,
-                                                      const TNodeSet & nodes,
-                                                      const idx_t      idx_ofs,
-                                                      TPermutation &   perm ) const;
+    virtual std::unique_ptr< TCluster >
+    build_leaf ( const TGraph &   graph,
+                 const TNodeSet & nodes,
+                 const idx_t      idx_ofs,
+                 TPermutation &   perm ) const;
     using TAlgCTBuilder::build_leaf;
     
     //! graph partitioning algorithm for vertex separators
@@ -283,6 +290,6 @@ protected:
                                  std::list< TNodeSet > &     scc ) const;
 };
 
-}// namespace
+}// namespace Hpro
 
-#endif  // __HLIB_TALGCTBUILDER_HH
+#endif  // __HPRO_TALGCTBUILDER_HH

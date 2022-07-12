@@ -1,25 +1,23 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixHierarchy.cc
 // Description : represents a level-wise hierarchy of matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
 #include <list>
 #include <deque>
+#include <algorithm>
 
 #include "hpro/matrix/TBlockMatrix.hh"
 #include "hpro/matrix/structure.hh"
 
 #include "hpro/matrix/TMatrixHierarchy.hh"
 
-namespace HLIB
+namespace Hpro
 {
-
-using std::list;
-using std::deque;
 
 //////////////////////////////////////////////////////////////
 //
@@ -48,9 +46,10 @@ namespace
 //
 // comparison for mat_storage_t::sort
 //
+template < typename value_t >
 bool
-list_compare ( TSparseBlockMatrix::block_list_t *  list1,
-               TSparseBlockMatrix::block_list_t *  list2 )
+list_compare ( typename TSparseBlockMatrix< value_t >::block_list_t *  list1,
+               typename TSparseBlockMatrix< value_t >::block_list_t *  list2 )
 {
     return list1->front()->row_is().is_strictly_left_of( list2->front()->row_is() );
 }
@@ -68,7 +67,8 @@ list_compare ( TSparseBlockMatrix::block_list_t *  list1,
 //
 // destructor
 //
-TSparseBlockMatrix::~TSparseBlockMatrix ()
+template < typename value_t >
+TSparseBlockMatrix< value_t >::~TSparseBlockMatrix ()
 {
     // NO DELETION, BECAUSE THIS MATRIX TYPE IS (FOR NOW) ONLY
     // USED TO HOLD POINTERS TO OTHERWISE REFERENCED MATRICES
@@ -104,9 +104,10 @@ TSparseBlockMatrix::~TSparseBlockMatrix ()
 //
 // access individual submatrix addressed by is0 × is1
 //
-TMatrix *
-TSparseBlockMatrix::block ( const TIndexSet &  is0,
-                            const TIndexSet &  is1 )
+template < typename value_t >
+TMatrix< value_t > *
+TSparseBlockMatrix< value_t >::block ( const TIndexSet &  is0,
+                                       const TIndexSet &  is1 )
 {
     block_list_t *  row = _block_rows[ is0 ];
 
@@ -124,8 +125,9 @@ TSparseBlockMatrix::block ( const TIndexSet &  is0,
 
 //
 // return submatrix t×s with is0 × is1 ⊆ t×s
-TMatrix *
-TSparseBlockMatrix::block_containing ( const TIndexSet &  is0,
+template < typename value_t >
+TMatrix< value_t > *
+TSparseBlockMatrix< value_t >::block_containing ( const TIndexSet &  is0,
                                        const TIndexSet &  is1 )
 {
     for ( auto  entry : _block_rows )
@@ -147,8 +149,9 @@ TSparseBlockMatrix::block_containing ( const TIndexSet &  is0,
 //
 // insert matrix A into sparse block matrix
 //
+template < typename value_t >
 void
-TSparseBlockMatrix::insert_block ( TMatrix *  A )
+TSparseBlockMatrix< value_t >::insert_block ( TMatrix< value_t > *  A )
 {
     TIndexSet  is0( A->row_is() );
     TIndexSet  is1( A->col_is() );
@@ -198,10 +201,11 @@ TSparseBlockMatrix::insert_block ( TMatrix *  A )
 //
 // sort data for efficient (and correct) access
 //
+template < typename value_t >
 void
-TSparseBlockMatrix::sort ()
+TSparseBlockMatrix< value_t >::sort ()
 {
-    _blocks.sort( list_compare );
+    _blocks.sort( list_compare< value_t > );
     
     // for ( auto & entry : _block_rows )
     // {
@@ -230,8 +234,9 @@ TSparseBlockMatrix::sort ()
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TSparseBlockMatrix::byte_size () const
+TSparseBlockMatrix< value_t >::byte_size () const
 {
     size_t  size = 0;
     
@@ -249,8 +254,9 @@ TSparseBlockMatrix::byte_size () const
 //
 // print content
 //
+template < typename value_t >
 void
-TSparseBlockMatrix::print ( const uint  ofs ) const
+TSparseBlockMatrix< value_t >::print ( const uint  ofs ) const
 {
     uint  row = 0;
     
@@ -290,15 +296,17 @@ TSparseBlockMatrix::print ( const uint  ofs ) const
 //
 // construct an empty hierarchy
 //
-TMatrixHierarchy::TMatrixHierarchy ()
+template < typename value_t >
+TMatrixHierarchy< value_t >::TMatrixHierarchy ()
 {
 }
 
 //
 // construct a hierarchy based on given block matrix
 //
-TMatrixHierarchy::TMatrixHierarchy ( TMatrix *   A,
-                                     const bool  with_blocked )
+template < typename value_t >
+TMatrixHierarchy< value_t >::TMatrixHierarchy ( TMatrix< value_t > *  A,
+                                                const bool            with_blocked )
 {
     //
     // for now, we need as a 
@@ -309,9 +317,9 @@ TMatrixHierarchy::TMatrixHierarchy ( TMatrix *   A,
     // for each level (with at least one leaf)
     //
 
-    size_t                        lvl    = 0;         // counter for current level
-    deque< TMatrix * >            matrices;           // matrices on current level
-    list< TSparseBlockMatrix * >  hierarchy_list;     // temporary storage for matrices in hierarchy
+    size_t                                        lvl = 0;            // counter for current level
+    std::deque< TMatrix< value_t > * >            matrices;           // matrices on current level
+    std::list< TSparseBlockMatrix< value_t > * >  hierarchy_list;     // temporary storage for matrices in hierarchy
 
     matrices.push_front( A );
     
@@ -339,7 +347,7 @@ TMatrixHierarchy::TMatrixHierarchy ( TMatrix *   A,
 
         if ( found_leaf || with_blocked )
         {
-            auto  SB = std::make_unique< TSparseBlockMatrix >();
+            auto  SB = std::make_unique< TSparseBlockMatrix< value_t > >();
 
             for ( auto  M : matrices )
             {
@@ -350,19 +358,19 @@ TMatrixHierarchy::TMatrixHierarchy ( TMatrix *   A,
             _hierarchy.push_back( SB.release() );
         }// if
         else
-            _hierarchy.push_back( ptrcast( nullptr, TSparseBlockMatrix ) );
+            _hierarchy.push_back( ptrcast( nullptr, TSparseBlockMatrix< value_t > ) );
 
         //
         // collect list of son matrices of current level
         //
 
-        deque< TMatrix * >  sons;
+        std::deque< TMatrix< value_t > * >  sons;
         
         for ( auto  M : matrices )
         {
             if ( is_blocked( M ) )
             {
-                auto  BM = ptrcast( M, TBlockMatrix );
+                auto  BM = ptrcast( M, TBlockMatrix< value_t > );
                                              
                 for ( uint  bi = 0; bi < BM->block_rows(); bi++ )
                 {
@@ -383,7 +391,8 @@ TMatrixHierarchy::TMatrixHierarchy ( TMatrix *   A,
 //
 // destructor
 //
-TMatrixHierarchy::~TMatrixHierarchy ()
+template < typename value_t >
+TMatrixHierarchy< value_t >::~TMatrixHierarchy ()
 {
     for ( auto *  SB : _hierarchy )
     {
@@ -400,8 +409,9 @@ TMatrixHierarchy::~TMatrixHierarchy ()
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TMatrixHierarchy::byte_size () const
+TMatrixHierarchy< value_t >::byte_size () const
 {
     size_t  size = 0;
 
@@ -417,8 +427,9 @@ TMatrixHierarchy::byte_size () const
 //
 // print content
 //
+template < typename value_t >
 void
-TMatrixHierarchy::print ( const uint  ofs ) const
+TMatrixHierarchy< value_t >::print ( const uint  ofs ) const
 {
     for ( size_t  lvl = 0; lvl < _hierarchy.size(); lvl++ )
     {
@@ -434,4 +445,9 @@ TMatrixHierarchy::print ( const uint  ofs ) const
     }// for
 }
 
+template class TMatrixHierarchy< float >;
+template class TMatrixHierarchy< double >;
+template class TMatrixHierarchy< std::complex< float > >;
+template class TMatrixHierarchy< std::complex< double > >;
+    
 }// namespace

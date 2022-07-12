@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : Matrix.cc
 // Description : implements dense matrix class for BLAS operations
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstdlib>
@@ -23,7 +23,7 @@
 
 #include "hpro/blas/Matrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -161,8 +161,8 @@ random ( const size_t  length )
 
 template class Matrix< float >;
 template class Matrix< double >;
-template class Matrix< Complex< float > >;
-template class Matrix< Complex< double > >;
+template class Matrix< std::complex< float > >;
+template class Matrix< std::complex< double > >;
 
 
 template std::ostream &
@@ -173,11 +173,11 @@ operator << < Matrix< double > >            ( std::ostream &,
                                               const MatrixBase< Matrix< double > > & );
 
 template std::ostream &
-operator << < Matrix< Complex< float > > >  ( std::ostream &,
-                                              const MatrixBase< Matrix< Complex< float > > > & );
+operator << < Matrix< std::complex< float > > >  ( std::ostream &,
+                                                   const MatrixBase< Matrix< std::complex< float > > > & );
 template std::ostream &
-operator << < Matrix< Complex< double > > > ( std::ostream &,
-                                              const MatrixBase< Matrix< Complex< double > > > & );
+operator << < Matrix< std::complex< double > > > ( std::ostream &,
+                                                   const MatrixBase< Matrix< std::complex< double > > > & );
 
 
 template std::ostream &
@@ -188,11 +188,11 @@ operator << < Vector< double > >            ( std::ostream &,
                                               const VectorBase< Vector< double > > & );
 
 template std::ostream &
-operator << < Vector< Complex< float > > >  ( std::ostream &,
-                                              const VectorBase< Vector< Complex< float > > > & );
+operator << < Vector< std::complex< float > > >  ( std::ostream &,
+                                                   const VectorBase< Vector< std::complex< float > > > & );
 template std::ostream &
-operator << < Vector< Complex< double > > > ( std::ostream &,
-                                              const VectorBase< Vector< Complex< double > > > & );
+operator << < Vector< std::complex< double > > > ( std::ostream &,
+                                                   const VectorBase< Vector< std::complex< double > > > & );
 
 
 template Matrix< float >
@@ -201,11 +201,11 @@ identity< float >             ( const size_t  n );
 template Matrix< double >
 identity< double >            ( const size_t  n );
 
-template Matrix< Complex< float > >
-identity< Complex< float > >  ( const size_t  n );
+template Matrix< std::complex< float > >
+identity< std::complex< float > >  ( const size_t  n );
     
-template Matrix< Complex< double > >
-identity< Complex< double > > ( const size_t  n );
+template Matrix< std::complex< double > >
+identity< std::complex< double > > ( const size_t  n );
 
 
 template Matrix< float >
@@ -216,13 +216,13 @@ template Matrix< double >
 random< double >            ( const size_t  nrows,
                               const size_t  ncols );
     
-template Matrix< Complex< float > >
-random< Complex< float > >  ( const size_t  nrows,
-                              const size_t  ncols );
+template Matrix< std::complex< float > >
+random< std::complex< float > >  ( const size_t  nrows,
+                                   const size_t  ncols );
     
-template Matrix< Complex< double > >
-random< Complex< double > > ( const size_t  nrows,
-                              const size_t  ncols );
+template Matrix< std::complex< double > >
+random< std::complex< double > > ( const size_t  nrows,
+                                   const size_t  ncols );
     
 template Vector< float >
 random< float >             ( const size_t  length );
@@ -230,11 +230,11 @@ random< float >             ( const size_t  length );
 template Vector< double >
 random< double >            ( const size_t  length );
     
-template Vector< Complex< float > >
-random< Complex< float > >  ( const size_t  length );
+template Vector< std::complex< float > >
+random< std::complex< float > >  ( const size_t  length );
     
-template Vector< Complex< double > >
-random< Complex< double > > ( const size_t  length );
+template Vector< std::complex< double > >
+random< std::complex< double > > ( const size_t  length );
     
 }// namespace BLAS
 
@@ -264,8 +264,8 @@ write ( const BLAS::Matrix< T > & M,
 template void write< float >   ( const BLAS::Matrix< float > &,  const std::string &, const std::string & );
 template void write< double >  ( const BLAS::Matrix< double > &, const std::string &, const std::string & );
 
-template void write< Complex< float > >   ( const BLAS::Matrix< Complex< float > > &,  const std::string &, const std::string & );
-template void write< Complex< double > >  ( const BLAS::Matrix< Complex< double > > &, const std::string &, const std::string & );
+template void write< std::complex< float > >   ( const BLAS::Matrix< std::complex< float > > &,  const std::string &, const std::string & );
+template void write< std::complex< double > >  ( const BLAS::Matrix< std::complex< double > > &, const std::string &, const std::string & );
 
 //!
 //! write vector to file
@@ -285,9 +285,9 @@ write ( const BLAS::Vector< T > & v,
 template void write< float >    ( const BLAS::Vector< float > &,   const std::string &, const std::string & );
 template void write< double >   ( const BLAS::Vector< double > &,  const std::string &, const std::string & );
 
-template void write< Complex< float > >   ( const BLAS::Vector< Complex< float > > &,  const std::string &, const std::string & );
-template void write< Complex< double > >  ( const BLAS::Vector< Complex< double > > &, const std::string &, const std::string & );
+template void write< std::complex< float > >   ( const BLAS::Vector< std::complex< float > > &,  const std::string &, const std::string & );
+template void write< std::complex< double > >  ( const BLAS::Vector< std::complex< double > > &, const std::string &, const std::string & );
 
 }// namespace DBG
 
-}// namespace HLIB
+}// namespace Hpro

@@ -1,11 +1,11 @@
-#ifndef __HLIB_TCLUSTER_HH
-#define __HLIB_TCLUSTER_HH
+#ifndef __HPRO_TCLUSTER_HH
+#define __HPRO_TCLUSTER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCluster.hh
 // Description : baseclass for a node in a cluster tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -15,7 +15,7 @@
 #include "hpro/base/TTypeInfo.hh"
 #include "hpro/cluster/TIndexSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local type
@@ -154,7 +154,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_BASE( TCluster );
+    HPRO_RTTI_BASE( TCluster );
 };
 
 //!
@@ -164,6 +164,6 @@ public:
 //!
 void flatten ( TCluster * root ); 
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TCLUSTER_HH
+#endif  // __HPRO_TCLUSTER_HH

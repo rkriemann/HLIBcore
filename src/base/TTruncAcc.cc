@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TTruncAcc.cc
 // Description : defines truncation accuracy for low-rank matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/cluster/TBlockCluster.hh"
@@ -11,12 +11,11 @@
 
 #include "hpro/base/TTruncAcc.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // global objects
 const TTruncAcc  acc_exact( 0.0, 0.0 );
-const TTruncAcc  acc_machine( Limits::epsilon< real >(), 0.0 );
 
 namespace
 {
@@ -149,9 +148,9 @@ std::string
 TTruncAcc::to_string () const
 {
     if ( is_fixed_rank() )
-        return HLIB::to_string( "k = %d", rank() );
+        return Hpro::to_string( "k = %d", rank() );
     else
-        return HLIB::to_string( "ε = %.4e", rel_eps() );
+        return Hpro::to_string( "ε = %.4e", rel_eps() );
 }
 
 //////////////////////////////////////////////////////////////////
@@ -174,9 +173,10 @@ TBlockTruncAcc::acc ( const TBlockCluster *  bc ) const
     
     return get_acc( * bc->rowcl(), * bc->colcl() );
 }
-    
+
+template < typename value_t >
 const TTruncAcc &
-TBlockTruncAcc::acc ( const TMatrix *  M ) const
+TBlockTruncAcc::acc ( const TMatrix< value_t > *  M ) const
 {
     if ( M == nullptr )
         HERROR( ERR_ARG, "(TBlockTruncAcc) acc", "matrix is nullptr" );

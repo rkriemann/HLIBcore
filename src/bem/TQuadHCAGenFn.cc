@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TQuadHCAGenFn.cc
 // Description : class providing HCA functionality for BEM bilinear forms
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <set>
@@ -14,7 +14,7 @@
 
 #include "hpro/bem/TQuadHCAGenFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using namespace std;
@@ -36,20 +36,20 @@ using  val_map_t = std::unordered_map< idx_t, idx_t >;
 //! - \a order defines (maximal) quadrature order for
 //!   evaluating the integrals 
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
-TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TQuadHCAGenFn ( const ansatzsp_t *    ansatzsp,
-                                                              const testsp_t *      testsp,
-                                                              const uint            quad_order,
-                                                              const TPermutation *  row_perm_i2e,
-                                                              const TPermutation *  col_perm_i2e,
-                                                              stat_t *              stat )
-        : TPermHCAGeneratorFn< T_val >( row_perm_i2e, col_perm_i2e ),
-          _ansatz_sp( ansatzsp ),
-          _test_sp( testsp ),
-          _quad_order( quad_order ),
-          _stat( stat )
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::TQuadHCAGenFn ( const ansatzsp_t *    ansatzsp,
+                                                                const testsp_t *      testsp,
+                                                                const uint            quad_order,
+                                                                const TPermutation *  row_perm_i2e,
+                                                                const TPermutation *  col_perm_i2e,
+                                                                stat_t *              stat )
+        : TPermHCAGeneratorFn< value_t >( row_perm_i2e, col_perm_i2e )
+        , _ansatz_sp( ansatzsp )
+        , _test_sp( testsp )
+        , _quad_order( quad_order )
+        , _stat( stat )
 {
     if (( _ansatz_sp == nullptr ) || ( _test_sp == nullptr ))
         HERROR( ERR_ARG, "(TQuadHCAGenFn)", "function space is nullptr" );
@@ -72,7 +72,7 @@ TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TQuadHCAGenFn ( const ansatzsp_t *
 
         // actual and padded number of quadrature points
         const size_t  npts        = n*n;
-        const size_t  padded_npts = CFG::Mach::simd_padded_size< real >( npts );
+        const size_t  padded_npts = CFG::Mach::simd_padded_size< real_t >( npts );
 
         _quad_rules_cache[n].npts = npts;
         _quad_rules_cache[n].x.resize( padded_npts );
@@ -95,7 +95,7 @@ TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TQuadHCAGenFn ( const ansatzsp_t *
             }// for
         }// for
 
-            // fill rest with zero (only weights to avoid division by zero in coordinate computations)
+        // fill rest with zero (only weights to avoid division by zero in coordinate computations)
         for ( ; quad_idx < padded_npts ; ++quad_idx )
         {
             _quad_rules_cache[n].x[ quad_idx ] = _quad_rules_cache[n].x[ 0 ];
@@ -110,20 +110,18 @@ TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TQuadHCAGenFn ( const ansatzsp_t *
 //! and points \f$ y_{l} \f$ defined by \a pts.
 //! Store results in \a matrix at index (i,l).
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
 void
-TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
-                                                                   const vector< T3Point > &  pts,
-                                                                   BLAS::Matrix< value_t > &  matrix ) const
+TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
+                                                                     const vector< T3Point > &  pts,
+                                                                     BLAS::Matrix< value_t > &  matrix ) const
 {
-    using  real_t = typename real_type< value_t >::type_t;
-
-    const tri_quad_rule_t * quad_rule = this->get_quad_rule();
-    const size_t            npts      = quad_rule->npts;
-    const ansatzsp_t *      fnspace   = this->ansatz_space();
-    const TGrid *           grid      = fnspace->grid();
+    const auto  quad_rule = this->get_quad_rule();
+    const auto  npts      = quad_rule->npts;
+    const auto  fnspace   = this->ansatz_space();
+    const auto  grid      = fnspace->grid();
     
     //
     // go over all points and indices and compute integral
@@ -178,20 +176,18 @@ TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( const vector<
 //! and points \f$ x_{l} \f$ defined by \a pts. 
 //! Store results in \a matrix at index (j,l).
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
 void
-TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
-                                                                   const vector< T3Point > &  pts,
-                                                                   BLAS::Matrix< value_t > &  matrix ) const
+TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
+                                                                     const vector< T3Point > &  pts,
+                                                                     BLAS::Matrix< value_t > &  matrix ) const
 {
-    using  real_t = typename real_type< value_t >::type_t;
-
-    const tri_quad_rule_t * quad_rule = this->get_quad_rule();
-    const size_t            npts      = quad_rule->npts;
-    const testsp_t *        fnspace   = this->test_space();
-    const TGrid *           grid      = fnspace->grid();
+    const auto  quad_rule = this->get_quad_rule();
+    const auto  npts      = quad_rule->npts;
+    const auto  fnspace   = this->test_space();
+    const auto  grid      = fnspace->grid();
     
     //
     // go over all points and indices and compute integral
@@ -244,19 +240,19 @@ TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( const vector<
 //!
 //! constructor
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
-TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TInvarBasisQuadHCAGenFn ( const ansatzsp_t *    ansatzsp,
-                                                                                  const testsp_t *      testsp,
-                                                                                  const uint            quad_order,
-                                                                                  const TPermutation *  row_perm_i2e,
-                                                                                  const TPermutation *  col_perm_i2e,
-                                                                                  stat_t *              stat )
-        : TQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >( ansatzsp, testsp,
-                                                        quad_order,
-                                                        row_perm_i2e, col_perm_i2e,
-                                                        stat )
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::TInvarBasisQuadHCAGenFn ( const ansatzsp_t *    ansatzsp,
+                                                                                    const testsp_t *      testsp,
+                                                                                    const uint            quad_order,
+                                                                                    const TPermutation *  row_perm_i2e,
+                                                                                    const TPermutation *  col_perm_i2e,
+                                                                                    stat_t *              stat )
+: TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >( ansatzsp, testsp,
+                                                  quad_order,
+                                                  row_perm_i2e, col_perm_i2e,
+                                                  stat )
 {
     //
     // precompute ansatz values
@@ -272,10 +268,10 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TInvarBasisQuadHCAGenFn 
         
         for ( uint  order = 1; order <= this->_quad_order; ++order )
         {
-            const tri_quad_rule_t * rule        = this->get_quad_rule( order );
-            const size_t            npts        = rule->x.size();
-            const size_t            padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
-            size_t                  i           = 0;
+            const auto    rule        = this->get_quad_rule( order );
+            const size_t  npts        = rule->x.size();
+            const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+            size_t        i           = 0;
             
             _ansatz_val[ nbasis ][ order ].resize( padded_npts );
             
@@ -306,10 +302,10 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TInvarBasisQuadHCAGenFn 
         
         for ( uint  order = 1; order <= this->_quad_order; ++order )
         {
-            const tri_quad_rule_t * rule        = this->get_quad_rule( order );
-            const size_t            npts        = rule->x.size();
-            const size_t            padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
-            size_t                  i           = 0;
+            const auto    rule        = this->get_quad_rule( order );
+            const size_t  npts        = rule->x.size();
+            const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+            size_t        i           = 0;
             
             _test_val[ nbasis ][ order ].resize( padded_npts );
             
@@ -333,21 +329,14 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::TInvarBasisQuadHCAGenFn 
 //! and points \f$ y_{l} \f$ defined by \a pts.
 //! Store results in \a matrix at index (i,l).
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
 void
-TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
-                                                                             const vector< T3Point > &  pts,
-                                                                             BLAS::Matrix< value_t > &  matrix ) const
+TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
+                                                                               const vector< T3Point > &  pts,
+                                                                               BLAS::Matrix< value_t > &  matrix ) const
 {
-    //
-    // local types for storing triangle sets and for
-    // mapping indices to position in \a values
-    //
-    
-    using  real_t = typename real_type< value_t >::type_t;
-
     //
     // store position of all indices for indirect access of <matrix>
     //
@@ -376,9 +365,9 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( con
     // loop over each triangle in function space and integrate function
     //
 
-    const tri_quad_rule_t * quad_rule = this->get_quad_rule();
-    const size_t            npts      = quad_rule->npts;
-    vector< value_t >       quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    const auto         quad_rule = this->get_quad_rule();
+    const size_t       npts      = quad_rule->npts;
+    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -387,7 +376,7 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( con
         for ( const auto  tri_idx : triangles )
         {
             const TGrid::triangle_t  tri      = grid->triangle( tri_idx );
-            const real               tri_size = real_t( grid->tri_size( tri_idx ) );
+            const auto               tri_size = real_t( grid->tri_size( tri_idx ) );
             
             // evaluate dx-integral
             this->eval_dx( tri_idx, y, *quad_rule, quad_vals );
@@ -429,21 +418,14 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dx_perm  ( con
 //! and points \f$ x_{l} \f$ defined by \a pts. 
 //! Store results in \a matrix at index (j,l).
 //!
-template < typename  T_ansatzsp,
-           typename  T_testsp,
-           typename  T_val >
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
 void
-TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
-                                                                             const vector< T3Point > &  pts,
-                                                                             BLAS::Matrix< value_t > &  matrix ) const
+TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
+                                                                               const vector< T3Point > &  pts,
+                                                                               BLAS::Matrix< value_t > &  matrix ) const
 {
-    //
-    // local types for storing triangle sets and for
-    // mapping indices to position in \a values
-    //
-    
-    using  real_t = typename real_type< value_t >::type_t;
-
     //
     // store position of all indices for indirect access of <matrix>
     //
@@ -472,9 +454,9 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( con
     // loop over each triangle in function space and integrate function
     //
 
-    const tri_quad_rule_t *  quad_rule = this->get_quad_rule();
-    const size_t             npts      = quad_rule->npts;
-    vector< value_t >        quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    const auto         quad_rule = this->get_quad_rule();
+    const size_t       npts      = quad_rule->npts;
+    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -483,7 +465,7 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( con
         for (const auto  tri_idx : triangles )
         {
             const TGrid::triangle_t  tri      = grid->triangle( tri_idx );
-            const real               tri_size = real_t( grid->tri_size( tri_idx ) );
+            const auto               tri_size = real_t( grid->tri_size( tri_idx ) );
             
             // evaluate dx-integral
             this->eval_dy( x, tri_idx, *quad_rule, quad_vals );
@@ -528,22 +510,20 @@ TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_val >::integrate_dy_perm  ( con
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-template class TQuadHCAGenFn< TConstFnSpace,  TConstFnSpace,  real    >;
-template class TQuadHCAGenFn< TConstFnSpace,  TConstFnSpace,  complex >;
-template class TQuadHCAGenFn< TConstFnSpace,  TLinearFnSpace, real    >;
-template class TQuadHCAGenFn< TConstFnSpace,  TLinearFnSpace, complex >;
-template class TQuadHCAGenFn< TLinearFnSpace, TConstFnSpace,  real    >;
-template class TQuadHCAGenFn< TLinearFnSpace, TConstFnSpace,  complex >;
-template class TQuadHCAGenFn< TLinearFnSpace, TLinearFnSpace, real    >;
-template class TQuadHCAGenFn< TLinearFnSpace, TLinearFnSpace, complex >;
+#define INST_ALL( type1, type2 )                                              \
+    template class TQuadHCAGenFn< TConstFnSpace< type1 >,  TConstFnSpace< type1 >,  type2 >; \
+    template class TQuadHCAGenFn< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class TQuadHCAGenFn< TLinearFnSpace< type1 >, TConstFnSpace< type1 >,  type2 >; \
+    template class TQuadHCAGenFn< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >; \
+                                                                        \
+    template class TInvarBasisQuadHCAGenFn< TConstFnSpace< type1 >,  TConstFnSpace< type1 >,  type2 >; \
+    template class TInvarBasisQuadHCAGenFn< TConstFnSpace< type1 >,  TLinearFnSpace< type1 >, type2 >; \
+    template class TInvarBasisQuadHCAGenFn< TLinearFnSpace< type1 >, TConstFnSpace< type1 >,  type2 >; \
+    template class TInvarBasisQuadHCAGenFn< TLinearFnSpace< type1 >, TLinearFnSpace< type1 >, type2 >;
 
-template class TInvarBasisQuadHCAGenFn< TConstFnSpace,  TConstFnSpace,  real    >;
-template class TInvarBasisQuadHCAGenFn< TConstFnSpace,  TConstFnSpace,  complex >;
-template class TInvarBasisQuadHCAGenFn< TConstFnSpace,  TLinearFnSpace, real    >;
-template class TInvarBasisQuadHCAGenFn< TConstFnSpace,  TLinearFnSpace, complex >;
-template class TInvarBasisQuadHCAGenFn< TLinearFnSpace, TConstFnSpace,  real    >;
-template class TInvarBasisQuadHCAGenFn< TLinearFnSpace, TConstFnSpace,  complex >;
-template class TInvarBasisQuadHCAGenFn< TLinearFnSpace, TLinearFnSpace, real    >;
-template class TInvarBasisQuadHCAGenFn< TLinearFnSpace, TLinearFnSpace, complex >;
+INST_ALL( float,  float )
+INST_ALL( double, double )
+INST_ALL( float,  std::complex< float > )
+INST_ALL( double, std::complex< double > )
 
-}// namespace HLIB
+}// namespace Hpro

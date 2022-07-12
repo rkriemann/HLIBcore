@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : matlab_io.cc
 // Description : Matlab related IO functions and classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstring>
@@ -11,7 +11,7 @@
 #include <sstream>
 #include <memory>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if HAS_BOOST_IOSTREAMS == 1
 #include <boost/iostreams/filtering_stream.hpp>
@@ -21,10 +21,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
-#include "hpro/matrix/TDenseMatrix.hh"
-#include "hpro/matrix/TRkMatrix.hh"
 #include "hpro/matrix/TSparseMatrix.hh"
 #include "hpro/matrix/THMatrix.hh"
+#include "hpro/matrix/structure.hh"
 
 #include "baseio.hh"
 
@@ -32,7 +31,7 @@
 #include "hpro/io/TVectorIO.hh"
 #include "hpro/io/TCoordIO.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace fs = boost::filesystem;
@@ -130,66 +129,50 @@ namespace
 //
 // template functions for reading and writing data
 //
-template <class T>
-T
+template < typename value_t >
+value_t
 mat5_read ( std::istream &  in,
             const bool      byteswap )
 {
-    T  val;
+    value_t  val;
     
-    in.read( reinterpret_cast< char * >( & val ), sizeof(T) );
+    in.read( reinterpret_cast< char * >( & val ), sizeof(value_t) );
     BYTE_SWAP( val );
 
     return val;
 }
 
-template <class T>
+template < typename value_t >
 void
 mat5_read ( std::istream &  in,
-            T *             data,
+            value_t *       data,
             const uint      nelem,
             const bool      byteswap )
 {
-    in.read( reinterpret_cast< char * >(  data ), sizeof(T)*nelem );
+    in.read( reinterpret_cast< char * >(  data ), sizeof(value_t)*nelem );
     
-    if ( byteswap && ( sizeof(T) > 1 ))
+    if ( byteswap && ( sizeof(value_t) > 1 ))
     {
         for ( uint i = 0; i < nelem; i++ )
             BYTE_SWAP( data[i] );
     }// if
 }
 
-// template <>
-// void
-// mat5_read ( std::istream &  in, complex * data, const uint nelem, const bool byteswap )
-// {
-//     in.read( reinterpret_cast< char * >(  data ), sizeof(complex)*nelem );
-
-//     if ( byteswap )
-//     {
-//         for ( uint i = 0; i < nelem; i++ )
-//         {
-//             BYTE_SWAP( std::real(data[i]) );
-//             BYTE_SWAP( std::imag(data[i]) );
-//         }// for
-//     }// if
-// }
-
-template <class T>
+template < typename value_t >
 void
 mat5_write ( std::ostream &  out,
-             T               data )
+             value_t         data )
 {
-    out.write( reinterpret_cast< const char * >( & data ), sizeof(T) );
+    out.write( reinterpret_cast< const char * >( & data ), sizeof(value_t) );
 }
 
-template <class T>
+template < typename value_t >
 void
-mat5_write ( std::ostream &  out,
-             const T *       data,
-             const size_t    nelem )
+mat5_write ( std::ostream &   out,
+             const value_t *  data,
+             const size_t     nelem )
 {
-    out.write( reinterpret_cast< const char * >(  data ), sizeof(T)*nelem );
+    out.write( reinterpret_cast< const char * >(  data ), sizeof(value_t)*nelem );
 }
 
 void
@@ -267,23 +250,24 @@ mat5_writetag ( std::ostream & out,
 //
 // read coefficient of array and return as double
 //
-real
+template < typename value_t >
+value_t
 mat5_read_coeff ( std::istream &  in,
                   const bool      byteswap,
                   const int32_t   type )
 {
-    real  coeff;
+    value_t  coeff;
 
     switch ( type )
     {
-        case MI_INT8   : coeff = real(mat5_read<int8_t>(   in, byteswap )); break;
-        case MI_UINT8  : coeff = real(mat5_read<uint8_t>(  in, byteswap )); break;
-        case MI_INT16  : coeff = real(mat5_read<int16_t>(  in, byteswap )); break;
-        case MI_UINT16 : coeff = real(mat5_read<uint16_t>( in, byteswap )); break;
-        case MI_INT32  : coeff = real(mat5_read<int32_t>(  in, byteswap )); break;
-        case MI_UINT32 : coeff = real(mat5_read<uint32_t>( in, byteswap )); break;
-        case MI_SINGLE : coeff = real(mat5_read<float>(    in, byteswap )); break;
-        case MI_DOUBLE : coeff = real(mat5_read<double>(   in, byteswap )); break;
+        case MI_INT8   : coeff = value_t(mat5_read<int8_t>(   in, byteswap )); break;
+        case MI_UINT8  : coeff = value_t(mat5_read<uint8_t>(  in, byteswap )); break;
+        case MI_INT16  : coeff = value_t(mat5_read<int16_t>(  in, byteswap )); break;
+        case MI_UINT16 : coeff = value_t(mat5_read<uint16_t>( in, byteswap )); break;
+        case MI_INT32  : coeff = value_t(mat5_read<int32_t>(  in, byteswap )); break;
+        case MI_UINT32 : coeff = value_t(mat5_read<uint32_t>( in, byteswap )); break;
+        case MI_SINGLE : coeff = value_t(mat5_read<float>(    in, byteswap )); break;
+        case MI_DOUBLE : coeff = value_t(mat5_read<double>(   in, byteswap )); break;
                         
     default:
         HERROR( ERR_NOT_IMPL, "mat5_read_coeff",
@@ -296,28 +280,29 @@ mat5_read_coeff ( std::istream &  in,
 //
 // read sparse double array
 //
+template < typename value_t >
 void
 mat5_read_sparse ( std::istream &         in,
-                   const bool             imag,
                    const bool             byteswap,
                    const vector< uint > & dims,
                    const uint             nonzero,
-                   TMatrix **             M,
-                   TVector **             v )
+                   TMatrix< value_t > **  M,
+                   TVector< value_t > **  v )
 {
-    unique_ptr< TSparseMatrix >  S;
-    unique_ptr< TScalarVector >  x;
+    using  real_t = real_type_t< value_t >;
+    
+    std::unique_ptr< TSparseMatrix< value_t > >  S;
+    std::unique_ptr< TScalarVector< value_t > >  x;
 
     if ( v != nullptr )
     {
         int  len = (dims[0] != 1 ? dims[0] : dims[1]);
 
-        x.reset( new TScalarVector( len, 0, imag ) );
+        x.reset( new TScalarVector< value_t >( len, 0 ) );
     }// if
     else
     {
-        S.reset( new TSparseMatrix(  dims[0], dims[1] ) );
-        S->set_complex( imag );
+        S.reset( new TSparseMatrix< value_t >(  dims[0], dims[1] ) );
     }// else
     
     //
@@ -437,10 +422,9 @@ mat5_read_sparse ( std::istream &         in,
     {
         for ( size_t  i = 0; i < nnz; i++ )
         {
-            const real coeff = mat5_read_coeff( in, byteswap, type );
+            const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
 
-            if   ( imag ) x->set_centry( rowptr[i], coeff );
-            else          x->set_entry(  rowptr[i], coeff );
+            x->set_entry( rowptr[i], coeff );
         }// for
     }// if
     else
@@ -456,12 +440,10 @@ mat5_read_sparse ( std::istream &         in,
             {
                 const idx_t  row   = rowptr[i];
                 const idx_t  idx   = S->rowptr(row) + tmp[row];
-                const real   coeff = mat5_read_coeff( in, byteswap, type );
+                const auto   coeff = mat5_read_coeff< real_t >( in, byteswap, type );
                 
                 S->colind(idx) = col;
-
-                if ( imag ) S->ccoeff(idx) = coeff;
-                else        S->rcoeff(idx) = coeff;
+                S->coeff(idx) = coeff;
 
                 tmp[row]++;
             }// for
@@ -474,7 +456,7 @@ mat5_read_sparse ( std::istream &         in,
     // read imaginary parts
     //
 
-    if ( imag )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_readtag( in, type, size, byteswap );
         
@@ -482,9 +464,9 @@ mat5_read_sparse ( std::istream &         in,
         {
             for ( size_t  i = 0; i < nnz; i++ )
             {
-                const real coeff = mat5_read_coeff( in, byteswap, type );
+                const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
 
-                x->set_centry( rowptr[i], x->centry( rowptr[i] ) + complex( 0, coeff ) );
+                x->set_entry( rowptr[i], get_value< value_t >::compose( std::real( x->entry( rowptr[i] ) ), coeff ) );
             }// for
         }// if
         else
@@ -500,9 +482,9 @@ mat5_read_sparse ( std::istream &         in,
                 {
                     const idx_t  row   = rowptr[i];
                     const idx_t  idx   = S->rowptr(row) + tmp[row];
-                    const real   coeff = mat5_read_coeff( in, byteswap, type );
+                    const auto   coeff = mat5_read_coeff< real_t >( in, byteswap, type );
             
-                    S->ccoeff(idx) += complex( 0, coeff );
+                    S->coeff( idx ) = get_value< value_t >::compose( std::real( S->coeff(idx) ), coeff );
 
                     tmp[row]++;
                 }// for
@@ -541,31 +523,32 @@ mat5_read_sparse ( std::istream &         in,
 //
 // read full double matrix
 //
+template < typename value_t >
 void
-mat5_read_dblarray ( std::istream &         in,
-                     const bool             imag,
-                     const bool             byteswap,
-                     const vector< uint > & dims,
-                     TMatrix **             M,
-                     TVector **             v )
+mat5_read_dblarray ( std::istream &          in,
+                     const bool              byteswap,
+                     const vector< uint > &  dims,
+                     TMatrix< value_t > **   M,
+                     TVector< value_t > **   v )
 {
-    unique_ptr< TDenseMatrix >   D;
-    unique_ptr< TScalarVector >  x;
+    using  real_t = real_type_t< value_t >;
+    
+    std::unique_ptr< TDenseMatrix< value_t > >   D;
+    std::unique_ptr< TScalarVector< value_t > >  x;
 
     if ( v != nullptr )
     {
         const uint  len = (dims[0] != 1 ? dims[0] : dims[1]);
 
-        x = std::make_unique< TScalarVector >( len, 0, imag );
+        x = std::make_unique< TScalarVector< value_t > >( len, 0 );
     }// if
     else
     {
-        D = std::make_unique< TDenseMatrix >();
+        D = std::make_unique< TDenseMatrix< value_t > >();
 
         if ( D == nullptr )
             HERROR( ERR_MEM, "mat5_read_dblarray", "" );
         
-        D->set_complex( imag );
         D->set_size( dims[0], dims[1] );
     }// else
     
@@ -584,10 +567,9 @@ mat5_read_dblarray ( std::istream &         in,
 
         for ( uint i = 0; i < len; i++ )
         {
-            const real  coeff = mat5_read_coeff( in, byteswap, type );
+            const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
             
-            if   ( imag ) x->set_centry( i, coeff );
-            else          x->set_entry(  i, coeff );
+            x->set_entry( i, coeff );
         }// for
     }// if
     else
@@ -595,10 +577,9 @@ mat5_read_dblarray ( std::istream &         in,
         for ( uint j = 0; j < dims[1]; j++ )
             for ( uint i = 0; i < dims[0]; i++ )
             {
-                const real  coeff = mat5_read_coeff( in, byteswap, type );
+                const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
             
-                if ( D->is_complex() ) D->set_centry( i, j, coeff );
-                else                   D->set_entry(  i, j, coeff );
+                D->set_entry( i, j, coeff );
             }// for
     }// else
     
@@ -608,7 +589,7 @@ mat5_read_dblarray ( std::istream &         in,
     // read imaginary parts
     //
 
-    if ( imag )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_readtag( in, type, size, byteswap );
         
@@ -618,9 +599,9 @@ mat5_read_dblarray ( std::istream &         in,
             
             for ( uint i = 0; i < len; i++ )
             {
-                const real  coeff = mat5_read_coeff( in, byteswap, type );
+                const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
             
-                x->set_centry( i, x->centry( i ) + complex( 0, coeff ) );
+                x->set_entry( i, get_value< value_t >::compose( std::real( x->entry( i ) ), coeff ) );
             }// for
         }// if
         else
@@ -628,9 +609,9 @@ mat5_read_dblarray ( std::istream &         in,
             for ( uint j = 0; j < dims[1]; j++ )
                 for ( uint i = 0; i < dims[0]; i++ )
                 {
-                    const real  coeff = mat5_read_coeff( in, byteswap, type );
+                    const auto  coeff = mat5_read_coeff< real_t >( in, byteswap, type );
                     
-                    D->set_centry( i, j, D->centry( i, j ) + complex( 0, coeff ) );
+                    D->set_entry( i, j, get_value< value_t >::compose( std::real( D->entry( i, j ) ), coeff ) );
                 }// for
         }// else
         
@@ -643,7 +624,7 @@ mat5_read_dblarray ( std::istream &         in,
 
     if ( D.get() != nullptr )
     {
-        if ( imag )
+        if ( is_complex_type< value_t >::value )
         {
             bool  is_sym  = true;
             bool  is_herm = true;
@@ -651,10 +632,10 @@ mat5_read_dblarray ( std::istream &         in,
             for ( uint i = 0; i < dims[0]; i++ )
                 for ( uint j = i+1; j < dims[1]; j++ )
                 {
-                    if ( D->centry( i, j ) != D->centry( j, i ) )
+                    if ( D->entry( i, j ) != D->entry( j, i ) )
                         is_sym = false;
 
-                    if ( D->centry( i, j ) != conj( D->centry( j, i ) ) )
+                    if ( D->entry( i, j ) != Math::conj( D->entry( j, i ) ) )
                         is_herm = false;
 
                     if ( ! is_sym && ! is_herm )
@@ -702,14 +683,15 @@ mat5_read_dblarray ( std::istream &         in,
 //
 // read a single element from file
 //
+template < typename value_t >
 void
-mat5_read_element ( std::istream &      in,
-                    const bool          byteswap,
-                    const std::string & name,
-                    const bool          is_subfield,
-                    const std::string & fieldname,
-                    TMatrix **          M,
-                    TVector **          v )
+mat5_read_element ( std::istream &         in,
+                    const bool             byteswap,
+                    const std::string &    name,
+                    const bool             is_subfield,
+                    const std::string &    fieldname,
+                    TMatrix< value_t > **  M,
+                    TVector< value_t > **  v )
 {
     int32_t  element_size = 0;
     matmi_t  type = matmi_t( 0 );
@@ -776,7 +758,7 @@ mat5_read_element ( std::istream &      in,
 
 #else
         
-        HERROR( ERR_NOT_IMPL, "mat5_read_element", "nompression not supported" );
+        HERROR( ERR_NOT_IMPL, "mat5_read_element", "compression not supported" );
         
 #endif
     }// if
@@ -799,6 +781,9 @@ mat5_read_element ( std::istream &      in,
     const bool     imag   = ((flags & 0x0800) != 0);
     const matmx_t  aclass = matmx_t( flags & 0xff );
 
+    if ( imag && ! is_complex_type< value_t >::value )
+        HERROR( ERR_REAL_CMPLX, "mat5_read_element", "found complex valued data but real valued requested" );
+    
     PAD_SEEKG( size, in ); 
     
     //
@@ -854,9 +839,9 @@ mat5_read_element ( std::istream &      in,
     if ( type != MI_INT8 )
         HERROR( ERR_FMT_MATLAB, "mat5_read_dblarray", "expected INT8" );
 
-    std::string  element_name( size_t(size+1), '\0' );
+    std::string  element_name( size_t(size), '\0' );
 
-    element_name[size] = '\0';
+    // element_name[size] = '\0';
     
     in.read( const_cast< char * >( element_name.data() ), size );
     PAD_SEEKG( size, in );
@@ -866,8 +851,8 @@ mat5_read_element ( std::istream &      in,
         element_name = fieldname;
 
     // adjust "skipping" if requested name equals element_name
-    if (( name != "" ) && ( name == element_name ))
-        skip = false;
+    if (( name != "" ) && ( name != element_name ))
+        skip = true;
         
     //
     // read fields based on class value
@@ -914,17 +899,17 @@ mat5_read_element ( std::istream &      in,
         else if ( aclass == MX_SPARSE_ARRAY )
         {
             if (( name == "" ) || ( name == element_name ))
-                mat5_read_sparse( in, imag, byteswap, dims, nnz, M, v );
+                mat5_read_sparse< value_t >( in, byteswap, dims, nnz, M, v );
         }// if
         else if ( aclass == MX_DBL_ARRAY )
         {
             if (( name == "" ) || ( name == element_name ))
-                mat5_read_dblarray( in, imag, byteswap, dims, M, v );
+                mat5_read_dblarray< value_t >( in, byteswap, dims, M, v );
         }// if
         else if ( aclass == MX_SGL_ARRAY )
         {
             if (( name == "" ) || ( name == element_name ))
-                mat5_read_dblarray( in, imag, byteswap, dims, M, v );
+                mat5_read_dblarray< value_t >( in, byteswap, dims, M, v );
         }// if
         // else
         //     HERROR( ERR_TYPE, "mat5_read_element", "only dense and sparse matrices supported" );
@@ -938,16 +923,238 @@ mat5_read_element ( std::istream &      in,
     PAD_SEEKG( element_size, in ); 
 }
 
+bool
+mat5_guess_type ( std::istream &         in,
+                  const bool             byteswap,
+                  const std::string &    name,
+                  const bool             is_subfield,
+                  const std::string &    fieldname,
+                  variant_id_t &         value_type )
+{
+    bool     found        = false;
+    int32_t  element_size = 0;
+    matmi_t  type         = matmi_t( 0 );
+        
+    mat5_readtag( in, type, element_size, byteswap );
+
+    int32_t  size = element_size;
+    auto     pos  = in.tellg();
+        
+    if ( type == MI_COMPRESSED )
+    {
+        #if HAS_BOOST_IOSTREAMS == 1
+        
+        std::string  inbuf( size, '\0' );
+
+        in.read( const_cast< char * >( inbuf.data() ), size );
+        
+        //
+        // read first 8 bytes to obtain size
+        //
+        
+        uint32_t  tmp[2] = { 0, 0 };
+
+        {
+            io::filtering_istream  zin;
+            std::istringstream     strin( inbuf );
+
+            zin.push( io::zlib_decompressor()  );
+            zin.push( strin );
+
+            zin.read( reinterpret_cast< char * >( tmp ), sizeof(tmp) );
+        }
+
+        //
+        // uncompress all and continue reading matlab format
+        // - can not uncompress on the fly using zlib_decompressor as it
+        //   does not support tell/seek
+        // - "+8" gives correct size
+        //
+        
+        std::string  outbuf( tmp[1] + 8, '\0' );
+
+        {
+            io::filtering_istream  zin;
+            std::istringstream     strin( inbuf );
+
+            zin.push( io::zlib_decompressor()  );
+            zin.push( strin );
+
+            zin.read( const_cast< char * >( outbuf.data() ), tmp[1] + 8 );
+        }
+        
+        std::istringstream  strout( outbuf );
+
+        while ( strout.good() )
+        {
+            if ( mat5_guess_type( strout, byteswap, name, is_subfield, fieldname, value_type ) )
+            {
+                found = true;
+                break;
+            }// if
+        }// while
+
+        // go to point after datastructure in case we did not
+        // read everything
+        in.seekg( pos );
+        in.seekg( element_size, std::ios_base::cur );
+        
+        PAD_SEEKG( element_size, in );
+                
+        return found;
+#else
+        
+        HERROR( ERR_NOT_IMPL, "mat5_guess_type", "compression not supported" );
+        
+#endif
+    }// if
+    else if ( type != MI_MATRIX )
+        HERROR( ERR_NOT_IMPL, "mat5_guess_type", "only miMatrix is supported" );
+
+    //
+    // read array flags
+    //
+
+    mat5_readtag( in, type, size, byteswap );
+
+    if ( type != MI_UINT32 )
+        HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected UINT32" );
+
+    if ( size != 8 )
+        HERROR( ERR_SIZE, "mat5_guess_type", "expected 2 * UINT32" );
+
+    const uint32_t flags  = mat5_read<uint32_t>( in, byteswap );
+    const bool     imag   = ((flags & 0x0800) != 0);
+    const matmx_t  aclass = matmx_t( flags & 0xff );
+
+    PAD_SEEKG( size, in ); 
+    
+    //
+    // read number of non-zeroes in case of sparse matrix
+    // or junk in case of a dense matrix
+    //
+    
+    mat5_read<uint32_t>( in, byteswap );
+    PAD_SEEKG( size, in );
+    
+    //
+    // read dimensions 
+    //
+    
+    mat5_readtag( in, type, size, byteswap );
+
+    if ( type != MI_INT32 )
+        HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT32" );
+
+    const uint     ndims    = size / 4;
+    vector< uint > dims( ndims );
+    uint           nentries = 1;
+    bool           skip     = false;  // indicates skipping of data element
+
+    for ( uint i = 0; i < ndims; i++ )
+    {
+        dims[i]   = mat5_read<int32_t>( in, byteswap );
+        nentries *= dims[i];
+    }// for
+    
+    PAD_SEEKG( size, in ); 
+
+    //
+    // read name of array
+    //
+    
+    mat5_readtag( in, type, size, byteswap );
+
+    if ( type != MI_INT8 )
+        HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT8" );
+
+    std::string  element_name( size_t(size), '\0' );
+
+    // element_name[size] = '\0';
+    
+    in.read( const_cast< char * >( element_name.data() ), size );
+    PAD_SEEKG( size, in );
+
+    // in case of a subfield: adjust element name
+    if (( element_name == "" ) && is_subfield )
+        element_name = fieldname;
+
+    // adjust "skipping" if requested name equals element_name
+    if (( name != "" ) && ( name != element_name ))
+        skip = true;
+        
+    //
+    // read fields based on class value
+    //
+
+    if ( ! skip )
+    {
+        if ( aclass == MX_STRUCTURE )
+        {
+            mat5_readtag( in, type, size, byteswap );
+
+            if ( type != MI_INT32 )
+                HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT32" );
+
+            const int32_t  fnlen = mat5_read<int32_t>( in, byteswap );
+        
+            mat5_readtag( in, type, size, byteswap );
+
+            if ( type != MI_INT8 )
+                HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT8" );
+
+            const uint             fields = size / fnlen;
+            vector< std::string >  fieldnames( fields );
+
+            for ( uint i = 0; i < fields; i++ )
+            {
+                fieldnames[i].resize( fnlen+1 );
+                fieldnames[i][fnlen] = '\0';
+                in.read( const_cast< char * >( fieldnames[i].data() ), fnlen );
+            }// for
+
+            PAD_SEEKG( size, in );
+
+            for ( uint i = 0; i < fields; i++ )
+            {
+                if ( mat5_guess_type( in, byteswap, name, true, fieldnames[i], value_type ) )
+                {
+                    found = true;
+                    break;
+                }// if
+            }// for
+        }// if
+        else
+        {
+            if ( imag )
+                value_type = COMPLEX_FP64;
+            else
+                value_type = REAL_FP64;
+
+            found = true;
+        }// else
+    }// if
+
+    // go to point after datastructure in case we did not
+    // read everything
+    in.seekg( pos );
+    in.seekg( element_size, std::ios_base::cur );
+        
+    PAD_SEEKG( element_size, in );
+
+    return found;
+}
+
 //
 // special write methods
 //
-template <typename T>
+template < typename value_t >
 void
-write_dense ( std::ostream &            out,
-              const BLAS::Matrix< T > & D,
-              const std::string &       matname )
+write_dense ( std::ostream &                   out,
+              const BLAS::Matrix< value_t > &  D,
+              const std::string &              matname )
 {
-    using  real_t = typename real_type< T >::type_t;
+    using  real_t = real_type_t< value_t >;
     
     // remember current position for size info
     const auto  pos = out.tellp();
@@ -960,10 +1167,10 @@ write_dense ( std::ostream &            out,
     // (if complex valued)
     //
 
-    uint32_t  flags = ( is_complex_type<T>::value ? 0x0800 : 0 );
+    uint32_t  flags = ( is_complex_type< value_t >::value ? 0x0800 : 0 );
     uint32_t  tmp   = 0;
 
-    flags |= is_single_prec< T >::value ? MX_SGL_ARRAY : MX_DBL_ARRAY;
+    flags |= is_single_prec< value_t >::value ? MX_SGL_ARRAY : MX_DBL_ARRAY;
     
     mat5_writetag( out, MI_UINT32, 8 );
     mat5_write<uint32_t>( out, flags );
@@ -996,7 +1203,7 @@ write_dense ( std::ostream &            out,
     // - no padding neccessary since sizeof(double) == 8
     //
 
-    matmi_t  mi_type = is_single_prec< T >::value ? MI_SINGLE : MI_DOUBLE;
+    matmi_t  mi_type = is_single_prec< value_t >::value ? MI_SINGLE : MI_DOUBLE;
     
     mat5_writetag( out, mi_type, int32_t( sizeof(real_t)*rows*cols ) );
 
@@ -1010,7 +1217,7 @@ write_dense ( std::ostream &            out,
     // write imaginary part of array
     //
 
-    if ( is_complex_type<T>::value )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_writetag( out, mi_type, int32_t( sizeof(real_t)*rows*cols ) );
 
@@ -1033,10 +1240,11 @@ write_dense ( std::ostream &            out,
     mat5_writetag( out, MI_MATRIX, size );
 }
 
+template < typename value_t >
 void
-write_rank ( std::ostream &       out,
-             const TRkMatrix *    R,
-             const std::string &  matname )
+write_rank ( std::ostream &                out,
+             const TRkMatrix< value_t > *  R,
+             const std::string &           matname )
 {
     //
     // split low-rank matrix in A and B and write matname_A and matname_B
@@ -1093,35 +1301,24 @@ write_rank ( std::ostream &       out,
 
     mat5_writetag( out, MI_DOUBLE, int32_t(sizeof(double)*rows*rank) );
 
-    if ( R->is_complex() )
-    {
-        for ( int k = 0; k < rank; k++ )
-            for ( int i = 0; i < rows; i++ )
-            {
-                mat5_write<double>( out, std::real( R->blas_cmat_A()( i, k ) ) );
-            }// for
-    }// if
-    else
-    {
-        for ( int k = 0; k < rank; k++ )
-            for ( int i = 0; i < rows; i++ )
-            {
-                mat5_write<double>( out, R->blas_rmat_A()( i, k ) );
-            }// for
-    }// else
+    for ( int k = 0; k < rank; k++ )
+        for ( int i = 0; i < rows; i++ )
+        {
+            mat5_write<double>( out, std::real( R->blas_mat_A()( i, k ) ) );
+        }// for
     
     //
     // write imaginary part of array
     //
 
-    if ( R->is_complex() )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_writetag( out, MI_DOUBLE, int32_t(sizeof(double)*rows*rank) );
 
         for ( int k = 0; k < rank; k++ )
             for ( int i = 0; i < rows; i++ )
             {
-                mat5_write<double>( out, std::imag( R->blas_cmat_A()( i, k ) ) );
+                mat5_write<double>( out, std::imag( R->blas_mat_A()( i, k ) ) );
             }// for
     }// if
 
@@ -1185,35 +1382,24 @@ write_rank ( std::ostream &       out,
 
     mat5_writetag( out, MI_DOUBLE, int32_t(sizeof(double)*cols*rank) );
 
-    if ( R->is_complex() )
-    {
-        for ( int k = 0; k < rank; k++ )
-            for ( int i = 0; i < cols; i++ )
-            {
-                mat5_write<double>( out, std::real( R->blas_cmat_B()( i, k ) ) );
-            }// for
-    }// if
-    else
-    {
-        for ( int k = 0; k < rank; k++ )
-            for ( int i = 0; i < cols; i++ )
-            {
-                mat5_write<double>( out, R->blas_rmat_B()( i, k ) );
-            }// for
-    }// else
+    for ( int k = 0; k < rank; k++ )
+        for ( int i = 0; i < cols; i++ )
+        {
+            mat5_write<double>( out, std::real( R->blas_mat_B()( i, k ) ) );
+        }// for
     
     //
     // write imaginary part of array
     //
 
-    if ( R->is_complex() )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_writetag( out, MI_DOUBLE, int32_t(sizeof(double)*cols*rank) );
 
         for ( int k = 0; k < rank; k++ )
             for ( int i = 0; i < cols; i++ )
             {
-                mat5_write<double>( out, std::imag( R->blas_cmat_B()( i, k ) ) );
+                mat5_write<double>( out, std::imag( R->blas_mat_B()( i, k ) ) );
             }// for
     }// if
 
@@ -1225,10 +1411,11 @@ write_rank ( std::ostream &       out,
     mat5_writetag( out, MI_MATRIX, size );
 }
 
+template < typename value_t >
 void
-write_sparse ( std::ostream &         out,
-               const TSparseMatrix *  S,
-               const std::string &    matname )
+write_sparse ( std::ostream &                    out,
+               const TSparseMatrix< value_t > *  S,
+               const std::string &               matname )
 {
     // remember current position for size info
     auto  fpos = out.tellp();
@@ -1345,10 +1532,7 @@ write_sparse ( std::ostream &         out,
             const idx_t  col = S->colind(j);
             const idx_t  idx = ccs_colind[col] + tmp[col];
 
-            if ( S->is_complex() )
-                ccs_coeff[ idx ] = std::real( S->ccoeff(j) );
-            else
-                ccs_coeff[ idx ] = S->rcoeff(j);
+            ccs_coeff[ idx ] = std::real( S->coeff(j) );
             
             tmp[col]++;
         }// for
@@ -1383,7 +1567,7 @@ write_sparse ( std::ostream &         out,
     // read imaginary parts
     //
 
-    if ( S->is_complex() )
+    if ( is_complex_type< value_t >::value )
     {
         for ( int i = 0; i < cols; i++ )
             tmp[i] = 0;
@@ -1401,7 +1585,7 @@ write_sparse ( std::ostream &         out,
                 const idx_t  col = S->colind(j);
                 const idx_t  idx = ccs_colind[col] + tmp[col];
                 
-                ccs_coeff[ idx ] = std::imag( S->ccoeff(j) );
+                ccs_coeff[ idx ] = std::imag( S->coeff(j) );
                 
                 tmp[col]++;
             }// for
@@ -1423,11 +1607,11 @@ write_sparse ( std::ostream &         out,
     mat5_writetag( out, MI_MATRIX, size );
 }
 
-template <typename T>
+template < typename value_t >
 void
-write_scalar ( std::ostream &            out,
-               const BLAS::Vector< T > & v,
-               const std::string &       vecname )
+write_scalar ( std::ostream &                   out,
+               const BLAS::Vector< value_t > &  v,
+               const std::string &              vecname )
 {
     // remember current position for size info
     auto  pos = out.tellp();
@@ -1440,7 +1624,7 @@ write_scalar ( std::ostream &            out,
     // (if complex valued)
     //
 
-    uint32_t  flags = ( is_complex_type<T>::value ? 0x0800 : 0 );
+    uint32_t  flags = ( is_complex_type< value_t >::value ? 0x0800 : 0 );
     uint32_t  tmp   = 0;
 
     flags |= MX_DBL_ARRAY;
@@ -1484,7 +1668,7 @@ write_scalar ( std::ostream &            out,
     // write imaginary part of array
     //
 
-    if ( is_complex_type<T>::value )
+    if ( is_complex_type< value_t >::value )
     {
         mat5_writetag( out, MI_DOUBLE, int32_t( sizeof(double)*dim ) );
 
@@ -1517,9 +1701,10 @@ write_scalar ( std::ostream &            out,
 //
 // write matrix to file
 //
+template < typename value_t >
 void
-TMatlabMatrixIO::write ( const TMatrix *      A,
-                         const std::string &  filename ) const
+TMatlabMatrixIO::write ( const TMatrix< value_t > *  A,
+                         const std::string &         filename ) const
 {
     return write( A, filename, "M" );
 }
@@ -1527,16 +1712,17 @@ TMatlabMatrixIO::write ( const TMatrix *      A,
 //
 // write matrix with given name (options are obsolete here)
 //
+template < typename value_t >
 void
-TMatlabMatrixIO::write ( const TMatrix *      A,
-                         const std::string &  filename,
-                         const std::string &  matname ) const
+TMatlabMatrixIO::write ( const TMatrix< value_t > *  A,
+                         const std::string &         filename,
+                         const std::string &         matname ) const
 {
     if ( A == nullptr )
         HERROR( ERR_ARG, "(TMatlabMatrixIO) write", "matrix is NULL" );
 
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    std::unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
+    std::ostream &                   out = * out_ptr.get();
 
     int16_t  version   = 0x0100;
     int16_t  endian    = 0x4d49; // = MI
@@ -1551,20 +1737,17 @@ TMatlabMatrixIO::write ( const TMatrix *      A,
     out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
     out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
 
-    if ( IS_TYPE( A, TDenseMatrix ) )
+    if ( is_dense( A ) )
     {
-        if ( A->is_complex() )
-            write_dense<complex>( out, cptrcast( A, TDenseMatrix )->blas_cmat(), matname );
-        else
-            write_dense<real>(    out, cptrcast( A, TDenseMatrix )->blas_rmat(), matname );
+        write_dense( out, cptrcast( A, TDenseMatrix< value_t > )->blas_mat(), matname );
     }// if
-    else if ( IS_TYPE( A, TRkMatrix ) )
+    else if ( is_lowrank( A ) )
     {
-        write_rank( out, cptrcast( A, TRkMatrix ), matname );
+        write_rank( out, cptrcast( A, TRkMatrix< value_t > ), matname );
     }// if
-    else if ( IS_TYPE( A, TSparseMatrix ) )
+    else if ( is_sparse( A ) )
     {
-        write_sparse( out, cptrcast( A, TSparseMatrix ), matname );
+        write_sparse( out, cptrcast( A, TSparseMatrix< value_t > ), matname );
     }// if
     else
         HERROR( ERR_MAT_TYPE, "(TMatlabMatrixIO) write", "unsupported matrix type " + A->typestr() );
@@ -1573,10 +1756,11 @@ TMatlabMatrixIO::write ( const TMatrix *      A,
 //
 // write linear operator \a A with name \a mname to file \a fname
 //
+template < typename value_t >
 void
-TMatlabMatrixIO::write ( const TLinearOperator *  A,
-                         const std::string &      /* fname */,
-                         const std::string &      /* mname */ ) const
+TMatlabMatrixIO::write ( const TLinearOperator< value_t > *  A,
+                         const std::string &                 /* fname */,
+                         const std::string &                 /* mname */ ) const
 {
     HERROR( ERR_MAT_TYPE, "(TMatlabMatrixIO) write", A->typestr() );
 }
@@ -1584,13 +1768,14 @@ TMatlabMatrixIO::write ( const TLinearOperator *  A,
 //
 // write BLAS matrix with given name
 //
+template < typename value_t >
 void
-TMatlabMatrixIO::write ( const BLAS::Matrix< float > &  A,
-                         const std::string &            filename,
-                         const std::string &            matname ) const
+TMatlabMatrixIO::write ( const BLAS::Matrix< value_t > &  A,
+                         const std::string &              filename,
+                         const std::string &              matname ) const
 {
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    std::unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
+    std::ostream &                   out = * out_ptr.get();
 
     int16_t  version   = 0x0100;
     int16_t  endian    = 0x4d49; // = MI
@@ -1605,106 +1790,36 @@ TMatlabMatrixIO::write ( const BLAS::Matrix< float > &  A,
     out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
     out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
 
-    write_dense< float >( out, A, matname );
-}
-
-void
-TMatlabMatrixIO::write ( const BLAS::Matrix< double > &  A,
-                         const std::string &             filename,
-                         const std::string &             matname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-
-    int16_t  version   = 0x0100;
-    int16_t  endian    = 0x4d49; // = MI
-    char     buf[116]  = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_dense< double >( out, A, matname );
-}
-
-void
-TMatlabMatrixIO::write ( const BLAS::Matrix< Complex< float > > &  A,
-                         const std::string &                        filename,
-                         const std::string &                        matname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-    
-    int16_t  version   = 0x0100;
-    int16_t  endian    = 0x4d49; // = MI
-    char     buf[116]  = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_dense< Complex< float > >( out, A, matname );
-}
-
-void
-TMatlabMatrixIO::write ( const BLAS::Matrix< Complex< double > > &  A,
-                         const std::string &                        filename,
-                         const std::string &                        matname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-    
-    int16_t  version   = 0x0100;
-    int16_t  endian    = 0x4d49; // = MI
-    char     buf[116]  = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_dense< Complex< double > >( out, A, matname );
+    write_dense( out, A, matname );
 }
 
 //
 // read matrix from file (assuming only one entry available)
 //
-unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 TMatlabMatrixIO::read ( const std::string & filename ) const
 {
-    return read( filename, "" );
+    return read< value_t >( filename, "" );
 }
 
 //
 // read matrix with name <matname> from file
 //
-unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 TMatlabMatrixIO::read  ( const std::string & filename,
                          const std::string & matname ) const
 {
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TMatlabMatrixIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    std::unique_ptr< std::istream >  in_ptr( open_read( filename ) );
+    std::istream &                   in = * in_ptr.get();
 
-    int16_t    version, endian;
-    bool       byteswap = false;
-    TMatrix *  M = nullptr;
+    int16_t               version, endian;
+    bool                  byteswap = false;
+    TMatrix< value_t > *  M        = nullptr;
 
     in.seekg( 124 );
     in.read( reinterpret_cast< char * >( & version ), sizeof(version) );
@@ -1719,11 +1834,24 @@ TMatlabMatrixIO::read  ( const std::string & filename,
     BYTE_SWAP( version );
         
     while (( M == nullptr ) && in.good() )
-        mat5_read_element( in, byteswap, matname, false, "", & M, nullptr );
+        mat5_read_element< value_t >( in, byteswap, matname, false, "", & M, nullptr );
     
-    return unique_ptr< TMatrix >( M );
+    return std::unique_ptr< TMatrix< value_t > >( M );
 }
 
+#define INST_MATRIXIO( type )                               \
+    template void TMatlabMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template void TMatlabMatrixIO::write< type > ( const TMatrix< type > *, const std::string &, const std::string & ) const; \
+    template void TMatlabMatrixIO::write< type > ( const TLinearOperator< type > *, const std::string & , const std::string & ) const; \
+    template void TMatlabMatrixIO::write< type > ( const BLAS::Matrix< type > &, const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TMatlabMatrixIO::read< type > ( const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TMatlabMatrixIO::read< type > ( const std::string &, const std::string & ) const;
+
+INST_MATRIXIO( float )
+INST_MATRIXIO( double )
+INST_MATRIXIO( std::complex< float > )
+INST_MATRIXIO( std::complex< double > )
+    
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 // 
@@ -1735,9 +1863,10 @@ TMatlabMatrixIO::read  ( const std::string & filename,
 //
 // write vector with name "v" to file <filename>
 //
+template < typename value_t >
 void
-TMatlabVectorIO::write ( const TVector *      v,
-                         const std::string &  filename ) const
+TMatlabVectorIO::write ( const TVector< value_t > *  v,
+                         const std::string &         filename ) const
 {
     write( v, filename, "v" );
 }
@@ -1745,10 +1874,11 @@ TMatlabVectorIO::write ( const TVector *      v,
 //
 // write vector with name <vecname> to file <filename>
 //
+template < typename value_t >
 void
-TMatlabVectorIO::write ( const TVector *      v,
-                         const std::string &  filename,
-                         const std::string &  vecname ) const
+TMatlabVectorIO::write ( const TVector< value_t > *  v,
+                         const std::string &         filename,
+                         const std::string &         vecname ) const
 {
     if ( v == nullptr )
         HERROR( ERR_ARG, "(TMatlabVectorIO) write", "vector is NULL" );
@@ -1756,14 +1886,14 @@ TMatlabVectorIO::write ( const TVector *      v,
     if ( ! IS_TYPE( v, TScalarVector ) )
         HERROR( ERR_VEC_TYPE, "(TMatlabVectorIO) write", v->typestr() );
 
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    std::unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
+    std::ostream &                   out = * out_ptr.get();
     
-    const TScalarVector * x = cptrcast( v, TScalarVector );
-    int16_t               version  = 0x0100;
-    int16_t               endian   = 0x4d49; // = MI
-    char                  buf[116] = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char                  subsys[8];
+    const auto  x        = cptrcast( v, TScalarVector< value_t > );
+    int16_t     version  = 0x0100;
+    int16_t     endian   = 0x4d49; // = MI
+    char        buf[116] = "MATLAB 5.0 MAT-file, Created by HLibPro";
+    char        subsys[8];
 
     for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
     for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
@@ -1773,91 +1903,17 @@ TMatlabVectorIO::write ( const TVector *      v,
     out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
     out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
 
-    if ( x->is_complex() )
-        write_scalar( out, x->blas_cvec(), vecname );
-    else
-        write_scalar( out, x->blas_rvec(), vecname );
+    write_scalar( out, x->blas_vec(), vecname );
 }
 
+template < typename value_t >
 void
-TMatlabVectorIO::write ( const BLAS::Vector< float > &  v,
-                         const std::string &            filename,
-                         const std::string &            vecname ) const
+TMatlabVectorIO::write ( const BLAS::Vector< value_t > &  v,
+                         const std::string &              filename,
+                         const std::string &              vecname ) const
 {
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-    
-    int16_t  version  = 0x0100;
-    int16_t  endian   = 0x4d49; // = MI
-    char     buf[116] = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_scalar( out, v, vecname );
-}
-
-void
-TMatlabVectorIO::write ( const BLAS::Vector< double > &  v,
-                         const std::string &             filename,
-                         const std::string &             vecname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-    
-    int16_t  version  = 0x0100;
-    int16_t  endian   = 0x4d49; // = MI
-    char     buf[116] = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_scalar( out, v, vecname );
-}
-
-void
-TMatlabVectorIO::write ( const BLAS::Vector< Complex< float > > &  v,
-                         const std::string &                       filename,
-                         const std::string &                       vecname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
-    
-    int16_t  version  = 0x0100;
-    int16_t  endian   = 0x4d49; // = MI
-    char     buf[116] = "MATLAB 5.0 MAT-file, Created by HLibPro";
-    char     subsys[8];
-
-    for ( size_t i = strlen(buf); i < 116; i++ ) buf[i]    = ' ';
-    for ( size_t i = 0;           i < 8;   i++ ) subsys[i] = '\0';
-    
-    out.write( buf, 116 );
-    out.write( subsys, 8 );
-    out.write( reinterpret_cast< const char * >( & version ), sizeof(version) );
-    out.write( reinterpret_cast< const char * >( & endian ),  sizeof(endian)  );
-
-    write_scalar( out, v, vecname );
-}
-
-void
-TMatlabVectorIO::write ( const BLAS::Vector< Complex< double > > &  v,
-                         const std::string &                        filename,
-                         const std::string &                        vecname ) const
-{
-    unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
-    std::ostream &              out = * out_ptr.get();
+    std::unique_ptr< std::ostream >  out_ptr( open_write( filename ) );
+    std::ostream &                   out = * out_ptr.get();
     
     int16_t  version  = 0x0100;
     int16_t  endian   = 0x4d49; // = MI
@@ -1878,28 +1934,30 @@ TMatlabVectorIO::write ( const BLAS::Vector< Complex< double > > &  v,
 //
 // read first vector from file <filename>
 //
-unique_ptr< TVector >
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
 TMatlabVectorIO::read ( const std::string &  filename ) const
 {
-    return read( filename, "" );
+    return read< value_t >( filename, "" );
 }
 
 //
 // read vector named <vecname> from file (vecname = "" means first vector avail.)
 //
-unique_ptr< TVector >
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
 TMatlabVectorIO::read ( const std::string &  filename,
                         const std::string &  vecname ) const
 {
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TMatlabVectorIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
+    std::unique_ptr< std::istream >  in_ptr( open_read( filename ) );
     std::istream &              in = * in_ptr.get();
 
-    int16_t    version, endian;
-    bool       byteswap = false;
-    TVector *  v = nullptr;
+    int16_t               version, endian;
+    bool                  byteswap = false;
+    TVector< value_t > *  v = nullptr;
 
     in.seekg( 124 );
     in.read( reinterpret_cast< char * >( & version ), sizeof(version) );
@@ -1913,11 +1971,23 @@ TMatlabVectorIO::read ( const std::string &  filename,
     BYTE_SWAP( version );
         
     while (( v == nullptr ) && in.good() )
-        mat5_read_element( in, byteswap, vecname, false, "", nullptr, & v );
+        mat5_read_element< value_t >( in, byteswap, vecname, false, "", nullptr, & v );
     
-    return unique_ptr< TVector >( v );
+    return std::unique_ptr< TVector< value_t > >( v );
 }
 
+#define INST_VECTORIO( type )                                       \
+    template void TMatlabVectorIO::write< type > ( const TVector< type > *, const std::string & ) const; \
+    template void TMatlabVectorIO::write< type > ( const TVector< type > *, const std::string &, const std::string & ) const; \
+    template void TMatlabVectorIO::write< type > ( const BLAS::Vector< type > &, const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TVector< type > > TMatlabVectorIO::read< type > ( const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TVector< type > > TMatlabVectorIO::read< type > ( const std::string & ) const;
+
+INST_VECTORIO( float )
+INST_VECTORIO( double )
+INST_VECTORIO( std::complex< float > )
+INST_VECTORIO( std::complex< double > )
+    
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 // 
@@ -1968,7 +2038,7 @@ TMatlabCoordIO::write ( const TCoordinate *  coord,
 //
 // read first vertices in file <filename>
 //
-unique_ptr< TCoordinate >
+std::unique_ptr< TCoordinate >
 TMatlabCoordIO::read ( const std::string &  filename ) const
 {
     return read( filename, "" );
@@ -1977,19 +2047,19 @@ TMatlabCoordIO::read ( const std::string &  filename ) const
 //
 // read vertices named <cooname> from file <filename>
 //
-unique_ptr< TCoordinate >
+std::unique_ptr< TCoordinate >
 TMatlabCoordIO::read ( const std::string &  filename,
                        const std::string &  cooname ) const
 {
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TMatlabCoordIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
+    std::unique_ptr< std::istream >  in_ptr( open_read( filename ) );
     std::istream &              in = * in_ptr.get();
 
-    int16_t                version, endian;
-    bool                   byteswap = false;
-    unique_ptr< TMatrix >  M;
+    int16_t  version, endian;
+    bool     byteswap = false;
+    auto     M        = std::unique_ptr< TMatrix< double > >();
 
     in.seekg( 124 );
     in.read( reinterpret_cast< char * >( & version ), sizeof(version) );
@@ -2005,13 +2075,13 @@ TMatlabCoordIO::read ( const std::string &  filename,
         
     while (( M.get() == nullptr ) && in.good() )
     {
-        TMatrix *  MT = nullptr;
+        TMatrix< double > *  MT = nullptr;
         
-        mat5_read_element( in, byteswap, cooname, false, "", & MT, nullptr );
+        mat5_read_element< double >( in, byteswap, cooname, false, "", & MT, nullptr );
 
-        M = unique_ptr< TMatrix >( MT );
+        M = std::unique_ptr< TMatrix< double > >( MT );
         
-        if ( ! IS_TYPE( M, TDenseMatrix ) || M->is_complex() )
+        if ( ! is_dense( *M ) )
         {
             M.reset( nullptr );
         }// if
@@ -2023,7 +2093,7 @@ TMatlabCoordIO::read ( const std::string &  filename,
         // convert dense matrix into coordinates
         //
 
-        TDenseMatrix *           D      = ptrcast( M.get(), TDenseMatrix );
+        auto                     D      = ptrcast( M.get(), TDenseMatrix< double > );
         const idx_t              ncoord = idx_t( D->rows() );
         const idx_t              dim    = idx_t( D->cols() );
         std::vector< double * >  vertices( ncoord );
@@ -2036,10 +2106,46 @@ TMatlabCoordIO::read ( const std::string &  filename,
                 vertices[i][j] = D->entry( i, j );
         }// for
 
-        return make_unique< TCoordinate >( vertices, uint( dim ) );
+        return std::make_unique< TCoordinate >( vertices, uint( dim ) );
     }// if
 
     return nullptr;
 }
 
-}// namespace HLIB
+variant_id_t
+matlab_guess_value_type ( const std::string &  filename,
+                          const std::string &  name )
+{
+    if ( ! fs::exists( filename ) )
+        HERROR( ERR_FNEXISTS, "(TMatlabMatrixIO) read", filename );
+    
+    std::unique_ptr< std::istream >  in_ptr( open_read( filename ) );
+    std::istream &                   in = * in_ptr.get();
+
+    int16_t  version, endian;
+    bool     byteswap = false;
+
+    in.seekg( 124 );
+    in.read( reinterpret_cast< char * >( & version ), sizeof(version) );
+    in.read( reinterpret_cast< char * >( & endian ),  sizeof(endian)  );
+    
+    if      ( endian == 0x4d49 )  byteswap = false; // MI
+    else if ( endian == 0x494d )  byteswap = true;  // IM
+    else
+        HERROR( ERR_FMT_MATLAB, "(TMatlabMatrixIO) read",
+                "endianess indicator wrong" );
+
+    BYTE_SWAP( version );
+
+    variant_id_t  vtype = REAL_FP64;
+    
+    while ( in.good() )
+    {
+        if ( mat5_guess_type( in, byteswap, name, false, "", vtype ) )
+            break;
+    }// while
+    
+    return vtype;
+}
+
+}// namespace Hpro

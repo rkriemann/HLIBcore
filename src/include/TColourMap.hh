@@ -1,11 +1,11 @@
-#ifndef __HLIB_COLOURMAP_HH
-#define __HLIB_COLOURMAP_HH
+#ifndef __HPRO_COLOURMAP_HH
+#define __HPRO_COLOURMAP_HH
 //
 // Project     : HLIBpro
 // File        : TColourMap.hh
 // Description : provides various colourmaps
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 
 #include "colour.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -220,6 +220,6 @@ public:
     virtual void init ( const size_t n );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_COLOURMAP_HH
+#endif  // __HPRO_COLOURMAP_HH

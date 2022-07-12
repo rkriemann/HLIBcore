@@ -1,11 +1,11 @@
-#ifndef __HLIB_TCOORDVIS_HH
-#define __HLIB_TCOORDVIS_HH
+#ifndef __HPRO_TCOORDVIS_HH
+#define __HPRO_TCOORDVIS_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoordVis.hh
 // Description : coordinate visualisation classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -18,37 +18,9 @@
 
 #include "hpro/vector/TScalarVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
-///////////////////////////////////////////////////////////////
-//!
-//! \ingroup  IO_Module
-//! \class    TCoordVis
-//! \brief    Base class for coordinate visualisation.
-//!
-class TCoordVis
-{
-public:
-    //////////////////////////////////////
-    //
-    // constructor and destructor
-    //
-
-    TCoordVis () {}
-
-    virtual ~TCoordVis () {}
-
-    //////////////////////////////////////
-    //
-    // print coord
-    //
-
-    //! print \a coord to file \a filename
-    virtual void print ( const TCoordinate &  coord,
-                         const std::string &  filename ) const = 0;
-};
-
 ///////////////////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
@@ -70,7 +42,7 @@ public:
     TPSCoordVis ();
     TPSCoordVis ( const T3Point view_dir );
 
-    virtual ~TPSCoordVis () {}
+    ~TPSCoordVis () {}
 
     //////////////////////////////////////
     //
@@ -78,19 +50,19 @@ public:
     //
     
     //! print \a coord to file \a filename
-    virtual void print ( const TCoordinate *   coord,
-                         const std::string &   filename ) const;
+    void print ( const TCoordinate *   coord,
+                 const std::string &   filename ) const;
 
     //! print coordinates \a coord and choose coordinate color based on label
-    virtual void print ( const TCoordinate *          coord,
-                         const std::vector< uint > &  label,
-                         const std::string &          filename ) const;
+    void print ( const TCoordinate *          coord,
+                 const std::vector< uint > &  label,
+                 const std::string &          filename ) const;
 
     //! print only coordinates \a coord with filter(i)=true
-    virtual void print ( const TCoordinate *          coord,
-                         const std::vector< uint > &  label,
-                         const std::vector< bool > &  filter,
-                         const std::string &          filename ) const;
+    void print ( const TCoordinate *          coord,
+                 const std::vector< uint > &  label,
+                 const std::vector< bool > &  filter,
+                 const std::string &          filename ) const;
 };
 
 //
@@ -138,7 +110,7 @@ public:
 
     TVTKCoordVis () {}
 
-    virtual ~TVTKCoordVis () {}
+    ~TVTKCoordVis () {}
 
     //////////////////////////////////////
     //
@@ -146,24 +118,25 @@ public:
     //
     
     //! print \a coord to file \a filename
-    virtual void print ( const TCoordinate *    coord,
-                         const std::string &    filename ) const;
+    void print ( const TCoordinate *    coord,
+                 const std::string &    filename ) const;
 
     //! print coordinates \a coord and colour coordinates with same
     //! label with same colour; the labels are defined by \a label and
     //! must begin with 0
-    virtual void print ( const TCoordinate *          coord,
-                         const std::vector< uint > &  label,
-                         const std::string &          filename ) const;
+    void print ( const TCoordinate *          coord,
+                 const std::vector< uint > &  label,
+                 const std::string &          filename ) const;
 
     //! print coordinates \a coord and the connections between
     //! them as defined by the coefficients of the sparse matrix \a S
     //! - the ordering of \a S is assumed to be equal to \a coord
     //! - if \a log_scale is true, coefficient scaling is logarithmic
-    virtual void print ( const TCoordinate *    coord,
-                         const TSparseMatrix *  S,
-                         const std::string &    filename,
-                         const coltype_t        col_type = TVTKCoordVis::NO_COLOUR ) const;
+    template < typename value_t >
+    void print ( const TCoordinate *               coord,
+                 const TSparseMatrix< value_t > *  S,
+                 const std::string &               filename,
+                 const coltype_t                   col_type = TVTKCoordVis::NO_COLOUR ) const;
 };
 
 //
@@ -182,4 +155,4 @@ print_vtk ( const TCoordinate *          coord,
 
 }// namespace
 
-#endif  // __HLIB_TCOORDVIS_HH
+#endif  // __HPRO_TCOORDVIS_HH

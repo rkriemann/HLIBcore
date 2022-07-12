@@ -1,11 +1,11 @@
-#ifndef __HLIB_TLINEARITERATION_HH
-#define __HLIB_TLINEARITERATION_HH
+#ifndef __HPRO_TLINEARITERATION_HH
+#define __HPRO_TLINEARITERATION_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TLinearIteration.hh
 // Description : Linear Iteration solver
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <ostream>
@@ -13,7 +13,7 @@
 
 #include "hpro/solver/TSolver.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -34,7 +34,7 @@ protected:
     //! @cond
 
     // damping factor
-    real  _damping;
+    double  _damping;
 
     //! @endcond
     
@@ -48,7 +48,7 @@ public:
     TLinearIteration ( const TStopCriterion &  stop_crit = TStopCriterion() );
     
     //! construct linear iteration solver object with damping
-    TLinearIteration ( const real              damping,
+    TLinearIteration ( const double            damping,
                        const TStopCriterion &  stop_crit = TStopCriterion() );
     
     //! dtor
@@ -60,31 +60,50 @@ public:
     //
 
     //! solve A·x = b with optional preconditioner \a W
-    virtual void solve  ( const TLinearOperator *  A,
-                          TVector *                x,
-                          const TVector *          b,
-                          const TLinearOperator *  W    = nullptr,
-                          TSolverInfo *            info = nullptr ) const;
-
+    template < typename value_t,
+               typename value_pre_t >
+    void solve ( const TLinearOperator< value_t > *      A,
+                 TVector< value_t > *                    x,
+                 const TVector< value_t > *              b,
+                 const TLinearOperator< value_pre_t > *  W    = nullptr,
+                 TSolverInfo *                           info = nullptr ) const;
+    
     //! solve A·X = B with optional preconditioner \a W
-    virtual void solve  ( const TLinearOperator *  A,
-                          TMatrix *                X,
-                          const TMatrix *          B,
-                          const TLinearOperator *  W    = nullptr,
-                          TSolverInfo *            info = nullptr ) const;
+    template < typename value_t >
+    void solve  ( const TLinearOperator< value_t > *  A,
+                  TMatrix< value_t > *                X,
+                  const TMatrix< value_t > *          B,
+                  const TLinearOperator< value_t > *  W    = nullptr,
+                  TSolverInfo *                       info = nullptr ) const;
+
+    //! solve A·x = b with optional preconditioner \a W
+    virtual
+    void solve ( any_const_operator_t  A,
+                 any_vector_t          x,
+                 any_const_vector_t    b,
+                 any_const_operator_t  W,
+                 TSolverInfo *         info = nullptr ) const;
+    virtual
+    void solve ( any_const_operator_t  A,
+                 any_vector_t          x,
+                 any_const_vector_t    b,
+                 TSolverInfo *         info = nullptr ) const;
+
 };
 
 //!
 //! \ingroup  Solver_Module
 //! \brief    Solve A·x = b with optional preconditioner \a W (functional approach)
 //!
-inline
-void linear_iteration ( const TLinearOperator *  A,
-                        TVector *                x,
-                        const TVector *          b,
-                        const TLinearOperator *  W         = nullptr,
-                        TSolverInfo *            info      = nullptr,
-                        const TStopCriterion &   stop_crit = TStopCriterion() )
+template < typename value_t,
+           typename value_pre_t >
+void
+linear_iteration ( const TLinearOperator< value_t > *      A,
+                   TVector< value_t > *                    x,
+                   const TVector< value_t > *              b,
+                   const TLinearOperator< value_pre_t > *  W         = nullptr,
+                   TSolverInfo *                           info      = nullptr,
+                   const TStopCriterion &                  stop_crit = TStopCriterion() )
 {
     TLinearIteration  solver( 1.0, stop_crit );
 
@@ -102,19 +121,19 @@ using TRichardson = TLinearIteration;
 //! \ingroup  Solver_Module
 //! \brief    Solve A·x = b with optional preconditioner \a W (functional approach)
 //!
-inline
-void richardson ( const TLinearOperator *  A,
-                  TVector *                x,
-                  const TVector *          b,
-                  const TLinearOperator *  W         = nullptr,
-                  TSolverInfo *            info      = nullptr,
-                  const TStopCriterion &   stop_crit = TStopCriterion() )
+template < typename value_t >
+void richardson ( const TLinearOperator< value_t > *  A,
+                  TVector< value_t > *                x,
+                  const TVector< value_t > *          b,
+                  const TLinearOperator< value_t > *  W         = nullptr,
+                  TSolverInfo *                       info      = nullptr,
+                  const TStopCriterion &              stop_crit = TStopCriterion() )
 {
     TLinearIteration  solver( 1.0, stop_crit );
 
     solver.solve( A, x, b, W, info );
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TRICHARDSON_HH
+#endif  // __HPRO_TRICHARDSON_HH

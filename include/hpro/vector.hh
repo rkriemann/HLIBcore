@@ -20,6 +20,6 @@
 #include <hpro/vector/TVector.hh>
 #include <hpro/vector/TScalarVector.hh>
 #include <hpro/vector/TBlockVector.hh>
-#include <hpro/vector/vec_conv.hh>
+#include <hpro/vector/convert.hh>
 
 #endif  // __HLIB_VECTOR_HH

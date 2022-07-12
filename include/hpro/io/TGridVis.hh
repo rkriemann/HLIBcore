@@ -1,18 +1,18 @@
-#ifndef __HLIB_TGRIDVIS_HH
-#define __HLIB_TGRIDVIS_HH
+#ifndef __HPRO_TGRIDVIS_HH
+#define __HPRO_TGRIDVIS_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGridVis.hh
 // Description : grid visualisation classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TGrid.hh"
 #include "hpro/bem/TFnSpace.hh"
 #include "hpro/vector/TScalarVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ///////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ namespace HLIB
 //! \class    TGridVis
 //! \brief    Base class for grid visualisation.
 //!
-class TGridVis
+class TGridVisBase
 {
 private:
     //! @cond
@@ -41,26 +41,9 @@ public:
     // constructor and destructor
     //
 
-    TGridVis ();
+    TGridVisBase ();
 
-    virtual ~TGridVis () {}
-
-    //////////////////////////////////////
-    //
-    // print grid
-    //
-
-    //! print \a grid to file \a filename
-    virtual void print ( const TGrid *        grid,
-                         const std::string &  filename ) const = 0;
-
-    //! print \a grid to file \a filename with colours according to
-    //! values in vector \a vec which holds coefficients for function
-    //! in \a fnspace 
-    virtual void print ( const TGrid *        grid,
-                         const TFnSpace *     fnspace,
-                         const TVector *      vec,
-                         const std::string &  filename ) const = 0;
+    virtual ~TGridVisBase () {}
 
     //! set value interval for grid function visualisation
     //! - colour is chosen based function value and position in interval
@@ -86,12 +69,9 @@ public:
 //! \brief    Base class for 2D grid visualisation (by projection).
 //!
 
-// forward decl.
-class T2DPrinter;
-
-class T2DGridVis : public TGridVis
+class T2DGridVis : public TGridVisBase
 {
-private:
+protected:
     //! @cond
     
     // viewing direction
@@ -141,29 +121,6 @@ public:
     
     //! turn on/off drawing of triangle contours (default: on)
     T2DGridVis &  draw_contour  ( const bool       b );
-    
-    //////////////////////////////////////
-    //
-    // print grid
-    //
-    
-    //! print \a grid to file \a filename
-    virtual void print ( const TGrid *        grid,
-                         const std::string &  filename ) const;
-
-    //! print \a grid to file \a filename with colours according to
-    //! values in vector \a vec which holds coefficients for function
-    //! in \a fnspace 
-    virtual void print ( const TGrid *        grid,
-                         const TFnSpace *     fnspace,
-                         const TVector *      vec,
-                         const std::string &  filename ) const;
-
-protected:
-    // return printer object for given format
-    virtual T2DPrinter *  get_printer ( const double         width,
-                                        const double         height,
-                                        const std::string &  filename ) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -186,12 +143,35 @@ public:
 
     virtual ~TPSGridVis () {}
 
+    //////////////////////////////////////
+    //
+    // print grid
+    //
+    
+    //! print \a grid to file \a filename
+    void print ( const TGrid *        grid,
+                 const std::string &  filename ) const;
 
-protected:
-    // return printer object for given format
-    virtual T2DPrinter *  get_printer ( const double         width,
-                                        const double         height,
-                                        const std::string &  filename ) const;
+    //! print \a grid to file \a filename with colours according to
+    //! values in vector \a vec which holds coefficients for function
+    //! in \a fnspace
+    template < typename fnspace_t,
+               typename value_t >
+    void print ( const TGrid *               grid,
+                 const fnspace_t *           fnspace,
+                 const TVector< value_t > *  vec,
+                 const std::string &         filename ) const;
+
+    template < typename fnspace_t,
+               typename value_t >
+    void print ( const TGrid &               grid,
+                 const fnspace_t &           fnspace,
+                 const TVector< value_t > &  vec,
+                 const std::string &         filename ) const
+    {
+        static_assert( std::is_floating_point< value_t >::value, "only real valued types supported" );
+        print( &grid, &fnspace, &vec, filename );
+    }
 };
 
 //
@@ -203,13 +183,21 @@ void
 print_ps ( const TGrid *        grid,
            const std::string &  filename );
 
+inline
+void
+print_ps ( const TGrid &        grid,
+           const std::string &  filename )
+{
+    print_ps( &grid, filename );
+}
+
 ///////////////////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
 //! \class    TVTKGridVis
 //! \brief    Class for grid visualisation in VTK format.
 //!
-class TVTKGridVis : public TGridVis
+class TVTKGridVis : public TGridVisBase
 {
 private:
     //! @cond
@@ -243,16 +231,29 @@ public:
     //
     
     //! print \a grid to file \a filename
-    virtual void print ( const TGrid *        grid,
-                         const std::string &  filename ) const;
+    void print ( const TGrid *        grid,
+                 const std::string &  filename ) const;
 
     //! print \a grid to file \a filename with colours according to
     //! values in vector \a vec which holds coefficients for function
     //! in \a fnspace 
-    virtual void print ( const TGrid *        grid,
-                         const TFnSpace *     fnspace,
-                         const TVector *      vec,
-                         const std::string &  filename ) const;
+    template < typename fnspace_t,
+               typename value_t >
+    void print ( const TGrid *               grid,
+                 const fnspace_t *           fnspace,
+                 const TVector< value_t > *  vec,
+                 const std::string &         filename ) const;
+
+    template < typename fnspace_t,
+               typename value_t >
+    void print ( const TGrid &               grid,
+                 const fnspace_t &           fnspace,
+                 const TVector< value_t > &  vec,
+                 const std::string &         filename ) const
+    {
+        static_assert( std::is_floating_point< value_t >::value, "only real valued types supported" );
+        print( &grid, &fnspace, &vec, filename );
+    }
 };
 
 //
@@ -264,7 +265,15 @@ void
 print_vtk ( const TGrid *        grid,
             const std::string &  filename );
 
+inline
+void
+print_vtk ( const TGrid &        grid,
+            const std::string &  filename )
+{
+    print_vtk( &grid, filename );
+}
+
 
 }// namespace
 
-#endif  // __HLIB_TGRID_HH
+#endif  // __HPRO_TGRID_HH

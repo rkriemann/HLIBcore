@@ -1,11 +1,11 @@
-#ifndef __HLIB_TZEROMATRIX_HH
-#define __HLIB_TZEROMATRIX_HH
+#ifndef __HPRO_TZEROMATRIX_HH
+#define __HPRO_TZEROMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TZeroMatrix.hh
 // Description : class for a zero matrix, i.e. with only zero coefficients
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -25,14 +25,19 @@ DECLARE_TYPE( TZeroMatrix );
 //! \class    TZeroMatrix
 //! \brief    Class for a null matrix with only zero coefficients
 //
-class TZeroMatrix : public TMatrix
+template < typename T_value >
+class TZeroMatrix : public TMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+
 private:
     //! number of rows in matrix
-    size_t                  _rows;
+    size_t  _rows;
 
     //! number of columns in matrix
-    size_t                  _cols;
+    size_t  _cols;
 
 public:
     ///////////////////////////////////////////
@@ -50,9 +55,8 @@ public:
     }
     
     //! construct null matrix with size defined by block cluster \a bct
-    TZeroMatrix ( const TBlockCluster *  bct         = nullptr,
-                  const value_type_t     avalue_type = real_valued )
-            : TMatrix( bct, avalue_type )
+    TZeroMatrix ( const TBlockCluster *  bct = nullptr )
+            : TMatrix< value_t >( bct )
             , _rows(0)
             , _cols(0)
     {
@@ -80,12 +84,6 @@ public:
     //! return number of columns in matrix
     size_t        cols         () const { return _cols; }
 
-    //! convert coefficients to real valued representation (if possible)
-    virtual void  to_real      () {}
-
-    //! convert coefficients to complex valued representation
-    virtual void  to_complex   () {}
-
     //! return true, if matrix is zero
     virtual bool  is_zero      () const { return true; }
     
@@ -95,12 +93,8 @@ public:
     //
 
     //! return matrix coefficient a_ij (real valued)
-    virtual real           entry      ( const idx_t,
-                                        const idx_t ) const { return real(0); }
-
-    //! return matrix coefficient a_ij (complex valued)
-    virtual const complex  centry     ( const idx_t,
-                                        const idx_t ) const { return complex(0); }
+    virtual value_t  entry  ( const idx_t,
+                              const idx_t ) const { return value_t(0); }
 
     /////////////////////////////////////////////////
     //
@@ -108,17 +102,18 @@ public:
     //
 
     //! compute this ≔ α·this
-    virtual void scale ( const real ) {}
+    virtual void scale ( const value_t ) {}
     
     //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void mul_vec ( const real      alpha,
-                           const TVector * x,
-                           const real      beta,
-                           TVector       * y,
-                           const matop_t   op = MATOP_NORM ) const;
+    virtual void mul_vec ( const value_t               alpha,
+                           const TVector< value_t > *  x,
+                           const value_t               beta,
+                           TVector< value_t > *        y,
+                           const matop_t               op = apply_normal ) const;
+    using TMatrix< value_t >::mul_vec;
 
     //! compute this ≔ this + α · matrix
-    virtual void add ( const real alpha, const TMatrix * matrix );
+    virtual void add ( const value_t  alpha, const TMatrix< value_t > * matrix );
         
     //! transpose matrix
     virtual void transpose ();
@@ -128,24 +123,6 @@ public:
     
     //! truncate matrix to given accuracy (NOT YET IMPLEMENTED)
     virtual void truncate ( const TTruncAcc & ) {}
-    
-    /////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
-    //
-
-    //! compute this ≔ α·this
-    virtual void cscale ( const complex ) {}
-    
-    //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void cmul_vec ( const complex   alpha,
-                            const TVector * x,
-                            const complex   beta,
-                            TVector       * y,
-                            const matop_t   op = MATOP_NORM ) const;
-
-    //! compute this ≔ this + α · matrix
-    virtual void cadd ( const complex a, const TMatrix * matrix );
         
     /////////////////////////////////////////////////
     //
@@ -174,29 +151,29 @@ public:
     //
     
     //! return matrix of same class (but no content)
-    virtual auto  create       () const -> std::unique_ptr< TMatrix > { return std::make_unique< TZeroMatrix >(); }
+    virtual auto  create       () const -> std::unique_ptr< TMatrix< value_t > > { return std::make_unique< TZeroMatrix< value_t > >(); }
     
     //! return copy of matrix
-    virtual auto  copy         () const -> std::unique_ptr< TMatrix >;
-    using TMatrix::copy;
+    virtual auto  copy         () const -> std::unique_ptr< TMatrix< value_t > >;
+    using TMatrix< value_t >::copy;
 
     //! return structural copy of matrix
-    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! copy matrix into matrix \a A
-    virtual void copy_to       ( TMatrix * A ) const;
-    using TMatrix::copy_to;
+    virtual void copy_to       ( TMatrix< value_t > * A ) const;
+    using TMatrix< value_t >::copy_to;
 
     //
     // type checking
     //
 
-    HLIB_RTTI_DERIVED( TZeroMatrix, TMatrix );
+    HPRO_RTTI_DERIVED( TZeroMatrix, TMatrix< value_t > );
 
     //! return size in bytes used by this object
     virtual size_t byte_size () const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TZEROMATRIX_HH
+#endif  // __HPRO_TZEROMATRIX_HH

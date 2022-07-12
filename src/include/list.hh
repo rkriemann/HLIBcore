@@ -1,17 +1,17 @@
-#ifndef __HLIB_LIST_HH
-#define __HLIB_LIST_HH
+#ifndef __HPRO_LIST_HH
+#define __HPRO_LIST_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : list.hh
 // Description : helper functions for lists
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <algorithm>
 #include <list>
 
-namespace HLIB
+namespace Hpro
 {
     
 //!
@@ -39,6 +39,6 @@ is_in ( const T_container &                       acont,
     return ( std::find( acont.begin(), acont.end(), adata ) != acont.end() );
 }
          
-}// namespace HLIB
+}// namespace Hpro
 
-#endif   // __HLIB_LIST_HH
+#endif   // __HPRO_LIST_HH

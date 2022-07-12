@@ -1,32 +1,33 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMETISAlgPartStrat.cc
 // Description : class for algebraic clustertree construction
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <time.h>
 
 #include <vector>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if USE_METIS == 1
 extern "C" {
 #include <metis.h>
 }
-
-#if defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
-// rename METIS type to prevent conflicts with HLIB::idx_t
-using  metis_idx_t = idx_t;
 #endif
 
+#if defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
+// rename METIS type to prevent conflicts with Hpro::idx_t
+using  metis_idx_t = idx_t;
+#else
+using  metis_idx_t = int;
 #endif
 
 #include "hpro/cluster/TAlgPartStrat.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////
@@ -44,13 +45,9 @@ namespace
 //
 
 #if defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
-
 metis_idx_t  METIS_OPTIONS[ METIS_NOPTIONS ];
-
 #else
-
 int          METIS_OPTIONS[5] = { 0, 0, 0, 0, 0 };
-
 #endif
 
 //
@@ -179,10 +176,10 @@ partition_graph ( const TGraph &                graph,
 //
 // ctor
 //
-#if USE_METIS == 1 && defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
-
 TMETISAlgPartStrat::TMETISAlgPartStrat ( const bool use_random )
 {
+    #if USE_METIS == 1 && defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
+
     static TMutex  mutex;
 
     { // guard option array
@@ -196,20 +193,13 @@ TMETISAlgPartStrat::TMETISAlgPartStrat ( const bool use_random )
         // seed for randomness in METIS
         METIS_OPTIONS[ METIS_OPTION_SEED ] = ( use_random ? ::time( nullptr ) : 0 );
     }
+        
+    #endif
 }
-
-#else
-
-TMETISAlgPartStrat::TMETISAlgPartStrat ( const bool )
-{
-}
-
-#endif
 
 //
 // partition graph into two sets
 //
-#if USE_METIS == 1
 void
 TMETISAlgPartStrat::partition ( const TGraph &  graph,
                                 TNodeSet &      left,
@@ -224,7 +214,11 @@ TMETISAlgPartStrat::partition ( const TGraph &  graph,
     size_t                      nright   = 0;
     std::vector< metis_idx_t >  part( nnodes, 0 );
 
+#if USE_METIS == 1
     partition_graph( graph, part );
+#else
+    HERROR( ERR_NOMETIS, "(TMETISAlgPartStrat) partition", "" );
+#endif
 
     for ( size_t  i = 0; i < nnodes; i++ )
     {
@@ -245,14 +239,5 @@ TMETISAlgPartStrat::partition ( const TGraph &  graph,
         else                   right.append( node );
     }// for
 }
-#else
-void
-TMETISAlgPartStrat::partition ( const TGraph &  ,
-                                TNodeSet &      ,
-                                TNodeSet &       ) const
-{
-    HERROR( ERR_NOMETIS, "(TMETISAlgPartStrat) partition", "" );
-}
-#endif
 
 }// namespace

@@ -1,18 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBCBuilder.cc
 // Description : builds a block-cluster-tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
-
-#include <mutex>
 
 #include "hpro/parallel/NET.hh"
 
 #include "hpro/cluster/TBCBuilder.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -225,4 +223,4 @@ TBCBuilder::create_bc ( TBlockCluster *  parent,
     return bc;
 }
 
-}// namespace HLIB
+}// namespace Hpro

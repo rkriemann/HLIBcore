@@ -1,11 +1,11 @@
-#ifndef __HLIB_TSAUTERTRIQUAD_HH
-#define __HLIB_TSAUTERTRIQUAD_HH
+#ifndef __HPRO_TSAUTERTRIQUAD_HH
+#define __HPRO_TSAUTERTRIQUAD_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TSauterTriQuad.hh
 // Description : provides quadrature rules for 2 triangles
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -13,7 +13,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/base/TPoint.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 //
@@ -105,4 +105,4 @@ protected:
 
 }// namespace
 
-#endif // __HLIB_TSAUTERTRIQUAD_HH
+#endif // __HPRO_TSAUTERTRIQUAD_HH

@@ -1,18 +1,18 @@
-#ifndef __HLIB_TLAPLACEBF_HH
-#define __HLIB_TLAPLACEBF_HH
+#ifndef __HPRO_TLAPLACEBF_HH
+#define __HPRO_TLAPLACEBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TLAPLACEBF.hh
 // Description : bilinear forms for Laplace operator
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/algebra/TLowRankApx.hh"
 #include "hpro/bem/TQuadBEMBF.hh"
 #include "hpro/bem/TQuadHCAGenFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ////////////////////////////////////////////////////////////////
@@ -41,8 +41,9 @@ namespace HLIB
 //!          \f[ 4 \pi \int_{\Gamma} \frac{u(y)}{\|x-y\|_2} dy = f(x) \f]
 //!
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-class TLaplaceSLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, real >
+           typename  T_testsp,
+           typename  T_value = double >
+class TLaplaceSLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -50,7 +51,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
 private:
 
@@ -58,12 +60,12 @@ private:
     // kernel function impl.
     //
 
-    void  ( * _kernel_fn ) ( const TGrid::triangle_t &    tri0,
-                             const TGrid::triangle_t &    tri1,
-                             const tripair_quad_rule_t *  rule,
-                             std::vector< real > &        values,
-                             const ansatzsp_t *           ansatz_sp,
-                             const testsp_t *             test_sp );
+    void  ( * _kernel_fn ) ( const TGrid::triangle_t &              tri0,
+                             const TGrid::triangle_t &              tri1,
+                             const tripair_quad_rule_t< value_t > * rule,
+                             std::vector< value_t > &               values,
+                             const ansatzsp_t *                     ansatz_sp,
+                             const testsp_t *                       test_sp );
 
 public:
     //////////////////////////////////////
@@ -84,12 +86,12 @@ protected:
     //
     // eval kernel function at quadrature points
     //
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< real > &        values ) const;
+    virtual void  eval_kernel  ( const idx_t                            tri0idx,
+                                 const idx_t                            tri1idx,
+                                 const TGrid::triangle_t &              tri0,
+                                 const TGrid::triangle_t &              tri1,
+                                 const tripair_quad_rule_t< real_t > *  quad_rule,
+                                 std::vector< value_t > &               values ) const;
 
 };
 
@@ -106,11 +108,14 @@ protected:
 //!
 //!          TLaplaceDLPBF implements the bilinear form for the Laplace
 //!          double layer potential with the kernel function
-//!          \f[ \frac{\langle n, y-x \rangle}{\|x-y\|_2^3} \f].
+//!          \f[ \frac{\langle n(y), y-x \rangle}{\|x-y\|_2^3} \f]
+//!          or the adjoint potential
+//!          \f[ \frac{\langle n(x), x-y \rangle}{\|x-y\|_2^3} \f]
 //!
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-class TLaplaceDLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, real >
+           typename  T_testsp,
+           typename  T_value = double >
+class TLaplaceDLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -118,21 +123,29 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
         
 private:
+    //! @cond
 
+    // enables/disables adjoint form
+    const bool     _adjoint;
+    
     //
     // kernel function impl.
     //
 
-    void  ( * _kernel_fn ) ( const TGrid::triangle_t &   tri0,
-                             const TGrid::triangle_t &   tri1,
-                             const tripair_quad_rule_t * rule,
-                             std::vector< real > &       values,
-                             const ansatzsp_t *          ansatz_sp,
-                             const testsp_t *            test_sp,
-                             const T3Point &             n );
+    void  ( * _kernel_fn ) ( const idx_t                            tri_id,
+                             const bool                             adjoint,
+                             const TGrid::triangle_t &              tri0,
+                             const TGrid::triangle_t &              tri1,
+                             const tripair_quad_rule_t< value_t > * rule,
+                             std::vector< value_t > &               values,
+                             const ansatzsp_t *                     ansatz_sp,
+                             const testsp_t *                       test_sp );
+
+    //! @endcond
 
 public:
     //////////////////////////////////////
@@ -142,6 +155,7 @@ public:
     
     TLaplaceDLPBF ( const ansatzsp_t *  aansatzsp,
                     const testsp_t *    atestsp,
+                    const bool          adjoint    = false,
                     const uint          quad_order = CFG::BEM::quad_order );
 
     virtual ~TLaplaceDLPBF () {}
@@ -153,12 +167,12 @@ protected:
     //
     // eval kernel function at quadrature points
     //
-    virtual void  eval_kernel  ( const idx_t                 tri0idx,
-                                 const idx_t                 tri1idx,
-                                 const TGrid::triangle_t &   tri0,
-                                 const TGrid::triangle_t &   tri1,
-                                 const tripair_quad_rule_t * quad_rule,
-                                 std::vector< real > &       values ) const;
+    virtual void  eval_kernel  ( const idx_t                            tri0idx,
+                                 const idx_t                            tri1idx,
+                                 const TGrid::triangle_t &              tri0,
+                                 const TGrid::triangle_t &              tri1,
+                                 const tripair_quad_rule_t< real_t > *  quad_rule,
+                                 std::vector< value_t > &               values ) const;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -175,8 +189,9 @@ protected:
 //! \brief   kernel generator function for Laplace SLP
 //!
 template < typename T_ansatzsp,
-           typename T_testsp >
-class TLaplaceSLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, real >
+           typename T_testsp,
+           typename T_value = double >
+class TLaplaceSLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -185,7 +200,8 @@ public:
     
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     
     //
     // inherit from base class
@@ -199,10 +215,10 @@ private:
     // HCA function impl.
     //
 
-    void ( * _eval_dxy_impl ) ( const tri_quad_rule_t &  quad_rule,
-                                const T3Point            x[3],
-                                const T3Point &          y,
-                                std::vector< real > &    values );
+    void ( * _eval_dxy_impl ) ( const tri_quad_rule_t< real_t > &  quad_rule,
+                                const T3Point                      x[3],
+                                const T3Point &                    y,
+                                std::vector< value_t > &           values );
     
 public:
     TLaplaceSLPGenFn ( const ansatzsp_t *    ansatzsp,
@@ -214,14 +230,14 @@ public:
     //
     // evaluate generator function at (\a x, \a y)
     //
-    real
+    value_t
     eval ( const T3Point &  x,
            const T3Point &  y ) const
     {
-        const real factor  = real( 1.0 / ( 4.0 * Math::pi< double >() ) );
-        const real sq_dist = real( Math::square( x[0] - y[0] ) +
-                                   Math::square( x[1] - y[1] ) +
-                                   Math::square( x[2] - y[2] ) );
+        const auto factor  = value_t( 1.0 / ( 4.0 * Math::pi< value_t >() ) );
+        const auto sq_dist = value_t( Math::square( x[0] - y[0] ) +
+                                      Math::square( x[1] - y[1] ) +
+                                      Math::square( x[2] - y[2] ) );
         
         return factor * Math::rsqrt( sq_dist );
     }
@@ -230,10 +246,10 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t              tri_idx,
-                             const T3Point &          y,
-                             const tri_quad_rule_t &  quad_rule,
-                             std::vector< real > &    values ) const
+    virtual void  eval_dx  ( const idx_t                        tri_idx,
+                             const T3Point &                    y,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -247,10 +263,10 @@ protected:
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &          x,
-                             const idx_t              tri_idx,
-                             const tri_quad_rule_t &  quad_rule,
-                             std::vector< real > &    values ) const
+    virtual void  eval_dy  ( const T3Point &                    x,
+                             const idx_t                        tri_idx,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const
     {
         const TGrid *            grid = this->test_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -268,8 +284,9 @@ protected:
 //! \brief   kernel generator function for Laplace DLP
 //!
 template < typename T_ansatzsp,
-           typename T_testsp >
-class TLaplaceDLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, real >
+           typename T_testsp,
+           typename T_value = double >
+class TLaplaceDLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -278,7 +295,8 @@ public:
     
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = real;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     
     //
     // inherit from base class
@@ -292,16 +310,16 @@ private:
     // HCA function impl.
     //
 
-    void ( * _eval_dx_impl ) ( const tri_quad_rule_t &  quad_rule,
-                               const T3Point            x[3],
-                               const T3Point &          y,
-                               std::vector< real > &    values );
+    void ( * _eval_dx_impl ) ( const tri_quad_rule_t< real_t > &  quad_rule,
+                               const T3Point                      x[3],
+                               const T3Point &                    y,
+                               std::vector< value_t > &           values );
         
-    void ( * _eval_dy_impl ) ( const tri_quad_rule_t &  quad_rule,
-                               const T3Point &          x,
-                               const T3Point            y[3],
-                               const T3Point &          normal,
-                               std::vector< real > &    values );
+    void ( * _eval_dy_impl ) ( const tri_quad_rule_t< real_t > &  quad_rule,
+                               const T3Point &                    x,
+                               const T3Point                      y[3],
+                               const T3Point &                    normal,
+                               std::vector< value_t > &           values );
     
 public:
     TLaplaceDLPGenFn ( const ansatzsp_t *    ansatzsp,
@@ -313,14 +331,14 @@ public:
     //
     // evaluate generator function at (\a x, \a y)
     //
-    real
+    value_t
     eval ( const T3Point & x,
            const T3Point & y ) const
     {
-        const real  factor  = real( 1.0 / ( 4.0 * Math::pi< double >() ) );
-        const real  sq_dist = real( Math::square( x[0] - y[0] ) +
-                                    Math::square( x[1] - y[1] ) +
-                                    Math::square( x[2] - y[2] ) );
+        const auto  factor  = value_t( 1.0 / ( 4.0 * Math::pi< value_t >() ) );
+        const auto  sq_dist = value_t( Math::square( x[0] - y[0] ) +
+                                       Math::square( x[1] - y[1] ) +
+                                       Math::square( x[2] - y[2] ) );
         
         return factor * Math::rsqrt( sq_dist );
     }
@@ -329,10 +347,10 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t              tri_idx,
-                             const T3Point &          y,
-                             const tri_quad_rule_t &  quad_rule,
-                             std::vector< real > &    values ) const
+    virtual void  eval_dx  ( const idx_t                        tri_idx,
+                             const T3Point &                    y,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -346,10 +364,10 @@ protected:
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &          x,
-                             const idx_t              tri_idx,
-                             const tri_quad_rule_t &  quad_rule,
-                             std::vector< real > &    values ) const
+    virtual void  eval_dy  ( const T3Point &                    x,
+                             const idx_t                        tri_idx,
+                             const tri_quad_rule_t< real_t > &  quad_rule,
+                             std::vector< value_t > &           values ) const
     {
         const TGrid *            grid = this->test_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -362,6 +380,6 @@ protected:
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TLAPLACEBF_HH
+#endif  // __HPRO_TLAPLACEBF_HH

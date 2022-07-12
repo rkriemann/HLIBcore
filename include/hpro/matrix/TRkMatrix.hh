@@ -1,11 +1,11 @@
-#ifndef __HLIB_TRKMATRIX_HH
-#define __HLIB_TRKMATRIX_HH
+#ifndef __HPRO_TRKMATRIX_HH
+#define __HPRO_TRKMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TRkMatrix.hh
 // Description : class for rank-k-matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/TTruncAcc.hh"
@@ -13,10 +13,11 @@
 #include "hpro/matrix/TMatrix.hh"
 #include "hpro/vector/TScalarVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // forward decl.
+template < typename value_t >
 class TDenseMatrix;
 
 // local matrix type
@@ -27,14 +28,18 @@ DECLARE_TYPE( TRkMatrix );
 //! \class   TRkMatrix
 //! \brief   Represents low rank matrices in factored form: \f$ M = A B^H \f$.
 //!
-class TRkMatrix : public TMatrix
+template < typename T_value >
+class TRkMatrix : public TMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+
 protected:
     //! @cond
     
     // factors of low-rank representation
-    BLAS::Matrix< real >     _rmat_A, _rmat_B;
-    BLAS::Matrix< complex >  _cmat_A, _cmat_B;
+    BLAS::Matrix< value_t >  _mat_A, _mat_B;
 
     // size of the vectors in A and B
     size_t                   _rows, _cols;
@@ -58,53 +63,31 @@ public:
                 const size_t                     cols );
 
     //! construct low-rank matrix of size defined by block index set
-    TRkMatrix ( const TBlockIndexSet &           block_is,
-                const value_type_t               avalue_type = real_valued );
+    TRkMatrix ( const TBlockIndexSet &           block_is );
     
     //! construct low-rank matrix of size defined by block index set
     TRkMatrix ( const TIndexSet &                arow_is,
-                const TIndexSet &                acol_is,
-                const value_type_t               avalue_type = real_valued );
-    
-    //! construct low-rank matrix of size defined by block index set
-    TRkMatrix ( const TIndexSet &                arow_is,
-                const TIndexSet &                acol_is,
-                const bool                       acomplex );
+                const TIndexSet &                acol_is );
     
     //! construct low-rank matrix of size defined by block index set
     //! and real factors \a A and \a B
     TRkMatrix ( const TIndexSet &                arow_is,
                 const TIndexSet &                acol_is,
-                const BLAS::Matrix< real > &     A,
-                const BLAS::Matrix< real > &     B );
-
-    //! construct low-rank matrix of size defined by block index set
-    //! and complex factors \a A and \a B
-    TRkMatrix ( const TIndexSet &                arow_is,
-                const TIndexSet &                acol_is,
-                const BLAS::Matrix< complex > &  A,
-                const BLAS::Matrix< complex > &  B );
+                const BLAS::Matrix< value_t > &  A,
+                const BLAS::Matrix< value_t > &  B );
 
     //! construct low-rank matrix of size defined by block index set
     //! and real factors \a A and \a B (move version)
     TRkMatrix ( const TIndexSet &                arow_is,
                 const TIndexSet &                acol_is,
-                BLAS::Matrix< real > &&          A,
-                BLAS::Matrix< real > &&          B );
-
-    //! construct low-rank matrix of size defined by block index set
-    //! and complex factors \a A and \a B (move version)
-    TRkMatrix ( const TIndexSet &                arow_is,
-                const TIndexSet &                acol_is,
-                BLAS::Matrix< complex > &&       A,
-                BLAS::Matrix< complex > &&       B );
+                BLAS::Matrix< value_t > &&       A,
+                BLAS::Matrix< value_t > &&       B );
 
     //! construct low-rank matrix of size defined by block cluster
-    TRkMatrix ( const TBlockCluster *            bc,
-                const value_type_t               avalue_type = real_valued );
+    TRkMatrix ( const TBlockCluster *            bc );
 
     //! copy constructor
-    TRkMatrix ( const TRkMatrix &                A );
+    TRkMatrix ( const TRkMatrix< value_t > &     A );
 
     //! destructor
     ~TRkMatrix ()
@@ -116,68 +99,48 @@ public:
     //
 
     //! return true, if matrix is zero
-    virtual bool    is_zero   () const { return (( _rank == 0 ) && ! accumulator().has_updates()); }
+    virtual bool    is_zero   () const { return (( _rank == 0 ) && ! this->accumulator().has_updates()); }
     
     //
     // access actual data of matrix factors as BLAS::Matrix
     //
     
     //! return pointer to internal matrix data of matrix A
-    BLAS::Matrix< real > &           blas_rmat_A  ()       { return _rmat_A; }
+    BLAS::Matrix< value_t > &           blas_mat_A  ()       { return _mat_A; }
     
     //! return const pointer to internal matrix data of matrix A
-    const BLAS::Matrix< real > &     blas_rmat_A  () const { return _rmat_A; }
-    
-    //! return pointer to internal matrix data of matrix A
-    BLAS::Matrix< complex > &        blas_cmat_A  ()       { return _cmat_A; }
-    
-    //! return const pointer to internal matrix data of matrix A
-    const BLAS::Matrix< complex > &  blas_cmat_A  () const { return _cmat_A; }
+    const BLAS::Matrix< value_t > &     blas_mat_A  () const { return _mat_A; }
 
     //! return pointer to internal matrix data of matrix B
-    BLAS::Matrix< real > &           blas_rmat_B  ()       { return _rmat_B; }
+    BLAS::Matrix< value_t > &           blas_mat_B  ()       { return _mat_B; }
     
     //! return const pointer to internal matrix data of matrix B
-    const BLAS::Matrix< real > &     blas_rmat_B  () const { return _rmat_B; }
-    
-    //! return pointer to internal matrix data of matrix B
-    BLAS::Matrix< complex > &        blas_cmat_B  ()       { return _cmat_B; }
-    
-    //! return const pointer to internal matrix data of matrix B
-    const BLAS::Matrix< complex > &  blas_cmat_B  () const { return _cmat_B; }
+    const BLAS::Matrix< value_t > &     blas_mat_B  () const { return _mat_B; }
 
     //
     // access individual vectors in A and B as BLAS vectors
     //
     
     //! return vector A_i
-    const BLAS::Vector< real >       blas_rvec_A  ( const idx_t  i ) const { return _rmat_A.column( i ); }
+    const BLAS::Vector< value_t >   blas_vec_A  ( const idx_t  i ) const { return _mat_A.column( i ); }
 
     //! return vector B_i
-    const BLAS::Vector< real >       blas_rvec_B  ( const idx_t  i ) const { return _rmat_B.column( i ); }
-    
-    //! return vector A_i
-    const BLAS::Vector< complex >    blas_cvec_A  ( const idx_t  i ) const { return _cmat_A.column( i ); }
-
-    //! return vector B_i
-    const BLAS::Vector< complex >    blas_cvec_B  ( const idx_t  i ) const { return _cmat_B.column( i ); }
+    const BLAS::Vector< value_t >   blas_vec_B  ( const idx_t  i ) const { return _mat_B.column( i ); }
     
     //
     // access individual vectors in A and B as H vectors
     //
     
     //! return vector A_i
-    const TScalarVector             vec_A   ( const idx_t  i ) const
+    const TScalarVector< value_t >  vec_A   ( const idx_t  i ) const
     {
-        if ( is_complex() ) return TScalarVector( row_is(), _cmat_A.column( i ) );
-        else                return TScalarVector( row_is(), _rmat_A.column( i ) );
+        return TScalarVector< value_t >( this->row_is(), _mat_A.column( i ) );
     }
 
     //! return vector B_i
-    const TScalarVector             vec_B   ( const idx_t  i ) const
+    const TScalarVector< value_t >  vec_B   ( const idx_t  i ) const
     {
-        if ( is_complex() ) return TScalarVector( col_is(), _cmat_B.column( i ) );
-        else                return TScalarVector( col_is(), _rmat_B.column( i ) );
+        return TScalarVector< value_t >( this->col_is(), _mat_B.column( i ) );
     }
     
     //
@@ -226,22 +189,9 @@ public:
     // access size information
     //
     
-    //! return real valued coefficent (\a i, \a j) of matrix
-    real            entry        ( const idx_t  i, const idx_t j ) const;
+    //! return coefficent (\a i, \a j) of matrix
+    value_t            entry        ( const idx_t  i, const idx_t j ) const;
 
-    //! return complex valued coefficent (\a i, \a j) of matrix
-    const complex   centry       ( const idx_t  i, const idx_t j ) const;
-
-    //
-    // change field type 
-    //
-    
-    //! switch to real valued storage if possible, e.g. all imaginary components zero
-    virtual void    to_real      ();
-
-    //! switch to complex valued storage
-    virtual void    to_complex   ();
-    
     ///////////////////////////////////////////
     //
     // management of update accumulator
@@ -267,146 +217,68 @@ public:
     virtual void    truncate     ( const TTruncAcc & acc );
 
     //! set this ≔ A·B^H
-    void            set_lrmat    ( const BLAS::Matrix< real > &     A,
-                                   const BLAS::Matrix< real > &     B );
-    void            set_lrmat    ( const BLAS::Matrix< complex > &  A,
-                                   const BLAS::Matrix< complex > &  B );
+    void            set_lrmat    ( const BLAS::Matrix< value_t > &     A,
+                                   const BLAS::Matrix< value_t > &     B );
     
-    void            set_lrmat    ( BLAS::Matrix< real > &&     A,
-                                   BLAS::Matrix< real > &&     B )
+    void            set_lrmat    ( BLAS::Matrix< value_t > &&     A,
+                                   BLAS::Matrix< value_t > &&     B )
     {
-        if ( is_complex() )
-            HERROR( ERR_ARG, "(TRkMatrix) set_lrmat", "expecting real valued data" );
-        
-        if (( A.nrows() != _rmat_A.nrows() ) ||
-            ( B.nrows() != _rmat_B.nrows() ) ||
-            ( A.ncols() != B.ncols()))
-            HERROR( ERR_ARG, "(TRkMatrix) set_lrmat", "input matrices have invalid dimension" );
-
-        if ( _rmat_A.ncols() == A.ncols() )
-        {
-            BLAS::copy( A, _rmat_A );
-            BLAS::copy( B, _rmat_B );
-        }// if
-        else
-        {
-            _rank   = A.ncols();
-            _rmat_A = std::move( A );
-            _rmat_B = std::move( B );
-        }// else
-    }
-    
-    void            set_lrmat    ( BLAS::Matrix< complex > &&  A,
-                                   BLAS::Matrix< complex > &&  B )
-    {
-        if ( ! is_complex() )
-            HERROR( ERR_ARG, "(TRkMatrix) set_lrmat", "expecting complex valued data" );
-        
-        if (( A.nrows() != _cmat_A.nrows() ) ||
-            ( B.nrows() != _cmat_B.nrows() ) ||
+        if (( A.nrows() != _mat_A.nrows() ) ||
+            ( B.nrows() != _mat_B.nrows() ) ||
             ( A.ncols() != B.ncols()))
             HERROR( ERR_ARG, "(TRkMatrix) set_lrmat", "input matrices have invalid dimension" );
         
-        if ( _cmat_A.ncols() == A.ncols() )
-        {
-            BLAS::copy( A, _cmat_A );
-            BLAS::copy( B, _cmat_B );
-        }// if
-        else
-        {
-            _rank   = A.ncols();
-            _cmat_A = std::move( A );
-            _cmat_B = std::move( B );
-        }// else
+        _rank  = A.ncols();
+        _mat_A = std::move( A );
+        _mat_B = std::move( B );
     }
     
     //! compute this ≔ this + α·A·B^H and truncate result w.r.t. \a acc (real valued variant)
-    void            add_rank     ( const real                       alpha,
-                                   const BLAS::Matrix< real > &     A,
-                                   const BLAS::Matrix< real > &     B,
-                                   const TTruncAcc &                acc );
-
-    //! compute this ≔ this + α·A·B^H and truncate result w.r.t. \a acc (complex valued variant)
-    void            add_rank     ( const complex                    alpha,
-                                   const BLAS::Matrix< complex > &  A,
-                                   const BLAS::Matrix< complex > &  B,
+    void            add_rank     ( const value_t                    alpha,
+                                   const BLAS::Matrix< value_t > &  A,
+                                   const BLAS::Matrix< value_t > &  B,
                                    const TTruncAcc &                acc );
     
     //! add a dense matrix and truncate w.r.t. \a acc (real valued variant)
-    void            add_dense    ( const real                       alpha,
-                                   const BLAS::Matrix< real > &     D,
-                                   const TTruncAcc &                acc );
-
-    //! add a dense matrix and truncate w.r.t. \a acc (complex valued variant)
-    void            add_dense    ( const complex                    alpha,
-                                   const BLAS::Matrix< complex > &  D,
+    void            add_dense    ( const value_t                    alpha,
+                                   const BLAS::Matrix< value_t > &  D,
                                    const TTruncAcc &                acc );
     
     //! copy a densematrix (nxm) as low-rank matrix (rank = min{n,m})
-    void            copy_dense   ( const TDenseMatrix * A,
-                                   const TTruncAcc &    acc );
+    void            copy_dense   ( const TDenseMatrix< value_t > *  A,
+                                   const TTruncAcc &                acc );
     
     /////////////////////////////////////////////////
     //
-    // BLAS-routines (real valued)
+    // BLAS-routines
     //
 
     //! scale matrix by constant factor
-    virtual void         scale      ( const real       f );
+    virtual void         scale      ( const value_t       f );
     
     //! compute y ≔ α·M·x + β·y, where M is either this, this^T or this^H depending on \a op
-    virtual void         mul_vec    ( const real       alpha,
-                                      const TVector *  x,
-                                      const real       beta,
-                                      TVector *        y,
-                                      const matop_t    op = apply_normal ) const;
+    virtual void         mul_vec    ( const value_t               alpha,
+                                      const TVector< value_t > *  x,
+                                      const value_t               beta,
+                                      TVector< value_t > *        y,
+                                      const matop_t               op = apply_normal ) const;
+    using TMatrix< value_t >::mul_vec;
 
     //! compute this = this + α·A without truncation
-    virtual void         add        ( const real       alpha,
-                                      const TMatrix *  A );
+    virtual void         add        ( const value_t               alpha,
+                                      const TMatrix< value_t > *  A );
         
     //! compute matrix product α·op_A(this)·op_B(B) 
-    virtual TRkMatrix *  mul_right  ( const real       alpha,
-                                      const TMatrix *  B,
-                                      const matop_t    op_A,
-                                      const matop_t    op_B ) const;
+    virtual TRkMatrix *  mul_right  ( const value_t               alpha,
+                                      const TMatrix< value_t > *  B,
+                                      const matop_t               op_A,
+                                      const matop_t               op_B ) const;
 
     //! compute matrix product α·op_A(A)·op_B(this) 
-    virtual TRkMatrix *  mul_left   ( const real       alpha,
-                                      const TMatrix *  A,
-                                      const matop_t    op_A,
-                                      const matop_t    op_B ) const;
-
-    /////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
-    //
-
-    //! scale matrix by constant factor
-    virtual void        cscale      ( const complex    f );
-    
-    //! compute y ≔ α·M·x + β·y, where M is either this, this^T or this^H depending on \a op
-    virtual void        cmul_vec    ( const complex    alpha,
-                                      const TVector *  x,
-                                      const complex    beta,
-                                      TVector *        y,
-                                      const matop_t    op_A = apply_normal ) const;
-
-    //! compute this = this + α·A without truncation
-    virtual void        cadd        ( const complex    a,
-                                      const TMatrix *  matrix );
-        
-    //! compute matrix product α·op_A(this)·op_B(B) 
-    virtual TRkMatrix * cmul_right  ( const complex    alpha,
-                                      const TMatrix *  B,
-                                      const matop_t    op_A,
-                                      const matop_t    op_B ) const;
-    
-    //! compute matrix product α·op_A(A)·op_B(this) 
-    virtual TRkMatrix * cmul_left   ( const complex    alpha,
-                                      const TMatrix *  A,
-                                      const matop_t    op_A,
-                                      const matop_t    op_B ) const;
+    virtual TRkMatrix *  mul_left   ( const value_t               alpha,
+                                      const TMatrix< value_t > *  A,
+                                      const matop_t               op_A,
+                                      const matop_t               op_B ) const;
 
     ///////////////////////////////////////////////////////////
     //
@@ -415,16 +287,12 @@ public:
 
     //! same as above but only the dimension of the vector spaces is tested,
     //! not the corresponding index sets
-    virtual void  apply_add   ( const real                       alpha,
-                                const BLAS::Vector< real > &     x,
-                                BLAS::Vector< real > &           y,
-                                const matop_t                    op = apply_normal ) const;
-    virtual void  apply_add   ( const complex                    alpha,
-                                const BLAS::Vector< complex > &  x,
-                                BLAS::Vector< complex > &        y,
-                                const matop_t                    op = apply_normal ) const;
+    virtual void  apply_add   ( const value_t                     alpha,
+                                const BLAS::Vector< value_t > &   x,
+                                BLAS::Vector< value_t > &         y,
+                                const matop_t                     op = apply_normal ) const;
 
-    using TMatrix::apply_add;
+    using TMatrix< value_t >::apply_add;
     
     /////////////////////////////////////////////////
     //
@@ -436,26 +304,26 @@ public:
     //
 
     //! return object of same type
-    virtual auto   create       () const -> std::unique_ptr< TMatrix >
+    virtual auto   create       () const -> std::unique_ptr< TMatrix< value_t > >
     {
-        return std::make_unique< TRkMatrix >();
+        return std::make_unique< TRkMatrix< value_t > >();
     }
 
     //! return copy of matrix
-    virtual auto   copy         () const -> std::unique_ptr< TMatrix >;
+    virtual auto   copy         () const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! return copy matrix wrt. given accuracy; if \a do_coarsen is set, perform coarsening
     virtual auto   copy         ( const TTruncAcc &  acc,
-                                  const bool         do_coarsen = false ) const -> std::unique_ptr< TMatrix >;
+                                  const bool         do_coarsen = false ) const -> std::unique_ptr< TMatrix< value_t > >;
 
     //! return structural copy of matrix
-    virtual auto   copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto   copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
 
     // copy matrix data to \a A
-    virtual void   copy_to      ( TMatrix *          A ) const;
+    virtual void   copy_to      ( TMatrix< value_t > *          A ) const;
 
     // copy matrix data to \a A and truncate w.r.t. \acc with optional coarsening
-    virtual void   copy_to      ( TMatrix *          A,
+    virtual void   copy_to      ( TMatrix< value_t > *          A,
                                   const TTruncAcc &  acc,
                                   const bool         do_coarsen = false ) const;
     
@@ -466,7 +334,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( TRkMatrix, TMatrix )
+    HPRO_RTTI_DERIVED( TRkMatrix, TMatrix< value_t > )
 
     //
     // serialisation
@@ -497,99 +365,19 @@ public:
 // if clauses ( if ( is_complex() ) )
 //
 
-template <typename T>  BLAS::Matrix< T > &        blas_mat_A  ( TRkMatrix *        A );
-template <typename T>  const BLAS::Matrix< T > &  blas_mat_A  ( const TRkMatrix *  A );
-template <typename T>  BLAS::Matrix< T > &        blas_mat_B  ( TRkMatrix *        A );
-template <typename T>  const BLAS::Matrix< T > &  blas_mat_B  ( const TRkMatrix *  A );
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_A  ( TRkMatrix< value_t > *        A ) { return A->blas_mat_A(); }
+template < typename value_t >  const BLAS::Matrix< value_t > &  blas_mat_A  ( const TRkMatrix< value_t > *  A ) { return A->blas_mat_A(); }
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_B  ( TRkMatrix< value_t > *        A ) { return A->blas_mat_B(); }
+template < typename value_t >  const BLAS::Matrix< value_t > &  blas_mat_B  ( const TRkMatrix< value_t > *  A ) { return A->blas_mat_B(); }
 
-template <> inline
-BLAS::Matrix< real > &
-blas_mat_A< real >    ( TRkMatrix *  A )
-{ return A->blas_rmat_A();  }
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_A  ( TRkMatrix< value_t > &        A ) { return A.blas_mat_A(); }
+template < typename value_t >  const BLAS::Matrix< value_t > &  blas_mat_A  ( const TRkMatrix< value_t > &  A ) { return A.blas_mat_A(); }
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_B  ( TRkMatrix< value_t > &        A ) { return A.blas_mat_B(); }
+template < typename value_t >  const BLAS::Matrix< value_t > &  blas_mat_B  ( const TRkMatrix< value_t > &  A ) { return A.blas_mat_B(); }
 
-template <> inline
-BLAS::Matrix< complex > &
-blas_mat_A< complex > ( TRkMatrix *  A )
-{ return A->blas_cmat_A(); }
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_A  ( std::unique_ptr< TRkMatrix< value_t > > & M ) { return M->blas_mat_A(); }
+template < typename value_t >  BLAS::Matrix< value_t > &        blas_mat_B  ( std::unique_ptr< TRkMatrix< value_t > > & M ) { return M->blas_mat_B(); }
 
-template <> inline
-BLAS::Matrix< real > &
-blas_mat_B< real >    ( TRkMatrix *  A )
-{ return A->blas_rmat_B();  }
+}// namespace Hpro
 
-template <> inline
-BLAS::Matrix< complex > &
-blas_mat_B< complex > ( TRkMatrix *  A )
-{ return A->blas_cmat_B(); }
-
-template <> inline
-const BLAS::Matrix< real > &
-blas_mat_A< real >    ( const TRkMatrix *  A )
-{ return A->blas_rmat_A();  }
-
-template <> inline
-const BLAS::Matrix< complex > &
-blas_mat_A< complex > ( const TRkMatrix *  A )
-{ return A->blas_cmat_A(); }
-
-template <> inline
-const BLAS::Matrix< real > &
-blas_mat_B< real >    ( const TRkMatrix *  A )
-{ return A->blas_rmat_B();  }
-
-template <> inline
-const BLAS::Matrix< complex > &
-blas_mat_B< complex > ( const TRkMatrix *  A )
-{ return A->blas_cmat_B(); }
-
-template <typename T>  BLAS::Matrix< T > &        blas_mat_A  ( TRkMatrix &        A );
-template <typename T>  const BLAS::Matrix< T > &  blas_mat_A  ( const TRkMatrix &  A );
-template <typename T>  BLAS::Matrix< T > &        blas_mat_B  ( TRkMatrix &        A );
-template <typename T>  const BLAS::Matrix< T > &  blas_mat_B  ( const TRkMatrix &  A );
-
-template <> inline
-BLAS::Matrix< real > &
-blas_mat_A< real >    ( TRkMatrix &  A )
-{ return A.blas_rmat_A();  }
-
-template <> inline
-BLAS::Matrix< complex > &
-blas_mat_A< complex > ( TRkMatrix &  A )
-{ return A.blas_cmat_A(); }
-
-template <> inline
-BLAS::Matrix< real > &
-blas_mat_B< real >    ( TRkMatrix &  A )
-{ return A.blas_rmat_B();  }
-
-template <> inline
-BLAS::Matrix< complex > &
-blas_mat_B< complex > ( TRkMatrix &  A )
-{ return A.blas_cmat_B(); }
-
-template <> inline
-const BLAS::Matrix< real > &
-blas_mat_A< real >    ( const TRkMatrix &  A )
-{ return A.blas_rmat_A();  }
-
-template <> inline
-const BLAS::Matrix< complex > &
-blas_mat_A< complex > ( const TRkMatrix &  A )
-{ return A.blas_cmat_A(); }
-
-template <> inline
-const BLAS::Matrix< real > &
-blas_mat_B< real >    ( const TRkMatrix &  A )
-{ return A.blas_rmat_B();  }
-
-template <> inline
-const BLAS::Matrix< complex > &
-blas_mat_B< complex > ( const TRkMatrix &  A )
-{ return A.blas_cmat_B(); }
-
-template <typename T>  BLAS::Matrix< T > &  blas_mat_A  ( std::unique_ptr< TRkMatrix > & M ) { return blas_mat_A<T>( M.get() ); }
-template <typename T>  BLAS::Matrix< T > &  blas_mat_B  ( std::unique_ptr< TRkMatrix > & M ) { return blas_mat_B<T>( M.get() ); }
-
-}// namespace HLIB
-
-#endif  // __HLIB_TRKMATRIX_HH
+#endif  // __HPRO_TRKMATRIX_HH

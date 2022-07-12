@@ -1,11 +1,11 @@
-#ifndef __HLIB_TPERMUTATION_HH
-#define __HLIB_TPERMUTATION_HH
+#ifndef __HPRO_TPERMUTATION_HH
+#define __HPRO_TPERMUTATION_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TPermutation.hh
 // Description : class for a permutation
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -17,7 +17,7 @@
 
 #include "hpro/vector/TVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -50,21 +50,25 @@ public:
     //
 
     //! permute given index
-    idx_t         permute      ( const idx_t      idx ) const { return (*this)[ idx ]; }
+    idx_t         permute      ( const idx_t                 idx ) const { return (*this)[ idx ]; }
 
     //! reorder given vector \a x and write result to \a y
-    void          permute      ( const TVector *  x,
-                                 TVector *        y ) const;
+    template < typename value_t >
+    void          permute      ( const TVector< value_t > *  x,
+                                 TVector< value_t > *        y ) const;
     
     //! use inverse permutation to reorder given vector \a x and write result to \a y
-    void          permute_inv  ( const TVector *  x,
-                                 TVector *        y ) const;
+    template < typename value_t >
+    void          permute_inv  ( const TVector< value_t > *  x,
+                                 TVector< value_t > *        y ) const;
     
     //! permute given vector \x inplace
-    void          permute      ( TVector *        x ) const;
+    template < typename value_t >
+    void          permute      ( TVector< value_t > *        x ) const;
     
     //! apply inverse permutation to given vector \x
-    void          permute_inv  ( TVector *        x ) const;
+    template < typename value_t >
+    void          permute_inv  ( TVector< value_t > *        x ) const;
     
     //! invert permutation
     void          invert   ();
@@ -124,6 +128,6 @@ public:
     virtual size_t byte_size () const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TPERMUTATION_HH
+#endif  // __HPRO_TPERMUTATION_HH

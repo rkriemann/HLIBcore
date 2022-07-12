@@ -1,17 +1,27 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBiCGStab.cc
 // Description : class implementing BiCG-Stab
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/System.hh"
 
 #include "hpro/solver/TBiCGStab.hh"
 
-namespace HLIB
+namespace Hpro
 {
+
+// import from TSolver
+void
+solve_mp ( const TSolver &       solver,
+           const std::string &   solver_name,
+           any_const_operator_t  A,
+           any_vector_t          x,
+           any_const_vector_t    b,
+           any_const_operator_t  W,
+           TSolverInfo *         info );
 
 namespace
 {
@@ -19,70 +29,17 @@ namespace
 //
 // actual BiCG-Stab algorithm
 //
-template <typename T>
+template < typename value_t,
+           typename value_pre_t >
 void
-bicgstab ( const TLinearOperator *   A,
-           TVector *                 x,
-           const TVector *           b,
-           const TLinearOperator *   W,
-           TSolverInfo *             info,
-           const TSolver *           solver );
-
-}// namespace anonymous
-
-////////////////////////////////////////////////
-//
-// constructor and destructor
-//
-
-TBiCGStab::TBiCGStab ( const TStopCriterion &  stop_crit )
-        : TSolver( stop_crit )
-{}
-
-TBiCGStab::~TBiCGStab ()
-{}
-
-////////////////////////////////////////////////
-//
-// solving the system
-//
-
-//
-// the real solving
-//
-void
-TBiCGStab::solve ( const TLinearOperator *  A,
-                   TVector *                x,
-                   const TVector *          b,
-                   const TLinearOperator *  W,
-                   TSolverInfo *            info ) const
+bicgstab ( const TLinearOperator< value_t > *      A,
+           TVector< value_t > *                    x,
+           const TVector< value_t > *              b,
+           const TLinearOperator< value_pre_t > *  W,
+           TSolverInfo *                           info,
+           const TSolver *                         solver )
 {
-    if ( x == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "x = nullptr" );
-    if ( b == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "b = nullptr" );
-    if ( A == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "A = nullptr" );
-
-    if ( A->is_complex() )
-        bicgstab<complex>( A, x, b, W, info, this );
-    else
-        bicgstab<real>( A, x, b, W, info, this );
-}
-
-namespace
-{
-
-//
-// actual BiCG-Stab algorithm
-//
-template <typename T>
-void
-bicgstab ( const TLinearOperator *   A,
-           TVector *                 x,
-           const TVector *           b,
-           const TLinearOperator *   W,
-           TSolverInfo *             info,
-           const TSolver *           solver )
-{
-    using  real_t = typename real_type< T >::type_t;
+    using  real_t = real_type_t< value_t >;
     
     const real_t  zero_limit = Math::square( Limits::epsilon< real_t >() );
     
@@ -95,11 +52,11 @@ bicgstab ( const TLinearOperator *   A,
     auto  r  = b->copy();
     auto  t  = b->copy(); // for exact residual
 
-    real  norm0 = real(0);
+    auto  norm0 = real_t(0);
 
     if ( W != nullptr )
     {
-        apply_add( real(-1), A, x, t.get() );
+        apply_add( value_t(-1), A, x, t.get() );
 
         if ( solver->use_exact_residual() )
             norm0 = t->norm2();
@@ -111,19 +68,19 @@ bicgstab ( const TLinearOperator *   A,
     }// if
     else
     {
-        apply_add( real(-1), A, x, r.get() );
+        apply_add( value_t(-1), A, x, r.get() );
         norm0 = r->norm2();
     }// else
 
-    auto  norm  = norm0;
+    auto  norm = norm0;
 
     // choose r0, with <r0,r> != 0
     auto  r0   = r->copy();
 
     // create/set up remaining aux. vectors
-    auto  p  = r0->copy();
-    auto  Ap = p->copy();
-    auto  Ar = r->copy();
+    auto  p    = r0->copy();
+    auto  Ap   = p->copy();
+    auto  Ar   = r->copy();
     
     //
     // iterate until stop-criterion reached
@@ -150,8 +107,8 @@ bicgstab ( const TLinearOperator *   A,
             apply( A, p.get(), Ap.get() );
         }// else
 
-        auto  r_r0  = tdot<T>( r.get(),  r0.get() );
-        auto  Ap_r0 = tdot<T>( Ap.get(), r0.get() );
+        auto  r_r0  = dot( r.get(),  r0.get() );
+        auto  Ap_r0 = dot( Ap.get(), r0.get() );
         
         if (( Math::abs( Ap_r0 ) < zero_limit ) || ( Math::abs( r_r0 ) < zero_limit ))
         {
@@ -164,15 +121,15 @@ bicgstab ( const TLinearOperator *   A,
         auto  alpha = r_r0 / Ap_r0;
 
         // x = x + αp
-        axpy<T>( alpha, p.get(), x );
+        axpy< value_t >( alpha, p.get(), x );
 
         // r = r - alpha A p_j
-        axpy<T>( -alpha, Ap.get(), r.get() );
+        axpy< value_t >( -alpha, Ap.get(), r.get() );
 
         if ( solver->use_exact_residual() && ( W != nullptr ))
         {
             apply( A, x, t.get() );
-            t->axpy( real(-1), b );
+            t->axpy( value_t(-1), b );
             norm = t->norm2();
         }// if
         else
@@ -199,8 +156,8 @@ bicgstab ( const TLinearOperator *   A,
             apply( A, r.get(), Ar.get() );
         }// else
 
-        auto  Ar_r  = tdot<T>( Ar.get(), r.get() );
-        auto  Ar_Ar = tdot<T>( Ar.get(), Ar.get() );
+        auto  Ar_r  = dot( Ar.get(), r.get() );
+        auto  Ar_Ar = dot( Ar.get(), Ar.get() );
         auto  omega = Ar_r / Ar_Ar;
 
         if ( Math::abs( omega ) < zero_limit )
@@ -212,15 +169,15 @@ bicgstab ( const TLinearOperator *   A,
         }// if
         
         // x = x + ωr
-        axpy<T>( omega, r.get(), x );
+        axpy< value_t >( omega, r.get(), x );
 
         // r = r - ωAr
-        axpy<T>( - omega, Ar.get(), r.get() );
+        axpy< value_t >( - omega, Ar.get(), r.get() );
 
         if ( solver->use_exact_residual() && ( W != nullptr ))
         {
             apply( A, x, t.get() );
-            t->axpy( real(-1), b );
+            t->axpy( value_t(-1), b );
             norm = t->norm2();
         }// if
         else
@@ -238,15 +195,93 @@ bicgstab ( const TLinearOperator *   A,
         it++;
 
         // β = <r_j+1,r0> / <r_j,r0> · alpha_j / omega_j
-        auto  beta = ( tdot<T>( r.get(), r0.get() ) / r_r0 ) * ( alpha / omega );
+        auto  beta = ( dot( r.get(), r0.get() ) / r_r0 ) * ( alpha / omega );
 
         // p = r_j+1 + β( p_j - ωAp_j )
-        scale<T>( beta, p.get() );
-        axpy<T>( -omega * beta, Ap.get(), p.get() );
-        axpy<T>( T(1), r.get(), p.get() );
+        scale< value_t >( beta, p.get() );
+        axpy< value_t >( -omega * beta, Ap.get(), p.get() );
+        axpy< value_t >( value_t(1), r.get(), p.get() );
     }// while
 }
 
 }// namespace anonymous
 
-}// namespace HLIB
+////////////////////////////////////////////////
+//
+// constructor and destructor
+//
+
+TBiCGStab::TBiCGStab ( const TStopCriterion &  stop_crit )
+        : TSolver( stop_crit )
+{}
+
+TBiCGStab::~TBiCGStab ()
+{}
+
+////////////////////////////////////////////////
+//
+// solving the system
+//
+
+//
+// the real solving
+//
+template < typename value_t,
+           typename value_pre_t >
+void
+TBiCGStab::solve ( const TLinearOperator< value_t > *     A,
+                   TVector< value_t > *                   x,
+                   const TVector< value_t > *             b,
+                   const TLinearOperator< value_pre_t > * W,
+                   TSolverInfo *                          info ) const
+{
+    if ( x == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "x = nullptr" );
+    if ( b == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "b = nullptr" );
+    if ( A == nullptr ) HERROR( ERR_ARG, "(TBiCGStab) solve", "A = nullptr" );
+
+    bicgstab( A, x, b, W, info, this );
+}
+
+//
+// generic implementation for "virtual" solve method
+//
+void
+TBiCGStab::solve ( any_const_operator_t  A,
+                   any_vector_t          x,
+                   any_const_vector_t    b,
+                   any_const_operator_t  W,
+                   TSolverInfo *         info ) const
+{
+    solve_mp( *this, "TBiCGStab", A, x, b, W, info );
+}
+
+template < typename value_t > using opptr_t = TLinearOperator< value_t > *;
+
+void
+TBiCGStab::solve ( any_const_operator_t  A,
+             any_vector_t          x,
+             any_const_vector_t    b,
+             TSolverInfo *         info ) const
+{
+    using std::get;
+    
+    if (( A.index() != x.index() ) ||
+        ( A.index() != b.index() ))
+        HERROR( ERR_ARG, "(TBiCGStab) solve", "A, x and b have different value type" );
+
+    switch ( A.index() )
+    {
+        case 0: this->solve( get< 0 >( A ), get< 0 >( x ), get< 0 >( b ), opptr_t< float >( nullptr ), info ); break;
+        case 1: this->solve( get< 1 >( A ), get< 1 >( x ), get< 1 >( b ), opptr_t< double >( nullptr ), info ); break;
+        case 2: this->solve( get< 2 >( A ), get< 2 >( x ), get< 2 >( b ), opptr_t< std::complex< float > >( nullptr ), info ); break;
+        case 3: this->solve( get< 3 >( A ), get< 3 >( x ), get< 3 >( b ), opptr_t< std::complex< double > >( nullptr ), info ); break;
+
+        default:
+            HERROR( ERR_ARG, "(TBiCGStab) solve", "A, x and b have unsupported value type" );
+    }// switch
+}
+
+// instantiate solve method
+HPRO_INST_SOLVE_METHOD( TBiCGStab )
+
+}// namespace Hpro

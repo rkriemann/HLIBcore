@@ -1,12 +1,12 @@
-#ifndef __HLIB_TSTDADMCOND_HH
-#define __HLIB_TSTDADMCOND_HH
+#ifndef __HPRO_TSTDADMCOND_HH
+#define __HPRO_TSTDADMCOND_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGeomAdmCond.hh
 // Description : baseclass for all admissibility-conditions
 //               for block-clusters
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/TPoint.hh"
@@ -14,7 +14,7 @@
 
 #include "hpro/cluster/TAdmCondition.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -114,7 +114,7 @@ class THiLoFreqGeomAdmCond : public TAdmCondition
 {
 protected:
     // (modulus of) wave number 
-    const real    _kappa;
+    const double  _kappa;
     
     // parameter η of standard admissibility
     const double  _eta;
@@ -128,9 +128,9 @@ public:
     // constructor and destructor
     //
 
-    THiLoFreqGeomAdmCond ( const complex  kappa,
-                           const double   max_waves,
-                           const double   eta = 2.0 );
+    THiLoFreqGeomAdmCond ( const std::complex< double >  kappa,
+                           const double                  max_waves,
+                           const double                  eta = 2.0 );
 
     virtual ~THiLoFreqGeomAdmCond () {}
 
@@ -143,6 +143,6 @@ public:
     virtual bool is_adm ( const TBlockCluster * cl ) const;
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TGEOMADMCOND_HH
+#endif  // __HPRO_TGEOMADMCOND_HH

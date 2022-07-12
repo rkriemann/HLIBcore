@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : String.cc
 // Description : module containing a class for a string
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <stdarg.h>
@@ -12,7 +12,7 @@
 
 #include "hpro/base/String.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -150,4 +150,4 @@ to_upper ( std::string &  str )
     boost::to_upper( str );
 }
 
-}// namespace HLIB
+}// namespace Hpro

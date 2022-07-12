@@ -1,17 +1,17 @@
-#ifndef __HLIB_TCLUSTERTREE_HH
-#define __HLIB_TCLUSTERTREE_HH
+#ifndef __HPRO_TCLUSTERTREE_HH
+#define __HPRO_TCLUSTERTREE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TClusterTree.hh
 // Description : class for a cluster tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/cluster/TCluster.hh"
 #include "hpro/cluster/TPermutation.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -108,7 +108,7 @@ public:
     //! flatten hierarchy of cluster tree
     virtual void flatten ()
     {
-        HLIB::flatten( _root );
+        Hpro::flatten( _root );
     }    
     
     //! return size in bytes used by this object
@@ -123,6 +123,6 @@ public:
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TCLUSTERTREE_HH
+#endif  // __HPRO_TCLUSTERTREE_HH

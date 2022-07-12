@@ -1,16 +1,16 @@
-#ifndef __HLIB_PACKED_HH
-#define __HLIB_PACKED_HH
+#ifndef __HPRO_PACKED_HH
+#define __HPRO_PACKED_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed.hh
 // Description : datatype for packed (vector) operations
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cmath>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 #include "hpro/base/basetypes.hh"
 #include "hpro/base/System.hh"
 
@@ -22,7 +22,7 @@
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -313,7 +313,7 @@ sincos ( const T_packed  f,
     simd_traits< typename T_packed::value_t, T_packed::isa >::sincos( f.x, s.x, c.x );
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
@@ -332,4 +332,4 @@ sincos ( const T_packed  f,
 #include "hpro/base/packed_vsx.hh"
 #include "hpro/base/packed_neon.hh"
 
-#endif  // HLIB_PACKED_HH
+#endif  // HPRO_PACKED_HH

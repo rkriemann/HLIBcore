@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TPermutation.cc
 // Description : class for a permutation matrix
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/vector/TScalarVector.hh"
 
 #include "hpro/cluster/TPermutation.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 ///////////////////////////////////////////
@@ -44,9 +44,10 @@ TPermutation::~TPermutation ()
 //
 // permute given vectors with source data in \a x and destination \a y
 //
+template < typename value_t >
 void
-TPermutation::permute ( const TVector *  x,
-                        TVector *        y ) const
+TPermutation::permute ( const TVector< value_t > *  x,
+                        TVector< value_t > *        y ) const
 {
     if (( x == nullptr ) || ( y == nullptr ))
         HERROR( ERR_ARG, "(TPermutation) permute", "vector is NULL" );
@@ -56,35 +57,23 @@ TPermutation::permute ( const TVector *  x,
 
     if (( x->size() != size() ) || ( y->size() != size() ))
         HERROR( ERR_VEC_SIZE, "(TPermutation) permute", "" );
-
-    if ( x->is_complex() != y->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TPermutation) permute", "" );
         
-    const TScalarVector *  sx = cptrcast( x, TScalarVector );
-    TScalarVector *        sy = ptrcast( y, TScalarVector );
+    auto  sx = cptrcast( x, TScalarVector< value_t > );
+    auto  sy = ptrcast(  y, TScalarVector< value_t > );
 
-    if ( x->is_complex() )
+    for ( idx_t  i = 0; i < idx_t(size()); ++i )
     {
-        for ( idx_t  i = 0; i < idx_t(size()); ++i )
-        {
-            sy->blas_cvec()( permute( i ) ) = sx->blas_cvec()( i );
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(size()); ++i )
-        {
-            sy->blas_rvec()( permute( i ) ) = sx->blas_rvec()( i );
-        }// for
-    }// else
+        sy->blas_vec()( permute( i ) ) = sx->blas_vec()( i );
+    }// for
 }
 
 //
 // use inverse permutation to reorder given vector \a x and write result to \a y
 //
+template < typename value_t >
 void
-TPermutation::permute_inv ( const TVector *  x,
-                            TVector *        y ) const
+TPermutation::permute_inv ( const TVector< value_t > *  x,
+                            TVector< value_t > *        y ) const
 {
     if (( x == nullptr ) || ( y == nullptr ))
         HERROR( ERR_ARG, "(TPermutation) permute_inv", "vector is NULL" );
@@ -94,27 +83,12 @@ TPermutation::permute_inv ( const TVector *  x,
 
     if (( x->size() != size() ) || ( y->size() != size() ))
         HERROR( ERR_VEC_SIZE, "(TPermutation) permute_inv", "" );
-
-    if ( x->is_complex() != y->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TPermutation) permute_inv", "" );
         
-    const TScalarVector *  sx = cptrcast( x, TScalarVector );
-    TScalarVector *        sy = ptrcast( y, TScalarVector );
+    auto  sx = cptrcast( x, TScalarVector< value_t > );
+    auto  sy = ptrcast(  y, TScalarVector< value_t > );
 
-    if ( x->is_complex() )
-    {
-        for ( idx_t  i = 0; i < idx_t(size()); ++i )
-        {
-            sy->blas_cvec()( i ) = sx->blas_cvec()( permute( i ) );
-        }// for
-    }// if
-    else
-    {
-        for ( idx_t  i = 0; i < idx_t(size()); ++i )
-        {
-            sy->blas_rvec()( i ) = sx->blas_rvec()( permute( i ) );
-        }// for
-    }// else
+    for ( idx_t  i = 0; i < idx_t(size()); ++i )
+        sy->blas_vec()( i ) = sx->blas_vec()( permute( i ) );
 }
 
 namespace
@@ -197,8 +171,9 @@ vector_sort ( BLAS::Vector< T > &  x,
 //
 // permute given vector inplace
 //
+template < typename value_t >
 void
-TPermutation::permute ( TVector *  x ) const
+TPermutation::permute ( TVector< value_t > *  x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TPermutation) permute", "vector is NULL" );
@@ -209,44 +184,19 @@ TPermutation::permute ( TVector *  x ) const
     if ( x->size() != size() )
         HERROR( ERR_VEC_SIZE, "(TPermutation) permute", "" );
 
-    TScalarVector *  sx = ptrcast( x, TScalarVector );
+    auto  sx  = ptrcast( x, TScalarVector< value_t > );
+    auto  tmp = TScalarVector< value_t >( * sx );
 
-    #if 0
-    if ( x->is_complex() )
-    {
-        TPermutation  perm = *this;
-        
-        vector_sort( sx->blas_cvec(), perm, 0, idx_t(x->size())-1 );
-    }// if
-    else
-    {
-        TPermutation  perm = *this;
-        
-        vector_sort( sx->blas_rvec(), perm, 0, idx_t(x->size())-1 );
-    }// else
-    #else
-    if ( x->is_complex() )
-    {
-        TScalarVector  tmp( * sx );
-
-        permute( sx, & tmp );
-        BLAS::copy( tmp.blas_cvec(), sx->blas_cvec() );
-    }// if
-    else
-    {
-        TScalarVector  tmp( * sx );
-
-        permute( sx, & tmp );
-        BLAS::copy( tmp.blas_rvec(), sx->blas_rvec() );
-    }// else
-    #endif
+    permute( sx, & tmp );
+    BLAS::copy( tmp.blas_vec(), sx->blas_vec() );
 }
     
 //
 // apply inverse permutation to given vector \x
 //
+template < typename value_t >
 void
-TPermutation::permute_inv ( TVector *  x ) const
+TPermutation::permute_inv ( TVector< value_t > *  x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TPermutation) permute_inv", "vector is NULL" );
@@ -257,22 +207,11 @@ TPermutation::permute_inv ( TVector *  x ) const
     if ( x->size() != size() )
         HERROR( ERR_VEC_SIZE, "(TPermutation) permute_inv", "" );
 
-    TScalarVector *  sx = ptrcast( x, TScalarVector );
+    auto  sx  = ptrcast( x, TScalarVector< value_t > );
+    auto  tmp = TScalarVector< value_t >( * sx );
 
-    if ( x->is_complex() )
-    {
-        TScalarVector  tmp( * sx );
-
-        permute_inv( sx, & tmp );
-        BLAS::copy( tmp.blas_cvec(), sx->blas_cvec() );
-    }// if
-    else
-    {
-        TScalarVector  tmp( * sx );
-
-        permute_inv( sx, & tmp );
-        BLAS::copy( tmp.blas_rvec(), sx->blas_rvec() );
-    }// else
+    permute_inv( sx, & tmp );
+    BLAS::copy( tmp.blas_vec(), sx->blas_vec() );
 }
     
 //
@@ -352,4 +291,27 @@ TPermutation::byte_size () const
     return sizeof( std::vector< idx_t > ) + size() * sizeof(idx_t);
 }
 
-}// namespace
+//
+// explicit template instantiation
+//
+template void TPermutation::permute< float >                  ( const TVector< float > *,                  TVector< float > * ) const;
+template void TPermutation::permute< double >                 ( const TVector< double > *,                 TVector< double > * ) const;
+template void TPermutation::permute< std::complex< float > >  ( const TVector< std::complex< float > > *,  TVector< std::complex< float > > * ) const;
+template void TPermutation::permute< std::complex< double > > ( const TVector< std::complex< double > > *, TVector< std::complex< double > > * ) const;
+
+template void TPermutation::permute_inv< float >                  ( const TVector< float > *,                  TVector< float > * ) const;
+template void TPermutation::permute_inv< double >                 ( const TVector< double > *,                 TVector< double > * ) const;
+template void TPermutation::permute_inv< std::complex< float > >  ( const TVector< std::complex< float > > *,  TVector< std::complex< float > > * ) const;
+template void TPermutation::permute_inv< std::complex< double > > ( const TVector< std::complex< double > > *, TVector< std::complex< double > > * ) const;
+
+template void TPermutation::permute< float >                  ( TVector< float > * ) const;
+template void TPermutation::permute< double >                 ( TVector< double > * ) const;
+template void TPermutation::permute< std::complex< float > >  ( TVector< std::complex< float > > * ) const;
+template void TPermutation::permute< std::complex< double > > ( TVector< std::complex< double > > * ) const;
+
+template void TPermutation::permute_inv< float >                  ( TVector< float > * ) const;
+template void TPermutation::permute_inv< double >                 ( TVector< double > * ) const;
+template void TPermutation::permute_inv< std::complex< float > >  ( TVector< std::complex< float > > * ) const;
+template void TPermutation::permute_inv< std::complex< double > > ( TVector< std::complex< double > > * ) const;
+
+}// namespace Hpro

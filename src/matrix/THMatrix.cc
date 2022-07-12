@@ -1,17 +1,19 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : THMatrix.cc
 // Description : class for H-matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
+
+#include "hpro/parallel/NET.hh"
 
 #include "hpro/matrix/structure.hh"
 #include "hpro/matrix/TMatrixHierarchy.hh"
 
 #include "hpro/matrix/THMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;
@@ -28,14 +30,23 @@ using std::unique_ptr;
 //
 // constructor
 //
-
-THMatrix::THMatrix ( const TBlockCluster * bct )
-        : TBlockMatrix( bct )
+template < typename value_t >
+THMatrix< value_t >::THMatrix ( const TBlockCluster * bct )
+        : TBlockMatrix< value_t >( bct )
         , _max_id( 0 )
 {}
 
-THMatrix::THMatrix ( const TBlockIndexSet &  bis )
-        : TBlockMatrix( bis )
+template < typename value_t >
+THMatrix< value_t >::THMatrix ( const TBlockIndexSet &  bis )
+        : TBlockMatrix< value_t >( bis )
+        , _max_id( 0 )
+{
+}
+
+template < typename value_t >
+THMatrix< value_t >::THMatrix ( const TIndexSet &  arowis,
+                                const TIndexSet &  acolis )
+        : TBlockMatrix< value_t >( arowis, acolis )
         , _max_id( 0 )
 {
 }
@@ -48,73 +59,46 @@ THMatrix::THMatrix ( const TBlockIndexSet &  bis )
 //
 // access single matrix coefficient
 //
-real
-THMatrix::entry ( const idx_t row, const idx_t col ) const
-{
-    idx_t  srow = row;
-    idx_t  scol = col;
-    
-    // translate index pair to lower half in case of symmetry
-    if ( ! is_nonsym() && ( srow < scol ))
-        std::swap( srow, scol );
-
-    const idx_t rofs = row_ofs();
-    const idx_t cofs = col_ofs();
-    
-    for ( uint i = 0; i < block_rows(); i++ )
-        for ( uint j = 0; j < block_cols(); j++ )
-        {
-            const TMatrix * A_ij = block(i,j);
-
-            if ( A_ij == nullptr )
-                continue;
-            
-            if ( A_ij->block_is().is_in( rofs + srow, cofs + scol ) )
-                return A_ij->entry( srow - A_ij->row_ofs() + rofs, scol - A_ij->col_ofs() + cofs );
-        }// for
-
-    return 0.0;
-}
-
-const complex
-THMatrix::centry ( const idx_t row, const idx_t col ) const
+template < typename value_t >
+value_t
+THMatrix< value_t >::entry ( const idx_t row, const idx_t col ) const
 {
     idx_t  srow = row;
     idx_t  scol = col;
     bool   swap_idx = false;
     
     // translate index pair to lower half in case of symmetry
-    if ( ! is_nonsym() && ( srow < scol ))
+    if ( ! this->is_nonsym() && ( srow < scol ))
     {
         std::swap( srow, scol );
         swap_idx = true;
     }// if
     
-    const idx_t rofs = row_ofs();
-    const idx_t cofs = col_ofs();
+    const idx_t rofs = this->row_ofs();
+    const idx_t cofs = this->col_ofs();
     
-    for ( uint i = 0; i < block_rows(); i++ )
-        for ( uint j = 0; j < block_cols(); j++ )
+    for ( uint i = 0; i < this->block_rows(); i++ )
+        for ( uint j = 0; j < this->block_cols(); j++ )
         {
-            const TMatrix * A_ij = block(i,j);
+            const TMatrix< value_t > * A_ij = this->block(i,j);
 
             if ( A_ij == nullptr )
                 continue;
             
             if ( A_ij->block_is().is_in( rofs + srow, cofs + scol ) )
             {
-                const complex val = A_ij->centry( srow - A_ij->row_ofs() + rofs,
-                                                  scol - A_ij->col_ofs() + cofs );
+                const auto  val = A_ij->entry( srow - A_ij->row_ofs() + rofs,
+                                               scol - A_ij->col_ofs() + cofs );
                 
-                if ( swap_idx && is_hermitian() )
-                    return conj(val);
+                if ( swap_idx && this->is_hermitian() )
+                    return Math::conj(val);
                 else
                     return val;
             }// if
         }// for
 
 
-    return 0.0;
+    return value_t(0);
 }
 
 /////////////////////////////////////////////////
@@ -125,16 +109,14 @@ THMatrix::centry ( const idx_t row, const idx_t col ) const
 //
 // matrix-vector-mult.
 //
+template < typename value_t >
 void
-THMatrix::mul_vec ( const real      alpha,
-                    const TVector * x,
-                    const real      beta,
-                    TVector       * y,
-                    const matop_t   op ) const
+THMatrix< value_t >::mul_vec ( const value_t               alpha,
+                               const TVector< value_t > *  x,
+                               const value_t               beta,
+                               TVector< value_t > *        y,
+                               const matop_t               op ) const
 {
-    // TBlockMatrix::mul_vec( alpha, x, beta, y, op );
-    // return;
-    
     if ( x == nullptr ) HERROR( ERR_ARG, "(THMatrix) mul_vec", "x = nullptr" );
     if ( y == nullptr ) HERROR( ERR_ARG, "(THMatrix) mul_vec", "y = nullptr" );
 
@@ -142,37 +124,9 @@ THMatrix::mul_vec ( const real      alpha,
     // multiply
     //
 
-    TBlockMatrix::mul_vec( alpha, x, beta, y, op );
+    TBlockMatrix< value_t >::mul_vec( alpha, x, beta, y, op );
 }
 
-/////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
-//
-// matrix-vector-multiplication : y = alpha op(A) * x + beta * y
-//
-void
-THMatrix::cmul_vec ( const complex   alpha,
-                     const TVector * x,
-                     const complex   beta,
-                     TVector       * y,
-                     const matop_t   op ) const
-{
-    // TBlockMatrix::cmul_vec( alpha, x, beta, y, op );
-    // return;
-    
-    if ( x == nullptr ) HERROR( ERR_ARG, "(THMatrix) cmul_vec", "x = nullptr" );
-    if ( y == nullptr ) HERROR( ERR_ARG, "(THMatrix) cmul_vec", "y = nullptr" );
-
-    //
-    // multiply
-    //
-    
-    TBlockMatrix::cmul_vec( alpha, x, beta, y, op );
-}
-    
 /////////////////////////////////////////////////
 //
 // misc.
@@ -181,25 +135,28 @@ THMatrix::cmul_vec ( const complex   alpha,
 //
 // return appropriate vector-types for matrix
 //
+template < typename value_t >
 auto
-THMatrix::row_vector () const -> unique_ptr< TVector >
+THMatrix< value_t >::row_vector () const -> unique_ptr< TVector< value_t > >
 {
-    return std::make_unique< TScalarVector >( rows(), row_ofs(), is_complex() );
+    return std::make_unique< TScalarVector< value_t > >( this->rows(), this->row_ofs() );
 }
 
+template < typename value_t >
 auto
-THMatrix::col_vector () const -> unique_ptr< TVector >
+THMatrix< value_t >::col_vector () const -> unique_ptr< TVector< value_t > >
 {
-    return std::make_unique< TScalarVector >( cols(), col_ofs(), is_complex() );
+    return std::make_unique< TScalarVector< value_t > >( this->cols(), this->col_ofs() );
 }
     
 //
 // transpose matrix
 //
+template < typename value_t >
 void
-THMatrix::transpose ()
+THMatrix< value_t >::transpose ()
 {
-    TBlockMatrix::transpose();
+    TBlockMatrix< value_t >::transpose();
 
     swap( _row_perm_e2i, _col_perm_e2i );
     swap( _row_perm_i2e, _col_perm_i2e );
@@ -210,10 +167,11 @@ THMatrix::transpose ()
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-THMatrix::byte_size () const
+THMatrix< value_t >::byte_size () const
 {
-    size_t  size = TBlockMatrix::byte_size();
+    size_t  size = TBlockMatrix< value_t >::byte_size();
 
     size += _row_perm_e2i.byte_size();
     size += _col_perm_e2i.byte_size();
@@ -231,31 +189,35 @@ THMatrix::byte_size () const
 // serialisation
 //
 
+template < typename value_t >
 void
-THMatrix::read  ( TByteStream & s )
+THMatrix< value_t >::read  ( TByteStream & s )
 {
-    TBlockMatrix::read( s );
+    TBlockMatrix< value_t >::read( s );
 }
 
+template < typename value_t >
 void
-THMatrix::build ( TByteStream & s )
+THMatrix< value_t >::build ( TByteStream & s )
 {
-    TBlockMatrix::build( s );
+    TBlockMatrix< value_t >::build( s );
 }
 
+template < typename value_t >
 void
-THMatrix::write ( TByteStream & s ) const
+THMatrix< value_t >::write ( TByteStream & s ) const
 {
-    TBlockMatrix::write( s );
+    TBlockMatrix< value_t >::write( s );
 }
 
 //
 // returns size of object in bytestream
 //
+template < typename value_t >
 size_t
-THMatrix::bs_size () const
+THMatrix< value_t >::bs_size () const
 {
-    return (TBlockMatrix::bs_size() +
+    return (TBlockMatrix< value_t >::bs_size() +
             _row_perm_e2i.byte_size() +
             _col_perm_e2i.byte_size() +
             _row_perm_i2e.byte_size() +
@@ -273,15 +235,16 @@ THMatrix::bs_size () const
 //
 // compute min/max tau/sigma indices
 //
+template < typename value_t >
 void
-THMatrix::comp_min_max_idx ()
+THMatrix< value_t >::comp_min_max_idx ()
 {
     //
     // set up matrix hierarchy
     //
 
-    set_hierarchy_data();
-    _max_id = HLIB::max_id( this );
+    this->set_hierarchy_data();
+    _max_id = Hpro::max_id( this );
 }
 
 /////////////////////////////////////////////////
@@ -292,11 +255,12 @@ THMatrix::comp_min_max_idx ()
 //
 // virtual constructor
 //
-std::unique_ptr< TMatrix >
-THMatrix::copy () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+THMatrix< value_t >::copy () const
 {
-    auto        M = TBlockMatrix::copy();
-    THMatrix *  H = ptrcast( M.get(), THMatrix );
+    auto        M = TBlockMatrix< value_t >::copy();
+    THMatrix *  H = ptrcast( M.get(), THMatrix< value_t > );
 
     H->comp_min_max_idx();
     H->set_row_perm( _row_perm_e2i, _row_perm_i2e );
@@ -308,11 +272,12 @@ THMatrix::copy () const
 //
 // copy matrix wrt. given accuracy and coarsening
 //
-std::unique_ptr< TMatrix >
-THMatrix::copy ( const TTruncAcc & acc, const bool coarsen ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+THMatrix< value_t >::copy ( const TTruncAcc & acc, const bool coarsen ) const
 {
-    auto        M = TBlockMatrix::copy( acc, coarsen );
-    THMatrix *  H = ptrcast( M.get(), THMatrix );
+    auto        M = TBlockMatrix< value_t >::copy( acc, coarsen );
+    THMatrix *  H = ptrcast( M.get(), THMatrix< value_t > );
 
     H->comp_min_max_idx();
     H->set_row_perm( _row_perm_e2i, _row_perm_i2e );
@@ -324,11 +289,12 @@ THMatrix::copy ( const TTruncAcc & acc, const bool coarsen ) const
 //
 // return structural copy
 //
-std::unique_ptr< TMatrix >
-THMatrix::copy_struct () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+THMatrix< value_t >::copy_struct () const
 {
-    auto        M = TBlockMatrix::copy_struct();
-    THMatrix *  H = ptrcast( M.get(), THMatrix );
+    auto        M = TBlockMatrix< value_t >::copy_struct();
+    THMatrix *  H = ptrcast( M.get(), THMatrix< value_t > );
 
     H->comp_min_max_idx();
     H->set_row_perm( _row_perm_e2i, _row_perm_i2e );
@@ -340,10 +306,11 @@ THMatrix::copy_struct () const
 //
 // copy matrix into A
 //
+template < typename value_t >
 void
-THMatrix::copy_to ( TMatrix * A ) const
+THMatrix< value_t >::copy_to ( TMatrix< value_t > * A ) const
 {
-    TBlockMatrix::copy_to( A );
+    TBlockMatrix< value_t >::copy_to( A );
 
     if ( ! IS_TYPE( A, THMatrix ) )
         HERROR( ERR_MAT_TYPE, "(THMatrix) copy_to", A->typestr() );
@@ -355,10 +322,11 @@ THMatrix::copy_to ( TMatrix * A ) const
     H->set_col_perm( _col_perm_e2i, _col_perm_i2e );
 }
 
+template < typename value_t >
 void
-THMatrix::copy_to ( TMatrix * A, const TTruncAcc & acc, const bool coarsen ) const
+THMatrix< value_t >::copy_to ( TMatrix< value_t > * A, const TTruncAcc & acc, const bool coarsen ) const
 {
-    TBlockMatrix::copy_to( A, acc, coarsen );
+    TBlockMatrix< value_t >::copy_to( A, acc, coarsen );
 
     if ( ! IS_TYPE( A, THMatrix ) )
         HERROR( ERR_MAT_TYPE, "(THMatrix) copy_to", A->typestr() );
@@ -373,10 +341,11 @@ THMatrix::copy_to ( TMatrix * A, const TTruncAcc & acc, const bool coarsen ) con
 //
 // copy complete structural information from given matrix
 //
+template < typename value_t >
 void
-THMatrix::copy_struct_from ( const TMatrix * M )
+THMatrix< value_t >::copy_struct_from ( const TMatrix< value_t > * M )
 {
-    TBlockMatrix::copy_struct_from( M );
+    TBlockMatrix< value_t >::copy_struct_from( M );
 
     if ( IS_TYPE( M, THMatrix ) )
     {
@@ -391,18 +360,19 @@ THMatrix::copy_struct_from ( const TMatrix * M )
 //
 // collect leaves
 //
+template < typename value_t >
 bool
-size_sort ( TMatrix * M1, TMatrix * M2 )
+size_sort ( TMatrix< value_t > * M1, TMatrix< value_t > * M2 )
 {
     return std::max( M1->rows(), M1->cols() ) > std::max( M2->rows(), M2->cols() );
 }
 
 // void
-// THMatrix::build_leaf_list ()
+// THMatrix< value_t >::build_leaf_list ()
 // {
-//     std::list< TMatrix * >  tmp;
+//     std::list< TMatrix< value_t > * >  tmp;
     
-//     TBlockMatrix::collect_leaves( tmp );
+//     TBlockMatrix< value_t >::collect_leaves( tmp );
 
 //     _leaves.resize( tmp.size() );
 
@@ -412,4 +382,13 @@ size_sort ( TMatrix * M1, TMatrix * M2 )
 //     sort( _leaves.begin(), _leaves.end(), size_sort );
 // }
 
-}// namespace
+//
+// explicit instantiation
+//
+
+template class THMatrix< float >;
+template class THMatrix< double >;
+template class THMatrix< std::complex< float > >;
+template class THMatrix< std::complex< double > >;
+
+}// namespace Hpro

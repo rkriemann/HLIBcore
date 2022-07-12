@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TByteStream.hh
 // Description : class for a byte stream
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -19,7 +19,7 @@
 
 #include "baseio.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::unique_ptr;

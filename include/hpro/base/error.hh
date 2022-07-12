@@ -1,11 +1,11 @@
-#ifndef __HLIB_ERROR_HH
-#define __HLIB_ERROR_HH
+#ifndef __HPRO_ERROR_HH
+#define __HPRO_ERROR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : error.hh
-// Description : error handling in HLib
+// Description : error handling in HLIBpro
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <exception>
@@ -14,10 +14,11 @@
 #include "hpro/base/types.hh"
 #include "hpro/base/config.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // forward decl. for REFERENCE below
+template < typename value_t >
 class TMatrix;
 
 //////////////////////////////////////////////////////////////////
@@ -35,14 +36,14 @@ enum loglevel_t
     LOG_DEBUG    = 8   // debug information
 };
 
-#define HERROR(   code, fnname, msg ) throw HLIB::Error( __FILE__, __LINE__, (fnname), (code), (msg) )
-// #define HERROR(   code, fnname, msg ) HLIB::LOG::error( __FILE__, __LINE__, (msg) )
-#define HWARNING( msg )               if ( HLIB::CFG::verbose( LOG_WARNING ) ) HLIB::LOG::warning( __FILE__, __LINE__, (msg) )
-#define HNOTICE(  msg )               if ( HLIB::CFG::verbose( LOG_NOTICE  ) ) HLIB::LOG::note(    __FILE__, __LINE__, (msg) )
-#define HINFO(    msg )               if ( HLIB::CFG::verbose( LOG_INFO    ) ) HLIB::LOG::info(    __FILE__, __LINE__, (msg) )
-#define HDEBUG(   msg )               if ( HLIB::CFG::verbose( LOG_DEBUG   ) ) HLIB::LOG::debug(   __FILE__, __LINE__, (msg) )
+#define HERROR(   code, fnname, msg ) throw Hpro::Error( __FILE__, __LINE__, (fnname), (code), (msg) )
+// #define HERROR(   code, fnname, msg ) Hpro::LOG::error( __FILE__, __LINE__, (msg) )
+#define HWARNING( msg )               if ( Hpro::CFG::verbose( Hpro::LOG_WARNING ) ) Hpro::LOG::warning( __FILE__, __LINE__, (msg) )
+#define HNOTICE(  msg )               if ( Hpro::CFG::verbose( Hpro::LOG_NOTICE  ) ) Hpro::LOG::note(    __FILE__, __LINE__, (msg) )
+#define HINFO(    msg )               if ( Hpro::CFG::verbose( Hpro::LOG_INFO    ) ) Hpro::LOG::info(    __FILE__, __LINE__, (msg) )
+#define HDEBUG(   msg )               if ( Hpro::CFG::verbose( Hpro::LOG_DEBUG   ) ) Hpro::LOG::debug(   __FILE__, __LINE__, (msg) )
 
-#if HLIB_DEBUG == 0
+#if HPRO_DEBUG == 0
 #define HASSERT( cond, code, fnname, msg )
 #else
 #define HASSERT( cond, code, fnname, msg ) { if ( ! ( cond ) ) HERROR( code, fnname, msg ); }
@@ -217,6 +218,7 @@ enum { NO_ERROR            = 0,         // no error occured
        ERR_CONSISTENCY     = 103,       // general consistency error
        ERR_COMM            = 104,       // communication error
        ERR_PERM            = 105,       // permission denied
+       ERR_EXCEPTION       = 106,       // general exception error
 
        ERR_REAL            = 200,       // data is real valued
        ERR_NREAL           = 201,       // data is not real valued
@@ -358,6 +360,6 @@ breakpoint ();
 
 }// namespace DBG
 
-}// namespace
+}// namespace Hpro
 
-#endif  // __HLIB_ERROR_HH
+#endif  // __HPRO_ERROR_HH

@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TStdGeomAdmCond.cc
 // Description : standard admissibility classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
@@ -11,7 +11,7 @@
 
 #include "hpro/cluster/TGeomAdmCond.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////////////////////////
@@ -152,4 +152,4 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     return TStdGeomAdmCond::is_adm( c );
 }
 
-}// namespace HLIB
+}// namespace Hpro

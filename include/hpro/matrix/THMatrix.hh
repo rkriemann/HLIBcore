@@ -1,22 +1,20 @@
-#ifndef __HLIB_THMATRIX_HH
-#define __HLIB_THMATRIX_HH
+#ifndef __HPRO_THMATRIX_HH
+#define __HPRO_THMATRIX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : THMatrix.hh
 // Description : class for H-matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <list>
 
 #include "hpro/cluster/TPermutation.hh"
-
 #include "hpro/matrix/TBlockMatrix.hh"
-
 #include "hpro/parallel/NET.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // local matrix type
@@ -28,8 +26,13 @@ DECLARE_TYPE( THMatrix );
 //! \brief    Class for an H-matrix, which extends block matrices
 //!           with additional functionality, e.g. permutations.
 //!
-class THMatrix : public TBlockMatrix
+template < typename T_value >
+class THMatrix : public TBlockMatrix< T_value >
 {
+public:
+    using  value_t = T_value;
+    using  real_t  = typename real_type< value_t >::type_t;
+    
 private:
 
     //! @cond
@@ -54,6 +57,9 @@ public:
 
     THMatrix ( const TBlockIndexSet &  bis );
 
+    THMatrix ( const TIndexSet &  arowis,
+               const TIndexSet &  acolis );
+
     virtual ~THMatrix () {}
 
     /////////////////////////////////////////////////
@@ -62,8 +68,7 @@ public:
     //
 
     // access single matrix coefficient
-    virtual real          entry  ( const idx_t i, const idx_t j ) const;
-    virtual const complex centry ( const idx_t i, const idx_t j ) const;
+    virtual value_t  entry  ( const idx_t i, const idx_t j ) const;
 
     // compute min/max tau/sigma indices
     void comp_min_max_idx ();
@@ -91,10 +96,10 @@ public:
     // return true if _all_ mappings are present and of correct size
     bool has_perm () const
     {
-        return (( _row_perm_e2i.size() == rows() ) &&
-                ( _row_perm_i2e.size() == rows() ) &&
-                ( _col_perm_e2i.size() == cols() ) &&
-                ( _col_perm_i2e.size() == cols() ));
+        return (( _row_perm_e2i.size() == this->rows() ) &&
+                ( _row_perm_i2e.size() == this->rows() ) &&
+                ( _col_perm_e2i.size() == this->cols() ) &&
+                ( _col_perm_i2e.size() == this->cols() ));
     }
 
     // return maximal ID of subblocks
@@ -102,38 +107,22 @@ public:
     
     /////////////////////////////////////////////////
     //
-    // BLAS-routines (real valued)
+    // BLAS-routines
     //
 
     //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void mul_vec ( const real      alpha,
-                           const TVector * x,
-                           const real      beta,
-                           TVector       * y,
-                           const matop_t   op = MATOP_NORM ) const;
+    virtual void mul_vec ( const value_t               alpha,
+                           const TVector< value_t > *  x,
+                           const value_t               beta,
+                           TVector< value_t > *        y,
+                           const matop_t               op = MATOP_NORM ) const;
+    using TMatrix< value_t >::mul_vec;
 
-    /////////////////////////////////////////////////
-    //
-    // BLAS-routines (complex valued)
-    //
-
-    //! compute y ≔ β·y + α·op(M)·x, with M = this
-    virtual void cmul_vec ( const complex   alpha,
-                            const TVector * x,
-                            const complex   beta,
-                            TVector       * y,
-                            const matop_t   op = MATOP_NORM ) const;
-    
     /////////////////////////////////////////////////
     //
     // matrix operations
     //
 
-#if 0
-    // truncate all rank-k-blocks in matrix to given accuracy
-    virtual void truncate ( const TTruncAcc & acc );
-#endif
-    
     //! transpose matrix
     virtual void transpose ();
     
@@ -147,33 +136,33 @@ public:
     //
 
     // return matrix of same class (but no content)
-    virtual auto  create       () const -> std::unique_ptr< TMatrix >
+    virtual auto  create       () const -> std::unique_ptr< TMatrix< value_t > >
     {
         return std::make_unique< THMatrix >();
     }
     
     // return copy of matrix
-    virtual auto  copy         () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy         () const -> std::unique_ptr< TMatrix< value_t > >;
     
     // copy matrix wrt. given accuracy and coarsening
     virtual auto  copy         ( const TTruncAcc &     acc,
-                                 const bool            coarsen = false ) const -> std::unique_ptr< TMatrix >;
+                                 const bool            coarsen = false ) const -> std::unique_ptr< TMatrix< value_t > >;
 
     // return structural copy of matrix
-    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix >;
+    virtual auto  copy_struct  () const -> std::unique_ptr< TMatrix< value_t > >;
     
     // copy matrix into A
-    virtual void  copy_to      ( TMatrix *          A ) const;
-    virtual void  copy_to      ( TMatrix *          A,
-                                 const TTruncAcc &  acc,
-                                 const bool         coarsen = false ) const;
+    virtual void  copy_to      ( TMatrix< value_t > *  A ) const;
+    virtual void  copy_to      ( TMatrix< value_t > *  A,
+                                 const TTruncAcc &     acc,
+                                 const bool            coarsen = false ) const;
 
     // copy complete structural information from given matrix
-    virtual void  copy_struct_from ( const TMatrix * M );
+    virtual void  copy_struct_from ( const TMatrix< value_t > * M );
     
     // return appropriate vector-types for matrix
-    virtual auto  row_vector   () const -> std::unique_ptr< TVector >;
-    virtual auto  col_vector   () const -> std::unique_ptr< TVector >;
+    virtual auto  row_vector   () const -> std::unique_ptr< TVector< value_t > >;
+    virtual auto  col_vector   () const -> std::unique_ptr< TVector< value_t > >;
     
     //
     // size of object
@@ -186,7 +175,7 @@ public:
     // RTTI
     //
 
-    HLIB_RTTI_DERIVED( THMatrix, TBlockMatrix )
+    HPRO_RTTI_DERIVED( THMatrix, TBlockMatrix< value_t > )
     
     //
     // serialisation
@@ -200,6 +189,6 @@ public:
     virtual size_t bs_size () const;
 };
 
-}// namespace
+}// namespace Hpro
 
-#endif  // __HLIB_THMATRIX_HH
+#endif  // __HPRO_THMATRIX_HH

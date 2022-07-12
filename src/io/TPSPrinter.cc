@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TPPrinter.cc
 // Description : class for a 2d PostScipt printer
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <fstream>
@@ -13,7 +13,7 @@
 
 #include "TPSPrinter.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // different pen-types

@@ -3,12 +3,12 @@
 // File        : colour.cc
 // Description : colour managment functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "colour.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -55,4 +55,4 @@ hsv ( const int  H,
     return colour_t( uint(r * 255.0), uint(g * 255.0), uint(b * 255.0) );
 }
 
-}// namespace HLIB
+}// namespace Hpro

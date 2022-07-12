@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : NET.cc
 // Description : encapsulation of network functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <cstring>
@@ -15,7 +15,7 @@
 
 #include "hpro/parallel/NET.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //
@@ -132,8 +132,8 @@ reduce ( const TProcSet &   ps,
 INST_REDUCE( size_t );
 INST_REDUCE( float );
 INST_REDUCE( double );
-INST_REDUCE( Complex<float> );
-INST_REDUCE( Complex<double> );
+INST_REDUCE( std::complex<float> );
+INST_REDUCE( std::complex<double> );
 
 //
 // reduce data in \a inbuf of all nodes in \a ps as
@@ -166,8 +166,8 @@ reduce_all ( const TProcSet &   ps,
 INST_REDUCE_ALL( size_t );
 INST_REDUCE_ALL( float );
 INST_REDUCE_ALL( double );
-INST_REDUCE_ALL( Complex<float> );
-INST_REDUCE_ALL( Complex<double> );
+INST_REDUCE_ALL( std::complex<float> );
+INST_REDUCE_ALL( std::complex<double> );
 
 //
 // send \a count elements of data in \a buffer of master of \a ps
@@ -313,4 +313,4 @@ test ( request_t & )
 
 }// namespace NET
 
-}// namespace HLIB
+}// namespace Hpro

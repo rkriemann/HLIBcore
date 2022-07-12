@@ -1,16 +1,16 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : T2DPrinter.cc
 // Description : baseclass for all 2d printers
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
 
 #include "T2DPrinter.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////

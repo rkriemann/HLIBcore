@@ -1,5 +1,5 @@
-#ifndef __HLIB_TLOWRANKAPX_HH
-#define __HLIB_TLOWRANKAPX_HH
+#ifndef __HPRO_TLOWRANKAPX_HH
+#define __HPRO_TLOWRANKAPX_HH
 //
 // Project     : HLib
 // File        : TLowRankApx.hh
@@ -21,7 +21,7 @@
 #include "hpro/matrix/TRkMatrix.hh"
 #include "hpro/parallel/TMutex.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 //!
@@ -35,9 +35,14 @@ namespace HLIB
 //! \class   TLowRankApx
 //! \brief   base class for all low rank approximation techniques
 //!
+template < typename T_value >
 class TLowRankApx
 {
 public:
+
+    using value_t = T_value;
+    using real_t  = real_type_t< value_t >;
+    
     //
     // statistical data of computations
     //
@@ -70,7 +75,7 @@ public:
     //! build low rank matrix for block cluster \a bct with
     //! rank defined by accuracy \a acc
     virtual
-    std::unique_ptr< TMatrix >
+    std::unique_ptr< TMatrix< value_t > >
     build ( const TBlockCluster *   bct,
             const TTruncAcc &       acc ) const
     {
@@ -86,7 +91,7 @@ public:
     //! build low rank matrix for block index set \a bis with
     //! rank defined by accuracy \a acc
     virtual
-    std::unique_ptr< TMatrix >
+    std::unique_ptr< TMatrix< value_t > >
     build ( const TBlockIndexSet &  bis,
             const TTruncAcc &       acc ) const = 0;
 
@@ -103,8 +108,13 @@ public:
 //!          TZeroLRApx will do that by approximating all far field blocks
 //!          by zero, e.g. a 0-rank low rank matrix.
 //!
-class TZeroLRApx : public TLowRankApx
+template < typename T_value >
+class TZeroLRApx : public TLowRankApx< T_value >
 {
+public:
+    using value_t = T_value;
+    using real_t  = real_type_t< value_t >;
+
 public:
     //////////////////////////////////////
     //
@@ -122,14 +132,10 @@ public:
 
     //! return low rank matrix of rank 0
     virtual
-    std::unique_ptr< TMatrix >
+    std::unique_ptr< TMatrix< value_t > >
     build ( const TBlockIndexSet &  bis,
-            const TTruncAcc &       /* acc */ ) const
-    {
-        return std::make_unique< TRkMatrix >( bis.row_is(), bis.col_is() );
-    }
-
-    using TLowRankApx::build;
+            const TTruncAcc &       acc ) const;
+    using TLowRankApx< value_t >::build;
 };
     
 //!
@@ -142,16 +148,16 @@ public:
 //!
 //!          This is usually used for debugging or accuracy tests.
 //!
-template < typename T >
-class TDenseLRApx : public TLowRankApx
+template < typename T_value >
+class TDenseLRApx : public TLowRankApx< T_value >
 {
 public:
     //
     // template type as public member type
     //
 
-    using  value_t    = T;
-    using  real_t     = typename real_type< value_t >::type_t;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     using  coeff_fn_t = TCoeffFn< value_t >;
     
 protected:
@@ -164,12 +170,7 @@ public:
     // constructor and destructor
     //
 
-    TDenseLRApx ( const coeff_fn_t *  coeff_fn )
-            : _coeff_fn( coeff_fn )
-    {
-        if ( _coeff_fn == NULL )
-            HERROR( ERR_ARG, "(TDenseLRApx)", "no coefficient function supplied (NULL)" );
-    }
+    TDenseLRApx ( const coeff_fn_t *  coeff_fn );
 
     virtual ~TDenseLRApx () {}
     
@@ -181,20 +182,10 @@ public:
     //! build low rank matrix for block index set \a bis with
     //! rank defined by accuracy \a acc
     virtual
-    std::unique_ptr< TMatrix >
+    std::unique_ptr< TMatrix< value_t > >
     build ( const TBlockIndexSet &  bis,
-            const TTruncAcc &       acc ) const
-    {
-        auto  D = std::make_unique< TDenseMatrix >( bis.row_is(), bis.col_is() );
-
-        D->set_complex( _coeff_fn->is_complex() );
-
-        _coeff_fn->eval( bis.row_is(), bis.col_is(), blas_mat< T >( D.get() ).data() );
-
-        return D;
-    }
-        
-    using TLowRankApx::build;
+            const TTruncAcc &       acc ) const;
+    using TLowRankApx< value_t >::build;
 };
 
 //!
@@ -214,16 +205,16 @@ public:
 //!          the final result. This interpolation order together with an accuracy for the approximation
 //!          of the generator function is specific to the given problem, and hence, user defined.
 //!
-template < typename T >
-class THCA : public TLowRankApx
+template < typename T_value >
+class THCA : public TLowRankApx< T_value >
 {
 public:
     //
     // template arguments as internal types
     //
 
-    using  value_t    = T;
-    using  real_t     = typename real_type< value_t >::type_t;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     using  coeff_fn_t = TCoeffFn< value_t >;
 
     //!
@@ -279,14 +270,14 @@ public:
 //!          Provides basic permutation management for evaluating the integrals
 //!          over the derivatives of the kernel generator function.
 //!
-template < typename T_val >
-class TPermHCAGeneratorFn : public THCA< T_val >::TGeneratorFn
+template < typename T_value >
+class TPermHCAGeneratorFn : public THCA< T_value >::TGeneratorFn
 {
 public:
     //
     // template types as internal types
     //
-    using  value_t = T_val;
+    using  value_t = T_value;
 
 protected:
     
@@ -380,6 +371,6 @@ public:
 
 //! \}
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TLOWRANKAPX_HH
+#endif  // __HPRO_TLOWRANKAPX_HH

@@ -1,11 +1,11 @@
-#ifndef __HLIB_TTYPEINFO_HH
-#define __HLIB_TTYPEINFO_HH
+#ifndef __HPRO_TTYPEINFO_HH
+#define __HPRO_TTYPEINFO_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TTypeInfo.hh
 // Description : baseclass for RTTI aware classes
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
@@ -13,7 +13,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/base/System.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -57,6 +57,6 @@ typestr ( const T *  obj )
     return obj->typestr();
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TTYPEINFO_HH
+#endif  // __HPRO_TTYPEINFO_HH

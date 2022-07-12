@@ -28,7 +28,6 @@ avx512 = avx512_env.Clone()
 vsx    = vsx_env.Clone()
 neon   = neon_env.Clone()
 mic    = mic_env.Clone()
-omp    = env.Clone()
 
 #
 # local settings and adjustments for SIMD environments
@@ -51,9 +50,6 @@ for senv, flag in ( ( sse3,   'SSE3'    ),
         senv.Replace(   CXXCOMSTR   = " C++    $SOURCES (%s)" % flag )
         senv.Replace(   SHCXXCOMSTR = " C++    $SOURCES (%s)" % flag )
     
-omp.Append( CPPPATH  = [ '#include', '#src/include' ] )
-omp.Append( CXXFLAGS = [ '-fopenmp' ] )
-
 #
 # define sources
 #
@@ -68,7 +64,6 @@ sources = [ 'base/String.cc',
             'base/error.cc',
             'base/init.cc',
 
-            'bem/TAcousticBF.cc',
             'bem/TBEMRHS.cc',
             'bem/TConstEdgeFnSpace.cc',
             'bem/TExpBF.cc',
@@ -85,8 +80,6 @@ sources = [ 'base/String.cc',
             'bem/TQuadHCAGenFn.cc',
             'bem/TRefinableGrid.cc',
             'bem/TSauterTriQuad.cc',
-            'bem/laplace_omp.cc',
-            'bem/helmholtz_omp.cc',
 
             'blas/Algebra.cc',
             'blas/Matrix.cc',
@@ -114,7 +107,7 @@ sources = [ 'base/String.cc',
 
             'io/baseio.cc',
             'io/HBIO.cc',
-            'io/HLibIO.cc',
+            'io/HproIO.cc',
             'io/MatlabIO.cc',
             'io/T2DPrinter.cc',
             'io/TClusterVis.cc',
@@ -164,7 +157,7 @@ sources = [ 'base/String.cc',
             'vector/TBlockVector.cc',
             'vector/TScalarVector.cc',
             'vector/TVector.cc',
-            'vector/vec_conv.cc' 
+            'vector/convert.cc' 
             ]
 
 #
@@ -186,7 +179,7 @@ if env.GetOption( 'clean' ):
 
 mach_obj = []
 
-for file in [ 'acoustic', 'laplace', 'helmholtz', 'maxwell', 'exp' ] :
+for file in [ 'laplace', 'helmholtz', 'maxwell', 'exp' ] :
     for ( isa_env, isa_name ) in [ [ sse3,   'sse2' ],   # files are SSE2, environment is SSE3
                                    [ avx,    'avx'  ],
                                    [ avx2,   'avx2' ],

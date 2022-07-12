@@ -1,16 +1,16 @@
-#ifndef __HLIB_ALGEBRA_TYPES_HH
-#define __HLIB_ALGEBRA_TYPES_HH
+#ifndef __HPRO_ALGEBRA_TYPES_HH
+#define __HPRO_ALGEBRA_TYPES_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : types.hh
 // Description : basic types for algebra module
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/types.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //! \enum   eval_type_t
@@ -52,6 +52,6 @@ enum eager_lazy_t : bool
     eval_lazy  = true      // lazy evaluation
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_ALGEBRA_TYPES_HH
+#endif  // __HPRO_ALGEBRA_TYPES_HH

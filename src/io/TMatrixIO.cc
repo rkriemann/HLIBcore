@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixIO.cc
 // Description : classes for matrix input/output
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <string>
@@ -18,7 +18,7 @@
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if USE_HDF5 == 1
 
@@ -43,13 +43,8 @@
 
 #include "hpro/io/TMatrixIO.hh"
 
-namespace HLIB
+namespace Hpro
 {
-
-using std::string;
-using std::vector;
-using std::unique_ptr;
-using std::make_unique;
 
 namespace fs = boost::filesystem;
 
@@ -64,96 +59,93 @@ using boost::phoenix::ref;
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 //
-// class TMatrixIO
-//
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-
-TMatrixIO::TMatrixIO ()
-{
-}
-
-void
-TMatrixIO::write ( const TMatrix *, const string & ) const
-{
-    HERROR( ERR_NOT_IMPL, "(TMatrixIO) write", "" );
-}
-
-unique_ptr< TMatrix >
-TMatrixIO::read  ( const string & ) const
-{
-    HERROR( ERR_NOT_IMPL, "(TMatrixIO) write", "" );
-}
-
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-//
 // class TAutoMatrixIO
 //
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+template < typename value_t >
 void
-TAutoMatrixIO::write ( const TMatrix *  A,
-                       const string &   filename ) const
+TAutoMatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &   filename ) const
 {
-    unique_ptr< TMatrixIO >  mio;
-        
+    write( A, filename, "" );
+}
+
+template < typename value_t >
+void
+TAutoMatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &              filename,
+                       const std::string &              matname ) const
+{
     switch ( guess_format( filename ) )
     {
-        case FMT_HLIB    : mio = make_unique< THLibMatrixIO >();   break;
-        case FMT_MATLAB  : mio = make_unique< TMatlabMatrixIO >(); break;
-        case FMT_SAMG    : mio = make_unique< TSAMGMatrixIO >();   break;
-        case FMT_HB      : mio = make_unique< THBMatrixIO >();     break;
-        case FMT_MTX     : mio = make_unique< TMMMatrixIO >();     break;
-        case FMT_HDF5    : mio = make_unique< THDF5MatrixIO >();   break;
+        case FMT_HPRO    :
+        {
+            auto  mio = std::make_unique< THLibMatrixIO >();
+
+            mio->write( A, filename );
+        }
+        break;
+            
+        case FMT_MATLAB  :
+        {
+            auto  mio = std::make_unique< TMatlabMatrixIO >();
+
+            mio->write( A, filename, matname );
+        }
+        break;
+            
+        case FMT_SAMG    :
+        {
+            auto  mio = std::make_unique< TSAMGMatrixIO >();
+
+            mio->write( A, filename );
+        }
+        break;
+
+        case FMT_HB      :
+        {
+            auto  mio = std::make_unique< THBMatrixIO >();
+
+            mio->write( A, filename );
+        }
+        break;
+
+        case FMT_MTX     :
+        {
+            auto  mio = std::make_unique< TMMMatrixIO >();
+
+            mio->write( A, filename );
+        }
+        break;
+
+        case FMT_HDF5    :
+        {
+            auto  mio = std::make_unique< THDF5MatrixIO >();
+
+            mio->write( A, filename, matname );
+        }
+        break;
 
         case FMT_UNKNOWN :
         default:
-            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) read", "" );
+            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) write", "" );
             return;
     }// switch
-
-    if ( mio.get() == nullptr )
-        return;
-
-    mio->write( A, filename );
 }
 
-void
-TAutoMatrixIO::write ( const TMatrix *  A,
-                       const string &   filename,
-                       const string &   matname ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TAutoMatrixIO::read  ( const std::string &  filename ) const
 {
-    unique_ptr< TMatrixIO >  mio;
-    bool                  support_named = false;
-        
-    switch ( guess_format( filename ) )
-    {
-        case FMT_HLIB    : mio = make_unique< THLibMatrixIO >();   break;
-        case FMT_MATLAB  : mio = make_unique< TMatlabMatrixIO >(); support_named = true; break;
-        case FMT_SAMG    : mio = make_unique< TSAMGMatrixIO >();   break;
-        case FMT_HB      : mio = make_unique< THBMatrixIO >();     break;
-        case FMT_MTX     : mio = make_unique< TMMMatrixIO >();     break;
-        case FMT_HDF5    : mio = make_unique< THDF5MatrixIO >();   support_named = true; break;
-
-        case FMT_UNKNOWN :
-        default:
-            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) read", "" );
-            return;
-    }// switch
-
-    if ( mio.get() == nullptr )
-        return;
-
-    if ( support_named )
-        ptrcast( mio.get(), TMatlabMatrixIO )->write( A, filename, matname );
-    else
-        mio->write( A, filename );
+    return read< value_t >( filename, "" );
 }
 
-unique_ptr< TMatrix >
-TAutoMatrixIO::read  ( const string &  filename ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TAutoMatrixIO::read  ( const std::string &  filename,
+                       const std::string &  matname ) const
 {
     if ( filename == "" )
         HERROR( ERR_ARG, "(TAutoMatrixIO) read", "empty filename" );
@@ -161,111 +153,127 @@ TAutoMatrixIO::read  ( const string &  filename ) const
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TAutoMatrixIO) read", filename );
     
-    unique_ptr< TMatrixIO >  mio;
-        
     switch ( guess_format( filename ) )
     {
-        case FMT_HLIB    : mio = make_unique< THLibMatrixIO >();   break;
-        case FMT_MATLAB  : mio = make_unique< TMatlabMatrixIO >(); break;
-        case FMT_SAMG    : mio = make_unique< TSAMGMatrixIO >();   break;
-        case FMT_HB      : mio = make_unique< THBMatrixIO >();     break;
-        case FMT_MTX     : mio = make_unique< TMMMatrixIO >();     break;
-        case FMT_HDF5    : mio = make_unique< THDF5MatrixIO >();   break;
+        case FMT_HPRO    :
+        {
+            auto  mio = std::make_unique< THLibMatrixIO >();
+
+            return mio->read< value_t >( filename );
+        }
+        break;
+            
+        case FMT_MATLAB  :
+        {
+            auto  mio = std::make_unique< TMatlabMatrixIO >();
+
+            return mio->read< value_t >( filename, matname );
+        }
+        break;
+            
+        case FMT_SAMG    :
+        {
+            auto  mio = std::make_unique< TSAMGMatrixIO >();
+
+            return mio->read< value_t >( filename );
+        }
+        break;
+
+        case FMT_HB      :
+        {
+            auto  mio = std::make_unique< THBMatrixIO >();
+
+            return mio->read< value_t >( filename );
+        }
+        break;
+
+        case FMT_MTX     :
+        {
+            auto  mio = std::make_unique< TMMMatrixIO >();
+
+            return mio->read< value_t >( filename );
+        }
+        break;
 
         case FMT_UNKNOWN :
         default:
-            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) read", "" );
+            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) write", "" );
+            return std::unique_ptr< TMatrix< value_t > >();
     }// switch
 
-    return mio->read( filename );
+    return std::unique_ptr< TMatrix< value_t > >();
 }
 
-unique_ptr< TMatrix >
-TAutoMatrixIO::read  ( const string &  filename,
-                       const string &  matname ) const
-{
-    if ( filename == "" )
-        HERROR( ERR_ARG, "(TAutoMatrixIO) read", "empty filename" );
-
-    if ( ! fs::exists( filename ) )
-        HERROR( ERR_FNEXISTS, "(TAutoMatrixIO) read", filename );
-    
-    unique_ptr< TMatrixIO >  mio;
-    bool                     support_named = false;
-        
-    switch ( guess_format( filename ) )
-    {
-        case FMT_HLIB    : mio = make_unique< THLibMatrixIO >();   break;
-        case FMT_MATLAB  : mio = make_unique< TMatlabMatrixIO >(); support_named = true; break;
-        case FMT_SAMG    : mio = make_unique< TSAMGMatrixIO >();   break;
-        case FMT_HB      : mio = make_unique< THBMatrixIO >();     break;
-        case FMT_MTX     : mio = make_unique< TMMMatrixIO >();     break;
-        case FMT_HDF5    : mio = make_unique< THDF5MatrixIO >();   break;
-
-        case FMT_UNKNOWN :
-        default:
-            HERROR( ERR_FMT_UNKNOWN, "(TAutoMatrixIO) read", "" );
-    }// switch
-
-    if ( support_named )
-        return ptrcast( mio.get(), TMatlabMatrixIO )->read( filename, matname );
-    else
-        return mio->read( filename );
-}
-
-unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 read_matrix  ( const std::string &  filename )
 {
-    TAutoMatrixIO  mio;
-
-    return mio.read( filename );
+    return read_matrix< value_t >( filename, "" );
 }
 
-unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 read_matrix  ( const std::string &  filename,
                const std::string &  matname )
 {
     TAutoMatrixIO  mio;
 
-    return mio.read( filename, matname );
+    return mio.read< value_t >( filename, matname );
 }
 
+template < typename value_t >
 void
-write_matrix  ( const TMatrix *      A,
-                const std::string &  filename )
+write_matrix  ( const TMatrix< value_t > *  A,
+                const std::string &         filename )
 {
-    TAutoMatrixIO  mio;
-
-    mio.write( A, filename );
+    write_matrix( A, filename, "" );
 }
 
+template < typename value_t >
 void
-write_matrix  ( const TMatrix *      A,
-                const std::string &  filename,
-                const std::string &  matname )
+write_matrix  ( const TMatrix< value_t > *  A,
+                const std::string &         filename,
+                const std::string &         matname )
 {
     TAutoMatrixIO  mio;
 
     mio.write( A, filename, matname );
 }
 
-unique_ptr< TLinearOperator >
+template < typename value_t >
+std::unique_ptr< TLinearOperator< value_t > >
 read_linop  ( const std::string &  filename )
 {
     THLibMatrixIO  mio;
 
-    return mio.read_linop( filename );
+    return mio.read_linop< value_t >( filename );
 }
 
+template < typename value_t >
 void
-write_linop ( const TLinearOperator *  A,
-              const std::string &      filename )
+write_linop ( const TLinearOperator< value_t > *  A,
+              const std::string &                 filename )
 {
     THLibMatrixIO  mio;
 
-    mio.write_linop( A, filename );
+    mio.write_linop< value_t >( A, filename );
 }
 
+#define INST_AUTO( type ) \
+    template void TAutoMatrixIO::write< type >                              ( const TMatrix< type > *, const std::string & ) const; \
+    template void TAutoMatrixIO::write< type >                              ( const TMatrix< type > *, const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TAutoMatrixIO::read< type > ( const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TAutoMatrixIO::read< type > ( const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > read_matrix< type >         ( const std::string & ); \
+    template void write_matrix< type >                                      ( const TMatrix< type > *, const std::string & ); \
+    template std::unique_ptr< TLinearOperator< type > > read_linop< type >  ( const std::string & ); \
+    template void write_linop< type >                                       ( const TLinearOperator< type > *, const std::string & );
+
+INST_AUTO( float )
+INST_AUTO( double )
+INST_AUTO( std::complex< float > )
+INST_AUTO( std::complex< double > )
+    
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 //
@@ -274,23 +282,25 @@ write_linop ( const TLinearOperator *  A,
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+template < typename value_t >
 void
-TOctaveMatrixIO::write ( const TMatrix * A, const string & name ) const
+TOctaveMatrixIO::write ( const TMatrix< value_t > *  A,
+                         const std::string &         name ) const
 {
     if ( A == nullptr )
         HERROR( ERR_ARG, "(TOctaveMatrixIO) write", "argument is nullptr" );
     
-    unique_ptr< std::ostream >  out_ptr( open_write( name ) );
-    std::ostream &              out = * out_ptr.get();
-
+    auto            out_ptr = open_write( name );
+    std::ostream &  out     = * out_ptr.get();
+    
     if ( ! is_dense( A ) )
         HERROR( ERR_MAT_TYPE, "(TOctaveMatrixIO) write", "only dense matrices supported" );
-    
+
     //
     // convert matrix to dense and then write dense matrix
     //
 
-    auto  D = cptrcast( A, TDenseMatrix );
+    auto  D = cptrcast( A, TDenseMatrix< value_t > );
 
     //
     // write header
@@ -310,13 +320,13 @@ TOctaveMatrixIO::write ( const TMatrix * A, const string & name ) const
     // write matrix
     //
 
-    if ( D->is_complex() )
+    if ( is_complex_type< value_t >::value )
     {
         for ( idx_t  i = 0; i < idx_t(n); i++ )
         {
             for ( idx_t  j = 0; j < idx_t(m); j++ )
             {
-                const complex f = D->centry(i,j);
+                const auto  f = D->entry(i,j);
                 
                 out << boost::format( "(%.16e,%.16e) " ) % std::real(f) % std::imag(f);
             }// for
@@ -329,12 +339,21 @@ TOctaveMatrixIO::write ( const TMatrix * A, const string & name ) const
         for ( idx_t  i = 0; i < idx_t(n); i++ )
         {
             for ( idx_t  j = 0; j < idx_t(m); j++ )
-                out << boost::format( "%.16e " ) % D->entry(i,j);
+                out << boost::format( "%.16e " ) % std::real( D->entry(i,j) );
             
             out << std::endl;
         }// for
     }// else
 }
+
+#define INST_OCTAVE( type ) \
+    template void TOctaveMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const;
+
+INST_OCTAVE( float )
+INST_OCTAVE( double )
+INST_OCTAVE( std::complex< float > )
+INST_OCTAVE( std::complex< double > )
+    
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -347,15 +366,18 @@ TOctaveMatrixIO::write ( const TMatrix * A, const string & name ) const
 //
 // write matrix to file
 //
+template < typename value_t >
 void
-TSAMGMatrixIO::write ( const TMatrix *  A,
-                       const string &   filename ) const
+TSAMGMatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &         filename ) const
 {
+    using  real_t  = real_type_t< value_t >;
+    
     if ( A == nullptr )
         HERROR( ERR_ARG, "(TSAMGMatrixIO) write", "matrix is nullptr" );
 
     // can not write complex matrices
-    if ( A->is_complex() )
+    if ( is_complex_type< value_t >::value )
         HERROR( ERR_NREAL, "(TSAMGMatrixIO) write", "SAMG only supports real valued data" );
 
     //
@@ -364,8 +386,8 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
 
     fs::path  filepath( filename );
     fs::path  ext = filepath.extension();
-    string    compress_ext;
-    string    frm_filename;
+    std::string    compress_ext;
+    std::string    frm_filename;
 
     while (( to_lower_copy( ext.string() ) == ".gz"    ) ||
            ( to_lower_copy( ext.string() ) == ".bzip2" ) ||
@@ -387,41 +409,41 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
     
     if ( IS_TYPE( A, TSparseMatrix ) )
     {
-        const TSparseMatrix * S = cptrcast( A, TSparseMatrix );
+        auto  S = cptrcast( A, TSparseMatrix< value_t > );
 
         //
         // open format file to write basic information
         //
         
-        const size_t    nnz = S->n_non_zero();
-        const size_t    n   = S->rows();
-        ulong           type;
-        bool            row_sum_zero = true;
-        vector< real >  diag_values( S->rows(), 0.0 );
+        const size_t           nnz = S->n_non_zero();
+        const size_t           n   = S->rows();
+        ulong                  type;
+        bool                   row_sum_zero = true;
+        std::vector< real_t >  diag_values( S->rows(), 0.0 );
         
         // determine, if row-sum is zero in matrix
         for ( idx_t  row = 0; row < idx_t(S->rows()); row++ )
         {
             const idx_t  lb = S->rowptr(row);
             const idx_t  ub = S->rowptr(row+1);
-            real         f  = 0.0;
+            real_t       f  = 0.0;
             bool         found_diag = false;
             
             for ( idx_t j = lb; j < ub; j++ )
             {
                 if ( S->colind(j) == idx_t(row) )
                 {
-                    diag_values[row] = S->rcoeff(j);
+                    diag_values[row] = std::real( S->coeff(j) );
                     found_diag       = true;
                 }// if
                 
-                f += S->rcoeff(j);
+                f += std::real( S->coeff(j) );
             }// for
 
             if ( ! found_diag )
                 HERROR( ERR_NOT_IMPL, "", "add zero diagonal elements" );
             
-            if ( Math::abs( f ) > 1e-32 )
+            if ( Math::abs( f ) > real_t(1e-32) )
                 row_sum_zero = false;
         }// for
         
@@ -433,8 +455,8 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // write format to frm file
         //
         
-        unique_ptr< std::ostream >  out_ptr( open_write( frm_filename ) );
-        std::ostream &              frm_out = * out_ptr.get();
+        auto            out_ptr = open_write( frm_filename );
+        std::ostream &  frm_out = * out_ptr.get();
         
         frm_out << "f  4" << std::endl
                 << nnz << " " << n << " " << type << " 0 0" << std::endl;
@@ -443,7 +465,7 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // write matrix to amg file
         //
         
-        out_ptr.reset( open_write( filename ) );
+        out_ptr = std::move( open_write( filename ) );
 
         std::ostream &  amg_out = * out_ptr.get();
         
@@ -479,7 +501,7 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
             for ( idx_t  j = lb; j < ub; j++ )
             {
                 if ( S->colind(j) != idx_t(row) )
-                    amg_out << boost::format( "%.16E" ) % double(S->rcoeff(j)) << std::endl;
+                    amg_out << boost::format( "%.16E" ) % double(std::real(S->coeff(j))) << std::endl;
             }// for
         }// for
     }// if
@@ -490,25 +512,25 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // in sparse format
         //
 
-        auto            D = cptrcast( A, TDenseMatrix );
-        ulong           nnz;
-        const size_t    n = D->rows();
-        const size_t    m = D->cols();
-        ulong           type;
-        bool            row_sum_zero = true;
-        vector< uint >  row_ptr( n+1, 0 );
-        uint            pos  = 0;
+        auto                 D            = cptrcast( A, TDenseMatrix< value_t > );
+        ulong                nnz;
+        const size_t         n            = D->rows();
+        const size_t         m            = D->cols();
+        ulong                type;
+        bool                 row_sum_zero = true;
+        std::vector< uint >  row_ptr( n+1, 0 );
+        uint                 pos          = 0;
         
         // determine, if row-sum is zero in matrix
         for ( idx_t  i = 0; i < idx_t(n); i++ )
         {
-            real  f = 0.0;
+            real_t  f = 0.0;
 
             row_ptr[i] = pos;
             
             for ( idx_t  j = 0; j < idx_t(m); j++ )
             {
-                const real val = D->entry( i, j );
+                const auto  val = std::real( D->entry( i, j ) );
 
                 if (( i == j ) || ( val != 0.0 ))
                     pos++;
@@ -516,7 +538,7 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
                 f += val;
             }// for
             
-            if ( Math::abs( f ) > 1e-32 )
+            if ( Math::abs( f ) > real_t(1e-32) )
                 row_sum_zero = false;
         }// for
 
@@ -530,8 +552,8 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // write format to frm file
         //
         
-        unique_ptr< std::ostream >  out_ptr( open_write( frm_filename ) );
-        std::ostream &              frm_out = * out_ptr.get();
+        auto            out_ptr = open_write( frm_filename );
+        std::ostream &  frm_out = * out_ptr.get();
         
         frm_out << "f  4" << std::endl
                 << nnz << " " << n << " " << type << " 0 0" << std::endl;
@@ -540,7 +562,7 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // write matrix to amg file
         //
         
-        out_ptr.reset( open_write( filename ) );
+        out_ptr = std::move( open_write( filename ) );
 
         std::ostream &  amg_out = * out_ptr.get();
         
@@ -557,7 +579,7 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
             // then the rest
             for ( uint j = 0; j < m; j++ )
             {
-                if (( j != i ) && ( D->entry( i, j ) != 0.0 ))
+                if (( j != i ) && ( std::real(D->entry( i, j )) != real_t(0) ))
                     amg_out << j+1 << std::endl;
             }// for
         }// for
@@ -565,11 +587,11 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
         // finally the coefficients, again with the diag-entry first
         for ( uint i = 0; i < n; i++ )
         {
-            amg_out << boost::format( "%.16E" ) % double(D->entry( i, i )) << std::endl;
+            amg_out << boost::format( "%.16E" ) % double(std::real(D->entry( i, i ))) << std::endl;
             
             for ( uint j = 0; j < m; j++ )
             {
-                const double val = D->entry( i, j );
+                const double  val = std::real( D->entry( i, j ) );
                 
                 if (( j != i ) && ( val != 0.0 ))
                     amg_out << boost::format( "%.16E" ) % val << std::endl;
@@ -583,17 +605,18 @@ TSAMGMatrixIO::write ( const TMatrix *  A,
 //
 // read matrix from file
 //
-unique_ptr< TMatrix >
-TSAMGMatrixIO::read ( const string &  filename ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TSAMGMatrixIO::read ( const std::string &  filename ) const
 {
     //
     // open format file to read further information
     //
 
-    fs::path  amgpath( filename );
-    fs::path  ext = amgpath.extension();
-    string    compress_ext;
-    fs::path  frmpath;
+    fs::path     amgpath( filename );
+    fs::path     ext = amgpath.extension();
+    std::string  compress_ext;
+    fs::path     frmpath;
 
     while (( to_lower_copy( ext.string() ) == ".gz"    ) ||
            ( to_lower_copy( ext.string() ) == ".bzip2" ) ||
@@ -609,23 +632,23 @@ TSAMGMatrixIO::read ( const string &  filename ) const
     else
         frmpath = amgpath.string() + ".frm";
 
-    unique_ptr< std::istream >  in_ptr;
+    std::unique_ptr< std::istream >  in_ptr;
     
     if ( fs::exists( frmpath ) )
-        in_ptr.reset( open_read( frmpath.string() ) );
+        in_ptr = std::move( open_read( frmpath.string() ) );
     else
     {
         if ( fs::exists( frmpath.string() + compress_ext ) )
-            in_ptr.reset( open_read( frmpath.string() + compress_ext ) );
+            in_ptr = std::move( open_read( frmpath.string() + compress_ext ) );
         else
             HERROR( ERR_FNEXISTS, "(TSAMGMatrixIO) read", frmpath.string() + "(" + compress_ext + ")" );
     }// else
 
     std::istream &  frm_in = * in_ptr.get();
     
-    ulong             nnz, n, type;
-    string            line;
-    vector< string >  parts;
+    ulong                       nnz, n, type;
+    std::string                 line;
+    std::vector< std::string >  parts;
 
     std::getline( frm_in, line );
     std::getline( frm_in, line );
@@ -642,11 +665,11 @@ TSAMGMatrixIO::read ( const string &  filename ) const
     // read matrix
     //
 
-    in_ptr.reset( open_read( filename ) );
+    in_ptr = std::move( open_read( filename ) );
 
     std::istream &  amg_in = * in_ptr.get();
 
-    auto  S = make_unique< TSparseMatrix >();
+    auto  S = std::make_unique< TSparseMatrix< value_t > >();
 
     S->set_size( n, n );
     S->init( nnz );
@@ -687,7 +710,7 @@ TSAMGMatrixIO::read ( const string &  filename ) const
         std::getline( amg_in, line );
         val = str_to_dbl( line );
 
-        S->rcoeff(i) = real(val);
+        S->coeff(i) = value_t(val);
     }// for
 
     S->sort_entries();
@@ -695,8 +718,17 @@ TSAMGMatrixIO::read ( const string &  filename ) const
     if (( type == 11 ) || ( type == 12 )) S->set_symmetric();
     else                                  S->set_nonsym();
 
-    return unique_ptr< TMatrix >( S.release() );
+    return std::unique_ptr< TMatrix< value_t > >( S.release() );
 }
+
+#define INST_SAMG( type ) \
+    template void TSAMGMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TSAMGMatrixIO::read< type > ( const std::string & ) const;
+
+INST_SAMG( float )
+INST_SAMG( double )
+INST_SAMG( std::complex< float > )
+INST_SAMG( std::complex< double > )
 
 ///////////////////////////////////////////////////
 // 
@@ -706,8 +738,10 @@ TSAMGMatrixIO::read ( const string &  filename ) const
 //
 // write matrix with name
 //
+template < typename value_t >
 void
-TPLTMGMatrixIO::write ( const TMatrix *, const string & ) const
+TPLTMGMatrixIO::write ( const TMatrix< value_t > *,
+                        const std::string & ) const
 {
     HERROR( ERR_NOT_IMPL, "(TPLTMGMatrixIO) write", "" );
 }
@@ -715,8 +749,9 @@ TPLTMGMatrixIO::write ( const TMatrix *, const string & ) const
 //
 // read matrix from file
 //
-unique_ptr< TMatrix >
-TPLTMGMatrixIO::read  ( const string & filename ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TPLTMGMatrixIO::read  ( const std::string &  filename ) const
 {
     //
     // read matrix file
@@ -725,10 +760,10 @@ TPLTMGMatrixIO::read  ( const string & filename ) const
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TPLTMGMatrixIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
-    string                      line;
-    uint                        n;
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
+    std::string     line;
+    uint            n;
 
     std::getline( in, line );
     n = str_to_int( line );
@@ -749,8 +784,8 @@ TPLTMGMatrixIO::read  ( const string & filename ) const
     auto  pos = in.tellg();
     uint  nnz = 0;
     
-    vector< uint >    rows( n, 0 );
-    vector< string >  parts;
+    std::vector< uint >        rows( n, 0 );
+    std::vector< std::string >  parts;
 
     // first count number of entries per row to set up CRS structure
     while ( in.good() )
@@ -772,7 +807,7 @@ TPLTMGMatrixIO::read  ( const string & filename ) const
     }// while
 
     // now reread file and fill CRS data
-    auto   S   = make_unique< TSparseMatrix >( n, n );
+    auto   S   = std::make_unique< TSparseMatrix< value_t > >( n, n );
     idx_t  ofs = 0;
 
     S->init( nnz );
@@ -807,13 +842,22 @@ TPLTMGMatrixIO::read  ( const string & filename ) const
         ofs = S->rowptr(i) + rows[i];
 
         S->colind(ofs) = j;
-        S->rcoeff(ofs) = real(entry);
+        S->coeff(ofs)  = value_t(entry);
         
         rows[i]++;
     }// while
     
-    return unique_ptr< TMatrix >( S.release() );
+    return std::unique_ptr< TMatrix< value_t > >( S.release() );
 }
+
+#define INST_PLTMG( type ) \
+    template void TPLTMGMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TPLTMGMatrixIO::read< type > ( const std::string & ) const;
+
+INST_PLTMG( float )
+INST_PLTMG( double )
+INST_PLTMG( std::complex< float > )
+INST_PLTMG( std::complex< double > )
 
 ///////////////////////////////////////////////////
 // 
@@ -832,8 +876,9 @@ enum mtxsym_t    { MTX_GENERAL, MTX_SYM, MTX_SKEWSYM, MTX_HERM };
 //
 // write matrix to <fname>
 //
+template < typename value_t >
 void
-TMMMatrixIO::write ( const TMatrix *, const string & ) const
+TMMMatrixIO::write ( const TMatrix< value_t > *, const std::string & ) const
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
@@ -841,25 +886,26 @@ TMMMatrixIO::write ( const TMatrix *, const string & ) const
 //
 // read matrix from <fname>
 //
-unique_ptr< TMatrix >
-TMMMatrixIO::read  ( const string &  filename ) const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TMMMatrixIO::read  ( const std::string &  filename ) const
 {
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "(TMMMatrixIO) read", filename );
     
-    unique_ptr< std::istream >  in_ptr( open_read( filename ) );
-    std::istream &              in = * in_ptr.get();
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
 
     ///////////////////////////////////////////////////
     //
     // read header and determine format of file
     //
 
-    string            line;
-    vector< string >  parts;
-    mtxformat_t       mat_format = MTX_ARRAY;
-    mtxfield_t        mat_field  = MTX_REAL;
-    mtxsym_t          mat_sym    = MTX_GENERAL;
+    std::string   line;
+    auto          parts = std::vector< std::string >();
+    mtxformat_t   mat_format = MTX_ARRAY;
+    mtxfield_t    mat_field  = MTX_REAL;
+    mtxsym_t      mat_sym    = MTX_GENERAL;
 
     while ( in.good() )
     {
@@ -901,6 +947,9 @@ TMMMatrixIO::read  ( const string &  filename ) const
 
     if ( mat_sym == MTX_SKEWSYM )
         HERROR( ERR_NOT_IMPL, "(TMMMatrixIO) read", "skewsym matrices" );
+
+    if (( mat_field == MTX_COMPLEX ) && ! is_complex_type< value_t >::value )
+        HERROR( ERR_REAL_CMPLX, "(TMMMatrixIO) read", "complex data found but real data requested" );
     
     ///////////////////////////////////////////////////
     //
@@ -941,10 +990,10 @@ TMMMatrixIO::read  ( const string &  filename ) const
         // now, first go through file and count entries per row
         //
 
-        const bool      is_sym   = (( mat_sym == MTX_SYM ) || ( mat_sym == MTX_HERM ));
-        auto            file_pos = in.tellg();
-        vector< uint >  row_count( nrows, 0 );
-        size_t          real_nnz = 0;
+        const bool           is_sym   = (( mat_sym == MTX_SYM ) || ( mat_sym == MTX_HERM ));
+        auto                 file_pos = in.tellg();
+        std::vector< uint >  row_count( nrows, 0 );
+        size_t               real_nnz = 0;
         
         for ( long  i = 0; i < nnz; i++ )
         {
@@ -977,10 +1026,8 @@ TMMMatrixIO::read  ( const string &  filename ) const
         // sparse matrix with the previously collected data
         //
 
-        auto  S   = make_unique< TSparseMatrix >( nrows, ncols );
+        auto  S   = std::make_unique< TSparseMatrix< value_t > >( nrows, ncols );
         uint  pos = 0;
-
-        if ( mat_field == MTX_COMPLEX ) S->set_complex( true );
 
         S->init( real_nnz );
 
@@ -1023,13 +1070,11 @@ TMMMatrixIO::read  ( const string &  filename ) const
                 row--;
                 col--;
                 
-                const complex  val( re, im );
-
                 {
                     const idx_t    idx = S->rowptr(row) + row_count[row];
                 
                     S->colind(idx) = col;
-                    S->ccoeff(idx) = val;
+                    S->coeff(idx)  = get_value< value_t >::compose( re, im );
                 }
 
                 if ( is_sym && ( row != col ))
@@ -1037,7 +1082,7 @@ TMMMatrixIO::read  ( const string &  filename ) const
                     const idx_t  idx = S->rowptr(col) + row_count[col];
                 
                     S->colind(idx) = row;
-                    S->ccoeff(idx) = val;
+                    S->coeff(idx)  = get_value< value_t >::compose( re, im );
                 }// if
             }// if
             else if ( mat_field == MTX_REAL )
@@ -1061,7 +1106,7 @@ TMMMatrixIO::read  ( const string &  filename ) const
                     const idx_t  idx = S->rowptr(row) + row_count[row];
                 
                     S->colind(idx) = col;
-                    S->rcoeff(idx) = real(val);
+                    S->coeff(idx)  = value_t(val);
                 }
 
                 if ( is_sym && ( row != col ))
@@ -1069,7 +1114,7 @@ TMMMatrixIO::read  ( const string &  filename ) const
                     const idx_t  idx = S->rowptr(col) + row_count[col];
                 
                     S->colind(idx) = row;
-                    S->rcoeff(idx) = real(val);
+                    S->coeff(idx)  = value_t(val);
                 }// if
             }// if
             else if ( mat_field == MTX_PATTERN )
@@ -1092,7 +1137,7 @@ TMMMatrixIO::read  ( const string &  filename ) const
                     const idx_t  idx = S->rowptr(row) + row_count[row];
                 
                     S->colind(idx) = col;
-                    S->rcoeff(idx) = real(val);
+                    S->coeff(idx)  = value_t(val);
                 }
                 
                 if ( is_sym && ( row != col ))
@@ -1100,17 +1145,70 @@ TMMMatrixIO::read  ( const string &  filename ) const
                     const idx_t  idx = S->rowptr(col) + row_count[col];
                 
                     S->colind(idx) = row;
-                    S->rcoeff(idx) = real(val);
+                    S->coeff(idx)  = value_t(val);
                 }// if
             }// else
             
             row_count[row]++;
         }// for
 
-        return unique_ptr< TMatrix >( S.release() );
+        return std::unique_ptr< TMatrix< value_t > >( S.release() );
     }// if
     else
         HERROR( ERR_NOT_IMPL, "(TMMMatrixIO) read", "array format" );
+}
+
+#define INST_MM( type ) \
+    template void TMMMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TMMMatrixIO::read< type > ( const std::string & ) const;
+
+INST_MM( float )
+INST_MM( double )
+INST_MM( std::complex< float > )
+INST_MM( std::complex< double > )
+
+variant_id_t
+mtx_guess_value_type ( const std::string &  filename )
+{
+    if ( ! fs::exists( filename ) )
+        HERROR( ERR_FNEXISTS, "mtx_guess_value_type", filename );
+    
+    auto            in_ptr = open_read( filename );
+    std::istream &  in     = * in_ptr.get();
+
+    ///////////////////////////////////////////////////
+    //
+    // read header and determine format of file
+    //
+
+    std::string   line;
+    auto          parts = std::vector< std::string >();
+    mtxfield_t    mat_field  = MTX_REAL;
+
+    while ( in.good() )
+    {
+        std::getline( in, line );
+        split( line, " \t\r\n", parts );
+
+        if (( parts[0] == "%%MatrixMarket" ) || ( parts[0] == "%MatrixMarket" ))
+        {
+            // look for qualifiers
+            for ( uint i = 3; i < parts.size(); i++ )
+            {
+                if      ( parts[i] == "real"    ) mat_field = MTX_REAL;
+                else if ( parts[i] == "integer" ) mat_field = MTX_INTEGER;
+                else if ( parts[i] == "complex" ) mat_field = MTX_COMPLEX;
+                else if ( parts[i] == "pattern" ) mat_field = MTX_PATTERN;
+            }// for
+            
+            break;
+        }// if
+    }// while
+
+    if ( mat_field == MTX_COMPLEX )
+        return COMPLEX_FP64;
+    else
+        return REAL_FP64;
 }
 
 ///////////////////////////////////////////////////
@@ -1142,12 +1240,12 @@ h5_write_dense ( H5File *                         file,
     // define datatype
     //
 
-    unique_ptr< FloatType >  datatype;
+    std::unique_ptr< FloatType >  datatype;
     
     if ( is_single_prec< value_t >::value )
-        datatype = make_unique< FloatType >( PredType::NATIVE_FLOAT );
+        datatype = std::make_unique< FloatType >( PredType::NATIVE_FLOAT );
     else
-        datatype = make_unique< FloatType >( PredType::NATIVE_DOUBLE );
+        datatype = std::make_unique< FloatType >( PredType::NATIVE_DOUBLE );
 
     // // little endian
     // datatype->setOrder( H5T_ORDER_LE );
@@ -1171,10 +1269,10 @@ h5_write_dense ( H5File *                         file,
 
 template < typename value_t >
 void
-h5_write_dense ( H5File *                                    file,
-                 const std::string &                         gname,
-                 const std::string &                         mname,
-                 const BLAS::Matrix< Complex< value_t > > &  A )
+h5_write_dense ( H5File *                                         file,
+                 const std::string &                              gname,
+                 const std::string &                              mname,
+                 const BLAS::Matrix< std::complex< value_t > > &  A )
 {
     if ( is_complex_type< value_t >::value )
         HERROR( ERR_CONSISTENCY, "", "" );
@@ -1186,7 +1284,7 @@ h5_write_dense ( H5File *                                    file,
     // define datatype
     //
 
-    CompType  datatype( sizeof( Complex< value_t > ) );
+    CompType  datatype( sizeof( std::complex< value_t > ) );
     
     if ( is_single_prec< value_t >::value )
     {
@@ -1219,11 +1317,12 @@ h5_write_dense ( H5File *                                    file,
 //
 // write structural part of matrix (type, indexsets, etc.)
 //
+template < typename value_t >
 void
-h5_write_struct ( H5File *             file,
-                  const std::string &  gname,
-                  const TMatrix *      M,
-                  const std::string &  type )
+h5_write_struct ( H5File *                    file,
+                  const std::string &         gname,
+                  const TMatrix< value_t > *  M,
+                  const std::string &         type )
 {
     // local type for storing data
     struct  structure_t
@@ -1269,47 +1368,39 @@ h5_write_struct ( H5File *             file,
     data_set.close();
 }
 
+template < typename value_t >
 void
-h5_write ( H5File *             file,
-           const std::string &  gname,
-           const TMatrix *      M );
+h5_write ( H5File *                    file,
+           const std::string &         gname,
+           const TMatrix< value_t > *  M );
 
+template < typename value_t >
 void
-h5_write ( H5File *              file,
-           const std::string &   gname,
-           const TDenseMatrix *  M )
+h5_write ( H5File *                         file,
+           const std::string &              gname,
+           const TDenseMatrix< value_t > *  M )
 {
     h5_write_struct( file, gname, M, "dense" );
-
-    if ( M->is_complex() )
-        h5_write_dense( file, gname, "D", M->blas_cmat() );
-    else
-        h5_write_dense( file, gname, "D", M->blas_rmat() );
+    h5_write_dense( file, gname, "D", M->blas_mat() );
 }
 
+template < typename value_t >
 void
-h5_write ( H5File *              file,
-           const std::string &   gname,
-           const TRkMatrix *     M )
+h5_write ( H5File *                      file,
+           const std::string &           gname,
+           const TRkMatrix< value_t > *  M )
 {
     h5_write_struct( file, gname, M, "lowrank" );
 
-    if ( M->is_complex() )
-    {
-        h5_write_dense( file, gname, "U", M->blas_cmat_A() );
-        h5_write_dense( file, gname, "V", M->blas_cmat_B() );
-    }// if
-    else
-    {
-        h5_write_dense( file, gname, "U", M->blas_rmat_A() );
-        h5_write_dense( file, gname, "V", M->blas_rmat_B() );
-    }// else
+    h5_write_dense( file, gname, "U", M->blas_mat_A() );
+    h5_write_dense( file, gname, "V", M->blas_mat_B() );
 }
 
+template < typename value_t >
 void
-h5_write ( H5File *              file,
-           const std::string &   gname,
-           const TBlockMatrix *  M )
+h5_write ( H5File *                         file,
+           const std::string &              gname,
+           const TBlockMatrix< value_t > *  M )
 {
     h5_write_struct( file, gname, M, "structured" );
 
@@ -1363,7 +1454,7 @@ h5_write ( H5File *              file,
     // write sub blocks
     //
     
-    auto  group = make_unique< Group >( file->createGroup( gname + "/subblocks" ) );
+    auto  group = std::make_unique< Group >( file->createGroup( gname + "/subblocks" ) );
 
     // std::cout << gname + "/subblocks" << std::endl;
     
@@ -1378,26 +1469,27 @@ h5_write ( H5File *              file,
     }// for
 }
 
+template < typename value_t >
 void
-h5_write ( H5File *             file,
-           const std::string &  gname,
-           const TMatrix *      M )
+h5_write ( H5File *                    file,
+           const std::string &         gname,
+           const TMatrix< value_t > *  M )
 {
     // std::cout << gname << std::endl;
     
-    auto  group = make_unique< Group >( file->createGroup( gname ) );
+    auto  group = std::make_unique< Group >( file->createGroup( gname ) );
     
     if ( is_dense( M ) )
     {
-        h5_write( file, gname, cptrcast( M, TDenseMatrix ) );
+        h5_write( file, gname, cptrcast( M, TDenseMatrix< value_t > ) );
     }// if
     else if ( is_lowrank( M ) )
     {
-        h5_write( file, gname, cptrcast( M, TRkMatrix ) );
+        h5_write( file, gname, cptrcast( M, TRkMatrix< value_t > ) );
     }// if
     else if ( is_blocked( M ) )
     {
-        h5_write( file, gname, cptrcast( M, TBlockMatrix ) );
+        h5_write( file, gname, cptrcast( M, TBlockMatrix< value_t > ) );
     }// if
     else
         HERROR( ERR_MAT_TYPE, "(THDF5MatrixIO) h5_write", M->typestr() );
@@ -1577,9 +1669,10 @@ h5_read_dense_c ( hid_t                file,
 //
 // write matrix \a A to file \a fname
 //
+template < typename value_t >
 void
-THDF5MatrixIO::write ( const TMatrix *      A,
-                       const std::string &  fname ) const
+THDF5MatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &         fname ) const
 {
     write( A, fname, "M" );
 }
@@ -1588,10 +1681,11 @@ THDF5MatrixIO::write ( const TMatrix *      A,
 // write matrix \a A with name \a mname to file \a fname
 //
 #if USE_HDF5 == 1
+template < typename value_t >
 void
-THDF5MatrixIO::write ( const TMatrix *      A,
-                       const std::string &  fname,
-                       const std::string &  mname ) const
+THDF5MatrixIO::write ( const TMatrix< value_t > *  A,
+                       const std::string &         fname,
+                       const std::string &         mname ) const
 {
     try
     {
@@ -1608,8 +1702,9 @@ THDF5MatrixIO::write ( const TMatrix *      A,
     catch( DataTypeIException &  error ) { error.printErrorStack(); }
 }
 #else
+template < typename value_t >
 void
-THDF5MatrixIO::write ( const TMatrix *      ,
+THDF5MatrixIO::write ( const TMatrix< value_t > * ,
                        const std::string &  ,
                        const std::string &   ) const
 {
@@ -1619,35 +1714,9 @@ THDF5MatrixIO::write ( const TMatrix *      ,
 
 
 #if USE_HDF5 == 1
+template < typename value_t >
 void
-THDF5MatrixIO::write ( const BLAS::Matrix< real > &  A,
-                       const std::string &           fname,
-                       const std::string &           mname ) const
-{
-    try
-    {
-        H5File  file( fname, H5F_ACC_TRUNC );
-
-        h5_write_dense( & file, "/", mname, A );
-    }// try
-    catch( FileIException &      error ) { error.printErrorStack(); }
-    catch( DataSetIException &   error ) { error.printErrorStack(); }
-    catch( DataSpaceIException & error ) { error.printErrorStack(); }
-    catch( DataTypeIException &  error ) { error.printErrorStack(); }
-}
-#else
-void
-THDF5MatrixIO::write ( const BLAS::Matrix< real > &  ,
-                       const std::string &           ,
-                       const std::string &            ) const
-{
-    HERROR( ERR_NOHDF5, "(THDF5MatrixIO) write", "" );
-}
-#endif
-
-#if USE_HDF5 == 1
-void
-THDF5MatrixIO::write ( const BLAS::Matrix< complex > &  A,
+THDF5MatrixIO::write ( const BLAS::Matrix< value_t > &  A,
                        const std::string &              fname,
                        const std::string &              mname ) const
 {
@@ -1663,10 +1732,11 @@ THDF5MatrixIO::write ( const BLAS::Matrix< complex > &  A,
     catch( DataTypeIException &  error ) { error.printErrorStack(); }
 }
 #else
+template < typename value_t >
 void
-THDF5MatrixIO::write ( const BLAS::Matrix< complex > &  ,
-                       const std::string &              ,
-                       const std::string &               ) const
+THDF5MatrixIO::write ( const BLAS::Matrix< value_t > &,
+                       const std::string &            ,
+                       const std::string &            ) const
 {
     HERROR( ERR_NOHDF5, "(THDF5MatrixIO) write", "" );
 }
@@ -1676,31 +1746,43 @@ THDF5MatrixIO::write ( const BLAS::Matrix< complex > &  ,
 // read and return matrix from file \a fname
 //
 #if USE_HDF5 == 1
-std::unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 THDF5MatrixIO::read  ( const std::string &  filename ) const
 {
     try
     {
         auto  file = H5Fopen( filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT );
-        auto  M    = h5_read_dense_c< real >( file, "" );
+        auto  M    = h5_read_dense_c< value_t >( file, "" );
 
-        return std::make_unique< TDenseMatrix >( is( 0, M.nrows()-1 ), is( 0, M.ncols()-1 ), std::move( M ) );
+        return std::make_unique< TDenseMatrix< value_t > >( is( 0, M.nrows()-1 ), is( 0, M.ncols()-1 ), std::move( M ) );
     }// try
     catch( FileIException &      error ) { error.printErrorStack(); }
     catch( DataSetIException &   error ) { error.printErrorStack(); }
     catch( DataSpaceIException & error ) { error.printErrorStack(); }
     catch( DataTypeIException &  error ) { error.printErrorStack(); }
 
-    return std::unique_ptr< TMatrix >();
+    return std::unique_ptr< TMatrix< value_t > >();
 }
 #else
-std::unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 THDF5MatrixIO::read  ( const std::string &  ) const
 {
     HERROR( ERR_NOHDF5, "(THDF5MatrixIO) read", "" );
 
-    return std::unique_ptr< TMatrix >();
+    return std::unique_ptr< TMatrix< value_t > >();
 }
 #endif
 
-}// namespace HLIB
+#define INST_HDF5( type ) \
+    template void THDF5MatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template void THDF5MatrixIO::write< type > ( const BLAS::Matrix< type > &, const std::string &, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > THDF5MatrixIO::read< type > ( const std::string & ) const;
+
+INST_HDF5( float )
+INST_HDF5( double )
+INST_HDF5( std::complex< float > )
+INST_HDF5( std::complex< double > )
+
+}// namespace Hpro

@@ -1,16 +1,16 @@
-#ifndef __HLIB_SOLVE_TYPES_HH
-#define __HLIB_SOLVE_TYPES_HH
+#ifndef __HPRO_SOLVE_TYPES_HH
+#define __HPRO_SOLVE_TYPES_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : solve_types.hh
 // Description : special basic types for evaluation and solve algorithms
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/algebra/types.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -77,6 +77,6 @@ struct eval_option_t
     {}
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_SOLVE_TYPES_HH
+#endif  // __HPRO_SOLVE_TYPES_HH

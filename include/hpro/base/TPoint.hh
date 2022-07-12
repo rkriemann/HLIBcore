@@ -1,11 +1,11 @@
-#ifndef __HLIB_TPOINT_HH
-#define __HLIB_TPOINT_HH
+#ifndef __HPRO_TPOINT_HH
+#define __HPRO_TPOINT_HH
 //
 // Project     : HLIBpro
 // File        : TPoint.hh
 // Description : class for a n-dimensional vector
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 #include "hpro/base/error.hh"
 #include "hpro/base/System.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //////////////////////////////////////////////////////////
@@ -24,6 +24,9 @@ namespace HLIB
 //
 class TPoint : public std::vector< double >
 {
+public:
+    using  value_t = double;
+    
 public:
     /////////////////////////////////////////
     //
@@ -280,7 +283,6 @@ public:
 //
 inline double norm2 ( const TPoint & v )                     { return v.norm2(); }
 inline double dot   ( const TPoint & v1, const TPoint & v2 ) { return v1.dot( v2 ); }
-inline double dot   ( const TPoint & v )                     { return v.dot( v ); }
 
 inline TPoint
 operator - ( const TPoint & v )
@@ -338,6 +340,9 @@ operator * ( const double f, const TPoint & v )
 //
 class T3Point
 {
+public:
+    using  value_t = double;
+    
 private:
     // the coordinates
     double  _data[3];
@@ -551,7 +556,6 @@ public:
 //
 inline double  norm2 ( const T3Point & v )                      { return v.norm2(); }
 inline double  dot   ( const T3Point & v1, const T3Point & v2 ) { return v1.dot( v2 ); }
-inline double  dot   ( const T3Point & v )                      { return v.dot( v ); }
 
 inline T3Point
 operator - ( const T3Point & v )
@@ -609,6 +613,9 @@ spherical ( const double  theta,  // polar angle
 //
 class T2Point
 {
+public:
+    using  value_t = double;
+    
 private:
     // the coordinates
     double  _data[2];
@@ -787,7 +794,6 @@ public:
 //
 inline double norm2 ( const T2Point & v )                      { return v.norm2(); }
 inline double dot   ( const T2Point & v1, const T2Point & v2 ) { return v1.dot( v2 ); }
-inline double dot   ( const T2Point & v )                      { return v.dot( v ); }
 
 inline T2Point
 operator - ( const T2Point & v )
@@ -827,6 +833,6 @@ spherical ( const double  phi,    // polar angle
                     r * std::sin( phi ) );
 }
             
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TPOINT_HH
+#endif  // __HPRO_TPOINT_HH

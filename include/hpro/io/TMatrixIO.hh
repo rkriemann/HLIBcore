@@ -1,17 +1,17 @@
-#ifndef __HLIB_TMATRIXIO_HH
-#define __HLIB_TMATRIXIO_HH
+#ifndef __HPRO_TMATRIXIO_HH
+#define __HPRO_TMATRIXIO_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TMatrixIO.hh
 // Description : class for matrix input/output
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/Matrix.hh"
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -23,42 +23,11 @@ namespace HLIB
 ///////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
-//! \class    TMatrixIO
-//! \brief    Base class for Matrix IO defining interface
-//!
-class TMatrixIO
-{
-public:
-    ///////////////////////////////////////////////
-    //
-    // constructor and destructor
-    //
-
-    TMatrixIO ();
-
-    virtual ~TMatrixIO () {}
-    
-    ///////////////////////////////////////////////
-    //
-    // interface for I/O
-    //
-
-    //! write matrix \a A to file \a name
-    virtual void  write ( const TMatrix *      A,
-                          const std::string &  name ) const;
-    
-    //! read and return matrix from file \a name
-    virtual auto  read  ( const std::string &  name ) const -> std::unique_ptr< TMatrix >;
-};
-
-///////////////////////////////////////////////////
-//!
-//! \ingroup  IO_Module
 //! \class    TAutoMatrixIO
 //! \brief    Class for matrix I/O with automatic
 //!           file format detection
 //!
-class TAutoMatrixIO : public TMatrixIO
+class TAutoMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -76,24 +45,28 @@ public:
     //
 
     //! write matrix \a A to file \a filename
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  filename ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         filename ) const;
 
     //! write matrix \a A to file \a filename with optional
     //! matrix name \a matname (if file format has corresponding support)
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  filename,
-            const std::string &  matname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         filename,
+            const std::string &         matname ) const;
 
     //! read and return matrix from file \a filename
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  name ) const;
 
     //! read and return matrix from file \a filename with optional
     //! matrix name \a matname (if file format has corresponding support)
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  filename,
             const std::string &  matname ) const;
 };
@@ -107,7 +80,8 @@ public:
 //!           of several matrices (or other objects), only the first matrix
 //!           will be read.
 //!
-std::unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 read_matrix  ( const std::string &  filename );
 
 //!
@@ -120,7 +94,8 @@ read_matrix  ( const std::string &  filename );
 //!           Furthermore, if the file format supports storage of several matrices
 //!           (or other objects), only the first matrix will be read.
 //!
-std::unique_ptr< TMatrix >
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
 read_matrix  ( const std::string &  filename,
                const std::string &  matname );
 
@@ -137,9 +112,18 @@ read_matrix  ( const std::string &  filename,
 //!           - mtx                   : MatrixMarket format
 //!           - hdf, h5               : HDF5 format
 //!
+template < typename value_t >
 void
-write_matrix  ( const TMatrix *      A,
-                const std::string &  filename );
+write_matrix  ( const TMatrix< value_t > *  A,
+                const std::string &         filename );
+
+template < typename value_t >
+void
+write_matrix  ( const TMatrix< value_t > &  A,
+                const std::string &         filename )
+{
+    write_matrix( &A, filename );
+}
 
 //!
 //! \ingroup  IO_Module
@@ -150,10 +134,20 @@ write_matrix  ( const TMatrix *      A,
 //!           format supports named matrices, the matrix will be stored under the
 //!           name \a matname.
 //!
+template < typename value_t >
 void
-write_matrix  ( const TMatrix *      A,
-                const std::string &  filename,
-                const std::string &  matname );
+write_matrix  ( const TMatrix< value_t > *  A,
+                const std::string &         filename,
+                const std::string &         matname );
+
+template < typename value_t >
+void
+write_matrix  ( const TMatrix< value_t > &  A,
+                const std::string &         filename,
+                const std::string &         matname )
+{
+    write_matrix( &A, filename, matname );
+}
 
 //!
 //! \ingroup  IO_Module
@@ -162,7 +156,8 @@ write_matrix  ( const TMatrix *      A,
 //!           Read linear operator from file \a filename. Currently only the
 //!           HLIBpro file format supports linear operators.
 //!
-std::unique_ptr< TLinearOperator >
+template < typename value_t >
+std::unique_ptr< TLinearOperator< value_t > >
 read_linop  ( const std::string &  filename );
 
 //!
@@ -171,9 +166,18 @@ read_linop  ( const std::string &  filename );
 //!
 //!           Write linear operator \a A to file \a filename in HLIBpro format.
 //!
+template < typename value_t >
 void
-write_linop ( const TLinearOperator *  A,
-              const std::string &      filename );
+write_linop ( const TLinearOperator< value_t > *  A,
+              const std::string &                 filename );
+
+template < typename value_t >
+void
+write_linop ( const TLinearOperator< value_t > &  A,
+              const std::string &                 filename )
+{
+    write_linop( &A, filename );
+}
 
 ///////////////////////////////////////////////////
 //!
@@ -181,7 +185,7 @@ write_linop ( const TLinearOperator *  A,
 //! \class    TOctaveMatrixIO
 //! \brief    Class for matrix I/O in octave format
 //!
-class TOctaveMatrixIO : public TMatrixIO
+class TOctaveMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -199,9 +203,10 @@ public:
     //
 
     //! write matrix \a A to file \a name
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  name ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         name ) const;
 };
 
 ///////////////////////////////////////////////////
@@ -210,7 +215,7 @@ public:
 //! \class    TSAMGMatrixIO
 //! \brief    Class for matrix I/O in SAMG format
 //!
-class TSAMGMatrixIO : public TMatrixIO
+class TSAMGMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -228,12 +233,14 @@ public:
     //
 
     //! write matrix \a A to file \a name
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  name ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         name ) const;
 
     //! read and return matrix from file \a name
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  name ) const;
 };
 
@@ -243,7 +250,7 @@ public:
 //! \class    TMatlabMatrixIO
 //! \brief    Class for matrix I/O in Matlab format
 //!
-class TMatlabMatrixIO : public TMatrixIO
+class TMatlabMatrixIO
 {
 private:
     //! if true (default), any permutation of the matrices will be
@@ -256,7 +263,7 @@ public:
     // constructor and destructor
     //
 
-    //! construct Matlab matrix IO object with internal permutation set to \a perm
+    //! ctor with internal permutation set to \a perm
     TMatlabMatrixIO ( const bool perm = CFG::IO::permute_save )
             : _permute( perm )
     {}
@@ -269,46 +276,40 @@ public:
     //
 
     //! write matrix \a A with name "M" to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     // write matrix \a A with name \a mname to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname,
-            const std::string &  mname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname,
+            const std::string &         mname ) const;
 
     // write linear operator \a A with name \a mname to file \a fname
-    virtual void
-    write ( const TLinearOperator *  A,
-            const std::string &      fname,
-            const std::string &      mname ) const;
+    template < typename value_t >
+    void
+    write ( const TLinearOperator< value_t > *  A,
+            const std::string &                 fname,
+            const std::string &                 mname ) const;
 
     // write BLAS matrix \a A with name \a mname to file \a fname
-    virtual void
-    write ( const BLAS::Matrix< float > &    A,
+    template < typename value_t >
+    void
+    write ( const BLAS::Matrix< value_t > &  A,
             const std::string &              fname,
             const std::string &              mname ) const;
-    virtual void
-    write ( const BLAS::Matrix< double > &   A,
-            const std::string &              fname,
-            const std::string &              mname ) const;
-    virtual void
-    write ( const BLAS::Matrix< Complex< float > > &  A,
-            const std::string &                       fname,
-            const std::string &                       mname ) const;
-    virtual void
-    write ( const BLAS::Matrix< Complex< double > > &  A,
-            const std::string &                        fname,
-            const std::string &                        mname ) const;
 
     //! read and return matrix from file \a fname (assuming only one entry available)
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 
     //! read matrix with name \a mname from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname,
             const std::string &  mname ) const;
 };
@@ -316,10 +317,10 @@ public:
 ///////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
-//! \class    THLibMatrixIO
+//! \class    THproMatrixIO
 //! \brief    Class for matrix I/O in HLIB format
 //!
-class THLibMatrixIO : public TMatrixIO
+class THproMatrixIO
 {
 protected:
     //! flag for using compression
@@ -331,12 +332,12 @@ public:
     // constructor and destructor
     //
 
-    //! construct HLIB matrix IO object with compression set to \a compressed
-    THLibMatrixIO ( const bool compressed = false )
+    //! ctor with compression set to \a compressed
+    THproMatrixIO ( const bool compressed = false )
             : _compressed(compressed)
     {}
 
-    virtual ~THLibMatrixIO () {}
+    virtual ~THproMatrixIO () {}
 
     //! set internal compression usage to \a compressed
     void set_compression ( const bool  compressed ) { _compressed = compressed; }
@@ -347,12 +348,14 @@ public:
     //
 
     //! write matrix \a A to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     //! read and return matrix from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 
     ///////////////////////////////////////////////
@@ -361,14 +364,18 @@ public:
     //
 
     //! write linear operator \a A to file \a fname
-    virtual void
-    write_linop ( const TLinearOperator * A,
-                  const std::string &     fname ) const;
+    template < typename value_t >
+    void
+    write_linop ( const TLinearOperator< value_t > *  A,
+                  const std::string &                 fname ) const;
 
     //! read and return linear operator from file \a fname
-    virtual std::unique_ptr< TLinearOperator >
-    read_linop  ( const std::string &     fname ) const;
+    template < typename value_t >
+    std::unique_ptr< TLinearOperator< value_t > >
+    read_linop  ( const std::string &  fname ) const;
 };
+
+using THLibMatrixIO = THproMatrixIO;
 
 ///////////////////////////////////////////////////
 //!
@@ -376,7 +383,7 @@ public:
 //! \class    TPLTMGMatrixIO
 //! \brief    Class for matrix I/O in PLTMG format
 //!
-class TPLTMGMatrixIO : public TMatrixIO
+class TPLTMGMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -394,12 +401,14 @@ public:
     //
 
     //! write matrix \a A to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     //! read and return matrix from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -410,7 +419,7 @@ public:
 //! \brief    Class for matrix I/O in Harwell-Boeing and
 //!           Rutherford-Boeing format
 //!
-class THBMatrixIO : public TMatrixIO
+class THBMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -428,12 +437,14 @@ public:
     //
 
     //! write matrix \a A to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     //! read and return matrix from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -443,7 +454,7 @@ public:
 //! \class    TMMMatrixIO
 //! \brief    Class for matrix I/O in MatrixMarket format.
 //!
-class TMMMatrixIO : public TMatrixIO
+class TMMMatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -461,12 +472,14 @@ public:
     //
 
     //! write matrix \a A to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     //! read and return matrix from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
@@ -477,7 +490,7 @@ public:
 //! \class    THDF5MatrixIO
 //! \brief    Class for matrix I/O in HDF5 format.
 //!
-class THDF5MatrixIO : public TMatrixIO
+class THDF5MatrixIO
 {
 public:
     ///////////////////////////////////////////////
@@ -495,33 +508,33 @@ public:
     //
 
     //! write matrix \a A to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
 
     // write matrix \a A with name \a mname to file \a fname
-    virtual void
-    write ( const TMatrix *      A,
-            const std::string &  fname,
-            const std::string &  mname ) const;
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname,
+            const std::string &         mname ) const;
 
     // write matrix \a A with name \a mname to file \a fname
+    template < typename value_t >
     void
-    write ( const BLAS::Matrix< real > &     A,
-            const std::string &              fname,
-            const std::string &              mname ) const;
-    void
-    write ( const BLAS::Matrix< complex > &  A,
+    write ( const BLAS::Matrix< value_t > &  A,
             const std::string &              fname,
             const std::string &              mname ) const;
     
     //! read and return matrix from file \a fname
-    virtual std::unique_ptr< TMatrix >
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
     read  ( const std::string &  fname ) const;
 };
 
 //! \}
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TMATRIXIO_HH
+#endif  // __HPRO_TMATRIXIO_HH

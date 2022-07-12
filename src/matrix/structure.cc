@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : structure.cc
 // Description : test functions for various matrix structures
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
@@ -15,7 +15,7 @@
 
 #include "hpro/matrix/structure.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -24,8 +24,9 @@ namespace
 //
 // return true if <A> is block diagonal
 //
+template < typename value_t >
 bool
-is_diag_local ( const TMatrix * A )
+is_diag_local ( const TMatrix< value_t > * A )
 {
     if ( A == nullptr )
         return false;
@@ -38,9 +39,9 @@ is_diag_local ( const TMatrix * A )
     // are non-empty
     //
     
-    const TBlockMatrix * BA  = cptrcast( A, TBlockMatrix );
-    const uint           br  = BA->block_rows();
-    const uint           bc  = BA->block_cols();
+    const auto  BA  = cptrcast( A, TBlockMatrix< value_t > );
+    const uint  br  = BA->block_rows();
+    const uint  bc  = BA->block_cols();
 
     // must have at least 2 diagonal blocks
     if ( br == 1 )
@@ -56,7 +57,7 @@ is_diag_local ( const TMatrix * A )
                 if ( i == j )
                     continue;
             
-                const TMatrix * A_ij = BA->block( i, j );
+                const auto  A_ij = BA->block( i, j );
 
                 // if matrix is not existent or is low-rank with 0 rank, continue
                 if (( A_ij == nullptr ) || A_ij->is_zero() )
@@ -73,8 +74,9 @@ is_diag_local ( const TMatrix * A )
 
 }// namespace anonymous
 
+template < typename value_t >
 bool
-is_diag ( const TMatrix *  A )
+is_diag ( const TMatrix< value_t > *  A )
 {
     bool  res = is_diag_local( A );
     
@@ -102,8 +104,9 @@ namespace
 // return true if <A> has domain-decomposition format, e.g.
 // only diagonal blocks and non-zero last row/column
 //
+template < typename value_t >
 bool
-is_dd_local ( const TMatrix * A )
+is_dd_local ( const TMatrix< value_t > * A )
 {
     if ( A == nullptr )
         return false;
@@ -116,9 +119,9 @@ is_dd_local ( const TMatrix * A )
     // are non-empty
     //
     
-    const TBlockMatrix * BA  = cptrcast( A, TBlockMatrix );
-    const uint           br  = BA->block_rows();
-    const uint           bc  = BA->block_cols();
+    const auto  BA  = cptrcast( A, TBlockMatrix< value_t > );
+    const uint  br  = BA->block_rows();
+    const uint  bc  = BA->block_cols();
 
     // check for at least two subdomains
     if (( br < 3 ) || ( bc < 3 ))
@@ -135,7 +138,7 @@ is_dd_local ( const TMatrix * A )
 
             for ( uint j = i+1; j < bc-1; j++ )
             {
-                const TMatrix * A_ij = BA->block( i, j );
+                const auto  A_ij = BA->block( i, j );
 
                 // if matrix is not existent or is low-rank with 0 rank, continue
                 if (( A_ij == nullptr ) || A_ij->is_zero() )
@@ -151,11 +154,11 @@ is_dd_local ( const TMatrix * A )
 
             for ( uint j = i+1; j < br-1; j++ )
             {
-                const TMatrix * A_ij = BA->block( j, i );
+                const auto  A_ij = BA->block( j, i );
 
                 // if matrix is not existent or is low-rank with 0 rank, continue
                 if (( A_ij == nullptr ) || A_ij->is_zero() )
-                    // ( is_lowrank( A_ij ) && ( cptrcast( A_ij, TRkMatrix )->rank() == 0 )))
+                    // ( is_lowrank( A_ij ) && ( cptrcast( A_ij, TRkMatrix< value_t > )->rank() == 0 )))
                     continue;
 
                 // matrix exists and has content, so no DD format
@@ -169,8 +172,9 @@ is_dd_local ( const TMatrix * A )
 
 }// namespace anonymous
 
+template < typename value_t >
 bool
-is_dd ( const TMatrix *  A )
+is_dd ( const TMatrix< value_t > *  A )
 {
     bool  res = is_dd_local( A );
     
@@ -194,8 +198,9 @@ is_dd ( const TMatrix *  A )
 //
 // return true, if A is block matrix with flat hierarchy
 //
+template < typename value_t >
 bool
-is_flat ( const TMatrix *  A )
+is_flat ( const TMatrix< value_t > *  A )
 {
     if ( A == nullptr )
         return false;
@@ -206,7 +211,7 @@ is_flat ( const TMatrix *  A )
     if ( A->parent() != nullptr )
         return false;
     
-    auto  B = cptrcast( A, TBlockMatrix );
+    auto  B = cptrcast( A, TBlockMatrix< value_t > );
 
     // // minimal number of blocks are assumed
     // if ( std::min( B->block_rows(), B->block_cols() ) > 2 )
@@ -223,8 +228,9 @@ is_flat ( const TMatrix *  A )
 //
 // return true if <A> is lower left block matrix
 //
+template < typename value_t >
 bool
-is_lower_left ( const TMatrix * A )
+is_lower_left ( const TMatrix< value_t > * A )
 {
     if ( A == nullptr )
         return false;
@@ -236,9 +242,9 @@ is_lower_left ( const TMatrix * A )
     // check if all blocks in upper right part are empty
     //
     
-    const TBlockMatrix * BA = cptrcast( A, TBlockMatrix );
-    const uint           br = BA->block_rows();
-    const uint           bc = BA->block_cols();
+    const auto  BA = cptrcast( A, TBlockMatrix< value_t > );
+    const uint  br = BA->block_rows();
+    const uint  bc = BA->block_cols();
 
     for ( uint i = 0; i < br; i++ )
     {
@@ -248,7 +254,7 @@ is_lower_left ( const TMatrix * A )
 
         for ( uint j = i+1; j < bc; j++ )
         {
-            const TMatrix * A_ij = BA->block( i, j );
+            const auto  A_ij = BA->block( i, j );
 
             // if matrix is not existent or is low-rank with 0 rank, continue
             if (( A_ij == nullptr ) || A_ij->is_zero() )
@@ -265,8 +271,9 @@ is_lower_left ( const TMatrix * A )
 //
 // return true if <A> is upper right block matrix
 //
+template < typename value_t >
 bool
-is_upper_right ( const TMatrix * A )
+is_upper_right ( const TMatrix< value_t > * A )
 {
     if ( A == nullptr )
         return false;
@@ -278,9 +285,9 @@ is_upper_right ( const TMatrix * A )
     // check if all blocks in upper right part are empty
     //
     
-    const TBlockMatrix * BA = cptrcast( A, TBlockMatrix );
-    const uint           br = BA->block_rows();
-    const uint           bc = BA->block_cols();
+    const auto  BA = cptrcast( A, TBlockMatrix< value_t > );
+    const uint  br = BA->block_rows();
+    const uint  bc = BA->block_cols();
 
     for ( uint i = 0; i < bc; i++ )
     {
@@ -290,7 +297,7 @@ is_upper_right ( const TMatrix * A )
 
         for ( uint j = i+1; j < br; j++ )
         {
-            const TMatrix * A_ij = BA->block( j, i );
+            const auto  A_ij = BA->block( j, i );
 
             // if matrix is not existent or is low-rank with 0 rank, continue
             if (( A_ij == nullptr ) || A_ij->is_zero() )
@@ -307,8 +314,9 @@ is_upper_right ( const TMatrix * A )
 //!
 //! return true if matrix is zero, e.g. all entries zero
 //!
+template < typename value_t >
 bool
-is_zero ( const TMatrix *  A )
+is_zero ( const TMatrix< value_t > *  A )
 {
     // NULL matrices are considered zero!
     if ( A == nullptr )
@@ -320,21 +328,22 @@ is_zero ( const TMatrix *  A )
 //
 // return maximal ID in all submatrices
 //
+template < typename value_t >
 int
-max_id ( const TMatrix *  A )
+max_id ( const TMatrix< value_t > *  A )
 {
     int  id = A->id();
         
     // recurse
     if ( A->is_blocked() )
     {
-        const TBlockMatrix *  B = cptrcast( A, TBlockMatrix );
+        const auto  B = cptrcast( A, TBlockMatrix< value_t > );
         
         for ( uint j = 0; j < B->block_cols(); ++j )
         {
             for ( uint i = 0; i < B->block_rows(); ++i )
             {
-                const TMatrix *  B_ij = B->block( i, j );
+                const auto  B_ij = B->block( i, j );
                 
                 if ( B_ij == nullptr )
                     continue;
@@ -355,9 +364,10 @@ max_id ( const TMatrix *  A )
 namespace
 {
 
+template < typename value_t >
 void
-diagonal ( const TMatrix *  A,
-           TScalarVector *  diag )
+diagonal ( const TMatrix< value_t > *  A,
+           TScalarVector< value_t > *  diag )
 {
     if ( A == nullptr )
         HERROR( ERR_ARG, "diagonal", "matrix is nullptr" );
@@ -367,7 +377,7 @@ diagonal ( const TMatrix *  A,
     
     if ( is_blocked( A ) )
     {
-        auto  B = cptrcast( A, TBlockMatrix );
+        auto  B = cptrcast( A, TBlockMatrix< value_t > );
         
         for ( uint  i = 0; i < std::min( B->block_rows(), B->block_cols() ); ++i )
         {
@@ -379,45 +389,41 @@ diagonal ( const TMatrix *  A,
         const idx_t  ofs = A->row_is().first();
 
         for ( auto  i : A->row_is() )
-        {
-            if ( A->is_complex() )
-                diag->set_centry( i - diag->ofs(), A->centry( i - ofs, i - ofs ) );
-            else
-                diag->set_entry( i - diag->ofs(), A->entry( i - ofs, i - ofs ) );
-        }// for
+            diag->set_entry( i - diag->ofs(), A->entry( i - ofs, i - ofs ) );
     }// else
 }
 
-}
+}// namespace anonymous
 
-std::unique_ptr< TVector >
-diagonal ( const TMatrix *  A )
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+diagonal ( const TMatrix< value_t > *  A )
 {
     if ( A == nullptr )
         HERROR( ERR_ARG, "diagonal", "matrix is nullptr" );
     
-    auto  diag = std::make_unique< TScalarVector >( is( 0, std::min< idx_t >( A->rows(), A->cols() )-1 ),
-                                                    A->value_type() );
+    auto  diag = std::make_unique< TScalarVector< value_t > >( is( 0, std::min< idx_t >( A->rows(), A->cols() )-1 ) );
 
     diagonal( A, diag.get() );
 
-    return std::unique_ptr< TVector >( diag.release() );
+    return std::unique_ptr< TVector< value_t > >( diag.release() );
 }
 
 //////////////////////////////////////////////////////////
 //
 // return copy of all diagonal blocks of A with full hierarchy
 //
-std::unique_ptr< TMatrix >
-copy_diag   ( const TMatrix * A )
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+copy_diag   ( const TMatrix< value_t > * A )
 {
     if ( A == nullptr )
         return nullptr;
     
     if ( is_blocked( A ) )
     {
-        auto  BA = cptrcast( A, TBlockMatrix );
-        auto  T  = std::make_unique< TBlockMatrix >();
+        auto  BA = cptrcast( A, TBlockMatrix< value_t > );
+        auto  T  = std::make_unique< TBlockMatrix< value_t > >();
 
         T->copy_struct_from( A );
         T->set_block_struct( BA->block_rows(), BA->block_cols() );
@@ -437,9 +443,10 @@ copy_diag   ( const TMatrix * A )
 namespace
 {
 
+template < typename value_t >
 uint
-get_first_diag_leaf_level ( const TMatrix *  A,
-                            const uint       lvl )
+get_first_diag_leaf_level ( const TMatrix< value_t > *  A,
+                            const uint                  lvl )
 {
     uint  max_lvl = lvl;
 
@@ -448,7 +455,7 @@ get_first_diag_leaf_level ( const TMatrix *  A,
     
     if ( ! is_leaf( A ) && ! is_small( A ) && is_blocked( A ) )
     {
-        const auto  B = cptrcast( A, TBlockMatrix );
+        const auto  B = cptrcast( A, TBlockMatrix< value_t > );
 
         max_lvl = 0;
 
@@ -457,7 +464,7 @@ get_first_diag_leaf_level ( const TMatrix *  A,
             if ( B->block( i, i ) != nullptr )
             {
                 auto  lvl_ii = get_first_diag_leaf_level( B->block( i, i ), lvl+1 );
-                
+                    
                 if ( max_lvl == 0 ) max_lvl = lvl_ii;
                 else                max_lvl = std::min( max_lvl, lvl_ii );
             }// if
@@ -469,8 +476,9 @@ get_first_diag_leaf_level ( const TMatrix *  A,
 
 }// namespace anonymous
 
+template < typename value_t >
 uint
-get_first_diag_leaf_level ( const TMatrix *  A )
+get_first_diag_leaf_level ( const TMatrix< value_t > *  A )
 {
     return get_first_diag_leaf_level( A, 0 );
 }
@@ -479,9 +487,10 @@ get_first_diag_leaf_level ( const TMatrix *  A )
 //
 // return matrix with rowis( A_row ) × colis( A_col )
 //
-TMatrix *
-product_block ( const TMatrix *  A_row,
-                const TMatrix *  A_col )
+template < typename value_t >
+TMatrix< value_t > *
+product_block ( const TMatrix< value_t > *  A_row,
+                const TMatrix< value_t > *  A_col )
 {
     //
     // iterate over both lists in case of symmetric matrices (upper half missing)
@@ -502,11 +511,12 @@ product_block ( const TMatrix *  A_row,
     return nullptr;
 }
 
-TMatrix *
-product_block ( const matop_t    op_row,
-                const TMatrix *  A_row,
-                const matop_t    op_col,
-                const TMatrix *  A_col )
+template < typename value_t >
+TMatrix< value_t > *
+product_block ( const matop_t               op_row,
+                const TMatrix< value_t > *  A_row,
+                const matop_t               op_col,
+                const TMatrix< value_t > *  A_col )
 {
     //
     // iterate over both lists in case of symmetric matrices (upper half missing)
@@ -530,9 +540,10 @@ product_block ( const matop_t    op_row,
 //
 // return sub block of M with given id
 //
-const TMatrix *
-get_block ( const TMatrix *  M,
-            const int        id )
+template < typename value_t >
+const TMatrix< value_t > *
+get_block ( const TMatrix< value_t > *  M,
+            const int                   id )
 {
     if ( M == nullptr )
         return nullptr;
@@ -542,7 +553,7 @@ get_block ( const TMatrix *  M,
 
     if ( is_blocked( M ) )
     {
-        auto  B = cptrcast( M, TBlockMatrix );
+        auto  B = cptrcast( M, TBlockMatrix< value_t > );
 
         for ( uint  i = 0; i < B->block_rows(); ++i )
             for ( uint  j = 0; j < B->block_cols(); ++j )
@@ -560,9 +571,10 @@ get_block ( const TMatrix *  M,
 //
 // return matrix block in A corresponding to block index set bis
 //
-const TMatrix *
-get_block ( const TMatrix *         A,
-            const TBlockIndexSet &  bis )
+template < typename value_t >
+const TMatrix< value_t > *
+get_block ( const TMatrix< value_t > *  A,
+            const TBlockIndexSet &      bis )
 {
     if ( A == nullptr )
         return nullptr;
@@ -574,7 +586,7 @@ get_block ( const TMatrix *         A,
 
         if ( is_blocked( A ) )
         {
-            const auto  B = cptrcast( A, TBlockMatrix );
+            const auto  B = cptrcast( A, TBlockMatrix< value_t > );
 
             for ( uint i = 0; i < B->block_rows(); ++i )
             {
@@ -602,15 +614,16 @@ get_block ( const TMatrix *         A,
 //!
 //! return number of sub blocks in matrix (including inner blocks)
 //!
+template < typename value_t >
 size_t
-get_nblocks ( const TMatrix *   M )
+get_nblocks ( const TMatrix< value_t > *   M )
 {
     if ( M == nullptr )
         return 0;
     
     if ( is_blocked( M ) )
     {
-        auto    B = cptrcast( M, TBlockMatrix );
+        auto    B = cptrcast( M, TBlockMatrix< value_t > );
         size_t  n = 1;  // this block
 
         for ( uint  i = 0; i < B->nblock_rows(); ++i )
@@ -626,15 +639,16 @@ get_nblocks ( const TMatrix *   M )
 //!
 //! return number of leaf blocks in matrix
 //!
+template < typename value_t >
 size_t
-get_nblocks_leaf ( const TMatrix *   M )
+get_nblocks_leaf ( const TMatrix< value_t > *   M )
 {
     if ( M == nullptr )
         return 0;
     
     if ( is_blocked( M ) )
     {
-        auto    B = cptrcast( M, TBlockMatrix );
+        auto    B = cptrcast( M, TBlockMatrix< value_t > );
         size_t  n = 0;
 
         for ( uint  i = 0; i < B->nblock_rows(); ++i )
@@ -650,20 +664,21 @@ get_nblocks_leaf ( const TMatrix *   M )
 //!
 //! return number of low-rank sub blocks in matrix
 //!
+template < typename value_t >
 size_t
-get_nblocks_lr ( const TMatrix *   M )
+get_nblocks_lowrank ( const TMatrix< value_t > *   M )
 {
     if ( M == nullptr )
         return 0;
     
     if ( is_blocked( M ) )
     {
-        auto    B = cptrcast( M, TBlockMatrix );
+        auto    B = cptrcast( M, TBlockMatrix< value_t > );
         size_t  n = 0;
 
         for ( uint  i = 0; i < B->nblock_rows(); ++i )
             for ( uint  j = 0; j < B->nblock_cols(); ++j )
-                n += get_nblocks_lr( B->block( i, j ) );
+                n += get_nblocks_lowrank( B->block( i, j ) );
 
         return n;
     }// if
@@ -676,15 +691,16 @@ get_nblocks_lr ( const TMatrix *   M )
 //!
 //! return number of dense sub blocks in matrix
 //!
+template < typename value_t >
 size_t
-get_nblocks_dense  ( const TMatrix *   M )
+get_nblocks_dense  ( const TMatrix< value_t > *   M )
 {
     if ( M == nullptr )
         return 0;
     
     if ( is_blocked( M ) )
     {
-        auto    B = cptrcast( M, TBlockMatrix );
+        auto    B = cptrcast( M, TBlockMatrix< value_t > );
         size_t  n = 0;
 
         for ( uint  i = 0; i < B->nblock_rows(); ++i )
@@ -699,4 +715,29 @@ get_nblocks_dense  ( const TMatrix *   M )
         return 0;
 }   
 
-}// namespace HLIB
+#define INST_ALL( type ) \
+    template bool is_diag ( const TMatrix< type > * );                  \
+    template bool is_dd ( const TMatrix< type > * );                    \
+    template bool is_flat ( const TMatrix< type > * );                  \
+    template bool is_lower_left ( const TMatrix< type > * A );          \
+    template bool is_upper_right ( const TMatrix< type > * A );         \
+    template bool is_zero ( const TMatrix< type > * );                  \
+    template int max_id ( const TMatrix< type > * );                    \
+    template std::unique_ptr< TVector< type > > diagonal ( const TMatrix< type > * ); \
+    template std::unique_ptr< TMatrix< type > > copy_diag   ( const TMatrix< type > * A ); \
+    template uint get_first_diag_leaf_level ( const TMatrix< type > * ); \
+    template TMatrix< type > * product_block ( const TMatrix< type > *, const TMatrix< type > * ); \
+    template TMatrix< type > * product_block ( const matop_t, const TMatrix< type > *, const matop_t, const TMatrix< type > * ); \
+    template const TMatrix< type > * get_block ( const TMatrix< type > *, const int ); \
+    template const TMatrix< type > * get_block ( const TMatrix< type > *, const TBlockIndexSet & ); \
+    template size_t get_nblocks ( const TMatrix< type > * );            \
+    template size_t get_nblocks_leaf ( const TMatrix< type > * );       \
+    template size_t get_nblocks_lowrank ( const TMatrix< type > * );    \
+    template size_t get_nblocks_dense  ( const TMatrix< type > * );
+
+INST_ALL( float )
+INST_ALL( double )
+INST_ALL( std::complex< float > )
+INST_ALL( std::complex< double > )
+
+}// namespace Hpro

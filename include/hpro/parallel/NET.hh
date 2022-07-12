@@ -1,16 +1,16 @@
-#ifndef __HLIB_NET_HH
-#define __HLIB_NET_HH
+#ifndef __HPRO_NET_HH
+#define __HPRO_NET_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : NET.hh
 // Description : encapsulation of network functions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <stdlib.h>
 
-#include "hlib-config.h"
+#include "hpro/config.h"
 
 #if defined(__GNUC__) && !defined(__ICC)
 #  if __GNUC__ >= 4  &&  __GNUC_MINOR__ >= 6
@@ -19,7 +19,7 @@
 #  endif
 #endif
 
-#if HLIB_NET_TYPE == 2
+#if HPRO_NET_TYPE == 2
 #include <mpi.h>
 #endif
 
@@ -33,7 +33,7 @@
 #include "hpro/base/error.hh"
 #include "hpro/parallel/TProcSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace NET
@@ -52,7 +52,7 @@ enum reduce_op_t
 //
 // non-blocking request
 //
-#if HLIB_NET_TYPE == 2
+#if HPRO_NET_TYPE == 2
 using  request_t = MPI_Request;
 #else
 using  request_t = void *;
@@ -269,6 +269,6 @@ broadcast    ( const TProcSet &  ps,
     
 }// namespace NET
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_NET_HH
+#endif  // __HPRO_NET_HH

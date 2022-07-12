@@ -1,18 +1,18 @@
-#ifndef __HLIB_TBEMBF_HH
-#define __HLIB_TBEMBF_HH
+#ifndef __HPRO_TBEMBF_HH
+#define __HPRO_TBEMBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBEMBF.hh
 // Description : classes for bilinearforms in BEM-applications
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/Matrix.hh"
 #include "hpro/bem/TFnSpace.hh"
 #include "hpro/matrix/TMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ////////////////////////////////////////////////////////////////////////////
@@ -140,6 +140,6 @@ protected:
     DISABLE_COPY_OP( TBEMBF );
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TBEMBF_HH
+#endif  // __HPRO_TBEMBF_HH

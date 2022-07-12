@@ -1,11 +1,11 @@
-#ifndef __HLIB_TGAUSSQUAD_HH
-#define __HLIB_TGAUSSQUAD_HH
+#ifndef __HPRO_TGAUSSQUAD_HH
+#define __HPRO_TGAUSSQUAD_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGaussQuad.hh
 // Description : provides Gauss quadrature rules
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -13,7 +13,7 @@
 #include "hpro/base/types.hh"
 #include "hpro/base/TPoint.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 //
@@ -78,4 +78,4 @@ public:
 
 }// namespace
 
-#endif // __HLIB_TGAUSSQUAD_HH
+#endif // __HPRO_TGAUSSQUAD_HH

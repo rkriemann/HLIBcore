@@ -1,11 +1,11 @@
-#ifndef __HLIB_TUPDATEACCUMULATOR_HH
-#define __HLIB_TUPDATEACCUMULATOR_HH
+#ifndef __HPRO_TUPDATEACCUMULATOR_HH
+#define __HPRO_TUPDATEACCUMULATOR_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TUpdateAccumulator.hh
 // Description : class for handling updates to matrix blocks
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <list>
@@ -14,16 +14,17 @@
 
 #include "hpro/parallel/TMutex.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // forward decl.
+template < typename value_t >
 class TMatrix;
-class TBlockMatrix;
 
 //
 // base class for direct (e.g. non-recursive) updates
 //
+template < typename value_t >
 class TDirectMatrixUpdate
 {
 public:
@@ -31,10 +32,10 @@ public:
     virtual ~TDirectMatrixUpdate () {}
     
     // apply internal update to matrix \a M with accuracy \a acc
-    virtual auto         compute          ( const TTruncAcc &  acc ) -> std::unique_ptr< TMatrix > = 0;
+    virtual auto         compute          ( const TTruncAcc &  acc ) -> std::unique_ptr< TMatrix< value_t > > = 0;
 
     // return linear operator representing update
-    virtual auto         linear_op        () const -> std::unique_ptr< TLinearOperator > = 0;
+    virtual auto         linear_op        () const -> std::unique_ptr< TLinearOperator< value_t > > = 0;
     
     // return true if result of update is dense
     virtual bool         is_dense_result  () const = 0;
@@ -46,6 +47,7 @@ public:
 //
 // base class for recursive updates
 //
+template < typename value_t >
 class TRecursiveMatrixUpdate
 {
 public:
@@ -53,8 +55,8 @@ public:
     virtual ~TRecursiveMatrixUpdate () {}
     
     // apply internal update to matrix \a M with accuracy \a acc
-    virtual void         apply      ( TMatrix *          M,
-                                      const TTruncAcc &  acc ) = 0;
+    virtual void         apply      ( TMatrix< value_t > *  M,
+                                      const TTruncAcc &     acc ) = 0;
 
     // return descriptive info
     virtual std::string  to_string  () const { return "TRecursiveMatrixUpdate"; };
@@ -66,6 +68,7 @@ public:
 //! \brief   Handles updates for a single matrix block by accumulating
 //!          direct updates and recursive (pending) updates
 //!
+template < typename value_t >
 class TUpdateAccumulator : public TLockable
 {
     //! @cond
@@ -73,20 +76,20 @@ class TUpdateAccumulator : public TLockable
 public:
 
     // set of direct updates
-    using  direct_updates_t    = std::deque< TDirectMatrixUpdate * >;
+    using  direct_updates_t    = std::deque< TDirectMatrixUpdate< value_t > * >;
     
     // set of recursive updates
-    using  recursive_updates_t = std::list< TRecursiveMatrixUpdate * >;
+    using  recursive_updates_t = std::list< TRecursiveMatrixUpdate< value_t > * >;
     
 private:
     // accumulated updates
-    std::unique_ptr< TMatrix >  _accumulated;
+    std::unique_ptr< TMatrix< value_t > >  _accumulated;
 
     // list of pending direct updates
-    direct_updates_t            _pending_direct;
+    direct_updates_t                       _pending_direct;
 
     // list of pending recursive updates
-    recursive_updates_t         _pending_recursive;
+    recursive_updates_t                    _pending_recursive;
 
     //! @endcond
     
@@ -98,14 +101,14 @@ public:
     }
     
     //! initialise matrix for accumulated updates
-    void       init                   ( const TMatrix *    M );
+    void       init                   ( const TMatrix< value_t > *    M );
 
     //! compute and apply local direct updates;
     //! - use \a dest as hint for destination type, e.g. to choose format of accumulator
     //! - directly update \a dest if \a update_dest == true (accumulator is zero afterwards)
-    void       apply_direct           ( const TTruncAcc &  acc,
-                                        TMatrix *          dest        = nullptr,
-                                        const bool         update_dest = false );
+    void       apply_direct           ( const TTruncAcc &     acc,
+                                        TMatrix< value_t > *  dest        = nullptr,
+                                        const bool            update_dest = false );
 
     //! return true if accumulator holds any updates
     bool       has_updates            () const;
@@ -115,8 +118,8 @@ public:
     //
     
     //! access accumulated updates
-    auto       accumulated_updates    ()       ->       TMatrix * { return _accumulated.get(); }
-    auto       accumulated_updates    () const -> const TMatrix * { return _accumulated.get(); }
+    auto       accumulated_updates    ()       ->       TMatrix< value_t > * { return _accumulated.get(); }
+    auto       accumulated_updates    () const -> const TMatrix< value_t > * { return _accumulated.get(); }
 
     //! access set of direct pending updates
     auto       pending_direct         ()       ->       direct_updates_t &    { return _pending_direct; }
@@ -131,16 +134,16 @@ public:
     //
     
     //! add update matrix
-    void       add_update             ( const TMatrix *    M,
-                                        const TTruncAcc &  acc,
-                                        const TMatrix *    dest = nullptr );
+    void       add_update             ( const TMatrix< value_t > *  M,
+                                        const TTruncAcc &           acc,
+                                        const TMatrix< value_t > *  dest = nullptr );
     
     //! add update from parent matrix
-    void       add_parent_update      ( const TMatrix *    M,
-                                        const TTruncAcc &  acc );
+    void       add_parent_update      ( const TMatrix< value_t > *  M,
+                                        const TTruncAcc &           acc );
     
     //! add update U to set of recursive pending updates
-    void       add_pending_direct     ( TDirectMatrixUpdate *  U )
+    void       add_pending_direct     ( TDirectMatrixUpdate< value_t > *  U )
     {
         if ( U == nullptr )
             return;
@@ -151,7 +154,7 @@ public:
     }
 
     //! add update U to set of recursive pending updates
-    void       add_pending_recursive  ( TRecursiveMatrixUpdate *  U )
+    void       add_pending_recursive  ( TRecursiveMatrixUpdate< value_t > *  U )
     {
         if ( U == nullptr )
             return;
@@ -185,6 +188,6 @@ public:
 
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TUPDATEACCUMULATOR_HH
+#endif  // __HPRO_TUPDATEACCUMULATOR_HH

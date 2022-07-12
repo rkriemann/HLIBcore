@@ -1,11 +1,11 @@
-#ifndef __HLIB_TALGADMCOND_HH
-#define __HLIB_TALGADMCOND_HH
+#ifndef __HPRO_TALGADMCOND_HH
+#define __HPRO_TALGADMCOND_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TAlgAdmCond.hh
 // Description : algebraic admissibility condition for sparse matrices
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -16,7 +16,7 @@
 
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -30,12 +30,12 @@ protected:
     //! @cond
     
     // sparse matrix defining the matrix graph
-    const TSparseMatrix *  _mat;
+    any_const_sparse_matrix_t  _mat;
 
     // mapping of index-names from external (in sparse matrix)
     // to internal numbering (in cluster tree)
-    const TPermutation *   _row_perm_i2e, * _col_perm_i2e;
-    TPermutation *         _row_perm_e2i, * _col_perm_e2i;
+    const TPermutation *       _row_perm_i2e, * _col_perm_i2e;
+    TPermutation *             _row_perm_e2i, * _col_perm_e2i;
     
     //! @endcond
 public:
@@ -46,14 +46,14 @@ public:
 
     //! ctor with graph defined by \a S and mapping of internal to external
     //! indices defined by \a perm_i2e (row and column mappings identical)
-    TAlgAdmCond ( const TSparseMatrix *  S,
-                  const TPermutation *   perm_i2e = nullptr );
+    TAlgAdmCond ( any_const_sparse_matrix_t  S,
+                  const TPermutation *              perm_i2e = nullptr );
 
     //! ctor with graph defined by \a S and mapping of internal to external
     //! indices defined by \a row_perm_i2e and \a col_perm_i2e
-    TAlgAdmCond ( const TSparseMatrix *  S,
-                  const TPermutation *   row_perm_i2e,
-                  const TPermutation *   col_perm_i2e );
+    TAlgAdmCond ( any_const_sparse_matrix_t  S,
+                  const TPermutation *              row_perm_i2e,
+                  const TPermutation *              col_perm_i2e );
 
     //! dtor
     virtual ~TAlgAdmCond ();
@@ -74,7 +74,7 @@ protected:
     //! @cond
     
     // admissibility parameter
-    const real                   _eta;
+    const double                 _eta;
     
     // mark visited nodes (not mt-safe !!!)
     mutable std::vector< bool >  _visited;
@@ -87,18 +87,18 @@ public:
     //
 
     //! ctor
-    TStdAlgAdmCond ( const real             eta,
-                     const TSparseMatrix *  S,
-                     const TPermutation *   perm_i2e = nullptr );
+    TStdAlgAdmCond ( const double               eta,
+                     any_const_sparse_matrix_t  S,
+                     const TPermutation *       perm_i2e = nullptr );
 
     //! ctor
-    TStdAlgAdmCond ( const real             eta,
-                     const TSparseMatrix *  S,
-                     const TPermutation *   row_perm_i2e,
-                     const TPermutation *   col_perm_i2e );
+    TStdAlgAdmCond ( const double               eta,
+                     any_const_sparse_matrix_t  S,
+                     const TPermutation *       row_perm_i2e,
+                     const TPermutation *       col_perm_i2e );
 
     //! dtor
-    virtual ~TStdAlgAdmCond ();
+    virtual ~TStdAlgAdmCond () {}
 
     ///////////////////////////////////////////
     //
@@ -168,22 +168,22 @@ public:
     //! on connectivity in \a S
     //! - \a distance is the upper limit for the path length between clusters
     //! - \a connectivity is the upper limit for direct edges between clusters
-    TWeakAlgAdmCond ( const TSparseMatrix *  S,
-                      const TPermutation *   perm_i2e     = nullptr,
-                      const uint             distance     = 1,
-                      const uint             connectivity = 0 );
+    TWeakAlgAdmCond ( any_const_sparse_matrix_t  S,
+                      const TPermutation *       perm_i2e     = nullptr,
+                      const uint                 distance     = 1,
+                      const uint                 connectivity = 0 );
 
     //! construct object for algebraic weak admissibility with row and column
     //! permutations \a row_perm_i2e and \a col_perm_i2e (from internal to external
     //! ordering)
-    TWeakAlgAdmCond ( const TSparseMatrix *  S,
-                      const TPermutation *   row_perm_i2e,
-                      const TPermutation *   col_perm_i2e,
-                      const uint             distance     = 1,
-                      const uint             connectivity = 0 );
+    TWeakAlgAdmCond ( any_const_sparse_matrix_t  S,
+                      const TPermutation *       row_perm_i2e,
+                      const TPermutation *       col_perm_i2e,
+                      const uint                 distance     = 1,
+                      const uint                 connectivity = 0 );
 
     //! dtor
-    virtual ~TWeakAlgAdmCond ();
+    virtual ~TWeakAlgAdmCond () {}
 
     ///////////////////////////////////////////
     //
@@ -196,4 +196,4 @@ public:
 
 }// namespace
 
-#endif  // __HLIB_TALGADMCOND_HH
+#endif  // __HPRO_TALGADMCOND_HH

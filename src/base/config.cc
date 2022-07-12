@@ -1,12 +1,12 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : config.cc
 // Description : global variables
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include <hlib-config.h>
+#include <hpro/config.h>
 
 #include <iostream>
 
@@ -20,7 +20,7 @@
 #include "hpro/base/error.hh"
 #include "hpro/base/System.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -114,7 +114,7 @@ read_config ()
     std::string  cfg_filename = ".hlibpro.conf";
     std::string  buffer;
 
-    if ( get_environ( "HLIB_CONFIG", buffer ) )
+    if ( get_environ( "HPRO_CONFIG", buffer ) )
         cfg_filename = buffer;
 
     if ( ! boost::filesystem::exists( cfg_filename ) )
@@ -375,9 +375,9 @@ get_local_variables ()
 namespace
 {
 
-const uint    HLIB_MAJOR_VERSION = 2;
-const uint    HLIB_MINOR_VERSION = 9;
-const char *  HLIB_VERSION       = "2.9";
+const uint    HPRO_MAJOR_VERSION = 3;
+const uint    HPRO_MINOR_VERSION = 0;
+const char *  HPRO_VERSION       = "3.0";
 
 }// namespace anonymous
 
@@ -415,6 +415,107 @@ init ()
     #define EVAL_ENV( str, var, type )  { if ( GET_ENV( str ) ) var = boost::lexical_cast< type >( content ); }
     #define EVAL_EN2( str, var, type )  { if ( GET_ENV( str ) ) var = decltype( var )( boost::lexical_cast< type >( content ) ); }
     
+    EVAL_ENV( "HPRO_BLAS_check_zeroes",    BLAS::check_zeroes,    bool );
+    EVAL_ENV( "HPRO_BLAS_check_inf_nan",   BLAS::check_inf_nan,   bool );
+    EVAL_ENV( "HPRO_BLAS_gesvd_limit",     BLAS::gesvd_limit,     uint );
+    EVAL_ENV( "HPRO_BLAS_use_gesvj",       BLAS::use_gesvj,       bool );
+    EVAL_ENV( "HPRO_BLAS_use_double_prec", BLAS::use_double_prec, bool );
+    EVAL_EN2( "HPRO_BLAS_approx_method",   BLAS::approx_method,   int );
+    EVAL_EN2( "HPRO_BLAS_trunc_method",    BLAS::trunc_method,    int );
+    EVAL_ENV( "HPRO_BLAS_power_steps",     BLAS::power_steps,     uint );
+    EVAL_ENV( "HPRO_BLAS_sample_size",     BLAS::sample_size,     uint );
+    EVAL_ENV( "HPRO_BLAS_oversampling",    BLAS::oversampling,    uint );
+
+    EVAL_ENV( "HPRO_Cluster_nmin",                 Cluster::nmin,                 uint );
+    EVAL_ENV( "HPRO_Cluster_sort_wrt_size",        Cluster::sort_wrt_size,        bool );
+    EVAL_ENV( "HPRO_Cluster_sync_interface_depth", Cluster::sync_interface_depth, bool );
+    EVAL_ENV( "HPRO_Cluster_adjust_bbox",          Cluster::adjust_bbox,          bool );
+    EVAL_EN2( "HPRO_Cluster_same_cluster_level",   Cluster::cluster_level_mode,   bool );
+    EVAL_ENV( "HPRO_Cluster_build_scc",            Cluster::build_scc,            bool );
+    EVAL_ENV( "HPRO_Cluster_METIS_random",         Cluster::METIS_random,         bool );
+
+    EVAL_ENV( "HPRO_Build_recompress",     Build::recompress,     bool );
+    EVAL_ENV( "HPRO_Build_coarsen_build",  Build::coarsen,        bool );
+    EVAL_ENV( "HPRO_Build_to_dense_build", Build::to_dense,       bool );
+    EVAL_ENV( "HPRO_Build_to_dense_ratio", Build::to_dense_ratio, double );
+    EVAL_ENV( "HPRO_Build_pure_dense",     Build::pure_dense,     bool );
+    EVAL_ENV( "HPRO_Build_use_sparsemat",  Build::use_sparsemat,  bool );
+    EVAL_ENV( "HPRO_Build_use_zeromat",    Build::use_zeromat,    bool );
+    EVAL_ENV( "HPRO_Build_use_ghostmat",   Build::use_ghostmat,   bool );
+    EVAL_ENV( "HPRO_Build_check_cb_ret",   Build::check_cb_ret,   bool );
+    EVAL_ENV( "HPRO_Build_symmetrise",     Build::symmetrise,     bool );
+    EVAL_ENV( "HPRO_Build_aca_max_ratio",  Build::aca_max_ratio,  double );
+    
+    EVAL_ENV( "HPRO_Arith_recompress",       Arith::recompress, bool );
+    EVAL_ENV( "HPRO_Arith_abs_eps",          Arith::abs_eps, double );
+    EVAL_ENV( "HPRO_Arith_coarsen",          Arith::coarsen, bool );
+    EVAL_ENV( "HPRO_Arith_to_dense",         Arith::to_dense, bool );
+    EVAL_ENV( "HPRO_Arith_to_dense_ratio",   Arith::to_dense_ratio, double );
+    EVAL_ENV( "HPRO_Arith_max_seq_size",     Arith::max_seq_size, uint );
+    EVAL_ENV( "HPRO_Arith_max_seq_size_vec", Arith::max_seq_size_vec, uint );
+    EVAL_ENV( "HPRO_Arith_use_dag",          Arith::use_dag, bool );
+    EVAL_ENV( "HPRO_Arith_dag_version",      Arith::dag_version, uint );
+    EVAL_ENV( "HPRO_Arith_dag_optimise",     Arith::dag_optimise, bool );
+    EVAL_ENV( "HPRO_Arith_max_check_size",   Arith::max_check_size, uint );
+    EVAL_ENV( "HPRO_Arith_pseudo_inversion", Arith::pseudo_inversion, bool );
+    EVAL_ENV( "HPRO_Arith_use_accu",         Arith::use_accu, bool );
+    EVAL_ENV( "HPRO_Arith_lazy_eval",        Arith::lazy_eval, bool );
+    EVAL_ENV( "HPRO_Arith_sum_approx",       Arith::sum_approx, bool );
+    EVAL_EN2( "HPRO_Arith_sum_apx_type",     Arith::sum_apx_type, int );
+    EVAL_ENV( "HPRO_Arith_split_update",     Arith::split_update, bool );
+    EVAL_ENV( "HPRO_Arith_sort_updates",     Arith::sort_updates, bool );
+    EVAL_ENV( "HPRO_Arith_dense_accu",       Arith::dense_accu, bool );
+    EVAL_ENV( "HPRO_Arith_symmetrise",       Arith::dense_accu, bool );
+    EVAL_ENV( "HPRO_Arith_zero_sum_trunc",   Arith::zero_sum_trunc, bool );
+    EVAL_ENV( "HPRO_Arith_vector_solve_method", Arith::vector_solve_method, uint );
+
+    EVAL_ENV( "HPRO_Solver_max_iter",            Solver::max_iter,           uint   );
+    EVAL_ENV( "HPRO_Solver_rel_res_red",         Solver::rel_res_red,        double );
+    EVAL_ENV( "HPRO_Solver_abs_res_red",         Solver::abs_res_red,        double );
+    EVAL_ENV( "HPRO_Solver_rel_res_growth",      Solver::rel_res_growth,     double );
+    EVAL_ENV( "HPRO_Solver_gmres_restart",       Solver::gmres_restart,      uint   );
+    EVAL_ENV( "HPRO_Solver_init_start_value",    Solver::init_start_value,   bool );
+    EVAL_ENV( "HPRO_Solver_use_exact_residual",  Solver::use_exact_residual, bool );
+
+    EVAL_ENV( "HPRO_BEM_quad_order",          BEM::quad_order,          uint );
+    EVAL_ENV( "HPRO_BEM_adaptive_quad_order", BEM::adaptive_quad_order, bool );
+    EVAL_ENV( "HPRO_BEM_use_simd",            BEM::use_simd,            bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_sse3",       BEM::use_simd_sse3,       bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_avx",        BEM::use_simd_avx,        bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_avx2",       BEM::use_simd_avx2,       bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_mic",        BEM::use_simd_mic,        bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_avx512f",    BEM::use_simd_avx512f,    bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_vsx",        BEM::use_simd_vsx,        bool );
+    EVAL_ENV( "HPRO_BEM_use_simd_neon",       BEM::use_simd_neon,       bool );
+
+    EVAL_ENV( "HPRO_IO_use_matlab_syntax",  IO::use_matlab_syntax, bool   );
+    EVAL_ENV( "HPRO_IO_permute_save",       IO::permute_save,      bool   );
+    
+    if ( GET_ENV( "HPRO_IO_color_mode" ) )
+    {
+        switch ( boost::lexical_cast< int   >( content ) )
+        {
+            case 0 : IO::color_mode = no_color;   break;
+            case 1 : IO::color_mode = use_color;  break;
+            default:
+            case 2 : IO::color_mode = auto_color; break;
+        }// switch
+    }// if
+    if ( GET_ENV( "HPRO_IO_charset_mode" ) )
+    {
+        switch ( boost::lexical_cast< int   >( content ) )
+        {
+            case 0 : IO::charset_mode = ascii_charset;   break;
+            case 1 : IO::charset_mode = unicode_charset; break;
+            default:
+            case 2 : IO::charset_mode = auto_charset;    break;
+        }// switch
+    }// if
+
+    EVAL_ENV( "HPRO_verbosity", verbosity, uint );
+
+
+    // for compatibility
     EVAL_ENV( "HLIB_BLAS_check_zeroes",    BLAS::check_zeroes,    bool );
     EVAL_ENV( "HLIB_BLAS_check_inf_nan",   BLAS::check_inf_nan,   bool );
     EVAL_ENV( "HLIB_BLAS_gesvd_limit",     BLAS::gesvd_limit,     uint );
@@ -526,23 +627,6 @@ done ()
 {
 }
 
-//
-// return number of threads
-//
-uint
-nthreads ()
-{
-    return 1;
-}
-
-//
-// adjust number of threads
-//
-void
-set_nthreads ( const uint  /* n */ )
-{
-}
-
 ////////////////////////////////////////////////
 //
 // misc.
@@ -550,9 +634,9 @@ set_nthreads ( const uint  /* n */ )
 ////////////////////////////////////////////////
 
 // version information
-uint         major_version () { return HLIB_MAJOR_VERSION; }
-uint         minor_version () { return HLIB_MINOR_VERSION; }
-std::string  version       () { return HLIB_VERSION; }
+uint         major_version () { return HPRO_MAJOR_VERSION; }
+uint         minor_version () { return HPRO_MINOR_VERSION; }
+std::string  version       () { return HPRO_VERSION; }
 
 // verbosity level
 uint  verbosity = 0;
@@ -569,83 +653,83 @@ void set_verbosity ( const uint level )
 void
 print_parameters ()
 {
-    std::cout << "HLIB_BLAS_check_zeroes             = " << BLAS::check_zeroes << std::endl
-              << "HLIB_BLAS_check_inf_nan            = " << BLAS::check_inf_nan << std::endl
-              << "HLIB_BLAS_gesvd_limit              = " << BLAS::gesvd_limit << std::endl
-              << "HLIB_BLAS_use_gesvj                = " << BLAS::use_gesvj << std::endl
-              << "HLIB_BLAS_use_double_prec          = " << BLAS::use_double_prec << std::endl
-              << "HLIB_BLAS_approx_method            = " << BLAS::approx_method << std::endl
-              << "HLIB_BLAS_trunc_method             = " << BLAS::trunc_method << std::endl
-              << "HLIB_BLAS_power_steps              = " << BLAS::power_steps << std::endl
-              << "HLIB_BLAS_sample_size              = " << BLAS::sample_size << std::endl
-              << "HLIB_BLAS_oversampling             = " << BLAS::oversampling << std::endl;
+    std::cout << "HPRO_BLAS_check_zeroes             = " << BLAS::check_zeroes << std::endl
+              << "HPRO_BLAS_check_inf_nan            = " << BLAS::check_inf_nan << std::endl
+              << "HPRO_BLAS_gesvd_limit              = " << BLAS::gesvd_limit << std::endl
+              << "HPRO_BLAS_use_gesvj                = " << BLAS::use_gesvj << std::endl
+              << "HPRO_BLAS_use_double_prec          = " << BLAS::use_double_prec << std::endl
+              << "HPRO_BLAS_approx_method            = " << BLAS::approx_method << std::endl
+              << "HPRO_BLAS_trunc_method             = " << BLAS::trunc_method << std::endl
+              << "HPRO_BLAS_power_steps              = " << BLAS::power_steps << std::endl
+              << "HPRO_BLAS_sample_size              = " << BLAS::sample_size << std::endl
+              << "HPRO_BLAS_oversampling             = " << BLAS::oversampling << std::endl;
 
-    std::cout << "HLIB_Cluster_nmin                  = " << Cluster::nmin << std::endl
-              << "HLIB_Cluster_sort_wrt_size         = " << Cluster::sort_wrt_size << std::endl
-              << "HLIB_Cluster_sync_interface_depth  = " << Cluster::sync_interface_depth << std::endl
-              << "HLIB_Cluster_adjust_bbox           = " << Cluster::adjust_bbox << std::endl
-              << "HLIB_Cluster_same_cluster_level    = " << (Cluster::cluster_level_mode != 0 ? true : false) << std::endl
-              << "HLIB_Cluster_build_scc             = " << Cluster::build_scc << std::endl
-              << "HLIB_Cluster_METIS_random          = " << Cluster::METIS_random << std::endl;
+    std::cout << "HPRO_Cluster_nmin                  = " << Cluster::nmin << std::endl
+              << "HPRO_Cluster_sort_wrt_size         = " << Cluster::sort_wrt_size << std::endl
+              << "HPRO_Cluster_sync_interface_depth  = " << Cluster::sync_interface_depth << std::endl
+              << "HPRO_Cluster_adjust_bbox           = " << Cluster::adjust_bbox << std::endl
+              << "HPRO_Cluster_same_cluster_level    = " << (Cluster::cluster_level_mode != 0 ? true : false) << std::endl
+              << "HPRO_Cluster_build_scc             = " << Cluster::build_scc << std::endl
+              << "HPRO_Cluster_METIS_random          = " << Cluster::METIS_random << std::endl;
 
-    std::cout << "HLIB_Build_recompress              = " << Build::recompress << std::endl
-              << "HLIB_Build_coarsen                 = " << Build::coarsen << std::endl
-              << "HLIB_Build_to_dense                = " << Build::to_dense << std::endl
-              << "HLIB_Build_to_dense_ratio          = " << Build::to_dense_ratio << std::endl
-              << "HLIB_Build_pure_dense              = " << Build::pure_dense << std::endl
-              << "HLIB_Build_use_sparsemat           = " << Build::use_sparsemat << std::endl
-              << "HLIB_Build_use_zeromat             = " << Build::use_zeromat << std::endl
-              << "HLIB_Build_use_ghostmat            = " << Build::use_ghostmat << std::endl
-              << "HLIB_Build_check_cb_ret            = " << Build::check_cb_ret << std::endl
-              << "HLIB_Build_symmetrise              = " << Build::symmetrise << std::endl
-              << "HLIB_Build_aca_max_ratio           = " << Build::aca_max_ratio << std::endl;
+    std::cout << "HPRO_Build_recompress              = " << Build::recompress << std::endl
+              << "HPRO_Build_coarsen                 = " << Build::coarsen << std::endl
+              << "HPRO_Build_to_dense                = " << Build::to_dense << std::endl
+              << "HPRO_Build_to_dense_ratio          = " << Build::to_dense_ratio << std::endl
+              << "HPRO_Build_pure_dense              = " << Build::pure_dense << std::endl
+              << "HPRO_Build_use_sparsemat           = " << Build::use_sparsemat << std::endl
+              << "HPRO_Build_use_zeromat             = " << Build::use_zeromat << std::endl
+              << "HPRO_Build_use_ghostmat            = " << Build::use_ghostmat << std::endl
+              << "HPRO_Build_check_cb_ret            = " << Build::check_cb_ret << std::endl
+              << "HPRO_Build_symmetrise              = " << Build::symmetrise << std::endl
+              << "HPRO_Build_aca_max_ratio           = " << Build::aca_max_ratio << std::endl;
     
-    std::cout << "HLIB_Arith_recompress              = " << Arith::recompress << std::endl
-              << "HLIB_Arith_abs_eps                 = " << Arith::abs_eps << std::endl
-              << "HLIB_Arith_coarsen                 = " << Arith::coarsen << std::endl
-              << "HLIB_Arith_to_dense                = " << Arith::to_dense << std::endl
-              << "HLIB_Arith_to_dense_ratio          = " << Arith::to_dense_ratio << std::endl
-              << "HLIB_Arith_max_seq_size            = " << Arith::max_seq_size << std::endl
-              << "HLIB_Arith_max_seq_size_vec        = " << Arith::max_seq_size_vec << std::endl
-              << "HLIB_Arith_use_dag                 = " << Arith::use_dag << std::endl
-              << "HLIB_Arith_dag_version             = " << Arith::dag_version << std::endl
-              << "HLIB_Arith_dag_optimise            = " << Arith::dag_optimise << std::endl
-              << "HLIB_Arith_max_check_size          = " << Arith::max_check_size << std::endl
-              << "HLIB_Arith_pseudo_inversion        = " << Arith::pseudo_inversion << std::endl
-              << "HLIB_Arith_use_accu                = " << Arith::use_accu << std::endl
-              << "HLIB_Arith_lazy_eval               = " << Arith::lazy_eval << std::endl
-              << "HLIB_Arith_sum_approx              = " << Arith::sum_approx << std::endl
-              << "HLIB_Arith_sum_apx_type            = " << Arith::sum_apx_type << std::endl
-              << "HLIB_Arith_split_update            = " << Arith::split_update << std::endl
-              << "HLIB_Arith_sort_updates            = " << Arith::sort_updates << std::endl
-              << "HLIB_Arith_dense_accu              = " << Arith::dense_accu << std::endl
-              << "HLIB_Arith_symmetrise              = " << Arith::symmetrise << std::endl
-              << "HLIB_Arith_zero_sum_trunc          = " << Arith::zero_sum_trunc << std::endl
-              << "HLIB_Arith_vector_solve_method     = " << Arith::vector_solve_method << std::endl;
+    std::cout << "HPRO_Arith_recompress              = " << Arith::recompress << std::endl
+              << "HPRO_Arith_abs_eps                 = " << Arith::abs_eps << std::endl
+              << "HPRO_Arith_coarsen                 = " << Arith::coarsen << std::endl
+              << "HPRO_Arith_to_dense                = " << Arith::to_dense << std::endl
+              << "HPRO_Arith_to_dense_ratio          = " << Arith::to_dense_ratio << std::endl
+              << "HPRO_Arith_max_seq_size            = " << Arith::max_seq_size << std::endl
+              << "HPRO_Arith_max_seq_size_vec        = " << Arith::max_seq_size_vec << std::endl
+              << "HPRO_Arith_use_dag                 = " << Arith::use_dag << std::endl
+              << "HPRO_Arith_dag_version             = " << Arith::dag_version << std::endl
+              << "HPRO_Arith_dag_optimise            = " << Arith::dag_optimise << std::endl
+              << "HPRO_Arith_max_check_size          = " << Arith::max_check_size << std::endl
+              << "HPRO_Arith_pseudo_inversion        = " << Arith::pseudo_inversion << std::endl
+              << "HPRO_Arith_use_accu                = " << Arith::use_accu << std::endl
+              << "HPRO_Arith_lazy_eval               = " << Arith::lazy_eval << std::endl
+              << "HPRO_Arith_sum_approx              = " << Arith::sum_approx << std::endl
+              << "HPRO_Arith_sum_apx_type            = " << Arith::sum_apx_type << std::endl
+              << "HPRO_Arith_split_update            = " << Arith::split_update << std::endl
+              << "HPRO_Arith_sort_updates            = " << Arith::sort_updates << std::endl
+              << "HPRO_Arith_dense_accu              = " << Arith::dense_accu << std::endl
+              << "HPRO_Arith_symmetrise              = " << Arith::symmetrise << std::endl
+              << "HPRO_Arith_zero_sum_trunc          = " << Arith::zero_sum_trunc << std::endl
+              << "HPRO_Arith_vector_solve_method     = " << Arith::vector_solve_method << std::endl;
 
-    std::cout << "HLIB_Solver_max_iter               = " << Solver::max_iter << std::endl
-              << "HLIB_Solver_rel_res_red            = " << Solver::rel_res_red << std::endl
-              << "HLIB_Solver_abs_res_red            = " << Solver::abs_res_red << std::endl
-              << "HLIB_Solver_rel_res_growth         = " << Solver::rel_res_growth << std::endl
-              << "HLIB_Solver_gmres_restart          = " << Solver::gmres_restart << std::endl
-              << "HLIB_Solver_init_start_value       = " << Solver::init_start_value << std::endl
-              << "HLIB_Solver_use_exact_residual     = " << Solver::use_exact_residual << std::endl;
+    std::cout << "HPRO_Solver_max_iter               = " << Solver::max_iter << std::endl
+              << "HPRO_Solver_rel_res_red            = " << Solver::rel_res_red << std::endl
+              << "HPRO_Solver_abs_res_red            = " << Solver::abs_res_red << std::endl
+              << "HPRO_Solver_rel_res_growth         = " << Solver::rel_res_growth << std::endl
+              << "HPRO_Solver_gmres_restart          = " << Solver::gmres_restart << std::endl
+              << "HPRO_Solver_init_start_value       = " << Solver::init_start_value << std::endl
+              << "HPRO_Solver_use_exact_residual     = " << Solver::use_exact_residual << std::endl;
 
-    std::cout << "HLIB_BEM_quad_order                = " << BEM::quad_order << std::endl
-              << "HLIB_BEM_adaptive_quad_order       = " << BEM::adaptive_quad_order << std::endl
-              << "HLIB_BEM_use_simd                  = " << BEM::use_simd << std::endl
-              << "HLIB_BEM_use_simd_sse3             = " << BEM::use_simd_sse3 << std::endl
-              << "HLIB_BEM_use_simd_avx              = " << BEM::use_simd_avx << std::endl
-              << "HLIB_BEM_use_simd_avx2             = " << BEM::use_simd_avx2 << std::endl
-              << "HLIB_BEM_use_simd_mic              = " << BEM::use_simd_mic << std::endl
-              << "HLIB_BEM_use_simd_avx512f          = " << BEM::use_simd_avx512f << std::endl
-              << "HLIB_BEM_use_simd_vsx              = " << BEM::use_simd_vsx << std::endl
-              << "HLIB_BEM_use_simd_neon             = " << BEM::use_simd_neon << std::endl;
+    std::cout << "HPRO_BEM_quad_order                = " << BEM::quad_order << std::endl
+              << "HPRO_BEM_adaptive_quad_order       = " << BEM::adaptive_quad_order << std::endl
+              << "HPRO_BEM_use_simd                  = " << BEM::use_simd << std::endl
+              << "HPRO_BEM_use_simd_sse3             = " << BEM::use_simd_sse3 << std::endl
+              << "HPRO_BEM_use_simd_avx              = " << BEM::use_simd_avx << std::endl
+              << "HPRO_BEM_use_simd_avx2             = " << BEM::use_simd_avx2 << std::endl
+              << "HPRO_BEM_use_simd_mic              = " << BEM::use_simd_mic << std::endl
+              << "HPRO_BEM_use_simd_avx512f          = " << BEM::use_simd_avx512f << std::endl
+              << "HPRO_BEM_use_simd_vsx              = " << BEM::use_simd_vsx << std::endl
+              << "HPRO_BEM_use_simd_neon             = " << BEM::use_simd_neon << std::endl;
 
-    std::cout << "HLIB_IO_use_matlab_syntax          = " << IO::use_matlab_syntax << std::endl
-              << "HLIB_IO_color_mode                 = " << IO::color_mode << std::endl
-              << "HLIB_IO_charset_mode               = " << IO::charset_mode << std::endl
-              << "HLIB_IO_permute_save               = " << IO::permute_save << std::endl;
+    std::cout << "HPRO_IO_use_matlab_syntax          = " << IO::use_matlab_syntax << std::endl
+              << "HPRO_IO_color_mode                 = " << IO::color_mode << std::endl
+              << "HPRO_IO_charset_mode               = " << IO::charset_mode << std::endl
+              << "HPRO_IO_permute_save               = " << IO::permute_save << std::endl;
 }
 
 ////////////////////////////////////////////////
@@ -673,10 +757,10 @@ bool   use_gesvj       = false;
 bool   use_double_prec = false;
 
 // low-rank approximation method
-HLIB::approx_t   approx_method = HLIB::use_svd;
+Hpro::approx_t   approx_method = Hpro::use_svd;
 
 // low-rank truncation method
-HLIB::approx_t   trunc_method  = HLIB::use_svd;
+Hpro::approx_t   trunc_method  = Hpro::use_svd;
 
 // number of power iteration steps in randomized SVD
 uint   power_steps     = 0;
@@ -837,7 +921,7 @@ bool            lazy_eval           = false;
 bool            sum_approx          = false;
 
 // approximation method to use for sums
-HLIB::approx_t  sum_apx_type        = use_aca;
+Hpro::approx_t  sum_apx_type        = use_aca;
 
 // split leaf matrices during updates as long as destination is blocked
 bool            split_update        = false;
@@ -869,25 +953,25 @@ namespace Solver
 {
 
 // maximal number of iterations
-uint  max_iter       = 100;
+uint    max_iter       = 100;
 
 // relative residual reduction, e.g., stop if |r_n| / |r_0| < ε
-real  rel_res_red    = 1e-8;
+double  rel_res_red    = 1e-8;
 
 // absolute residual reduction, e.g., stop if |r_n| < ε
-real  abs_res_red    = 1e-14;
+double  abs_res_red    = 1e-14;
 
 // relative residual growth (divergence), e.g., stop if |r_n| / |r_0| > ε
-real  rel_res_growth = 1e6;
+double  rel_res_growth = 1e6;
 
 // default restart for GMRES iteration
-uint  gmres_restart  = 20;
+uint    gmres_restart  = 20;
 
 // initialise start value before iteration (default: true)
-bool  init_start_value = true;
+bool    init_start_value = true;
 
 // compute exact residual during iteration (default: false)
-bool  use_exact_residual = false;
+bool    use_exact_residual = false;
 
 }// namespace Solver
 

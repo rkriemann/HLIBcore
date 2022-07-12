@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TRefinableGrid.cc
 // Description : defines a refinable grid class
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/bem/TRefinableGrid.hh"
@@ -13,7 +13,7 @@ using std::vector;
 using std::unique_ptr;
 using std::make_unique;
 
-namespace HLIB
+namespace Hpro
 {
     
 //
@@ -767,4 +767,4 @@ make_grid ( const std::string &  gridname )
     }// else
 }
 
-}// namespace HLIB
+}// namespace Hpro

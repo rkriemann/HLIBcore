@@ -45,14 +45,13 @@ fconf    = { 'source'   : 'conftest.f',
 
 # default compilation options
 compenv  = { 'LIBNAME'      : 'hpro',
-             'MAJVERSION'   : '2',
-             'MINVERSION'   : '9',
+             'MAJVERSION'   : '3',
+             'MINVERSION'   : '0',
              
              'PREFIX'       : '.',
              'OBJDIR'       : '',
              'NET_TYPE'     : 'SEQ',
-             'HLIBDEBUG'    : 'no',
-             'HLIBPREC'     : 'double',
+             'HPRODEBUG'    : 'no',
 
              #
              # programs
@@ -348,9 +347,7 @@ def usage ( status ):
     print( '    --opt-flags=FLAGS          define optimisation flags' )
     print( '    --profile-flags=FLAGS      define profile flags' )
     print( '' )
-    print( '    --enable-hlibdebug         turn on additional debugging features' )
-    print( '    --enable-single            use single precision in H-arithmetics' )
-    print( '    --enable-double            use double precision in H-arithmetics' )
+    print( '    --enable-debug             turn on additional debugging features' )
     print( '    --enable-ilp64             use 64-bit integers for BLAS/LAPACK' )
     print( '' )
     print( '  Optional libraries and tools' )
@@ -430,8 +427,8 @@ def parse_cmdline ( args, env ):
                                  [ '--opt-flags',       'required', env['OPTFLAGS'] ],
                                  [ '--profile-flags',   'required', env['PROFLAGS'] ],
 
-                                 [ '--enable-hlibdebug',  'none',   None ],
-                                 [ '--disable-hlibdebug', 'none',   None ],
+                                 [ '--enable-debug',    'none',   None ],
+                                 [ '--disable-debug',   'none',   None ],
 
                                  [ '--enable-single',   'none',     None ],
                                  [ '--disable-single',  'none',     None ],
@@ -546,22 +543,10 @@ def parse_cmdline ( args, env ):
             env['PROFLAGS'] = arg
 
 
-        elif opt in ( '--enable-hlibdebug' ):
-            env['HLIBDEBUG'] = 'yes'
-        elif opt in ( '--disable-hlibdebug' ):
-            env['HLIBDEBUG'] = 'no'
-
-
-        elif opt in ( '--enable-single' ):
-            env['HLIBPREC'] = 'single'
-        elif opt in ( '--disable-single' ):
-            env['HLIBPREC'] = 'double'
-
-
-        elif opt in ( '--enable-double' ):
-            env['HLIBPREC'] = 'double'
-        elif opt in ( '--disable-double' ):
-            env['HLIBPREC'] = 'single'
+        elif opt in ( '--enable-debug' ):
+            env['HPRODEBUG'] = 'yes'
+        elif opt in ( '--disable-debug' ):
+            env['HPRODEBUG'] = 'no'
 
 
         elif opt in ( '--enable-ilp64' ):
@@ -725,7 +710,6 @@ def print_env ( env ):
                 print( bold( '%-12s' % name ) + ' = ' + val )
 
     print_bold( 'PREFIX',     env['PREFIX'] )
-    print_bold( 'PRECISION',  env['HLIBPREC'] )
 
     print( '' )
     print_bold( 'CC',   env['CC'] )
@@ -2833,7 +2817,7 @@ def main ( compenv ):
     # convert BSP type to numerical value for preprocessor
     if compenv['NET_TYPE'] == 'SEQ' : compenv['NET_TYPE'] = '1' 
 
-    # compose flags for hlib-config
+    # compose flags for hpro-config
     compenv['CFGCFLAGS']  = ''
     compenv['CFGLFLAGS']  = ''
 
@@ -2878,11 +2862,8 @@ def main ( compenv ):
     if compenv['ACML']    == 'yes':
         compenv['CFGLFLAGS'] += ' ' + compenv['ACMLLFLAGS']
 
-    if compenv['HLIBDEBUG'] == 'yes' : compenv['HLIB_DEBUG'] = '1'
-    else :                             compenv['HLIB_DEBUG'] = '0'
-
-    if compenv['HLIBPREC'] == 'single' : compenv['HLIB_SINGLE_PREC'] = '1'
-    else :                               compenv['HLIB_SINGLE_PREC'] = '0'
+    if compenv['HPRODEBUG'] == 'yes' : compenv['HPRO_DEBUG'] = '1'
+    else :                             compenv['HPRO_DEBUG'] = '0'
 
     #
     # write final makefiles
@@ -2902,11 +2883,11 @@ def main ( compenv ):
 
         compenv = tmpenv.copy()
 
-    # set version for hlib-config
+    # set version for hpro-config
     compenv['VERSION'] = compenv["MAJVERSION"] + '.' + compenv["MINVERSION"]
     
-    write_makefile( 'include/hlib-config.h.in', 'include/hlib-config.h', compenv )
-    write_script(   'bin/hlib-config.in',       'bin/hlib-config',       compenv )
+    write_makefile( 'include/hpro/config.h.in', 'include/hpro/config.h', compenv )
+    write_script(   'bin/hpro-config.in',       'bin/hpro-config',       compenv )
 
     # make 'lib' directory if not yet existent
     try :

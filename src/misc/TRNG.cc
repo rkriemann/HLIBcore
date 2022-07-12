@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TRNG.cc
 // Description : class for a random-number-generator
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <atomic>
@@ -14,7 +14,7 @@
 
 #include "TRNG.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -52,4 +52,4 @@ TRNG::init ( const unsigned long aseed )
     _rng.distribution().reset();
 }
 
-}// namespace HLIB
+}// namespace Hpro

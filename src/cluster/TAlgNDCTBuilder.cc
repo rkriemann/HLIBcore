@@ -1,19 +1,20 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TNDAlgCTBuilder.cc
 // Description : class for alg. ct. construction with nested dissection
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
 
 #include "treealg.hh"
 #include "scheduler.hh"
+#include "tensor.hh"
 
 #include "hpro/cluster/TAlgCTBuilder.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 using std::vector;
@@ -150,13 +151,13 @@ TAlgNDCTBuilder::~TAlgNDCTBuilder ()
 // divide for cluster tree with given partition <part>
 //
 unique_ptr< TCluster >
-TAlgNDCTBuilder::divide ( const TGraph &         graph,
-                          const uint             lvl,
-                          TPermutation &         perm,
-                          const idx_t            idx_ofs,
-                          const uint             n_min,
-                          const TSparseMatrix *  S,
-                          const uint             max_lvl ) const
+TAlgNDCTBuilder::divide ( const TGraph &             graph,
+                          const uint                 lvl,
+                          TPermutation &             perm,
+                          const idx_t                idx_ofs,
+                          const uint                 n_min,
+                          any_const_sparse_matrix_t  S,
+                          const uint                 max_lvl ) const
 {
     PRINT graph.print( "graph.dot" );
 
@@ -164,7 +165,7 @@ TAlgNDCTBuilder::divide ( const TGraph &         graph,
     // stop recursion if number of DoF is small enough
     //
 
-    if (( lvl >= _min_leaf_lvl ) && ( graph.nnodes() <= n_min ))
+    if (( lvl >= this->_min_leaf_lvl ) && ( graph.nnodes() <= n_min ))
         return build_leaf( graph, idx_ofs, perm );
 
     if ( lvl > max_lvl )
@@ -181,7 +182,7 @@ TAlgNDCTBuilder::divide ( const TGraph &         graph,
     TNodeSet  left, right;
 
     if ( CFG::Cluster::build_scc )
-        scc_partition( graph, left, right );
+        this->scc_partition( graph, left, right );
     else
         partition( graph, left, right );
 
@@ -359,14 +360,14 @@ TAlgNDCTBuilder::divide ( const TGraph &         graph,
 // divide a given graph of interface indices
 //
 unique_ptr< TCluster >
-TAlgNDCTBuilder::divide_if ( const TGraph &   graph,
-                             const TNodeSet & surrounding,
-                             const TNodeSet & nodes,
-                             const uint       lvl,
-                             const idx_t      idx_ofs,
-                             TPermutation &   perm,
-                             const uint       max_lvl,
-                             const uint       n_min,
+TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
+                             const TNodeSet &         surrounding,
+                             const TNodeSet &         nodes,
+                             const uint               lvl,
+                             const idx_t              idx_ofs,
+                             TPermutation &           perm,
+                             const uint               max_lvl,
+                             const uint               n_min,
                              const TOptClusterSize &  csize ) const
 {
     //
@@ -374,7 +375,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &   graph,
     // is too small to divide
     //
 
-    if ((( lvl >= _min_leaf_lvl ) && ( nodes.nnodes() <= n_min )) || ( lvl >= max_lvl ))
+    if ((( lvl >= this->_min_leaf_lvl ) && ( nodes.nnodes() <= n_min )) || ( lvl >= max_lvl ))
         return build_leaf( graph, nodes, idx_ofs, perm );
 
     //
@@ -594,14 +595,14 @@ TAlgNDCTBuilder::divide_if ( const TGraph &   graph,
 // build cluster tree for vertex separator \a graph
 //
 unique_ptr< TCluster >
-TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
-                             const uint               lvl,
-                             TPermutation &           perm,
-                             const idx_t              idx_ofs,
-                             const uint               n_min,
-                             const TSparseMatrix *    S,
-                             const uint               max_lvl,
-                             const TOptClusterSize &  csize ) const
+TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
+                             const uint                 lvl,
+                             TPermutation &             perm,
+                             const idx_t                idx_ofs,
+                             const uint                 n_min,
+                             any_const_sparse_matrix_t  S,
+                             const uint                 max_lvl,
+                             const TOptClusterSize &    csize ) const
 {
     PRINT graph.print( "graph.dot" );
 
@@ -610,7 +611,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
     // is too small to divide
     //
 
-    if ((( lvl >= _min_leaf_lvl ) && ( graph.nnodes() <= n_min )) || ( lvl >= max_lvl ))
+    if ((( lvl >= this->_min_leaf_lvl ) && ( graph.nnodes() <= n_min )) || ( lvl >= max_lvl ))
         return build_leaf( graph, idx_ofs, perm );
 
     //
@@ -643,7 +644,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
     TNodeSet  left, right;
 
     if ( CFG::Cluster::build_scc )
-        scc_partition( graph, left, right );
+        this->scc_partition( graph, left, right );
     else
         partition( graph, left, right );
 
@@ -1311,9 +1312,9 @@ namespace
 // check if 'edge_matrix' represents a connected graph
 //
 bool
-matrix_connected ( const B::Matrix< bool > &  edge_matrix )
+matrix_connected ( const tensor2< char > &  edge_matrix )
 {
-    const size_t    nnodes                  = edge_matrix.nrows();
+    const size_t    nnodes                  = edge_matrix.dim0();
     size_t          number_of_visited_nodes = 0;
     vector< bool >  is_visited( nnodes );
 
@@ -1414,7 +1415,7 @@ build_vtxsep_graph ( const TGraph &    graph,
     }// for
 
     // use 'edge_matrix' to store the neighbourhood information of the matchings
-    B::Matrix< bool >  edge_matrix( nnodes_vtxsep, nnodes_vtxsep );
+    tensor2< char >  edge_matrix( nnodes_vtxsep, nnodes_vtxsep );
 
     for ( idx_t  i = 0; i < idx_t( nnodes_vtxsep ); ++i )
     {
@@ -1600,4 +1601,4 @@ avg_dom_depth ( const TCluster *  node )
 
 }// namespace anonymous
 
-}// namespace HLIB
+}// namespace Hpro

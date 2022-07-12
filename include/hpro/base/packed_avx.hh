@@ -1,11 +1,11 @@
-#ifndef __HLIB_PACKED_AVX_HH
-#define __HLIB_PACKED_AVX_HH
+#ifndef __HPRO_PACKED_AVX_HH
+#define __HPRO_PACKED_AVX_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : packed_sse3.hh
 // Description : datatype for packed (vector) operations using AVX
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 /////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ extern "C" __m256d  _ZGVcN4v_sin  ( __m256d  x );
 extern "C" __m256d  _ZGVcN4v_cos  ( __m256d  x );
 #endif
 
-namespace HLIB
+namespace Hpro
 {
 
 template <>
@@ -488,8 +488,8 @@ struct packed< double, ISA_AVX >
              const value_t   d ) : x( _mm256_setr_pd( a, b, c, d ) ) {}
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
 #endif // __AVX__
 
-#endif // __HLIB_PACKED_AVX_HH
+#endif // __HPRO_PACKED_AVX_HH

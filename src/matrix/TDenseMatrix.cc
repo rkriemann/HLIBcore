@@ -1,18 +1,21 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TDenseMatrix.cc
 // Description : class for dense matrices of arbitrary (small) size
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/base/error.hh"
+
 #include "hpro/vector/TScalarVector.hh"
+
 #include "hpro/matrix/TRkMatrix.hh"
+#include "hpro/matrix/structure.hh"
 
 #include "hpro/matrix/TDenseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // namespace abbr.
@@ -64,98 +67,29 @@ task_mulvec ( const value_t                 alpha,
 //
 // set size of matrix
 //
+template < typename value_t >
 void
-TDenseMatrix::set_size ( const size_t n, const size_t m )
+TDenseMatrix< value_t >::set_size ( const size_t n, const size_t m )
 {
     TScopedLock  mlock( *this );
     
     if (( n != _rows ) || (m != _cols))
     {
-        if ( is_complex() )
+        if ( n * m > 0 )
         {
-            if ( n * m > 0 )
-            {
-                _cmat = B::Matrix< complex >( n, m );
-                _rows = n;
-                _cols = m;
-            }// if
-            else
-            {            
-                _cmat = B::Matrix< complex >();
-                _rows = 0;
-                _cols = 0;
-            }// else
+            _mat  = std::move( B::Matrix< value_t >( n, m ) );
+            _rows = n;
+            _cols = m;
         }// if
         else
-        {
-            if ( n * m > 0 )
-            {
-                _rmat = B::Matrix< real >( n, m );
-                _rows = n;
-                _cols = m;
-            }// if
-            else
-            {            
-                _rmat = B::Matrix< real >();
-                _rows = 0;
-                _cols = 0;
-            }// else
+        {            
+            _mat  = std::move( B::Matrix< value_t >() );
+            _rows = 0;
+            _cols = 0;
         }// else
     }// if
 }
 
-//
-// switch between complex and real format
-//
-void
-TDenseMatrix::to_real ()
-{
-    if ( ! is_complex() )
-        return;
-
-    if ( _rows * _cols == 0 )
-        return;
-    
-    TScopedLock  mlock( *this );
-
-    for ( uint j = 0; j < _cols; ++j )
-        for ( uint i = 0; i < _rows; ++i )
-            if ( std::imag( _cmat( i, j ) ) != real(0) )
-            {
-                TMatrix::set_complex( true );
-                HERROR( ERR_NREAL, "(TDenseMatrix) to_real",
-                        "matrix has non-zero imaginary part" );
-            }// if
-    
-    _rmat = B::Matrix< real >( _rows, _cols );
-    
-    for ( uint j = 0; j < _cols; ++j )
-        for ( uint i = 0; i < _rows; ++i )
-            _rmat( i, j ) = std::real( _cmat( i, j ) );
-
-    _cmat = B::Matrix< complex >();
-}
-
-void
-TDenseMatrix::to_complex ()
-{
-    if ( is_complex() )
-        return;
-
-    if ( _rows*_cols == 0 )
-        return;
-    
-    TScopedLock  mlock( *this );
-
-    _cmat = B::Matrix< complex >( _rows, _cols );
-    
-    for ( uint j = 0; j < _cols; ++j )
-        for ( uint i = 0; i < _rows; ++i )
-            _cmat( i, j ) = _rmat( i, j );
-
-    _rmat = B::Matrix< real >();
-}
-    
 ///////////////////////////////////////////////
 //
 // block-handling
@@ -165,110 +99,69 @@ TDenseMatrix::to_complex ()
 // do α·this + β·op(M)
 // (either M is sub block of this or this a sub block of M)
 //
+template < typename value_t >
 void
-TDenseMatrix::add_block ( const real           alpha,
-                          const real           beta,
-                          const TDenseMatrix * M,
-                          const matop_t        op )
+TDenseMatrix< value_t >::add_block ( const value_t                    alpha,
+                                     const value_t                    beta,
+                                     const TDenseMatrix< value_t > *  M,
+                                     const matop_t                    op )
 {
-    if ( M->is_complex() )
-        set_complex( true );
-        
     TScopedLock  mlock( *this );
-
+    
     if ( op == apply_normal )
     {
-        if ( block_is().is_subset( M->block_is() ) )
+        //
+        // check if bigger or smaller
+        //
+
+        if ( this->block_is().is_subset( M->block_is() ) )
         {
             //
             // M is sub matrix of this
             //
             
-            if ( is_complex() )
+            B::Matrix< value_t >  Rthis( _mat,
+                                         intersect( this->row_is(), M->row_is() ) - this->row_ofs(),
+                                         intersect( this->col_is(), M->col_is() ) - this->col_ofs() );
+
+            // this ≔ α·this
+            if ( alpha != value_t(1) )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), M->row_is() ) - row_ofs(),
-                                             intersect( col_is(), M->col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( complex(0), Rthis );
-                    else                B::scale( complex(alpha), Rthis );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( complex(beta), M->blas_cmat(), Rthis );
-                }// else
+                if ( alpha == value_t(0) )
+                    B::fill( value_t(0), Rthis );
+                else
+                    B::scale( alpha, Rthis );
             }// if
-            else
+            
+            // this ≔ this + β·M
+            if ( beta != value_t(0) )
             {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), M->row_is() ) - row_ofs(),
-                                          intersect( col_is(), M->col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( real(0), Rthis );
-                    else                B::scale( alpha, Rthis );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( beta, M->blas_rmat(), Rthis );
-                }// else
-            }// if
+                B::add( beta, M->blas_mat(), Rthis );
+            }// else
         }// if
-        else if ( M->block_is().is_subset( block_is() ) )
+        else if ( M->block_is().is_subset( this->block_is() ) )
         {
             //
             // this is sub matrix of M
             //
             
-            if ( is_complex() )
+            // this ≔ α·this
+            if ( alpha != value_t(1) )
             {
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( complex(0), _cmat );
-                    else                    B::scale( complex(alpha), _cmat );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    if ( ! M->is_complex() )
-                        HERROR( ERR_REAL_CMPLX, "(TDenseMatrix) add_block", "" );
-                        
-                    B::Matrix< complex >  RM( M->blas_cmat(),
-                                              intersect( row_is(), M->row_is() ) - M->row_ofs(),
-                                              intersect( col_is(), M->col_is() ) - M->col_ofs() );
-
-                    B::add( complex(beta), RM, _cmat );
-                }// if
+                if ( alpha == value_t(0) )
+                    B::fill( value_t(0), _mat );
+                else
+                    B::scale( alpha, _mat );
             }// if
-            else
+
+            // this ≔ this + β·M
+            if ( beta != value_t(0) )
             {
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( real(0), _rmat );
-                    else                B::scale( alpha, _rmat );
-                }// else
+                B::Matrix< value_t >  RM( M->blas_mat(),
+                                          intersect( this->row_is(), M->row_is() ) - M->row_ofs(),
+                                          intersect( this->col_is(), M->col_is() ) - M->col_ofs() );
 
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::Matrix< real >  RM( M->blas_rmat(),
-                                           intersect( row_is(), M->row_is() ) - M->row_ofs(),
-                                           intersect( col_is(), M->col_is() ) - M->col_ofs() );
-
-                    B::add( beta, RM, _rmat );
-                }// if
+                B::add( beta, RM, _mat );
             }// if
         }// if
         else
@@ -277,52 +170,31 @@ TDenseMatrix::add_block ( const real           alpha,
     }// if
     else if ( op == apply_transposed )
     {
-        TBlockIndexSet  MT_bs( HLIB::transpose( M->block_is() ) );
+        TBlockIndexSet  MT_bs( Hpro::transpose( M->block_is() ) );
 
-        if ( block_is().is_subset( MT_bs ) )
+        if ( this->block_is().is_subset( MT_bs ) )
         {
             //
             // M^T is sub matrix of this
             //
             
-            if ( is_complex() )
+            B::Matrix< value_t >  Rthis( _mat,
+                                         intersect( this->row_is(), MT_bs.row_is() ) - this->row_ofs(),
+                                         intersect( this->col_is(), MT_bs.col_is() ) - this->col_ofs() );
+
+            // this ≔ α·this
+            if ( alpha != value_t(1) )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                             intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( complex(0), Rthis );
-                    else                B::scale( complex(alpha), Rthis );
-                }// if
-
-
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( complex(beta), B::transposed( M->blas_cmat() ), Rthis );
-                }// else
+                if ( alpha == value_t(0) )
+                    B::fill( value_t(0), Rthis );
+                else
+                    B::scale( alpha, Rthis );
             }// if
-            else
-            {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                          intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( real(0), Rthis );
-                    else                B::scale( alpha, Rthis );
-                }// if
 
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( beta, B::transposed( M->blas_rmat() ), Rthis );
-                }// else
+            // this ≔ this + β·M
+            if ( beta != value_t(0) )
+            {
+                B::add( beta, B::transposed( M->blas_mat() ), Rthis );
             }// else
         }// if
         else
@@ -331,51 +203,31 @@ TDenseMatrix::add_block ( const real           alpha,
     }// if
     else // if ( op == apply_adjoint )
     {
-        TBlockIndexSet  MT_bs( HLIB::transpose( M->block_is() ) );
+        TBlockIndexSet  MT_bs( Hpro::transpose( M->block_is() ) );
 
-        if ( block_is().is_subset( MT_bs ) )
+        if ( this->block_is().is_subset( MT_bs ) )
         {
             //
             // M^T is sub matrix of this
             //
-        
-            if ( is_complex() )
+            
+            B::Matrix< value_t >  Rthis( _mat,
+                                         intersect( this->row_is(), MT_bs.row_is() ) - this->row_ofs(),
+                                         intersect( this->col_is(), MT_bs.col_is() ) - this->col_ofs() );
+
+            // this ≔ α·this
+            if ( alpha != value_t(1) )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                             intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( complex(0), Rthis );
-                    else                B::scale( complex(alpha), Rthis );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( complex(beta), B::adjoint( M->blas_cmat() ), Rthis );
-                }// else
+                if ( alpha == value_t(0) )
+                    B::fill( value_t(0), Rthis );
+                else
+                    B::scale( alpha, Rthis );
             }// if
-            else
-            {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                          intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != real(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( real(0), Rthis );
-                    else                B::scale( alpha, Rthis );
-                }// if
 
-                // this ≔ this + β·M
-                if ( beta != real(0) )
-                {
-                    B::add( beta, B::adjoint( M->blas_rmat() ), Rthis );
-                }// else
+            // this ≔ this + β·M
+            if ( beta != value_t(0) )
+            {
+                B::add( beta, B::adjoint( M->blas_mat() ), Rthis );
             }// else
         }// if
         else
@@ -389,10 +241,11 @@ TDenseMatrix::add_block ( const real           alpha,
 // handle size (via cluster)
 //
 
+template < typename value_t >
 void
-TDenseMatrix::set_cluster ( const TBlockCluster * c )
+TDenseMatrix< value_t >::set_cluster ( const TBlockCluster * c )
 {
-    TMatrix::set_cluster( c );
+    TMatrix< value_t >::set_cluster( c );
 
     // set size to the size of the cluster
     if ( c != nullptr )
@@ -401,85 +254,73 @@ TDenseMatrix::set_cluster ( const TBlockCluster * c )
 
 /////////////////////////////////////////////////
 //
-// BLAS-routines (real valued)
+// BLAS-routines
 //
 
 //
 // scale matrix by constant factor
 //
+template < typename value_t >
 void
-TDenseMatrix::scale ( const real f )
+TDenseMatrix< value_t >::scale ( const value_t  f )
 {
-    if ( f == real(1) )
+    if ( f == value_t(1) )
         return;
 
     TScopedLock  mlock( *this );
 
-    if ( is_complex() )
-    {
-        if ( f == real(0) ) B::fill<complex>(  real(0), _cmat );
-        else            B::scale<complex>(   f, _cmat );
-    }// if
+    if ( f == value_t(0) )
+        B::fill( value_t(0), _mat );
     else
-    {
-        if ( f == real(0) ) B::fill<real>(  real(0), _rmat );
-        else            B::scale<real>(   f, _rmat );
-    }// else
+        B::scale( f, _mat );
 }
 
 //
 // matrix-vector-multiplication
 //
+template < typename value_t >
 void
-TDenseMatrix::mul_vec ( const real      alpha,
-                        const TVector * x,
-                        const real      beta,
-                        TVector       * y,
-                        const matop_t   op ) const
+TDenseMatrix< value_t >::mul_vec ( const value_t               alpha,
+                                   const TVector< value_t > *  x,
+                                   const value_t               beta,
+                                   TVector< value_t > *        y,
+                                   const matop_t               op ) const
 {
-    if ( x == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) mul_vec", "x = nullptr" );
-    if ( y == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) mul_vec", "y = nullptr" );
+    if ( x == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) cmul_vec", "x = nullptr" );
+    if ( y == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) cmul_vec", "y = nullptr" );
     
     if ( op == apply_normal )
     {
-        if (( row_is() != y->is() ) || ( col_is() != x->is() ))
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) mul_vec", "incompatible vector index set" );
+        if (( this->row_is() != y->is() ) || ( this->col_is() != x->is() ))
+            HERROR( ERR_INDEXSET, "(TDenseMatrix) cmul_vec", "incompatible vector index set" );
     }// if
     else
     {
-        if (( col_is() != y->is() ) || ( row_is() != x->is() ))
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) mul_vec", "incompatible vector index set" );
+        if (( this->col_is() != y->is() ) || ( this->row_is() != x->is() ))
+            HERROR( ERR_INDEXSET, "(TDenseMatrix) cmul_vec", "incompatible vector index set" );
     }// if
     
     if ( ! IS_TYPE( x, TScalarVector ) || ! IS_TYPE( y, TScalarVector ) )
-        HERROR( ERR_VEC_TYPE, "(TDenseMatrix) mul_vec",
+        HERROR( ERR_VEC_TYPE, "(TDenseMatrix) cmul_vec",
                 y->typestr() + " += TDenseMatrix * " + x->typestr() );
         
     //
-    // check if scalar vector
+    // multiply
     //
 
-    auto  s_y = ptrcast( y, TScalarVector );
-    auto  s_x = cptrcast( x, TScalarVector );
-
-    if ( ! (( is_complex() == x->is_complex() ) && ( is_complex() == y->is_complex() )) )
-        HERROR( ERR_REAL_CMPLX, "(TDenseMatrix) mul_vec", "" );
-        
-    if ( is_complex() )
-    {
-        task_mulvec< complex >( alpha, op, blas_cmat(), s_x->blas_cvec(), beta, s_y->blas_cvec() );
-    }// if
-    else
-    {
-        task_mulvec< real >( alpha, op, blas_rmat(), s_x->blas_rvec(), beta, s_y->blas_rvec() );
-    }// else
+    auto  s_y = ptrcast(  y, TScalarVector< value_t > );
+    auto  s_x = cptrcast( x, TScalarVector< value_t > );
+                
+    task_mulvec( alpha, op, blas_mat(), s_x->blas_vec(), beta, s_y->blas_vec() );
 }
 
 //
 // compute this ≔ this + a·M
 //
+template < typename value_t >
 void
-TDenseMatrix::add ( const real a, const TMatrix * M )
+TDenseMatrix< value_t >::add ( const value_t               a,
+                               const TMatrix< value_t > *  M )
 {
     if ( M == nullptr )
         HERROR( ERR_ARG, "(TDenseMatrix) add", "argument is nullptr" );
@@ -493,436 +334,356 @@ TDenseMatrix::add ( const real a, const TMatrix * M )
     // some checks
     //
     
-    if ( a == real(0) )
+    if ( a == value_t(0) )
         return;
 
-    if ( block_is() != D->block_is() )
-        HERROR( ERR_MAT_SIZE, "(TDenseMatrix) add", "" );
-
-    //
-    // add matrix
-    //
-
-    if ( D->is_complex() )
-        set_complex( true );
-
-    TScopedLock  mlock( *this );
-    
-    if ( D->is_complex() )
-        B::add<complex>( a, D->blas_cmat(), blas_cmat() );
-    else
-    {
-        if ( is_complex() )
-            HERROR( ERR_COMPLEX, "(TDenseMatrix) add", "can not mix real and complex" );
-        else
-            B::add( a, D->blas_rmat(), blas_rmat() );
-    }// else
-}
-
-//
-// matrix-matrix-multiplication: alpha op_A(this) * op_B(B)
-//
-TMatrix *
-TDenseMatrix::mul_right ( const real       /* alpha */,
-                          const TMatrix *  /* B */,
-                          const matop_t    /* op_A */,
-                          const matop_t    /* op_B */ ) const
-{
-    HERROR( ERR_NOT_IMPL, "", "" );
-}
-
-//
-// matrix-matrix-multiplication: alpha op_A(A)·op_B(this)
-//
-TMatrix *
-TDenseMatrix::mul_left ( const real       /* alpha */,
-                         const TMatrix *  /* A */,
-                         const matop_t    /* op_A */,
-                         const matop_t    /* op_B */ ) const
-{
-    HERROR( ERR_NOT_IMPL, "", "" );
-}
-
-/////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
-//
-// scale matrix by constant factor
-//
-void
-TDenseMatrix::cscale ( const complex f )
-{
-    if ( f == real(1) )
-        return;
-
-    TScopedLock  mlock( *this );
-
-    if ( is_complex() )
-    {
-        if ( f == real(0) ) B::fill<complex>(  real(0), _cmat );
-        else            B::scale<complex>(   f, _cmat );
-    }// if
-    else
-    {
-        HERROR( ERR_REAL_CMPLX, "(TDenseMatrix) cscale", "real matrix, complex factor" );
-        
-        // if ( f == real(0) )
-        //     B::fill<real>(  real(0), _rmat );
-        // else if ( std::imag( f ) != real(0) )
-        // {
-        //     set_complex( true );
-        //     B::scale<complex>( f, _cmat );
-        // }
-        // else
-        //     B::scale<real>( std::real(f), _rmat );
-    }// else
-}
-
-//
-// matrix-vector-multiplication
-//
-void
-TDenseMatrix::cmul_vec ( const complex   alpha,
-                         const TVector * x,
-                         const complex   beta,
-                         TVector       * y,
-                         const matop_t   op ) const
-{
-    if ( x == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) cmul_vec", "x = nullptr" );
-    if ( y == nullptr ) HERROR( ERR_ARG, "(TDenseMatrix) cmul_vec", "y = nullptr" );
-    
-    if ( op == apply_normal )
-    {
-        if (( row_is() != y->is() ) || ( col_is() != x->is() ))
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) cmul_vec", "incompatible vector index set" );
-    }// if
-    else
-    {
-        if (( col_is() != y->is() ) || ( row_is() != x->is() ))
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) cmul_vec", "incompatible vector index set" );
-    }// if
-    
-    if ( ! IS_TYPE( x, TScalarVector ) || ! IS_TYPE( y, TScalarVector ) )
-        HERROR( ERR_VEC_TYPE, "(TDenseMatrix) cmul_vec",
-                y->typestr() + " += TDenseMatrix * " + x->typestr() );
-        
-    //
-    // multiply
-    //
-
-    auto  s_y = ptrcast( y, TScalarVector );
-    auto  s_x = cptrcast( x, TScalarVector );
-                
-    if ( ! (( is_complex() == x->is_complex() ) && ( is_complex() == y->is_complex() )) )
-        HERROR( ERR_COMPLEX, "(TDenseMatrix) mul_vec", "can not mix real and complex" );
-        
-    if ( is_complex() )
-    {
-        task_mulvec< complex >( alpha, op, blas_cmat(), s_x->blas_cvec(), beta, s_y->blas_cvec() );
-    }// if
-    else
-    {
-        if ( ( std::imag( alpha ) != real(0) ) || ( std::imag( beta ) != real(0) ) )
-            HERROR( ERR_COMPLEX, "(TDenseMatrix) mul_vec", "can not mix real and complex" );
-        
-        task_mulvec< real >( std::real( alpha ), op, blas_rmat(), s_x->blas_rvec(), std::real( beta ), s_y->blas_rvec() );
-    }// else
-}
-
-//
-// compute this = this + a * matrix
-//
-void
-TDenseMatrix::cadd ( const complex a, const TMatrix * M )
-{
-    if ( M == nullptr )
-        HERROR( ERR_ARG, "(TDenseMatrix) cadd", "argument is nullptr" );
-    
-    if ( ! IS_TYPE( M, TDenseMatrix ) )
-        HERROR( ERR_MAT_TYPE, "(TDenseMatrix) cadd", M->typestr() );
-
-    const TDenseMatrix *  D = cptrcast( M, TDenseMatrix );
-
-    //
-    // some checks
-    //
-    
-    if ( a == real(0) )
-        return;
-
-    if ( block_is() != D->block_is() )
+    if ( this->block_is() != D->block_is() )
         HERROR( ERR_MAT_SIZE, "(TDenseMatrix) cadd", "" );
 
     //
     // add matrix
     //
 
-    if ( M->is_complex() || ( std::imag( a ) != real(0) ))
-        set_complex( true );
-
     TScopedLock  mlock( *this );
     
-    if ( is_complex() )
-    {
-        if ( D->is_complex() )
-            B::add( a, D->blas_cmat(), blas_cmat() );
-        else
-            HERROR( ERR_COMPLEX, "(TDenseMatrix) cadd", "can not mix real and complex" );
-    }// if
-    else
-        B::add( std::real(a), D->blas_rmat(), blas_rmat() );
+    B::add( a, D->blas_mat(), blas_mat() );
 }
 
 //
 // matrix-matrix-multiplication: alpha op_A(this) * op_B(B)
 //
-TMatrix *
-TDenseMatrix::cmul_right ( const complex    /* alpha */,
-                           const TMatrix *  /* B */,
-                           const matop_t    /* op_A */,
-                           const matop_t    /* op_B */ ) const
+template < typename value_t >
+TMatrix< value_t > *
+TDenseMatrix< value_t >::mul_right ( const value_t               alpha,
+                                     const TMatrix< value_t > *  B,
+                                     const matop_t               op_A,
+                                     const matop_t               op_B ) const
 {
-    HERROR( ERR_NOT_IMPL, "", "" );
-}
+    const bool  trans_A = (op_A != apply_normal);
+    const bool  trans_B = (op_B != apply_normal);
+    
+    if ( B == nullptr )
+        HERROR( ERR_ARG, "(TDenseMatrix) cmul_right", "argument is nullptr" );
 
-//
-// matrix-matrix-multiplication: alpha op_A(A) * op_B(this)
-//
-TMatrix *
-TDenseMatrix::cmul_left ( const complex    /* alpha */,
-                          const TMatrix *  /* A */,
-                          const matop_t    /* op_A */,
-                          const matop_t    /* op_B */ ) const
-{
-    HERROR( ERR_NOT_IMPL, "", "" );
-}
+    if ( (trans_A ? rows() : cols()) != (trans_B ? B->cols() : B->rows()) )
+        HERROR( ERR_MAT_SIZE, "(TDenseMatrix) cmul_right", "" );
     
-//
-// do α * this + β * op(M)
-// (either M is subblock of this or this a subblock of M)
-//
-void
-TDenseMatrix::add_block ( const complex        alpha,
-                          const complex        beta,
-                          const TDenseMatrix * M,
-                          const matop_t        op )
-{
-    if ( M->is_complex() || ( std::imag( alpha ) != real(0) ) || ( std::imag( beta ) != real(0) ) )
-        set_complex( true );
-        
-    TScopedLock  mlock( *this );
+    ////////////////////////////////////////////////////////////////
+    //
+    // check if number of coefficients in destination matrix
+    // is much larger than in source matrices, e.g. multiplication
+    // of low-rank matrices as dense matrices
+    //
+
+    const auto    A = this;
+    const size_t  n = ( trans_A ? A->cols() : A->rows() );
+    const size_t  m = ( trans_B ? B->rows() : B->cols() );
     
-    if ( op == apply_normal )
+    ////////////////////////////////////////////////////////////////
+    //
+    // build temporary matrix holding the result
+    //
+
+    auto  C = make_unique< TDenseMatrix< value_t > >();
+
+    C->set_size( n, m );
+    C->set_ofs( (trans_A ? A->col_ofs() : A->row_ofs()),
+                (trans_B ? B->row_ofs() : B->col_ofs()) );
+    C->scale( value_t(0) );
+
+    ////////////////////////////////////////////////////////////////
+    //
+    // multiply
+    //
+
+    // check if B is also dense and speed up things
+    if ( Hpro::is_dense( B ) )
+    {
+        const auto dB = cptrcast( B, TDenseMatrix< value_t > );
+
+        B::prod( alpha,
+                 mat_view( op_A, A->blas_mat() ),
+                 mat_view( op_B, dB->blas_mat() ),
+                 value_t(1), C->blas_mat() );
+    }// if
+    else
     {
         //
-        // check if bigger or smaller
+        // compute A * B for each row of A
         //
 
-        if ( block_is().is_subset( M->block_is() ) )
+        const size_t  ma   = ( trans_A ? A->rows()    : A->cols()    );
+        const idx_t   xofs = ( trans_B ? B->col_ofs() : B->row_ofs() );
+        const idx_t   yofs = ( trans_B ? B->row_ofs() : B->col_ofs() );
+        auto          vy   = TScalarVector< value_t >( m, yofs );
+
+        if ( op_A == apply_normal )
         {
-            //
-            // M is sub matrix of this
-            //
-            
-            if ( is_complex() )
+            auto  sx = TScalarVector< value_t >( ma, xofs );
+
+            if ( op_B == apply_normal )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), M->row_is() ) - row_ofs(),
-                                             intersect( col_is(), M->col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != complex(1) )
+                // compute C^T = B^T * A^T
+                for ( uint i = 0; i < n; i++ )
                 {
-                    if ( alpha == real(0) ) B::fill( complex(0), Rthis );
-                    else                B::scale( alpha, Rthis );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
-                {
-                    B::add( beta, M->blas_cmat(), Rthis );
-                }// else
-            }// if
-            else
-            {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), M->row_is() ) - row_ofs(),
-                                          intersect( col_is(), M->col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != complex(1) )
-                {
-                    if ( alpha == complex(0) ) B::fill( real(0), _rmat );
-                    else                       B::scale( std::real(alpha), _rmat );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
-                {
-                    B::add( std::real(beta), M->blas_rmat(), Rthis );
-                }// else
-            }// if
-        }// if
-        else if ( M->block_is().is_subset( block_is() ) )
-        {
-            //
-            // this is sub matrix of M
-            //
-            
-            if ( is_complex() )
-            {
-                // this ≔ α·this
-                if ( alpha != complex(1) )
-                {
-                    if ( alpha == real(0) ) B::fill( complex(0), _cmat );
-                    else                B::scale( alpha, _cmat );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
-                {
-                    if ( ! M->is_complex() )
-                        HERROR( ERR_REAL_CMPLX, "(TDenseMatrix) add_block", "" );
+                    auto  A_i = A->blas_mat().row( i );
+                    auto  C_i = C->blas_mat().row( i );
                         
-                    B::Matrix< complex >  RM( M->blas_cmat(),
-                                              intersect( row_is(), M->row_is() ) - M->row_ofs(),
-                                              intersect( col_is(), M->col_is() ) - M->col_ofs() );
-
-                    B::add( beta, RM, _cmat );
-                }// if
+                    B::copy( A_i, sx.blas_vec() );
+                    B->mul_vec( value_t(1), & sx, value_t(0), & vy, apply_transposed );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
             }// if
-            else
+            else if ( op_B == apply_transposed )
             {
-                // this ≔ α·this
-                if ( alpha != complex(1) )
+                // compute C^T = B * A^T
+                for ( uint i = 0; i < n; i++ )
                 {
-                    if ( alpha == real(0) ) B::fill( real(0), _rmat );
-                    else                    B::scale( std::real(alpha), _rmat );
-                }// if
+                    auto  A_i = A->blas_mat().row( i );
+                    auto  C_i = C->blas_mat().row( i );
 
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
+                    B::copy( A_i, sx.blas_vec() );
+                    B->mul_vec( value_t(1), & sx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+            }// if
+            else if ( op_B == apply_adjoint )
+            {
+                // compute C^H = B * A^H
+                for ( uint i = 0; i < n; i++ )
                 {
-                    B::Matrix< real >  RM( M->blas_rmat(),
-                                           intersect( row_is(), M->row_is() ) - M->row_ofs(),
-                                           intersect( col_is(), M->col_is() ) - M->col_ofs() );
+                    auto  A_i = A->blas_mat().row( i );
+                    auto  C_i = C->blas_mat().row( i );
 
-                    B::add( std::real(beta), RM, _rmat );
-                }// if
+                    B::copy( A_i, sx.blas_vec() );
+                    B::conj( sx.blas_vec() );
+                    B->mul_vec( value_t(1), & sx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+
+                B::conj( C->blas_mat() );
             }// if
         }// if
-        else
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) add_block",
-                   "given matrix is neither a subblock nor a superblock" );
-    }// if
-    else if ( op == apply_transposed )
-    {
-        TBlockIndexSet  MT_bs( HLIB::transpose( M->block_is() ) );
-
-        if ( block_is().is_subset( MT_bs ) )
+        else if ( op_A == apply_transposed )
         {
-            //
-            // M^T is sub matrix of this
-            //
-            
-            if ( is_complex() )
+            if ( op_B == apply_normal )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                             intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != complex(1) )
+                // compute C^T = B^T * A
+                for ( uint i = 0; i < n; i++ )
                 {
-                    if ( alpha == real(0) ) B::fill( complex(0), Rthis );
-                    else                    B::scale( alpha, Rthis );
-                }// if
-
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
-                {
-                    B::add( beta, B::transposed( M->blas_cmat() ), Rthis );
-                }// else
+                    auto  C_i = C->blas_mat().row( i );
+                    auto  vx  = A->column( i );
+                        
+                    B->mul_vec( value_t(1), & vx, value_t(0), & vy, apply_transposed );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
             }// if
-            else
+            else if ( op_B == apply_transposed )
             {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                          intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != complex(1) )
+                // compute C^T = B * A
+                for ( uint i = 0; i < n; i++ )
                 {
-                    if ( alpha == complex(0) ) B::fill( real(0), Rthis );
-                    else                       B::scale( std::real(alpha), Rthis );
-                }// if
+                    auto  C_i = C->blas_mat().row( i );
+                    auto  vx  = A->column( i );
+                        
+                    B->mul_vec( value_t(1), & vx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+            }// if
+            else if ( op_B == apply_adjoint )
+            {
+                TScalarVector< value_t >  sx( ma, xofs );
 
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
+                // compute C^H = B * conj(A)
+                for ( uint i = 0; i < n; i++ )
                 {
-                    B::add( std::real(beta), B::transposed( M->blas_rmat() ), Rthis );
-                }// else
-            }// else
+                    auto  A_i = A->blas_mat().row( i );
+                    auto  C_i = C->blas_mat().row( i );
+
+                    B::copy( A_i, sx.blas_vec() );
+                    B->mul_vec( value_t(1), & sx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+
+                B::conj( C->blas_mat() );
+            }// if
         }// if
-        else
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) add_block",
-                   "given matrix is neither a subblock nor a superblock" );
-    }// if
-    else // if ( op == apply_adjoint )
-    {
-        TBlockIndexSet  MT_bs( HLIB::transpose( M->block_is() ) );
-
-        if ( block_is().is_subset( MT_bs ) )
+        else if ( op_A == apply_adjoint )
         {
-            //
-            // M^T is sub matrix of this
-            //
-            
-            if ( is_complex() )
+            if ( op_B == apply_normal )
             {
-                B::Matrix< complex >  Rthis( _cmat,
-                                             intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                             intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-
-                // this ≔ α·this
-                if ( alpha != complex(1) )
+                // compute C^H = B^H * A
+                for ( uint i = 0; i < n; i++ )
                 {
-                    if ( alpha == complex(0) ) B::fill( complex(0), Rthis );
-                    else                       B::scale( alpha, Rthis );
-                }// if
+                    auto  C_i = C->blas_mat().row( i );
+                    auto  vx = A->column( i );
+                        
+                    B->mul_vec( value_t(1), & vx, value_t(0), & vy, apply_adjoint );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
 
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
-                {
-                    B::add( beta, B::adjoint( M->blas_cmat() ), Rthis );
-                }// else
+                B::conj( C->blas_mat() );
             }// if
-            else
+            else if ( op_B == apply_transposed )
             {
-                B::Matrix< real >  Rthis( _rmat,
-                                          intersect( row_is(), MT_bs.row_is() ) - row_ofs(),
-                                          intersect( col_is(), MT_bs.col_is() ) - col_ofs() );
-                
-                // this ≔ α·this
-                if ( alpha != complex(1) )
-                {
-                    if ( alpha == complex(0) ) B::fill( real(0), Rthis );
-                    else                       B::scale( std::real(alpha), Rthis );
-                }// if
+                TScalarVector< value_t >  sx( ma, xofs );
 
-                // this ≔ this + β·M
-                if ( beta != complex(0) )
+                // compute C^T = B * conj(A)
+                for ( uint i = 0; i < n; i++ )
                 {
-                    B::add( std::real(beta), B::adjoint( M->blas_rmat() ), Rthis );
-                }// else
-            }// else
+                    auto  A_i = A->blas_mat().row( i );
+                    auto  C_i = C->blas_mat().row( i );
+
+                    B::copy( A_i, sx.blas_vec() );
+                    B->mul_vec( value_t(1), & sx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+            }// if
+            else if ( op_B == apply_adjoint )
+            {
+                // compute C^H = B * A
+                for ( uint i = 0; i < n; i++ )
+                {
+                    auto  C_i = C->blas_mat().row( i );
+                    auto  vx  = A->column( i );
+                        
+                    B->mul_vec( value_t(1), & vx, value_t(0), & vy, apply_normal );
+                    B::copy( vy.blas_vec(), C_i );
+                }// for
+
+                B::conj( C->blas_mat() );
+            }// if
         }// if
-        else
-            HERROR( ERR_INDEXSET, "(TDenseMatrix) add_block",
-                   "given matrix is neither a subblock nor a superblock" );
+
+        //
+        // finally, scale C by alpha
+        //
+
+        if ( alpha != value_t(1) )
+            B::scale( alpha, C->blas_mat() );
     }// else
+
+    return C.release();
+}
+
+//
+// matrix-matrix-multiplication: alpha op_A(A)·op_B(this)
+//
+template < typename value_t >
+TMatrix< value_t > *
+TDenseMatrix< value_t >::mul_left ( const value_t               alpha,
+                                    const TMatrix< value_t > *  A,
+                                    const matop_t               op_A,
+                                    const matop_t               op_B ) const
+{
+    const bool  trans_A = (op_A != apply_normal);
+    const bool  trans_B = (op_B != apply_normal);
+    
+    if ( A == nullptr )
+        HERROR( ERR_ARG, "(TDenseMatrix) cmul_left", "argument is nullptr" );
+
+    if ( (trans_A ? A->rows() : A->cols()) != (trans_B ? cols() : rows()) )
+        HERROR( ERR_MAT_SIZE, "(TDenseMatrix) cmul_left", "" );
+
+    ////////////////////////////////////////////////////////////////
+    //
+    // check if number of coefficients in destination matrix
+    // is much larger than in source matrices, e.g. multiplication
+    // of low-rank matrices as dense matrices
+    //
+
+    const auto    B = this;
+    const size_t  n = ( trans_A ? A->cols() : A->rows() );
+    const size_t  m = ( trans_B ? B->rows() : B->cols() );
+    
+    ////////////////////////////////////////////////////////////////
+    //
+    // build temporary matrix holding the result
+    //
+
+    auto  C = make_unique< TDenseMatrix< value_t > >();
+
+    C->set_size( n, m );
+    C->set_ofs( (trans_A ? A->col_ofs() : A->row_ofs()),
+                (trans_B ? B->row_ofs() : B->col_ofs()) );
+    C->scale( value_t(0) );
+    
+    ////////////////////////////////////////////////////////////////
+    //
+    // multiply
+    //
+
+    // check if A is also dense and speed up things
+    if ( IS_TYPE( A, TDenseMatrix ) )
+    {
+        const auto  dA = cptrcast( A, TDenseMatrix< value_t > );
+
+        B::prod( alpha,
+                 mat_view( op_A, dA->blas_mat() ),
+                 mat_view( op_B, B->blas_mat() ),
+                 value_t(1), C->blas_mat() );
+    }// if
+    else
+    {
+        //
+        // multiply each column of op(B) with A and store result in C
+        //
+
+        const size_t   nb   = ( trans_B ? B->cols()    : B->rows()    );
+        const idx_t    xofs = ( trans_A ? A->row_ofs() : A->col_ofs() );
+
+        if ( op_B == apply_normal )
+        {
+            // compute C = op(A) * B
+            for ( uint i = 0; i < m; i++ )
+            {
+                auto  vx = B->column( i );
+                auto  vy = C->column( i );
+                    
+                A->mul_vec( value_t(1), & vx, value_t(0), & vy, op_A );
+            }// for
+        }// if
+        else if ( op_B == apply_transposed )
+        {
+            TScalarVector< value_t > sx( nb, xofs );
+                
+            // compute C = op(A) * B^T
+            for ( uint i = 0; i < m; i++ )
+            {
+                auto  B_i = B->blas_mat().row( i );
+                auto  vy  = C->column( i );
+                   
+                B::copy( B_i, sx.blas_vec() );
+                A->mul_vec( value_t(1), & sx, value_t(0), & vy, op_A );
+            }// for
+        }// if
+        else if ( op_B == apply_adjoint )
+        {
+            TScalarVector< value_t > sx( nb, xofs );
+                
+            // compute C = op(A) * B^H
+            for ( uint i = 0; i < m; i++ )
+            {
+                auto  B_i = B->blas_mat().row( i );
+                auto  vy  = C->column( i );
+                    
+                B::copy( B_i, sx.blas_vec() );
+                B::conj( sx.blas_vec() );
+                A->mul_vec( value_t(1), & sx, value_t(0), & vy, op_A );
+            }// for
+        }// if
+
+        //
+        // finally, scale C by alpha
+        //
+
+        if ( alpha != value_t(1) )
+        {
+            B::scale( alpha, C->blas_mat() );
+        }// if
+    }// else
+
+    return C.release();
 }
 
 ///////////////////////////////////////////////////////////
@@ -932,32 +693,17 @@ TDenseMatrix::add_block ( const complex        alpha,
 
 //! same as above but only the dimension of the vector spaces is tested,
 //! not the corresponding index sets
+template < typename value_t >
 void
-TDenseMatrix::apply_add   ( const real                       alpha,
-                            const BLAS::Vector< real > &     x,
-                            BLAS::Vector< real > &           y,
-                            const matop_t                    op ) const
+TDenseMatrix< value_t >::apply_add   ( const value_t                    alpha,
+                                       const BLAS::Vector< value_t > &  x,
+                                       BLAS::Vector< value_t > &        y,
+                                       const matop_t                    op ) const
 {
     HASSERT( ( x.length() == ncols( op ) ) && ( y.length() == nrows( op ) ),
              ERR_ARG, "(TDenseMatrix) apply_add", "incompatible vector dimensions" );
-    HASSERT( is_real(), 
-             ERR_REAL_CMPLX, "(TDenseMatrix) apply_add", "real vectors, complex matrix" );
 
-    BLAS::mulvec( alpha, mat_view( op, blas_mat< real >( this ) ), x, real(1), y );
-}
-    
-void
-TDenseMatrix::apply_add   ( const complex                    alpha,
-                            const BLAS::Vector< complex > &  x,
-                            BLAS::Vector< complex > &        y,
-                            const matop_t                    op ) const
-{
-    HASSERT( ( x.length() == ncols( op ) ) && ( y.length() == nrows( op ) ),
-             ERR_ARG, "(TDenseMatrix) apply_add", "incompatible vector dimensions" );
-    HASSERT( is_complex(), 
-             ERR_REAL_CMPLX, "(TDenseMatrix) apply_add", "complex vectors, real matrix" );
-
-    BLAS::mulvec( alpha, mat_view( op, blas_mat< complex >( this ) ), x, complex(1), y );
+    BLAS::mulvec( alpha, mat_view( op, Hpro::blas_mat( this ) ), x, value_t(1), y );
 }
 
 /////////////////////////////////////////////////
@@ -968,60 +714,50 @@ TDenseMatrix::apply_add   ( const complex                    alpha,
 //
 // transpose matrix
 //
+template < typename value_t >
 void
-TDenseMatrix::transpose ()
+TDenseMatrix< value_t >::transpose ()
 {
     {
         TScopedLock  mlock( *this );
     
-        if ( is_complex() )
-        {
-            B::Matrix< complex >  T( cols(), rows() );
+        B::Matrix< value_t >  T( cols(), rows() );
             
-            B::copy( transposed( blas_cmat() ), T );
-            blas_cmat() = std::move( T );
-        }// if
-        else
-        {
-            B::Matrix< real >  T( cols(), rows() );
-            
-            B::copy( transposed( blas_rmat() ), T );
-            blas_rmat() = std::move( T );
-        }// else
+        B::copy( B::transposed( blas_mat() ), T );
+        blas_mat() = std::move( T );
         
         std::swap( _rows, _cols );
     }
 
-    TMatrix::transpose();
+    TMatrix< value_t >::transpose();
 }
     
 //
 // conjugate matrix coefficients
 //
+template < typename value_t >
 void
-TDenseMatrix::conjugate ()
+TDenseMatrix< value_t >::conjugate ()
 {
-    if ( is_complex() && ! is_hermitian() )
+    if ( is_complex_type< value_t >::value )
     {
         TScopedLock  mlock( *this );
         
-        B::conj( blas_cmat() );
+        B::conj( blas_mat() );
     }// if
 }
 
 //
 // virtual constructor
 //
-std::unique_ptr< TMatrix >
-TDenseMatrix::copy () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TDenseMatrix< value_t >::copy () const
 {
-    auto  M = TMatrix::copy();
-    auto  D = ptrcast( M.get(), TDenseMatrix );
+    auto  M = TMatrix< value_t >::copy();
+    auto  D = ptrcast( M.get(), TDenseMatrix< value_t > );
 
-    if ( is_complex() )
-        B::copy( blas_cmat(), D->blas_cmat() );
-    else
-        B::copy( blas_rmat(), D->blas_rmat() );
+    B::copy( blas_mat(), D->blas_mat() );
 
     return M;
 }
@@ -1029,52 +765,46 @@ TDenseMatrix::copy () const
 //
 // copy matrix into A
 //
+template < typename value_t >
 void
-TDenseMatrix::copy_to ( TMatrix * A ) const
+TDenseMatrix< value_t >::copy_to ( TMatrix< value_t > * A ) const
 {
-    TMatrix::copy_to( A );
+    TMatrix< value_t >::copy_to( A );
     
     if ( ! IS_TYPE( A, TDenseMatrix ) )
     {
         HERROR( ERR_NOT_IMPL, "", "" );
-        
         // convert( this, A, acc_exact );
         // return;
     }// if
     
-    TDenseMatrix * D = ptrcast( A, TDenseMatrix );
+    auto  D = ptrcast( A, TDenseMatrix< value_t > );
 
-//     if ((D->rows() != rows()) || (D->cols() != cols()))
-//         WARNING( ERR_MAT_SIZE, "(TDenseMatrix) copy_to", "" );
-
-    D->set_complex( is_complex() );
     D->set_size( rows(), cols() );
 
-    if ( is_complex() )
-        B::copy( blas_cmat(), D->blas_cmat() );
-    else
-        B::copy( blas_rmat(), D->blas_rmat() );
+    B::copy( blas_mat(), D->blas_mat() );
 }
 
 //
 // return structural copy
 //
-std::unique_ptr< TMatrix >
-TDenseMatrix::copy_struct () const
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TDenseMatrix< value_t >::copy_struct () const
 {
-    return TMatrix::copy_struct();
+    return TMatrix< value_t >::copy_struct();
 }
 
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TDenseMatrix::byte_size () const
+TDenseMatrix< value_t >::byte_size () const
 {
-    size_t  size = TMatrix::byte_size() + 2*sizeof(size_t) + sizeof(B::Matrix<real>) + sizeof(B::Matrix<complex>);
+    size_t  size = TMatrix< value_t >::byte_size() + 2*sizeof(size_t) + sizeof(B::Matrix< value_t >);
 
-    if ( is_complex() ) size += _rows * _cols * sizeof(complex);
-    else                size += _rows * _cols * sizeof(real);
+    size += _rows * _cols * sizeof(value_t);
 
     return size;
 }
@@ -1082,11 +812,11 @@ TDenseMatrix::byte_size () const
 //
 // serialisation
 //
-
+template < typename value_t >
 void
-TDenseMatrix::read  ( TByteStream & s )
+TDenseMatrix< value_t >::read  ( TByteStream & s )
 {
-    TMatrix::read( s );
+    TMatrix< value_t >::read( s );
 
     size_t  n, m;
     
@@ -1095,16 +825,14 @@ TDenseMatrix::read  ( TByteStream & s )
 
     set_size( n, m );
 
-    if ( is_complex() )
-        s.get( blas_cmat().data(), sizeof( complex ) * _rows * _cols );
-    else
-        s.get( blas_rmat().data(), sizeof( real ) * _rows * _cols );
+    s.get( blas_mat().data(), sizeof( value_t ) * _rows * _cols );
 }
 
+template < typename value_t >
 void
-TDenseMatrix::build ( TByteStream & s )
+TDenseMatrix< value_t >::build ( TByteStream & s )
 {
-    TMatrix::build( s );
+    TMatrix< value_t >::build( s );
 
     size_t  n, m;
     
@@ -1113,34 +841,30 @@ TDenseMatrix::build ( TByteStream & s )
 
     set_size( n, m );
 
-    if ( is_complex() )
-        s.get( blas_cmat().data(), sizeof( complex ) * _rows * _cols );
-    else
-        s.get( blas_rmat().data(), sizeof( real ) * _rows * _cols );
+    s.get( blas_mat().data(), sizeof( value_t ) * _rows * _cols );
 }
 
+template < typename value_t >
 void
-TDenseMatrix::write ( TByteStream & s ) const
+TDenseMatrix< value_t >::write ( TByteStream & s ) const
 {
-    TMatrix::write( s );
+    TMatrix< value_t >::write( s );
 
     s.put( _rows );
     s.put( _cols );
 
-    if ( is_complex() )
-        s.put( blas_cmat().data(), sizeof( complex ) * _rows * _cols );
-    else
-        s.put( blas_rmat().data(), sizeof( real ) * _rows * _cols );
+    s.put( blas_mat().data(), sizeof( value_t ) * _rows * _cols );
 }
 
 //
 // returns size of object in bytestream
 //
+template < typename value_t >
 size_t
-TDenseMatrix::bs_size () const
+TDenseMatrix< value_t >::bs_size () const
 {
-    return (TMatrix::bs_size() + sizeof(_rows) + sizeof(_cols) +
-            (_rows * _cols * ( is_complex() ? sizeof(complex) : sizeof(real) ) ) );
+    return (TMatrix< value_t >::bs_size() + sizeof(_rows) + sizeof(_cols) +
+            (_rows * _cols * sizeof(value_t) ) );
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1337,9 +1061,10 @@ matrix_sort( B::Matrix< T > &  M,
 //
 // permute rows/columns in matrix
 //
+template < typename value_t >
 void
-TDenseMatrix::permute ( const TPermutation *  row_perm,
-                        const TPermutation *  col_perm )
+TDenseMatrix< value_t >::permute ( const TPermutation *  row_perm,
+                                   const TPermutation *  col_perm )
 {
 #if 1
 
@@ -1351,42 +1076,21 @@ TDenseMatrix::permute ( const TPermutation *  row_perm,
     
     TPermutation   perm;
 
-    if ( is_complex() )
-    {
-        B::Vector< complex >  tmp;
+    B::Vector< value_t >  tmp;
 
-        if ( row_perm != nullptr )
-        {
-            tmp  = B::Vector< complex >( cols() );
-            perm = * row_perm;
-            matrix_sort( blas_cmat(), true, perm, 0, idx_t(rows())-1, tmp );
-        }// if
-    
-        if ( col_perm != nullptr )
-        {
-            tmp  = B::Vector< complex >( rows() );
-            perm = * col_perm;
-            matrix_sort( blas_cmat(), false, perm, 0, idx_t(cols())-1, tmp );
-        }// if
+    if ( row_perm != nullptr )
+    {
+        tmp  = B::Vector< value_t >( cols() );
+        perm = * row_perm;
+        matrix_sort( blas_mat(), true, perm, 0, idx_t(rows())-1, tmp );
     }// if
-    else
-    {
-        B::Vector< real >  tmp( std::max( rows(), cols() ) );
-
-        if ( row_perm != nullptr )
-        {
-            tmp  = B::Vector< real >( cols() );
-            perm = * row_perm;
-            matrix_sort( blas_rmat(), true, perm, 0, idx_t(rows())-1, tmp );
-        }// if
     
-        if ( col_perm != nullptr )
-        {
-            tmp  = B::Vector< real >( rows() );
-            perm = * col_perm;
-            matrix_sort( blas_rmat(), false, perm, 0, idx_t(cols())-1, tmp );
-        }// if
-    }// else
+    if ( col_perm != nullptr )
+    {
+        tmp  = B::Vector< value_t >( rows() );
+        perm = * col_perm;
+        matrix_sort( blas_mat(), false, perm, 0, idx_t(cols())-1, tmp );
+    }// if
         
 #else
     
@@ -1401,34 +1105,17 @@ TDenseMatrix::permute ( const TPermutation *  row_perm,
 
     if ( row_perm != nullptr )
     {
-        if ( is_complex() )
+        for ( uint i = 0; i < n; i++ )
         {
-            for ( uint i = 0; i < n; i++ )
-            {
-                const uint pi = row_perm->permute( i );
-
-                B::Vector< complex >  this_i( blas_cmat().row( i ) );
-                B::Vector< complex >  T_pi( T->blas_cmat().row( pi ) );
+            const uint pi = row_perm->permute( i );
             
-                B::copy( this_i, T_pi );
-            }// for
-
-            B::copy( T->blas_cmat(), blas_cmat() );
-        }// if
-        else
-        {
-            for ( uint i = 0; i < n; i++ )
-            {
-                const uint pi = row_perm->permute( i );
-
-                B::Vector< real >  this_i( blas_rmat().row( i ) );
-                B::Vector< real >  T_pi( T->blas_rmat().row( pi ) );
+            B::Vector< value_t >  this_i( blas_mat().row( i ) );
+            B::Vector< value_t >  T_pi( T->blas_mat().row( pi ) );
             
-                B::copy( this_i, T_pi );
-            }// for
+            B::copy( this_i, T_pi );
+        }// for
 
-            B::copy( T->blas_rmat(), blas_rmat() );
-        }// else
+        B::copy( T->blas_mat(), blas_mat() );
     }// if
 
     //
@@ -1437,34 +1124,17 @@ TDenseMatrix::permute ( const TPermutation *  row_perm,
 
     if ( col_perm != nullptr )
     {
-        if ( is_complex() )
+        for ( uint j = 0; j < m; j++ )
         {
-            for ( uint j = 0; j < m; j++ )
-            {
-                const uint pj = col_perm->permute( j );
+            const uint pj = col_perm->permute( j );
 
-                B::Vector< complex >  this_j( blas_cmat().column( j ) );
-                B::Vector< complex >  T_pj( T->blas_cmat().column( pj ) );
+            B::Vector< value_t >  this_j( blas_mat().column( j ) );
+            B::Vector< value_t >  T_pj( T->blas_mat().column( pj ) );
             
-                B::copy( this_j, T_pj );
-            }// for
+            B::copy( this_j, T_pj );
+        }// for
 
-            B::copy( T->blas_cmat(), blas_cmat() );
-        }// if
-        else
-        {
-            for ( uint j = 0; j < m; j++ )
-            {
-                const uint pj = col_perm->permute( j );
-
-                B::Vector< real >  this_j( blas_rmat().column( j ) );
-                B::Vector< real >  T_pj( T->blas_rmat().column( pj ) );
-            
-                B::copy( this_j, T_pj );
-            }// for
-
-            B::copy( T->blas_rmat(), blas_rmat() );
-        }// else
+        B::copy( T->blas_mat(), blas_mat() );
     }// if
     
 #endif
@@ -1473,17 +1143,16 @@ TDenseMatrix::permute ( const TPermutation *  row_perm,
 //
 // test data for invalid values, e.g. INF and NAN
 //
+template < typename value_t >
 void
-TDenseMatrix::check_data () const
+TDenseMatrix< value_t >::check_data () const
 {
-    if ( is_complex() )
-    {
-        _cmat.check_data();
-    }// if
-    else
-    {
-        _rmat.check_data();
-    }// else
+    _mat.check_data();
 }
+
+template class TDenseMatrix< float >;
+template class TDenseMatrix< double >;
+template class TDenseMatrix< std::complex< float > >;
+template class TDenseMatrix< std::complex< double > >;
 
 }// namespace

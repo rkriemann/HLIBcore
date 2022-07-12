@@ -1,9 +1,9 @@
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBlockVector.cc
 // Description : class for a vector build out of other vectors
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <iostream>
@@ -12,7 +12,7 @@
 
 #include "hpro/vector/TBlockVector.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 // namespace abbr.
@@ -22,8 +22,8 @@ namespace B = BLAS;
 //
 // constructor and destructor
 //
-
-TBlockVector::~TBlockVector ()
+template < typename value_t >
+TBlockVector< value_t >::~TBlockVector ()
 {
     for ( uint i = 0; i < n_blocks(); i++ )
         delete block(i);
@@ -37,8 +37,9 @@ TBlockVector::~TBlockVector ()
 //
 // return size of vector
 //
+template < typename value_t >
 size_t
-TBlockVector::size () const
+TBlockVector< value_t >::size () const
 {
     size_t  s = 0;
     
@@ -54,8 +55,9 @@ TBlockVector::size () const
 //
 // set single vector block
 //
+template < typename value_t >
 void
-TBlockVector::set_block ( const uint i, TVector * v )
+TBlockVector< value_t >::set_block ( const uint i, TVector< value_t > * v )
 {
     if ( i >= n_blocks() )
         HERROR( ERR_VEC_STRUCT, "(TBlockVector) set_block", "index too high" );
@@ -69,8 +71,9 @@ TBlockVector::set_block ( const uint i, TVector * v )
 //
 // setup blockstructure of vector
 //
+template < typename value_t >
 void
-TBlockVector::set_block_struct ( const uint n )
+TBlockVector< value_t >::set_block_struct ( const uint n )
 {
     uint  old_n = n_blocks();
 
@@ -81,32 +84,6 @@ TBlockVector::set_block_struct ( const uint n )
     _blocks.resize( n, nullptr );
 }
 
-//
-// switch between complex and real format
-//
-void
-TBlockVector::to_real ()
-{
-    if ( ! is_complex() )
-        return;
-
-    for ( uint i = 0; i < n_blocks(); i++ )
-        if ( _blocks[i] != nullptr )
-            _blocks[i]->set_complex( false );
-}
-
-void
-TBlockVector::to_complex ()
-{
-    if ( is_complex() )
-        return;
-
-
-    for ( uint i = 0; i < n_blocks(); i++ )
-        if ( _blocks[i] != nullptr )
-            _blocks[i]->set_complex( true );
-}
-    
 ////////////////////////////////////////////////
 //
 // access entries
@@ -115,14 +92,15 @@ TBlockVector::to_complex ()
 //
 // return i'th entry
 //
-real
-TBlockVector::entry  ( const idx_t  row ) const
+template < typename value_t >
+value_t
+TBlockVector< value_t >::entry  ( const idx_t  row ) const
 {
-    const idx_t  vofs = ofs();
+    const idx_t  vofs = this->ofs();
     
     for ( uint i = 0; i < n_blocks(); i++ )
     {
-        const TVector * v_i = block(i);
+        const TVector< value_t > * v_i = block(i);
         
         if ( v_i == nullptr )
             continue;
@@ -131,40 +109,22 @@ TBlockVector::entry  ( const idx_t  row ) const
             return v_i->entry( row - v_i->ofs() + vofs );
     }// for
 
-    return 0.0;
-}
-
-const complex
-TBlockVector::centry ( const idx_t  row ) const
-{
-    const idx_t  vofs = ofs();
-    
-    for ( uint i = 0; i < n_blocks(); i++ )
-    {
-        const TVector * v_i = block(i);
-        
-        if ( v_i == nullptr )
-            continue;
-        
-        if (( v_i->ofs() - vofs <= row ) && ( row < v_i->ofs() - vofs + idx_t( v_i->size() ) ))
-            return v_i->centry( row - v_i->ofs() + vofs );
-    }// for
-
-    return 0.0;
+    return value_t(0);
 }
 
 //
 // set i'th entry
 //
+template < typename value_t >
 void
-TBlockVector::set_entry  ( const idx_t  row,
-                           const real   f )
+TBlockVector< value_t >::set_entry  ( const idx_t    row,
+                           const value_t  f )
 {
-    const idx_t  vofs = ofs();
+    const idx_t  vofs = this->ofs();
     
     for ( uint i = 0; i < n_blocks(); i++ )
     {
-        TVector * v_i = block(i);
+        TVector< value_t > * v_i = block(i);
         
         if ( v_i == nullptr )
             continue;
@@ -172,27 +132,6 @@ TBlockVector::set_entry  ( const idx_t  row,
         if (( v_i->ofs() - vofs <= row ) && ( row < v_i->ofs() - vofs + idx_t( v_i->size() ) ))
         {
             v_i->set_entry( row - v_i->ofs() + vofs, f );
-            return;
-        }// if
-    }// for
-}
-
-void
-TBlockVector::set_centry ( const idx_t    row,
-                           const complex  f )
-{
-    const idx_t  vofs = ofs();
-    
-    for ( uint i = 0; i < n_blocks(); i++ )
-    {
-        TVector * v_i = block(i);
-        
-        if ( v_i == nullptr )
-            continue;
-        
-        if (( v_i->ofs() - vofs <= row ) && ( row < v_i->ofs() - vofs + idx_t( v_i->size() ) ))
-        {
-            v_i->set_centry( row - v_i->ofs() + vofs, f );
             return;
         }// if
     }// for
@@ -206,8 +145,9 @@ TBlockVector::set_centry ( const idx_t    row,
 //
 // fill with constant
 //
+template < typename value_t >
 void
-TBlockVector::fill ( const real f )
+TBlockVector< value_t >::fill ( const value_t f )
 {
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -217,8 +157,9 @@ TBlockVector::fill ( const real f )
 //
 // fill with random numbers
 //
+template < typename value_t >
 void
-TBlockVector::fill_rand ( const uint seed )
+TBlockVector< value_t >::fill_rand ( const uint seed )
 {
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -228,21 +169,20 @@ TBlockVector::fill_rand ( const uint seed )
 //
 // this = this + a * x
 //
+template < typename value_t >
 void
-TBlockVector::axpy ( const real f, const TVector * x )
+TBlockVector< value_t >::axpy ( const value_t               f,
+                                const TVector< value_t > *  x )
 {
-    if ( f == 0.0 )
+    if ( f == value_t(0) )
         return;
     
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TBlockVector) axpy", "given vector is nullptr" );
 
-    if ( is_complex() != x->is_complex() )
-        HERROR( ERR_REAL_CMPLX, "(TBlockVector) axpy", "" );
-    
     if ( IS_TYPE( x, TBlockVector ) )
     {
-        const TBlockVector * b = cptrcast( x, TBlockVector );
+        const auto  b = cptrcast( x, TBlockVector< value_t > );
 
         if ( b->n_blocks() != n_blocks() )
             HERROR( ERR_VEC_STRUCT, "(TBlockVector) axpy",
@@ -254,28 +194,18 @@ TBlockVector::axpy ( const real f, const TVector * x )
     }// if
     else if ( IS_TYPE( x, TScalarVector ) )
     {
-        const TScalarVector * s = cptrcast( x, TScalarVector );
+        const auto  s = cptrcast( x, TScalarVector< value_t > );
 
         for ( uint i = 0; i < n_blocks(); i++ )
         {
-            TVector *  bi = block(i);
+            auto  bi = block(i);
                     
             if ( bi != nullptr )
             {
-                if ( is_complex() )
-                {
-                    B::Vector< complex >  t( s->blas_cvec(), bi->is() - s->ofs() );
-                    TScalarVector         st( bi->is(), t );
-                                              
-                    bi->axpy( f, & st );
-                }// if
-                else
-                {
-                    B::Vector< real >  t( s->blas_rvec(), bi->is() - s->ofs() );
-                    TScalarVector      st( bi->is(), t );
-                                              
-                    bi->axpy( f, & st );
-                }// else
+                B::Vector< value_t >      t( s->blas_vec(), bi->is() - s->ofs() );
+                TScalarVector< value_t >  st( bi->is(), t );
+                
+                bi->axpy( f, & st );
             }// if
         }// for
     }// if
@@ -289,8 +219,9 @@ TBlockVector::axpy ( const real f, const TVector * x )
 //
 // this = a * this
 //
+template < typename value_t >
 void
-TBlockVector::scale ( const real f )
+TBlockVector< value_t >::scale ( const value_t  f )
 {
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -300,8 +231,10 @@ TBlockVector::scale ( const real f )
 //
 // this = f * x
 //
+template < typename value_t >
 void
-TBlockVector::assign ( const real f, const TVector * x )
+TBlockVector< value_t >::assign ( const value_t               f,
+                                  const TVector< value_t > *  x )
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TBlockVector) assign", "given vector is nullptr" );
@@ -310,9 +243,9 @@ TBlockVector::assign ( const real f, const TVector * x )
         HERROR( ERR_VEC_TYPE, "(TBlockVector) assign",
                "expected TBlockVector, got " + x->typestr() );
 
-    const TBlockVector * b = cptrcast( x, TBlockVector );
+    const auto  b = cptrcast( x, TBlockVector< value_t > );
 
-    set_ofs( b->ofs() );
+    this->set_ofs( b->ofs() );
     
     if ( b->n_blocks() != n_blocks() )
         HERROR( ERR_VEC_STRUCT, "(TBlockVector) assign",
@@ -326,10 +259,11 @@ TBlockVector::assign ( const real f, const TVector * x )
 //
 // return infimum norm
 //
-real
-TBlockVector::norm_inf () const
+template < typename value_t >
+real_type_t< value_t >
+TBlockVector< value_t >::norm_inf () const
 {
-    real  f = 0.0;
+    real_type_t< value_t >  f = 0.0;
 
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -338,16 +272,12 @@ TBlockVector::norm_inf () const
     return f;
 }
 
-//////////////////////////////////////////////////
-//
-// BLAS-routines (complex valued)
-//
-
 //
 // conjugate entries
 //
+template < typename value_t >
 void
-TBlockVector::conjugate ()
+TBlockVector< value_t >::conjugate ()
 {
     for ( uint  i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -355,85 +285,11 @@ TBlockVector::conjugate ()
 }
 
 //
-// fill with constant
-//
-void
-TBlockVector::cfill ( const complex & f )
-{
-    for ( uint  i = 0; i < n_blocks(); i++ )
-        if ( block(i) != nullptr )
-            block(i)->cfill( f );
-}
-    
-//
-// this = a * this
-//
-void
-TBlockVector::cscale ( const complex & f )
-{
-    for ( uint i = 0; i < n_blocks(); i++ )
-        if ( block(i) != nullptr )
-            block(i)->cscale( f );
-}
-
-//
-// this = f * x
-//
-void
-TBlockVector::cassign ( const complex & f, const TVector * x )
-{
-    if ( x == nullptr )
-        HERROR( ERR_ARG, "(TBlockVector) cassign", "given vector is nullptr" );
-    
-    if ( ! IS_TYPE( x, TBlockVector ) )
-        HERROR( ERR_VEC_TYPE, "(TBlockVector) cassign",
-               "expected TBlockVector, got " + x->typestr() );
-
-    const TBlockVector * b = cptrcast( x, TBlockVector );
-
-    set_ofs( b->ofs() );
-    
-    if ( b->n_blocks() != n_blocks() )
-        HERROR( ERR_VEC_STRUCT, "(TBlockVector) cassign",
-               "given vector has different number of blocks" );
-    
-    for ( uint i = 0; i < n_blocks(); i++ )
-        if ( block(i) != nullptr )
-            block(i)->cassign( f, b->block(i) );
-}
-
-//
-// this = this + a * x
-//
-void
-TBlockVector::caxpy ( const complex & f, const TVector * x )
-{
-    if ( f == complex(0) )
-        return;
-    
-    if ( x == nullptr )
-        HERROR( ERR_ARG, "(TBlockVector) caxpy", "given vector is nullptr" );
-    
-    if ( ! IS_TYPE( x, TBlockVector ) )
-        HERROR( ERR_VEC_TYPE, "(TBlockVector) caxpy",
-               "expected TBlockVector, got " + x->typestr() );
-
-    const TBlockVector * b = cptrcast( x, TBlockVector );
-
-    if ( b->n_blocks() != n_blocks() )
-        HERROR( ERR_VEC_STRUCT, "(TBlockVector) caxpy",
-               "given vector has different number of blocks" );
-    
-    for ( uint i = 0; i < n_blocks(); i++ )
-        if ( block(i) != nullptr )
-            block(i)->caxpy( f, b->block(i) );
-}
-
-//
 // return inner product ( this^H * x )
 //
-complex
-TBlockVector::dot ( const TVector * x ) const
+template < typename value_t >
+value_t
+TBlockVector< value_t >::dot ( const TVector< value_t > * x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TBlockVector) dot", "given vector is nullptr" );
@@ -442,12 +298,12 @@ TBlockVector::dot ( const TVector * x ) const
         HERROR( ERR_VEC_TYPE, "(TBlockVector) dot",
                "expected TBlockVector, got " + x->typestr() );
 
-    const TBlockVector * b = cptrcast( x, TBlockVector );
+    const auto  b = cptrcast( x, TBlockVector< value_t > );
 
     if ( b->n_blocks() != n_blocks() )
         HERROR( ERR_VEC_STRUCT, "(TBlockVector) dot", "given vector has different number of blocks" );
 
-    complex  f = 0.0;
+    value_t  f = 0.0;
     
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -459,8 +315,9 @@ TBlockVector::dot ( const TVector * x ) const
 //
 // return inner product ( this^T * x )
 //
-complex
-TBlockVector::dotu ( const TVector * x ) const
+template < typename value_t >
+value_t
+TBlockVector< value_t >::dotu ( const TVector< value_t > * x ) const
 {
     if ( x == nullptr )
         HERROR( ERR_ARG, "(TBlockVector) dotu", "given vector is nullptr" );
@@ -469,12 +326,12 @@ TBlockVector::dotu ( const TVector * x ) const
         HERROR( ERR_VEC_TYPE, "(TBlockVector) dotu",
                "expected TBlockVector, got " + x->typestr() );
 
-    const TBlockVector * b = cptrcast( x, TBlockVector );
+    const auto  b = cptrcast( x, TBlockVector< value_t > );
 
     if ( b->n_blocks() != n_blocks() )
         HERROR( ERR_VEC_STRUCT, "(TBlockVector) dotu", "given vector has different number of blocks" );
 
-    complex  f = 0.0;
+    value_t  f = 0.0;
     
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -491,10 +348,11 @@ TBlockVector::dotu ( const TVector * x ) const
 //
 // return size in bytes used by this object
 //
+template < typename value_t >
 size_t
-TBlockVector::byte_size () const
+TBlockVector< value_t >::byte_size () const
 {
-    size_t  s = TVector::byte_size() + sizeof(_blocks);
+    size_t  s = TVector< value_t >::byte_size() + sizeof(_blocks);
 
     for ( uint i = 0; i < n_blocks(); i++ )
         if ( block(i) != nullptr )
@@ -506,13 +364,14 @@ TBlockVector::byte_size () const
 //
 // return copy of matrix
 //
-std::unique_ptr< TVector >
-TBlockVector::copy  () const
+template < typename value_t >
+std::unique_ptr< TVector< value_t > >
+TBlockVector< value_t >::copy  () const
 {
     auto  v = create();
-    auto  x = ptrcast( v.get(), TBlockVector );
+    auto  x = ptrcast( v.get(), TBlockVector< value_t > );
 
-    x->set_ofs( ofs() );
+    x->set_ofs( this->ofs() );
     x->set_block_struct( n_blocks() );
 
     for ( uint i = 0; i < n_blocks(); i++ )
@@ -525,8 +384,9 @@ TBlockVector::copy  () const
 //
 // stream output
 //
+template < typename value_t >
 void
-TBlockVector::print ( const uint offset ) const
+TBlockVector< value_t >::print ( const uint offset ) const
 {
     for ( uint i = 0; i < offset; i++ )
         std::cout << ' ';
@@ -551,4 +411,9 @@ TBlockVector::print ( const uint offset ) const
     std::cout << " ]" << std::endl;
 }
 
-}// namespace
+template class TBlockVector< float >;
+template class TBlockVector< double >;
+template class TBlockVector< std::complex< float > >;
+template class TBlockVector< std::complex< double > >;
+
+}// namespace Hpro

@@ -1,11 +1,11 @@
-#ifndef __HLIB_TCOEFFFN_HH
-#define __HLIB_TCOEFFFN_HH
+#ifndef __HPRO_TCOEFFFN_HH
+#define __HPRO_TCOEFFFN_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TCoeffFn.hh
 // Description : represents a function for matrix coefficients
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -20,7 +20,7 @@
 #include "hpro/matrix/TMatrix.hh"
 #include "hpro/matrix/TDenseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ////////////////////////////////////////////////////////////////////
@@ -51,12 +51,6 @@ public:
     //! destructor
     virtual ~TCoeffFn () {}
 
-    //! return true if function is complex valued
-    virtual bool       is_complex     () const
-    {
-        return is_complex_type< value_t >::value;
-    }
-        
     //! return format of matrix, e.g. symmetric or hermitian
     virtual matform_t  matrix_format  () const { return MATFORM_NONSYM; }
         
@@ -115,11 +109,11 @@ public:
     // construct dense matrix for \a rowis × \a colis
     //
     virtual
-    std::unique_ptr< TMatrix >
+    std::unique_ptr< TMatrix< value_t > >
     build ( const TIndexSet &  rowis,
             const TIndexSet &  colis ) const
     {
-        auto  M = std::make_unique< TDenseMatrix >( rowis, colis, is_complex() );
+        auto  M = std::make_unique< TDenseMatrix< value_t > >( rowis, colis );
 
         eval( rowis, colis, blas_mat< value_t >( M.get() ).data() );
 
@@ -474,18 +468,15 @@ public:
 
     //! construct coefficient function with \a M as dense matrix
     //! holding all coefficients
-    TDenseCoeffFn ( const TDenseMatrix *             M )
+    TDenseCoeffFn ( const TDenseMatrix< value_t > *  M )
             : TCoeffFn< value_t >()
     {
         if ( M == nullptr )
             HERROR( ERR_ARG, "TDenseCoeffFn", "M is null" );
 
-        if ( M->is_complex() != is_complex_type< value_t >::value )
-            HERROR( ERR_REAL_CMPLX, "TDenseCoeffFn", "M has wrong value type" );
-
         _row_ofs       = M->row_ofs();
         _col_ofs       = M->col_ofs();
-        _matrix        = blas_mat< value_t >( M );
+        _matrix        = blas_mat( M );
         _matrix_format = M->form();
     }
 
@@ -531,4 +522,4 @@ public:
     
 }// namespace
 
-#endif // __HLIB_TCOEFFFN_HH
+#endif // __HPRO_TCOEFFFN_HH

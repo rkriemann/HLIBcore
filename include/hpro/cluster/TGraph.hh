@@ -1,11 +1,11 @@
-#ifndef __HLIB_TGRAPH_HH
-#define __HLIB_TGRAPH_HH
+#ifndef __HPRO_TGRAPH_HH
+#define __HPRO_TGRAPH_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TGraph.hh
 // Description : classes for representing graphs
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -14,7 +14,7 @@
 #include "hpro/cluster/TNodeSet.hh"
 #include "hpro/matrix/TSparseMatrix.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -255,7 +255,7 @@ public:
     //! construct graph using symmetrised sparsity pattern of matrix \a S;
     //! nodes marked in \a nodemask, i.e. nodemask[node] = true, will be excluded
     //! from graph
-    TGraph ( const TSparseMatrix *        S,
+    TGraph ( any_const_sparse_matrix_t    S,
              const std::vector< bool > &  nodemask );
 
     //! dtor
@@ -444,7 +444,7 @@ public:
     //! construct graph using symmetrised sparsity pattern of matrix \a S;
     //! nodes marked in \a nodemask, i.e. nodemask[node] = true, will be excluded
     //! from graph; matrix coefficients will be used for edge weights
-    TEWGraph ( const TSparseMatrix *        S,
+    TEWGraph ( any_const_sparse_matrix_t    S,
                const std::vector< bool > &  nodemask,
                const bool                   sym_edge_weights );
     
@@ -522,6 +522,6 @@ public:
     virtual TGraph *  create () const { return new TEWGraph; }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif // __HLIB_TGRAPH_HH
+#endif // __HPRO_TGRAPH_HH

@@ -3,7 +3,7 @@
 // File        : TColourMap.cc
 // Description : provides various colourmaps
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <algorithm>
@@ -17,7 +17,7 @@
 
 #include "TColourMap.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace
@@ -2007,4 +2007,4 @@ TShuffleColourMap::init ( const size_t n )
     }// for
 }
 
-}// namespace HLIB
+}// namespace Hpro

@@ -1,16 +1,16 @@
-#ifndef __HLIB_BLAS_MATRIXBASE_HH
-#define __HLIB_BLAS_MATRIXBASE_HH
+#ifndef __HPRO_BLAS_MATRIXBASE_HH
+#define __HPRO_BLAS_MATRIXBASE_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : MatrixBase.hh
 // Description : base class for all matrices and matrix views
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/blas/Range.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 namespace BLAS
@@ -29,6 +29,10 @@ struct is_matrix
 {
     static const bool  value = false;
 };
+
+#if __cplusplus >= 201703L
+template <typename T> inline constexpr bool is_matrix_v = is_matrix< T >::value;
+#endif
 
 //!
 //! different matrix views in BLAS
@@ -121,6 +125,6 @@ std::ostream & operator << ( std::ostream & os, const MatrixBase< T > & M );
 
 }// namespace BLAS
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_BLAS_MATRIXBASE_HH
+#endif  // __HPRO_BLAS_MATRIXBASE_HH

@@ -1,18 +1,18 @@
-#ifndef __HLIB_THELMHOLTZBF_HH
-#define __HLIB_THELMHOLTZBF_HH
+#ifndef __HPRO_THELMHOLTZBF_HH
+#define __HPRO_THELMHOLTZBF_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : THelmholtzBF.hh
 // Description : bilinear forms for Helmholtz operator
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/algebra/TLowRankApx.hh"
 #include "hpro/bem/TQuadBEMBF.hh"
 #include "hpro/bem/TQuadHCAGenFn.hh"
 
-namespace HLIB
+namespace Hpro
 {
     
 ////////////////////////////////////////////////////////////////
@@ -41,8 +41,9 @@ namespace HLIB
 //!          \f[ 4 \pi \int_{\Gamma} \frac{u(y) \cdot e^{i\kappa \|x-y\|_2}}{\|x-y\|_2} dy = f(x) \f]
 //!
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-class THelmholtzSLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, complex >
+           typename  T_testsp,
+           typename  T_value >
+class THelmholtzSLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -50,22 +51,23 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = complex;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
 private:
     //! @cond
     
     // i * wave number
-    const complex  _ikappa;
+    const value_t  _ikappa;
 
     // kernel function implementation
-    void ( * _kernel_fn ) ( const TGrid::triangle_t &    tri0,
-                            const TGrid::triangle_t &    tri1,
-                            const tripair_quad_rule_t *  rule,
-                            const complex                ikappa,
-                            const ansatzsp_t *           ansatz_sp,
-                            const testsp_t *             test_sp,
-                            std::vector< complex > &     values );
+    void ( * _kernel_fn ) ( const TGrid::triangle_t &             tri0,
+                            const TGrid::triangle_t &             tri1,
+                            const tripair_quad_rule_t< real_t > * rule,
+                            const value_t                         ikappa,
+                            const ansatzsp_t *                    ansatz_sp,
+                            const testsp_t *                      test_sp,
+                            std::vector< value_t > &              values );
     
     //! @endcond
     
@@ -75,7 +77,7 @@ public:
     // constructor and destructor
     //
     
-    THelmholtzSLPBF ( const complex       kappa,
+    THelmholtzSLPBF ( const value_t       kappa,
                       const ansatzsp_t *  aansatzsp,
                       const testsp_t *    atestsp,
                       const uint          quad_order = CFG::BEM::quad_order );
@@ -87,12 +89,12 @@ public:
 
 protected:
     // eval kernel function at quadrature points
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< complex > &     values ) const;
+    virtual void  eval_kernel  ( const idx_t                           tri0idx,
+                                 const idx_t                           tri1idx,
+                                 const TGrid::triangle_t &             tri0,
+                                 const TGrid::triangle_t &             tri1,
+                                 const tripair_quad_rule_t< real_t > * quad_rule,
+                                 std::vector< value_t > &              values ) const;
 };
 
 ////////////////////////////////////////////////////
@@ -108,11 +110,14 @@ protected:
 //! 
 //!          THelmholtzDLPBF implements the bilinear form for the Helmholtz
 //!          double layer potential with the kernel function
-//!          \f[ \frac{e^{i \cdot \kappa \|x-y\|_2} (i\cdot \kappa \|x-y\|_2 - 1) \langle n, y-x \rangle}{\|x-y\|_2^3} \f].
+//!          \f[ \frac{e^{i \cdot \kappa \|x-y\|_2} (i\cdot \kappa \|x-y\|_2 - 1) \langle n(y), y-x \rangle}{\|x-y\|_2^3} \f].
+//!          or adjoint form
+//!          \f[ \frac{e^{i \cdot \kappa \|x-y\|_2} (i\cdot \kappa \|x-y\|_2 - 1) \langle n(x), x-y \rangle}{\|x-y\|_2^3} \f].
 //!
 template < typename  T_ansatzsp,
-           typename  T_testsp >
-class THelmholtzDLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, complex >
+           typename  T_testsp,
+           typename  T_value >
+class THelmholtzDLPBF : public TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -120,23 +125,28 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = complex;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
 
 private:
     //! @cond
+
+    // enables/disables adjoint form
+    const bool     _adjoint;
     
     // i times wave number
-    const complex  _ikappa;
+    const value_t  _ikappa;
     
     // kernel function implementation
-    void ( * _kernel_fn ) ( const idx_t                  tri1_id,
-                            const TGrid::triangle_t &    tri0,
-                            const TGrid::triangle_t &    tri1,
-                            const tripair_quad_rule_t *  rule,
-                            const complex                ikappa,
-                            const ansatzsp_t *           ansatz_sp,
-                            const testsp_t *             test_sp,
-                            std::vector< complex > &     values );
+    void ( * _kernel_fn ) ( const idx_t                           tri_id,
+                            const bool                            adjoint,
+                            const TGrid::triangle_t &             tri0,
+                            const TGrid::triangle_t &             tri1,
+                            const tripair_quad_rule_t< real_t > * rule,
+                            const value_t                         ikappa,
+                            const ansatzsp_t *                    ansatz_sp,
+                            const testsp_t *                      test_sp,
+                            std::vector< value_t > &              values );
     
     //! @endcond
     
@@ -146,9 +156,10 @@ public:
     // constructor and destructor
     //
     
-    THelmholtzDLPBF ( const complex       kappa,
+    THelmholtzDLPBF ( const value_t       kappa,
                       const ansatzsp_t *  aansatzsp,
                       const testsp_t *    atestsp,
+                      const bool          adjoint    = false,
                       const uint          quad_order = CFG::BEM::quad_order );
 
     virtual ~THelmholtzDLPBF () {}
@@ -158,12 +169,12 @@ public:
 
 protected:
     // eval kernel function at quadrature points
-    virtual void  eval_kernel  ( const idx_t                  tri0idx,
-                                 const idx_t                  tri1idx,
-                                 const TGrid::triangle_t &    tri0,
-                                 const TGrid::triangle_t &    tri1,
-                                 const tripair_quad_rule_t *  quad_rule,
-                                 std::vector< complex > &     values ) const;
+    virtual void  eval_kernel  ( const idx_t                           tri0idx,
+                                 const idx_t                           tri1idx,
+                                 const TGrid::triangle_t &             tri0,
+                                 const TGrid::triangle_t &             tri1,
+                                 const tripair_quad_rule_t< real_t > * quad_rule,
+                                 std::vector< value_t > &              values ) const;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -179,9 +190,10 @@ protected:
 //! \class   THelmholtzSLPGenFn
 //! \brief   kernel generator function for Helmholtz SLP
 //!
-template < typename T_ansatzsp,
-           typename T_testsp >
-class THelmholtzSLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, complex >
+template < typename  T_ansatzsp,
+           typename  T_testsp,
+           typename  T_value >
+class THelmholtzSLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -189,7 +201,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = complex;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     
     //
     // inherit from base class
@@ -202,22 +215,22 @@ private:
     // HCA function impl.
     //
 
-    void ( * _eval_dxy_impl ) ( const complex &           ikappa,
-                                const tri_quad_rule_t &   quad_rule,
-                                const T3Point             x[3],
-                                const T3Point &           y,
-                                std::vector< complex > &  values );
+    void ( * _eval_dxy_impl ) ( const value_t &                   ikappa,
+                                const tri_quad_rule_t< real_t > & quad_rule,
+                                const T3Point                     x[3],
+                                const T3Point &                   y,
+                                std::vector< value_t > &          values );
     
 protected:
 
     // i · wave number
-    const Complex< real >  _ikappa;
+    const value_t  _ikappa;
     
 public:
     //
     // constructor
     //
-    THelmholtzSLPGenFn ( const complex         kappa,
+    THelmholtzSLPGenFn ( const value_t         kappa,
                          const ansatzsp_t *    ansatzsp,
                          const testsp_t *      testsp,
                          const TPermutation *  row_perm_i2e,
@@ -227,11 +240,11 @@ public:
     //!
     //! evaluate generator function at (\a x, \a y)
     //!
-    complex  eval  ( const T3Point &  x,
+    value_t  eval  ( const T3Point &  x,
                      const T3Point &  y ) const
     {
-        const real  one_over_4pi = real(1) / ( real(4) * Math::pi< real >() );
-        const real  dist         = Math::sqrt( dot( x - y ) );
+        const auto  one_over_4pi = real_t(1) / ( real_t(4) * Math::pi< real_t >() );
+        const auto  dist         = real_t( ( x - y ).norm2() );
         
         return one_over_4pi * Math::exp( _ikappa * dist ) / ( dist );
     }
@@ -240,10 +253,10 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t               tri_idx,
-                             const T3Point &           y,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< complex > &  values ) const
+    virtual void  eval_dx  ( const idx_t                       tri_idx,
+                             const T3Point &                   y,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -257,10 +270,10 @@ protected:
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &           x,
-                             const idx_t               tri_idx,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< complex > &  values ) const
+    virtual void  eval_dy  ( const T3Point &                   x,
+                             const idx_t                       tri_idx,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->test_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -279,9 +292,10 @@ protected:
 //! \class   THelmholtzDLPGenFn
 //! \brief   kernel generator function for Helmholtz DLP
 //!
-template < typename T_ansatzsp,
-           typename T_testsp >
-class THelmholtzDLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, complex >
+template < typename  T_ansatzsp,
+           typename  T_testsp,
+           typename  T_value >
+class THelmholtzDLPGenFn : public TInvarBasisQuadHCAGenFn< T_ansatzsp, T_testsp, T_value >
 {
 public:
     //
@@ -289,7 +303,8 @@ public:
     //
     using  ansatzsp_t = T_ansatzsp;
     using  testsp_t   = T_testsp;
-    using  value_t    = complex;
+    using  value_t    = T_value;
+    using  real_t     = real_type_t< value_t >;
     
     //
     // inherit from base class
@@ -303,29 +318,29 @@ private:
     // HCA function impl.
     //
 
-    void ( * _eval_dx_impl ) ( const complex &            ikappa,
-                               const tri_quad_rule_t &    quad_rule,
-                               const T3Point              x[3],
-                               const T3Point &            y,
-                               std::vector< complex > &   values );
+    void ( * _eval_dx_impl ) ( const value_t &                   ikappa,
+                               const tri_quad_rule_t< real_t > & quad_rule,
+                               const T3Point                     x[3],
+                               const T3Point &                   y,
+                               std::vector< value_t > &          values );
     
-    void ( * _eval_dy_impl ) ( const complex &            ikappa,
-                               const tri_quad_rule_t &    quad_rule,
-                               const T3Point &            x,
-                               const T3Point              y[3],
-                               const T3Point &            normal,
-                               std::vector< complex > &   values );
+    void ( * _eval_dy_impl ) ( const value_t &                   ikappa,
+                               const tri_quad_rule_t< real_t > & quad_rule,
+                               const T3Point &                   x,
+                               const T3Point                     y[3],
+                               const T3Point &                   normal,
+                               std::vector< value_t > &          values );
     
 protected:
 
     // i · wave number
-    const Complex< real >  _ikappa;
+    const value_t  _ikappa;
     
 public:
     //
     // constructor
     //
-    THelmholtzDLPGenFn ( const complex         kappa,
+    THelmholtzDLPGenFn ( const value_t         kappa,
                          const ansatzsp_t *    ansatzsp,
                          const testsp_t *      testsp,
                          const TPermutation *  row_perm_i2e,
@@ -335,11 +350,11 @@ public:
     //!
     //! evaluate generator function at (\a x, \a y)
     //!
-    complex  eval  ( const T3Point &  x,
+    value_t  eval  ( const T3Point &  x,
                      const T3Point &  y ) const
     {
-        const real  one_over_4pi = real(1) / ( real(4) * Math::pi< real >() );
-        const real  dist         = Math::sqrt( dot( x - y ) );
+        const auto  one_over_4pi = real_t(1) / ( real_t(4) * Math::pi< real_t >() );
+        const auto  dist         = real_t( ( x - y ).norm2() );
         
         return one_over_4pi * Math::exp( _ikappa * dist ) / ( dist );
     }
@@ -348,10 +363,10 @@ protected:
     //! Evaluate \f$ D_x \gamma(x, y) \f$ on with \f$x\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dx  ( const idx_t               tri_idx,
-                             const T3Point &           y,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< complex > &  values ) const
+    virtual void  eval_dx  ( const idx_t                       tri_idx,
+                             const T3Point &                   y,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );
@@ -365,10 +380,10 @@ protected:
     //! Evaluate \f$ D_y \gamma(x, y) \f$ on with \f$y\f$ defined by quadrature
     //! points on triangle \a tri_idx. The computed values for each quadrature
     //! point i are stored on \a values[i].
-    virtual void  eval_dy  ( const T3Point &           x,
-                             const idx_t               tri_idx,
-                             const tri_quad_rule_t &   quad_rule,
-                             std::vector< complex > &  values ) const
+    virtual void  eval_dy  ( const T3Point &                   x,
+                             const idx_t                       tri_idx,
+                             const tri_quad_rule_t< real_t > & quad_rule,
+                             std::vector< value_t > &          values ) const
     {
         const TGrid *            grid = this->ansatz_space()->grid();
         const TGrid::triangle_t  tri  = grid->triangle( tri_idx );

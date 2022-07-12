@@ -1,11 +1,11 @@
-#ifndef __HLIB_TBLOCKCLUSTER_HH
-#define __HLIB_TBLOCKCLUSTER_HH
+#ifndef __HPRO_TBLOCKCLUSTER_HH
+#define __HPRO_TBLOCKCLUSTER_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TBlockCluster.hh
 // Description : class for a block cluster tree
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include <vector>
@@ -15,7 +15,7 @@
 
 #include "hpro/parallel/TProcSet.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -300,6 +300,6 @@ void apply ( const TBlockCluster *  bc,
     }// if
 }
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TBLOCKCLUSTER_HH
+#endif  // __HPRO_TBLOCKCLUSTER_HH

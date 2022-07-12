@@ -1,17 +1,17 @@
-#ifndef __HLIB_TADMCONDITION_HH
-#define __HLIB_TADMCONDITION_HH
+#ifndef __HPRO_TADMCONDITION_HH
+#define __HPRO_TADMCONDITION_HH
 //
-// Project     : HLib
+// Project     : HLIBpro
 // File        : TAdmCondition.hh
 // Description : baseclass for all admissibility conditions
 //               for block-clusters
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2020. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
 #include "hpro/cluster/TBlockCluster.hh"
 
-namespace HLIB
+namespace Hpro
 {
 
 //!
@@ -79,6 +79,6 @@ public:
     }
 };
 
-}// namespace HLIB
+}// namespace Hpro
 
-#endif  // __HLIB_TADMCONDITION_HH
+#endif  // __HPRO_TADMCONDITION_HH
