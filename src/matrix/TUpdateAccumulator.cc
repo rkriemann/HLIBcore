@@ -38,11 +38,11 @@ TUpdateAccumulator< value_t >::init ( const TMatrix< value_t > *  M )
     {
         if ( is_dense( M ) )
         {
-            _accumulated = std::make_unique< TDenseMatrix< value_t > >( M->row_is(), M->col_is(), M->value_type() );
+            _accumulated = std::make_unique< TDenseMatrix< value_t > >( M->row_is(), M->col_is() );
         }// if
         else
         {
-            _accumulated = std::make_unique< TRkMatrix< value_t > >( M->row_is(), M->col_is(), M->value_type() );
+            _accumulated = std::make_unique< TRkMatrix< value_t > >( M->row_is(), M->col_is() );
         }// else
     }// if
 }
@@ -115,5 +115,14 @@ TUpdateAccumulator< value_t >::add_parent_update ( const TMatrix< value_t > * /*
 {
     HERROR( ERR_NOT_IMPL, "", "" );
 }
+
+//
+// explicit instantiation
+//
+
+template class TUpdateAccumulator< float >;
+template class TUpdateAccumulator< double >;
+template class TUpdateAccumulator< std::complex< float > >;
+template class TUpdateAccumulator< std::complex< double > >;
 
 }// namespace Hpro
