@@ -36,7 +36,8 @@ template < typename T_value >
 class Matrix : public MatrixBase< Matrix< T_value > >, public MemBlock< T_value >
 {
     // ensure only floating point types (or complex version)
-    static_assert( std::is_floating_point< T_value >::value || is_complex_type< T_value >::value );
+    static_assert( std::is_floating_point< T_value >::value || is_complex_type< T_value >::value,
+                   "only floating point types supported" );
     
 public:
     //! internal value type
