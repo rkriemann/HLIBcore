@@ -216,7 +216,7 @@ min_idx ( const T1 &  x )
     HASSERT_BLAS( x.length() > 0, ERR_VEC_SIZE, "min_idx", "" ); \
 
     using  value_t = typename T1::value_t;
-    using  real_t  = typename real_type< value_t >::type_t;
+    using  real_t  = real_type_t< value_t >;
     
     const idx_t  n       = idx_t(x.length());
     real_t       min_val = Math::abs( x(0) );
@@ -404,7 +404,7 @@ stable_sum ( const T1 &  x )
 //!
 template < typename T1 >
 typename std::enable_if< is_vector< T1 >::value,
-                         typename real_type< typename T1::value_t >::type_t >::type
+                         real_type_t< typename T1::value_t > >::type
 norm2 ( const T1 &  x )
 {
     MKL_SEQ_START;
@@ -617,7 +617,7 @@ max_idx ( const T1 &  M,
           idx_t &     col )
 {
     using  value_t = typename T1::value_t;
-    using  real_t  = typename real_type< value_t >::type_t;
+    using  real_t  = real_type_t< value_t >;
     
     HASSERT_BLAS( M.nrows() > 0, ERR_MAT_SIZE, "(BLAS) max_idx", "" );
     HASSERT_BLAS( M.ncols() > 0, ERR_MAT_SIZE, "(BLAS) max_idx", "" );
@@ -1241,8 +1241,8 @@ template < typename T1,
            typename T2 >
 std::enable_if_t< is_matrix< T1 >::value  &&
                   is_vector< T2 >::value  &&
-                  is_same_type< typename real_type< typename T1::value_t >::type_t,
-                                typename real_type< typename T2::value_t >::type_t >::value,
+                  is_same_type< real_type_t< typename T1::value_t >,
+                                real_type_t< typename T2::value_t > >::value,
                   void >
 prod_diag ( T1 &         M,
             const T2 &   D,
@@ -1269,8 +1269,8 @@ template < typename T1,
            typename T2 >
 std::enable_if_t< is_vector< T1 >::value  &&
                   is_matrix< T2 >::value  &&
-                  is_same_type< typename real_type< typename T1::value_t >::type_t,
-                                typename real_type< typename T2::value_t >::type_t >::value,
+                  is_same_type< real_type_t< typename T1::value_t >,
+                                real_type_t< typename T2::value_t > >::value,
                   void >
 prod_diag ( const T1 &   D,
             T2 &         M,
@@ -1294,12 +1294,12 @@ prod_diag ( const T1 &   D,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 norm2 ( const T1 & M );
 
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 norm_2 ( const T1 & M )
 {
     return norm2( M );
@@ -1311,7 +1311,7 @@ norm_2 ( const T1 & M )
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 normF ( const T1 & M )
 {
     using  value_t = typename T1::value_t;
@@ -1339,7 +1339,7 @@ normF ( const T1 & M )
 
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 norm_F ( const T1 & M )
 {
     return normF( M );
@@ -1354,7 +1354,7 @@ template < typename T1,
 std::enable_if_t< is_matrix< T1 >::value  &&
                   is_matrix< T2 >::value  &&
                   is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 diff_normF ( const T1 &  A,
              const T2 &  B )
 {
@@ -1385,7 +1385,7 @@ template < typename T1,
 std::enable_if_t< is_matrix< T1 >::value  &&
                   is_matrix< T2 >::value  &&
                   is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 diff_norm_F ( const T1 &  A,
               const T2 &  B )
 {
@@ -1401,7 +1401,7 @@ template < typename T1,
 std::enable_if_t< is_matrix< T1 >::value  &&
                   is_matrix< T2 >::value  &&
                   is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 lr_normF ( const T1 &  A,
            const T2 &  B )
 {
@@ -1439,7 +1439,7 @@ template < typename T1,
 std::enable_if_t< is_matrix< T1 >::value  &&
                   is_matrix< T2 >::value  &&
                   is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 lr_norm_F ( const T1 &  A,
             const T2 &  B )
 {
@@ -1453,7 +1453,7 @@ lr_norm_F ( const T1 &  A,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value,
-                  typename real_type< typename T1::value_t >::type_t >
+                  real_type_t< typename T1::value_t > >
 cond ( const T1 &  M );
 
 //!
@@ -1482,7 +1482,7 @@ std::enable_if_t< is_matrix< T1 >::value, void >
 make_hermitian ( T1 &  A )
 {
     using  value_t = typename T1::value_t;
-    using  real_t  = typename real_type< value_t >::type_t;
+    using  real_t  = real_type_t< value_t >;
 
     const idx_t  n = idx_t( A.nrows() );
     const idx_t  m = idx_t( A.ncols() );
@@ -1781,9 +1781,9 @@ eigen ( T1 &  diag,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value, void >
-svd    ( T1 &                                                            A,
-         Vector< typename real_type< typename T1::value_t >::type_t > &  S,
-         Matrix< typename T1::value_t > &                                V );
+svd    ( T1 &                                             A,
+         Vector< real_type_t< typename T1::value_t > > &  S,
+         Matrix< typename T1::value_t > &                 V );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1794,9 +1794,9 @@ svd    ( T1 &                                                            A,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value, void >
-svd    ( T1 &                                                            A,
-         Vector< typename real_type< typename T1::value_t >::type_t > &  S,
-         const bool                                                      left = true );
+svd    ( T1 &                                             A,
+         Vector< real_type_t< typename T1::value_t > > &  S,
+         const bool                                       left = true );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1806,8 +1806,8 @@ svd    ( T1 &                                                            A,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value, void >
-sv     ( T1 &                                                            A,
-         Vector< typename real_type< typename T1::value_t >::type_t > &  S );
+sv     ( T1 &                                             A,
+         Vector< real_type_t< typename T1::value_t > > &  S );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1821,9 +1821,9 @@ std::enable_if_t< is_matrix< T1 >::value &&
                   is_matrix< T2 >::value &&
                   is_same_type< typename T1::value_t, typename T2::value_t >::value,
                   void >
-sv     ( T1 &                                                            A,
-         T2 &                                                            B,
-         Vector< typename real_type< typename T1::value_t >::type_t > &  S );
+sv     ( T1 &                                             A,
+         T2 &                                             B,
+         Vector< real_type_t< typename T1::value_t > > &  S );
 
 //!
 //! \ingroup  BLAS_Module

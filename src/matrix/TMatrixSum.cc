@@ -12,72 +12,72 @@
 namespace Hpro
 {
 
-namespace
-{
+// namespace
+// {
 
-//
-// return operator corresponding to op0( op1 )
-//
-matop_t
-apply_op ( const matop_t  op0,
-           const matop_t  op1 )
-{
-    switch ( op0 )
-    {
-        case apply_normal :
-        {
-            switch ( op1 ) 
-            {
-                case apply_normal     : return apply_normal;
-                case apply_conjugate  : return apply_conjugate;
-                case apply_transposed : return apply_transposed;
-                case apply_adjoint    : return apply_adjoint;
-            }// switch
-        }
-        break;
+// //
+// // return operator corresponding to op0( op1 )
+// //
+// matop_t
+// apply_op ( const matop_t  op0,
+//            const matop_t  op1 )
+// {
+//     switch ( op0 )
+//     {
+//         case apply_normal :
+//         {
+//             switch ( op1 ) 
+//             {
+//                 case apply_normal     : return apply_normal;
+//                 case apply_conjugate  : return apply_conjugate;
+//                 case apply_transposed : return apply_transposed;
+//                 case apply_adjoint    : return apply_adjoint;
+//             }// switch
+//         }
+//         break;
 
-        case apply_conjugate :
-        {
-            switch ( op1 ) 
-            {
-                case apply_normal     : return apply_conjugate;
-                case apply_conjugate  : return apply_normal;
-                case apply_transposed : return apply_adjoint;
-                case apply_adjoint    : return apply_transposed;
-            }// switch
-        }
-        break;
+//         case apply_conjugate :
+//         {
+//             switch ( op1 ) 
+//             {
+//                 case apply_normal     : return apply_conjugate;
+//                 case apply_conjugate  : return apply_normal;
+//                 case apply_transposed : return apply_adjoint;
+//                 case apply_adjoint    : return apply_transposed;
+//             }// switch
+//         }
+//         break;
 
-        case apply_transposed :
-        {
-            switch ( op1 ) 
-            {
-                case apply_normal     : return apply_transposed;
-                case apply_conjugate  : return apply_adjoint;
-                case apply_transposed : return apply_normal;
-                case apply_adjoint    : HERROR( ERR_ARG, "apply_op", "no operator for conjugate" ); return apply_conjugate;
-            }// switch
-        }
-        break;
+//         case apply_transposed :
+//         {
+//             switch ( op1 ) 
+//             {
+//                 case apply_normal     : return apply_transposed;
+//                 case apply_conjugate  : return apply_adjoint;
+//                 case apply_transposed : return apply_normal;
+//                 case apply_adjoint    : HERROR( ERR_ARG, "apply_op", "no operator for conjugate" ); return apply_conjugate;
+//             }// switch
+//         }
+//         break;
 
-        case apply_adjoint :
-        {
-            switch ( op1 ) 
-            {
-                case apply_normal     : return apply_adjoint;
-                case apply_conjugate  : return apply_transposed;
-                case apply_transposed : HERROR( ERR_ARG, "apply_op", "no operator for conjugate" ); return apply_conjugate; 
-                case apply_adjoint    : return apply_normal;
-            }// switch
-        }
-        break;
+//         case apply_adjoint :
+//         {
+//             switch ( op1 ) 
+//             {
+//                 case apply_normal     : return apply_adjoint;
+//                 case apply_conjugate  : return apply_transposed;
+//                 case apply_transposed : HERROR( ERR_ARG, "apply_op", "no operator for conjugate" ); return apply_conjugate; 
+//                 case apply_adjoint    : return apply_normal;
+//             }// switch
+//         }
+//         break;
         
-    }// switch
+//     }// switch
 
-    HERROR( ERR_CONSISTENCY, "apply_op", "not reachable" ); 
-}
+//     HERROR( ERR_CONSISTENCY, "apply_op", "not reachable" ); 
+// }
 
-}// namespace anonymous
+// }// namespace anonymous
 
 ///////////////////////////////////////////////////////////
 //
@@ -191,12 +191,12 @@ template < typename value_t >
 void
 TMatrixSum< value_t >::apply ( const TVector< value_t > *  x,
                                TVector< value_t > *        y,
-                               const matop_t    op ) const
+                               const matop_t               op ) const
 {
     y->fill( value_t(0) );
     
     for ( auto &  s : _summands )
-        s.linop->apply_add( s.scale, x, y, apply_op( op, s.op ) );
+        s.linop->apply_add( s.scale, x, y, BLAS::apply_op( op, s.op ) );
 }
 
 //
@@ -210,10 +210,8 @@ TMatrixSum< value_t >::apply_add ( const value_t               alpha,
                                    TVector< value_t > *        y,
                                    const matop_t               op ) const
 {
-    y->fill( value_t(0) );
-    
     for ( auto &  s : _summands )
-        s.linop->apply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
+        s.linop->apply_add( alpha*s.scale, x, y, BLAS::apply_op( op, s.op ) );
 }
 
 template < typename value_t >
@@ -241,7 +239,7 @@ TMatrixSum< value_t >::apply_add   ( const value_t                    alpha,
     BLAS::fill( value_t(0), y );
     
     for ( auto &  s : _summands )
-        s.linop->apply_add( alpha*s.scale, x, y, apply_op( op, s.op ) );
+        s.linop->apply_add( alpha*s.scale, x, y, BLAS::apply_op( op, s.op ) );
 }
 
 template < typename value_t >
@@ -254,7 +252,7 @@ TMatrixSum< value_t >::apply_add   ( const value_t                    alpha,
     BLAS::fill( value_t(0), Y );
     
     for ( auto &  s : _summands )
-        s.linop->apply_add( alpha*s.scale, X, Y, apply_op( op, s.op ) );
+        s.linop->apply_add( alpha*s.scale, X, Y, BLAS::apply_op( op, s.op ) );
 }
 
 ///////////////////////////////////////////////////////////

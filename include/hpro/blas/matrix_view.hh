@@ -73,6 +73,24 @@ adjoint ( const matop_t   op )
     }// switch
 }
 
+//
+// return operator corresponding to op0( op1 )
+//
+inline
+matop_t
+apply_op ( const matop_t  op0,
+           const matop_t  op1 )
+{
+    switch ( op0 )
+    {
+        case apply_normal     : return op1;
+        case apply_conjugate  : return conjugate( op1 );
+        case apply_transposed : return transposed( op1 );
+        case apply_adjoint    : return adjoint( op1 );
+        default               : HERROR( ERR_CONSISTENCY, "apply_op", "unknown matrix operation" );
+    }// switch
+}
+
 //!
 //! \{
 //! \name Matrix Modifiers
