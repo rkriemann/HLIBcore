@@ -159,7 +159,13 @@ public:
     { HERROR( ERR_NOT_IMPL, "(TVector) dotu", "" ); }
 
     //! return euclidean norm
-    virtual real_t  norm2 () const { return Math::sqrt( std::real( dot( this ) ) ); }
+    virtual real_t  norm2 () const
+    {
+        if constexpr ( is_complex_type< value_t >::value )
+            return Math::sqrt( std::real( dot( this ) ) );
+        else
+            return Math::sqrt( dot( this ) );
+    }
 
     //! return infimum norm
     virtual real_t  norm_inf () const { HERROR( ERR_NOT_IMPL, "(TVector) norm_inf", "" ); }

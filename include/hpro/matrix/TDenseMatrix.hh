@@ -35,7 +35,7 @@ public:
     using  value_t = T_value;
     using  real_t  = typename real_type< value_t >::type_t;
 
-private:
+protected:
     //! @cond
     
     //! number of rows 
@@ -142,7 +142,7 @@ public:
     virtual size_t  cols () const { return _cols; }
 
     //! set size of matrix to \a n × \a m
-    void            set_size ( const size_t  n,
+    virtual void    set_size ( const size_t  n,
                                const size_t  m );
     
     //! set size as defined by block cluster \a c

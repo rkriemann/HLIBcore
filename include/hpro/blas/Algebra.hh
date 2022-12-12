@@ -532,6 +532,12 @@ std::enable_if_t< is_matrix< T1 >::value  &&
 copy ( const T1 &  A,
        T2 &        B )
 {
+    // if ( ! ( A.nrows() == B.nrows() ) )
+    //     HERROR( ERR_MAT_SIZE, "", "" );
+    
+    // if ( ! ( A.ncols() == B.ncols() ) )
+    //     HERROR( ERR_MAT_SIZE, "", "" );
+    
     HASSERT_BLAS( A.nrows() == B.nrows(), ERR_MAT_SIZE, "(BLAS) copy", "" );
     HASSERT_BLAS( A.ncols() == B.ncols(), ERR_MAT_SIZE, "(BLAS) copy", "" );
 
@@ -1034,9 +1040,20 @@ prod ( const T1    alpha,
        const T1    beta,
        T4 &        C )
 {
-    HASSERT_BLAS( A.nrows() == C.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( B.ncols() == C.ncols(), ERR_MAT_SIZE, "(BLAS) prod", "" );
-    HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", "" );
+    // if ( ! ( A.nrows() == C.nrows() ) )
+    //     HERROR( ERR_MAT_SIZE, "", "" );
+    
+    // if ( ! ( B.ncols() == C.ncols() ) )
+    //     HERROR( ERR_MAT_SIZE, "", "" );
+        
+    // if ( ! ( A.ncols() == B.nrows() ) )
+    //     HERROR( ERR_MAT_SIZE, "", "" );
+
+    HASSERT_BLAS( A.nrows() == C.nrows(), ERR_MAT_SIZE, "(BLAS) prod", to_string( "nrows(A) = %d, nrows(C) = %d", A.nrows(), C.nrows() ) );
+    HASSERT_BLAS( B.ncols() == C.ncols(), ERR_MAT_SIZE, "(BLAS) prod", to_string( "ncols(B) = %d, ncols(C) = %d", B.ncols(), C.ncols() ) );
+    HASSERT_BLAS( A.ncols() == B.nrows(), ERR_MAT_SIZE, "(BLAS) prod", to_string( "ncols(A) = %d, nrows(B) = %d", A.ncols(), B.nrows() ) );
+
+    HASSERT_BLAS( C.col_stride() >= std::max< size_t >( 1, C.nrows() ), ERR_MAT_SIZE, "(BLAS) prod", to_string( "colstrid(C) = %d", C.col_stride() ) );
     
     MKL_SEQ_START;
     

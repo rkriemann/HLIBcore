@@ -107,7 +107,7 @@ public:
     virtual size_t        cols () const { return _cols; }
 
     //! set size of matrix
-    void                  set_size ( const size_t  r, const size_t  c ) { _rows = r; _cols = c; }
+    virtual void          set_size ( const size_t  r, const size_t  c ) { _rows = r; _cols = c; }
     
     //! return number of block-rows
     uint                  block_rows   ()                    const { return _block_rows; }

@@ -174,12 +174,12 @@ public:
     virtual void    set_cluster  ( const TBlockCluster * c );
 
     //! set size and rank of matrix (if zero == true fill new memory with zeros)
-    void            set_size     ( const size_t  n,
+    virtual void    set_size     ( const size_t  n,
                                    const size_t  m,
                                    const size_t  k );
     
     //! set new size but keep current rank of matrix
-    void            set_size     ( const size_t  n,
+    virtual void    set_size     ( const size_t  n,
                                    const size_t  m )
     {
         return set_size( n, m, _rank );
