@@ -1110,7 +1110,7 @@ TBlockMatrix< value_t >::byte_size () const
     size_t  size = 0;
     
     size += TMatrix< value_t >::byte_size();
-    size += 2*sizeof(uint) + _block_rows*_block_cols*sizeof(TMatrix< value_t >*);
+    size += 2*sizeof(size_t) + 2*sizeof(uint) + sizeof(_blocks) + _block_rows*_block_cols*sizeof(TMatrix< value_t >*);
 
     //
     // compute memory consumption of sub blocks

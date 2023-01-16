@@ -300,7 +300,7 @@ public:
     //! return size in bytes used by this object
     size_t  byte_size () const
     {
-        return sizeof( value_t ) * _length[0] * _length[1] + sizeof(_length) + sizeof(_stride);
+        return sizeof( value_t ) * _length[0] * _length[1] + sizeof(_length) + sizeof(_stride) + sizeof(MemBlock< value_t >);
     }
 
     //

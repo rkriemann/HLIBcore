@@ -804,7 +804,7 @@ TDenseMatrix< value_t >::byte_size () const
 {
     size_t  size = TMatrix< value_t >::byte_size() + 2*sizeof(size_t) + sizeof(B::Matrix< value_t >);
 
-    size += _rows * _cols * sizeof(value_t);
+    size += _mat.byte_size();
 
     return size;
 }

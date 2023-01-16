@@ -1262,8 +1262,8 @@ TRkMatrix< value_t >::byte_size () const
 {
     size_t  s = TMatrix< value_t >::byte_size() + 3 * sizeof(size_t);
 
-    s += sizeof(B::Matrix< value_t >);
-    s += (_rank * (_rows + _cols) * sizeof(value_t));
+    s += _mat_A.byte_size();
+    s += _mat_B.byte_size();
 
     return s;
 }

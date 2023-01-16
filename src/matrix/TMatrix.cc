@@ -850,7 +850,9 @@ template < typename value_t >
 size_t
 TMatrix< value_t >::byte_size () const
 {
-    return ( sizeof(TBlockCluster*) + 2*sizeof(uint) + _procs.byte_size() + sizeof(_matform) + TLockable::byte_size() );
+    return ( sizeof(_id) + sizeof(_cluster) + sizeof(_row_ofs) + sizeof(_col_ofs) +
+             _procs.byte_size() + sizeof(_matform) + TLockable::byte_size() );
+    // 7*sizeof(TMatrix<value_t>*) + sizeof(_accumulator) + TLockable::byte_size() );
 }
 
 //
