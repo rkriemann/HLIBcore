@@ -405,7 +405,16 @@ axpy ( const value_t               alpha,
        const TVector< value_t > &  x,
        TVector< value_t > &        y )
 {
-    y.axpy( alpha, x );
+    y.axpy( alpha, & x );
+}
+
+template < typename value_t >
+void
+add ( const value_t               alpha,
+      const TVector< value_t > &  x,
+      TVector< value_t > &        y )
+{
+    y.axpy( alpha, & x );
 }
 
 //
@@ -441,8 +450,16 @@ namespace DBG
 //
 template < typename value_t >
 void write ( const TVector< value_t > *  v,
-             const char *                filename,
-             const char *                vecname );
+             const std::string &         filename,
+             const std::string &         vecname );
+
+template < typename value_t >
+void write ( const TVector< value_t > &  v,
+             const std::string &         filename,
+             const std::string &         vecname )
+{
+    write( &v, filename, vecname );
+}
 
 }// namespace DBG
 
