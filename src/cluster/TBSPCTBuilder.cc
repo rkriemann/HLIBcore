@@ -99,6 +99,7 @@ TGeomCTBuilder::TGeomCTBuilder ( const uint  an_min,
 {
     _n_min         = std::max( an_min, uint(1) );
     _min_leaf_lvl  = amin_leaf_lvl;
+    _max_lvl       = 0;
     _adjust_bb     = CFG::Cluster::adjust_bbox;
     _sort_wrt_size = CFG::Cluster::sort_wrt_size;
 }
@@ -134,7 +135,7 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     //
 
     unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, uint(max_dof / 2) };
+    data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
     TNodeSet                   dofs( max_dof );
     TBBox                      bbox;
     TOptClusterSize            csize;
@@ -389,7 +390,10 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
 
     if ( lvl > data.max_lvl )
     {
-        HWARNING( to_string( "in (TBSPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        // show warning only for default choice of max_lvl
+        if ( _max_lvl == 0 )
+            HWARNING( to_string( "in (TBSPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        
         return build_leaf( dofs, lvl, index_ofs, bbox, data );
     }// if
     
@@ -647,7 +651,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     //
 
     unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, uint(max_dof / 2) };
+    data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
     TNodeSet                   dofs( max_dof );
     TBBox                      bbox;
     TOptClusterSize            csize;
@@ -758,7 +762,10 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
 
     if ( lvl > data.max_lvl )
     {
-        HWARNING( to_string( "in (TBSPNDPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        // show warning only for default choice of max_lvl
+        if ( _max_lvl == 0 )
+            HWARNING( to_string( "in (TBSPNDPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        
         return build_leaf( dofs, lvl, index_ofs, bbox, data );
     }// if
 

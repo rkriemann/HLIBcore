@@ -19,67 +19,6 @@ namespace Hpro
 
 using namespace std;
 
-void
-solve_mp ( const TSolver &       solver,
-           const std::string &   solver_name,
-           any_const_operator_t  A,
-           any_vector_t          x,
-           any_const_vector_t    b,
-           any_const_operator_t  W,
-           TSolverInfo *         info )
-{
-    using std::get;
-    
-    if (( A.index() != x.index() ) || ( A.index() != b.index() ))
-        HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x and b have different value type" );
-
-    switch ( W.index() )
-    {
-        case REAL_FP32 :
-            switch ( A.index() )
-            {
-                case REAL_FP32 : solver.solve( get< REAL_FP32 >( A ), get< REAL_FP32 >( x ), get< REAL_FP32 >( b ), get< REAL_FP32 >( W ), info ); break;
-                case REAL_FP64 : solver.solve( get< REAL_FP64 >( A ), get< REAL_FP64 >( x ), get< REAL_FP64 >( b ), get< REAL_FP32 >( W ), info ); break;
-                default:
-                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
-            }// switch
-            break;
-            
-        case REAL_FP64 :
-            switch ( A.index() )
-            {
-                case REAL_FP32 : solver.solve( get< REAL_FP32 >( A ), get< REAL_FP32 >( x ), get< REAL_FP32 >( b ), get< REAL_FP64 >( W ), info ); break;
-                case REAL_FP64 : solver.solve( get< REAL_FP64 >( A ), get< REAL_FP64 >( x ), get< REAL_FP64 >( b ), get< REAL_FP64 >( W ), info ); break;
-                default:
-                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
-            }// switch
-            break;
-            
-        case COMPLEX_FP32 :
-            switch ( A.index() )
-            {
-                case COMPLEX_FP32 : solver.solve( get< COMPLEX_FP32 >( A ), get< COMPLEX_FP32 >( x ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP32 >( W ), info ); break;
-                case COMPLEX_FP64 : solver.solve( get< COMPLEX_FP64 >( A ), get< COMPLEX_FP64 >( x ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP32 >( W ), info ); break;
-                default:
-                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
-            }// switch
-            break;
-            
-        case COMPLEX_FP64 :
-            switch ( A.index() )
-            {
-                case COMPLEX_FP32 : solver.solve( get< COMPLEX_FP32 >( A ), get< COMPLEX_FP32 >( x ), get< COMPLEX_FP32 >( b ), get< COMPLEX_FP64 >( W ), info ); break;
-                case COMPLEX_FP64 : solver.solve( get< COMPLEX_FP64 >( A ), get< COMPLEX_FP64 >( x ), get< COMPLEX_FP64 >( b ), get< COMPLEX_FP64 >( W ), info ); break;
-                default:
-                    HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
-            }// switch
-            break;
-
-        default :
-            HERROR( ERR_ARG, "(" + solver_name + ") solve", "A, x, b and W have unsupported value type" );
-    }// switch
-}
-
 ////////////////////////////////////////////////
 //
 // constructor and destructor

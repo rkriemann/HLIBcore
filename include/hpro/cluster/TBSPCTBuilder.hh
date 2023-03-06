@@ -85,6 +85,9 @@ protected:
     //! minimal level on which leaves may occur
     uint                   _min_leaf_lvl;
 
+    //! maximal level of tree (0: automatic choice)
+    uint                   _max_lvl;
+
     //! flag for adjusting bounding boxes of nodes
     bool                   _adjust_bb;
 
@@ -122,8 +125,12 @@ public:
 
     uint  n_min          () const { return _n_min;         }
     uint  min_leaf_lvl   () const { return _min_leaf_lvl;  }
+    uint  max_lvl        () const { return _max_lvl;       }
     bool  adjust_bb      () const { return _adjust_bb;     }
     bool  sort_wrt_size  () const { return _sort_wrt_size; }
+
+    //! set maximal leaf level
+    void  set_max_lvl    ( const uint  l ) { _max_lvl = l; }
     
     //! set flag for adjusting bounding box
     void  adjust_bb      ( const bool  b ) { _adjust_bb = b; }

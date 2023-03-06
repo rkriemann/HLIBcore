@@ -97,7 +97,7 @@ public:
     //! return ID of last processor in set
     uint last  () const noexcept { return _last;  }
 
-    //! return i´th subset in an n-partition of the local set
+    //! return i'th subset in an n-partition of the local set
     /*!
       Split local processor set into n subsets and return i'th subset.
       \param i  subset to return

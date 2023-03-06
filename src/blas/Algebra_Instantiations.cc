@@ -135,11 +135,11 @@ template void svd_double< std::complex<double> > ( Matrix< std::complex<double> 
                                               Matrix< std::complex<double> > &  V );
 
 
-#define INST_SVD( T )                                                   \
-    template void                                                       \
-    svd< Matrix< T > >  ( Matrix< T > &                                U, \
-                          Vector< typename real_type< T >::type_t > &  S, \
-                          Matrix< T > &                                V )
+#define INST_SVD( T )                                      \
+    template void                                          \
+    svd< Matrix< T > >  ( Matrix< T > &                 U, \
+                          Vector< real_type_t< T > > &  S, \
+                          Matrix< T > &                 V )
 INST_SVD( float );
 INST_SVD( double );
 INST_SVD( std::complex< float > );
@@ -147,10 +147,10 @@ INST_SVD( std::complex< double > );
 #undef INST_SVD
 
 
-#define INST_SVD( T )                                                   \
-    template void                                                       \
-    svd< Matrix< T > >  ( Matrix< T > &                                U, \
-                          Vector< typename real_type< T >::type_t > &  S, \
+#define INST_SVD( T )                                      \
+    template void                                          \
+    svd< Matrix< T > >  ( Matrix< T > &                 U, \
+                          Vector< real_type_t< T > > &  S, \
                           const bool left )
 INST_SVD( float );
 INST_SVD( double );
@@ -159,10 +159,10 @@ INST_SVD( std::complex< double > );
 #undef INST_SVD
 
 
-#define INST_SV( T )                                                    \
-    template void                                                       \
-    sv< Matrix< T > >  ( Matrix< T > &                                U, \
-                         Vector< typename real_type< T >::type_t > &  S )
+#define INST_SV( T )                                      \
+    template void                                         \
+    sv< Matrix< T > >  ( Matrix< T > &                 U, \
+                         Vector< real_type_t< T > > &  S )
 INST_SV( float );
 INST_SV( double );
 INST_SV( std::complex< float > );
@@ -170,11 +170,11 @@ INST_SV( std::complex< double > );
 #undef INST_SV
 
 
-#define INST_SV( T )                                                    \
-    template void                                                       \
-    sv< Matrix< T >, Matrix< T > >  ( Matrix< T > &                                A, \
-                                      Matrix< T > &                                B, \
-                                      Vector< typename real_type< T >::type_t > &  S )
+#define INST_SV( T )                                                   \
+    template void                                                      \
+    sv< Matrix< T >, Matrix< T > >  ( Matrix< T > &                 A, \
+                                      Matrix< T > &                 B, \
+                                      Vector< real_type_t< T > > &  S )
 INST_SV( float );
 INST_SV( double );
 INST_SV( std::complex< float > );

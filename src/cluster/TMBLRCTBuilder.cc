@@ -290,7 +290,7 @@ TMBLRCTBuilder::build ( const TCoordinate *  coord,
     // sort indices based on binary space partitioning
     //
     
-    data_t             data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, uint(max_dof / 2) };
+    data_t             data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
     // TCardBSPPartStrat  part( adaptive_split_axis );
     list< idx_t >      sorted;
 
@@ -457,7 +457,10 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
 
     if ( lvl > data.max_lvl )
     {
-        HWARNING( to_string( "in (TMBLRCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        // show warning only for default choice of max_lvl
+        if ( _max_lvl == 0 )
+            HWARNING( to_string( "in (TMBLRCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
+        
         return build_leaf( dofs, lvl, index_ofs, bbox, data );
     }// if
     
