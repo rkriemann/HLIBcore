@@ -195,6 +195,18 @@ apply ( const TLinearOperator< value_mat_t > &  A,
     apply( &A, &x, &y, op );
 }
 
+template < typename value_mat_t,
+           typename value_vec_t >
+void
+apply ( const TLinearOperator< value_mat_t > &  A,
+        const BLAS::Vector< value_vec_t > &     x,
+        BLAS::Vector< value_vec_t > &           y,
+        const matop_t                           op = apply_normal )
+{
+    BLAS::fill( value_vec_t(0), y );
+    A.apply_add( x, y, op );
+}
+
 //!
 //! \ingroup Matrix_Module
 //! \fn      apply

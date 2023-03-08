@@ -533,6 +533,41 @@ public:
     read  ( const std::string &  fname ) const;
 };
 
+///////////////////////////////////////////////////
+//!
+//! \ingroup  IO_Module
+//! \class    TH2LibMatrixIO
+//! \brief    Class for matrix I/O in format used by H2Lib.
+//!
+class TH2LibMatrixIO
+{
+public:
+    ///////////////////////////////////////////////
+    //
+    // constructor and destructor
+    //
+
+    TH2LibMatrixIO () {}
+
+    virtual ~TH2LibMatrixIO () {}
+
+    ///////////////////////////////////////////////
+    //
+    // interface for I/O
+    //
+
+    //! write matrix \a A to file \a fname
+    template < typename value_t >
+    void
+    write ( const TMatrix< value_t > *  A,
+            const std::string &         fname ) const;
+
+    //! read and return matrix from file \a fname
+    template < typename value_t >
+    std::unique_ptr< TMatrix< value_t > >
+    read  ( const std::string &  fname ) const;
+};
+
 //! \}
 
 }// namespace Hpro

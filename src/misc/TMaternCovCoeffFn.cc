@@ -12,8 +12,7 @@
 #  include <gsl/gsl_sf_bessel.h>
 #  include <gsl/gsl_sf_gamma.h>
 #else
-#  include <boost/math/special_functions/gamma.hpp>
-#  include <boost/math/special_functions/bessel.hpp>
+#  include <cmath>
 #endif
 
 #include "hpro/misc/TMaternCovCoeffFn.hh"
@@ -49,7 +48,7 @@ compute_Bessel ( const double  d,
         #if USE_GSL == 1
         return scale_fac * gsl_sf_bessel_Knu( nu, temp ) * std::pow( temp, nu );
         #else
-        return scale_fac * boost::math::cyl_bessel_k( nu, temp ) * std::pow( temp, nu );
+        return scale_fac * std::cyl_bessel_k( nu, temp ) * std::pow( temp, nu );
         #endif
     }// else
 }
@@ -71,7 +70,7 @@ TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                 
     #if USE_GSL == 1
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * gsl_sf_gamma(nu) ) )
     #else
-    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * boost::math::tgamma( nu ) ) )
+    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * std::tgamma( nu ) ) )
     #endif
     , _row_vertices( vertices )
     , _col_vertices( vertices )
@@ -91,7 +90,7 @@ TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                 
     #if USE_GSL == 1
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * gsl_sf_gamma(nu) ) )
     #else
-    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * boost::math::tgamma( nu ) ) )
+    , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * std::tgamma( nu ) ) )
     #endif
     , _row_vertices( row_vertices )
     , _col_vertices( col_vertices )

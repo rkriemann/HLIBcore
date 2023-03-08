@@ -135,6 +135,10 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'HDF5CFLAGS'   : '$pkgconfig( --cflags hdf5-serial )$',
              'HDF5LFLAGS'   : '$pkgconfig( --libs hdf5-serial )$ -lhdf5_cpp',
              
+             'NETCDF'       : 'check',
+             'NETCDFCFLAGS' : '$pkgconfig( --cflags netcdf )$',
+             'NETCDFLFLAGS' : '$pkgconfig( --libs netcdf )$',
+             
              'AMDLIBM'      : 'check',
              'AMDLIBMDIR'   : '',
              'AMDLIBMLFLAGS': '-L@AMDLIBMDIR@/lib/static -lamdlibm',
@@ -382,6 +386,9 @@ def usage ( status ):
     print( '    --with-hdf5                turn on/off usage of HDF5' )
     print( '      --hdf5-cflags            flags to compile with HDF5' )
     print( '      --hdf5-lflags            flags to link with HDF5' )
+    print( '    --with-netcdf              turn on/off usage of NetCDF' )
+    print( '      --netcdf-cflags          flags to compile with NetCDF' )
+    print( '      --netcdf-lflags          flags to link with NetCDF' )
     print( '    --with-amdlibm[=dir]       turn on/off usage of AMDLIBM with optional prefix "dir"' )
     print( '      --amdlibm-cflags=lflags  flags to compile with AMDLIBM' )
     print( '      --amdlibm-lflags=lflags  flags to link with AMDLIBM' )
@@ -469,6 +476,16 @@ def parse_cmdline ( args, env ):
                                  [ '--without-mongoose',   'none',     None ],
                                  [ '--mongoose-cflags',    'required', env['MONGOOSECFLAGS'] ],
                                  [ '--mongoose-lflags',    'required', env['MONGOOSELFLAGS'] ],
+
+                                 [ '--with-hdf5',      'none',     None ],
+                                 [ '--without-hdf5',   'none',     None ],
+                                 [ '--hdf5-cflags',    'required', env['HDF5CFLAGS'] ],
+                                 [ '--hdf5-lflags',    'required', env['HDF5LFLAGS'] ],
+
+                                 [ '--with-netcdf',      'none',     None ],
+                                 [ '--without-netcdf',   'none',     None ],
+                                 [ '--netcdf-cflags',    'required', env['NETCDFCFLAGS'] ],
+                                 [ '--netcdf-lflags',    'required', env['NETCDFLFLAGS'] ],
 
                                  [ '--with-amdlibm',    'optional', env['AMDLIBMDIR'] ],
                                  [ '--without-amdlibm', 'none',     None ],
@@ -645,6 +662,16 @@ def parse_cmdline ( args, env ):
             env['HDF5LFLAGS'] = arg
 
 
+        elif opt in ( '--with-netcdf' ):
+            env['NETCDF'] = 'yes'
+        elif opt in ( '--without-netcdf' ):
+            env['NETCDF'] = 'no'
+        elif opt in ( '--netcdf-cflags' ):
+            env['NETCDFCFLAGS'] = arg
+        elif opt in ( '--netcdf-lflags' ):
+            env['NETCDFLFLAGS'] = arg
+
+
         elif opt in ( '--with-vtrace' ):
             env['VAMPIRTRACE'] = 'yes'
         elif opt in ( '--without-vtrace' ):
@@ -801,6 +828,14 @@ def print_env ( env ):
             print_bold( 'HDF5LFLAGS', env['HDF5LFLAGS'] )
         else :
             print_bold( 'HDF5', 'yes', env['HDF5CFLAGS'] + ' ' + env['HDF5LFLAGS'] )
+
+    if env['NETCDF'] == 'yes':
+        if verbose > 1:
+            print_bold( 'NETCDF', 'yes' )
+            print_bold( 'NETCDFCFLAGS', env['NETCDFCFLAGS'] )
+            print_bold( 'NETCDFLFLAGS', env['NETCDFLFLAGS'] )
+        else :
+            print_bold( 'NETCDF', 'yes', env['NETCDFCFLAGS'] + ' ' + env['NETCDFLFLAGS'] )
 
     if env['AMDLIBM'] == 'yes':
         if verbose > 1:
@@ -1279,6 +1314,27 @@ def testsrc ( name ):
 
         ########################################################################
 
+        'C++17' :
+
+        """
+          #include <type_traits>
+          #include <memory>
+          #include <vector>
+          #include <variant>
+          int main () { 
+            using type_t = std::enable_if_t< true, void >;
+            auto  x = std::vector< double >( 10 );
+            auto  f = [&x] { for ( auto & v : x ) v++; };
+            auto  m = std::make_unique< double >();
+            using  any_type_t = std::variant< int, double >;
+            any_type_t  a = int(42);
+            if constexpr ( 0 == 1 ) { return 1; }
+            return 0; 
+          }
+        """,
+
+        ########################################################################
+
         'FC' :
 
         """
@@ -1610,6 +1666,24 @@ def testsrc ( name ):
            H5::Group      group( file.createGroup( \"/group\" ) );
            hsize_t        dims[2] = { 10, 10 };              
            H5::DataSpace  dataspace( 2, dims );
+           return 0; }
+        """,
+         
+        ########################################################################
+
+        'NetCDF' :
+
+        """
+         #include <netcdf.h>
+         int main () {
+           const char *  filename = "";
+           int           nc_file, nc_dims, nc_var, val;
+           size_t        dims, start, count;
+           ptrdiff_t     stride;
+           nc_create( filename, NC_64BIT_OFFSET, &nc_file );
+           nc_def_dim( nc_file, "dim", dims, &nc_dims );
+           nc_def_var( nc_file, "var", NC_INT, 1, &nc_dims, &nc_var);
+           nc_put_vars( nc_file, nc_var, &start, &count, &stride, &val );
            return 0; }
         """,
          
@@ -2307,13 +2381,13 @@ def test_environment ( env ):
         print( 'No working C compiler available !!!' )
         sys.exit( 1 )
     
-    if not check_cc( 'C++14', compenv['CXX'], '', test = 'C++14' ):
-        compenv['CXX'] = compenv['CXX'] + ' ' + '-std=c++14'
-        if not check_cc( 'C++ -std=c++14', compenv['CXX'], '', test = 'C++14' ):
-            print( 'C++ compiler does not support C++14!!!' )
+    if not check_cc( 'C++17', compenv['CXX'], '', test = 'C++17' ):
+        compenv['CXX'] = compenv['CXX'] + ' ' + '-std=c++17'
+        if not check_cc( 'C++ -std=c++17', compenv['CXX'], '', test = 'C++17' ):
+            print( 'C++ compiler does not support C++17!!!' )
             sys.exit( 1 )
         else :
-            env['CXX'] = env['CXX'] + ' ' + '-std=c++14'
+            env['CXX'] = env['CXX'] + ' ' + '-std=c++17'
             
     if not check_fc( 'Fortran', compenv['FC'], '' ):
         print( 'No working Fortran compiler available !!!' )
@@ -2451,6 +2525,15 @@ def test_environment ( env ):
             env['HDF5'] = 'check'
         else:
             env['HDF5'] = 'yes'
+
+    if compenv['NETCDF'] == 'yes' or compenv['NETCDF'] == 'check':
+        cflags = compenv['NETCDFCFLAGS']
+        lflags = compenv['NETCDFLFLAGS']
+
+        if not check_lib( 'NetCDF', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + cflags + ' ' + lflags ):
+            env['NETCDF'] = 'check'
+        else:
+            env['NETCDF'] = 'yes'
 
     if compenv['SVML'] == 'yes' or compenv['SVML'] == 'check':
         lflags = compenv['SVMLLFLAGS']
@@ -2809,7 +2892,7 @@ def main ( compenv ):
     else :                              compenv['HAS_CPUID'] = '0'
 
     for feat in ( 'ZLIB', 'METIS', 'SCOTCH', 'CHACO', 'MONGOOSE',
-                  'GSL', 'HDF5', 'SVML', 'LIBMVEC', 'AMDLIBM',
+                  'GSL', 'HDF5', 'NETCDF', 'SVML', 'LIBMVEC', 'AMDLIBM',
                   'ACML', 'MKL', 'MKL_SEQ' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
@@ -2857,6 +2940,9 @@ def main ( compenv ):
     if compenv['HDF5'] == 'yes' :
         compenv['CFGCFLAGS'] += ' ' + compenv['HDF5CFLAGS'] 
         compenv['CFGLFLAGS'] += ' ' + compenv['HDF5LFLAGS']
+    if compenv['NETCDF'] == 'yes' :
+        compenv['CFGCFLAGS'] += ' ' + compenv['NETCDFCFLAGS'] 
+        compenv['CFGLFLAGS'] += ' ' + compenv['NETCDFLFLAGS']
     if compenv['AMDLIBM'] == 'yes':
         compenv['CFGLFLAGS'] += ' ' + compenv['AMDLIBMLFLAGS']
     if compenv['ACML']    == 'yes':

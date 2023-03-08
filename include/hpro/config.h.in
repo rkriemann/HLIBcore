@@ -32,6 +32,7 @@
 #define USE_GSL                  @USE_GSL@
 #define USE_CAIRO                0
 #define USE_HDF5                 @USE_HDF5@
+#define USE_NETCDF               @USE_NETCDF@
 #define USE_AMDLIBM              @USE_AMDLIBM@
 #define USE_ACML                 @USE_ACML@
 #define USE_SVML                 @USE_SVML@

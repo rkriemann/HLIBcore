@@ -299,17 +299,19 @@ enum { NO_ERROR            = 0,         // no error occured
        ERR_BS_TYPE         = 1203,      // type error in bytestream
        ERR_BS_DATA         = 1204,      // general data error in bytestream
        
-       ERR_NOZLIB          = 1300,      // no zlib support compiled in
+       ERR_NOZLIB          = 1300,      // no zlib support available
        ERR_ZLIB_UNZIP      = 1301,      // error during zlib uncompression
-       ERR_NOMETIS         = 1302,      // no METIS support compiled in
-       ERR_NOSCOTCH        = 1303,      // no Scotch support compiled in
+       ERR_NOMETIS         = 1302,      // no METIS support available
+       ERR_NOSCOTCH        = 1303,      // no Scotch support available
        ERR_SCOTCH          = 1304,      // error in call to Scotch function
-       ERR_NOCHACO         = 1305,      // no Chaco support compiled in
-       ERR_NOLIBGRAPH      = 1306,      // no libGraph support compiled in
-       ERR_NOFFTW3         = 1307,      // no FFTW3 support compiled in
-       ERR_NOCAIRO         = 1308,      // no Cairo support compiled in
-       ERR_NOHDF5          = 1309,      // no HDF5 support compiled in
-       ERR_NOMONGOOSE      = 1310,      // no Mongoose support compiled in
+       ERR_NOCHACO         = 1305,      // no Chaco support available
+       ERR_NOLIBGRAPH      = 1306,      // no libGraph support available
+       ERR_NOFFTW3         = 1307,      // no FFTW3 support available
+       ERR_NOCAIRO         = 1308,      // no Cairo support available
+       ERR_NOHDF5          = 1309,      // no HDF5 support available
+       ERR_NOMONGOOSE      = 1310,      // no Mongoose support available
+       ERR_NONETCDF        = 1311,      // no NetCDF support available
+       ERR_NETCDF          = 1312,      // error during NetCDF I/O
        
        ERR_MPI             = 1400,      // error in call to MPI function
        

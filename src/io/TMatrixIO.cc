@@ -35,6 +35,10 @@
 
 #endif
 
+#if USE_NETCDF == 1
+#  include <netcdf.h>
+#endif
+
 #include "hpro/matrix/TSparseMatrix.hh"
 #include "hpro/matrix/THMatrix.hh"
 #include "hpro/matrix/structure.hh"
@@ -1784,5 +1788,464 @@ INST_HDF5( float )
 INST_HDF5( double )
 INST_HDF5( std::complex< float > )
 INST_HDF5( std::complex< double > )
+
+///////////////////////////////////////////////////
+// 
+// input and output in H2Lib format
+//
+
+//
+// write matrix \a A to file \a fname
+//
+template < typename value_t >
+void
+TH2LibMatrixIO::write ( const TMatrix< value_t > *  /* A */,
+                        const std::string &         /* filename */ ) const
+{
+    #if USE_NETCDF == 0
+    
+    HERROR( ERR_NONETCDF, "(TH2LibMatrixIO) write", "" );
+
+    #else
+
+    HERROR( ERR_NOT_IMPL, "(TH2LibMatrixIO) write", "" );
+
+    #endif
+}
+
+#if USE_NETCDF == 1
+
+#define NETCDF_CHECK( call, args, func )                                \
+    {                                                                   \
+        auto  ncres = call args ;                                       \
+        if ( ncres != NC_NOERR )                                        \
+            HERROR( ERR_NETCDF, func, to_string( "error %d during %s", ncres, #call ) ); \
+    }
+
+namespace
+{
+
+std::unique_ptr< TCluster >
+netcdf_read_cl ( int       nc_file,
+                 int       nc_sons,
+                 int       nc_size,
+                 int       nc_coeff,
+                 int       dim,
+                 idx_t     nidx,
+                 size_t &  nclusters,
+                 size_t &  ncoeffs )
+{
+    size_t     start  = nclusters;
+    size_t     count  = 1;
+    ptrdiff_t  stride = 1;
+
+    // number of sons
+    uint  nsons = 0;
+    
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_sons, &start, &count, &stride, &nsons ), "netcdf_read_cl" );
+
+    // size of cluster
+    uint  size = 0;
+    
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_size, &start, &count, &stride, &size ), "netcdf_read_cl" );
+
+    // create new cluster
+    auto  cl = std::make_unique< TCluster >( nidx, nidx + size - 1 );
+
+    cl->set_nsons( nsons );
+    
+    nclusters++;
+
+    // read sons
+    if ( nsons > 0 )
+    {
+        auto  son_idx = nidx;
+        
+        for ( uint  i = 0; i < nsons; i++ )
+        {
+            auto  son = netcdf_read_cl( nc_file, nc_sons, nc_size, nc_coeff, dim, son_idx, nclusters, ncoeffs );
+
+            son_idx += son->size();
+            cl->set_son( i, son.release() );
+        }// for
+    }// if
+
+    // read bounding box
+    auto  bb = std::vector< double >( dim );
+    
+    start = ncoeffs;
+    count = dim;
+    ncoeffs += count;
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_coeff, &start, &count, &stride, bb.data() ), "netcdf_read_cl" );
+
+    start += dim;
+    ncoeffs += count;
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_coeff, &start, &count, &stride, bb.data() ), "netcdf_read_cl" );
+
+    return  cl;
+}
+
+std::unique_ptr< TCluster >
+netcdf_read_cl ( int                  nc_file,
+                 const std::string &  prefix )
+{
+    auto    name = std::string();
+    char    dimname[ NC_MAX_NAME + 1 ];
+
+    // clusters dimension
+    size_t  clusters    = 0;
+    int     nc_clusters = 0;
+    
+    name = prefix + "_clusters";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_clusters ), "netcdf_read_cl" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_clusters, dimname, & clusters ), "netcdf_read_cl" );
+
+    // coeffs dimension
+    size_t  coeffs    = 0;
+    int     nc_coeffs = 0;
+    
+    name = prefix + "_coeffs";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_coeffs ), "netcdf_read_cl" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_coeffs, dimname, &coeffs ), "netcdf_read_cl" );
+
+    // totalsize dimension
+    size_t  totalsize    = 0;
+    int     nc_totalsize = 0;
+    
+    name = prefix + "_totalsize";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_totalsize ), "netcdf_read_cl" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_totalsize, dimname, &totalsize ), "netcdf_read_cl" );
+
+    // dim dimension
+    size_t  dim    = 0;
+    int     nc_dim = 0;
+    
+    name = prefix + "_dim";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_dim ), "netcdf_read_cl" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_dim, dimname, &dim ), "netcdf_read_cl" );
+
+    // sons variable
+    int  nc_sons = 0;
+    
+    name = prefix + "_sons";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_sons ), "netcdf_read_cl" );
+
+    // size variable
+    int  nc_size = 0;
+    
+    name = prefix + "_size";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_size ), "netcdf_read_cl" );
+
+    // idx variable
+    int  nc_idx = 0;
+    
+    name = prefix + "_idx";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_idx ), "netcdf_read_cl" );
+
+    // coeff variable
+    int  nc_coeff = 0;
+    
+    name = prefix + "_coeff";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_coeff ), "netcdf_read_cl" );
+
+    // read index
+    auto  idx = std::vector< uint >( totalsize );
+    
+    nc_get_var( nc_file, nc_idx, idx.data() );
+
+    // read coefficients from NetCDF variables
+    idx_t   nidx      = 0;
+    size_t  nclusters = 0;
+    size_t  ncoeffs   = 0;
+    
+    auto  cl = netcdf_read_cl( nc_file, nc_sons, nc_size, nc_coeff, dim, nidx, nclusters, ncoeffs );
+    
+    if ( nclusters != clusters )
+        HERROR( ERR_NETCDF, "netcdf_read_cl", "inconsistent number of cluster indices" );
+    
+    if ( ncoeffs != coeffs )
+        HERROR( ERR_NETCDF, "netcdf_read_cl", "inconsistent number of cluster coefficients" );
+
+    return  cl;
+}
+
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+netcdf_read_mat ( int               nc_file,
+                  int               nc_type,
+                  int               nc_rows,
+                  int               nc_cols,
+                  int               nc_rank,
+                  int               nc_rsons,
+                  int               nc_csons,
+                  int               nc_coeffs,
+                  size_t &          blockidx,
+                  size_t &          coeffidx,
+                  const TCluster *  rowcl,
+                  const TCluster *  colcl )
+{
+    size_t     start  = blockidx;
+    size_t     count  = 1;
+    ptrdiff_t  stride = 1;
+    int  val = 0;
+    
+    // number of rows
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_rows, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+    const uint  nrows = val;
+
+    // number of columns
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_cols, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+    const uint  ncols = val;
+
+    // type of matrix
+    NETCDF_CHECK( nc_get_vars, ( nc_file, nc_type, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+    const uint  type = val;
+
+    //
+    // create matrix based on given type
+    //
+
+    auto  M = std::unique_ptr< TMatrix< value_t > >();
+    
+    if ( type == 1 )
+    {
+        //
+        // dense matrix
+        //
+
+        auto  D = BLAS::Matrix< value_t >( nrows, ncols );
+
+        start     = coeffidx;
+        count     = nrows * ncols;
+        coeffidx += count;
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_coeffs, &start, &count, &stride, D.data() ), "netcdf_read_mat" );
+
+        // next block
+        blockidx++;
+
+        M = std::make_unique< TDenseMatrix< value_t > >( *rowcl, *colcl, std::move( D ) );
+    }// if
+    else if ( type == 2 )
+    {
+        //
+        // lowrank matrix
+        //
+
+        // rank
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_rank, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+        const uint  rank = val;
+
+        // read U
+        auto  U = BLAS::Matrix< value_t >( nrows, rank );
+        
+        start     = coeffidx;
+        count     = nrows * rank;
+        coeffidx += count;
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_coeffs, &start, &count, &stride, U.data() ), "netcdf_read_mat" );
+
+        // read V
+        auto  V = BLAS::Matrix< value_t >( ncols, rank );
+        
+        start     = coeffidx;
+        count     = ncols * rank;
+        coeffidx += count;
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_coeffs, &start, &count, &stride, V.data() ), "netcdf_read_mat" );
+
+        // next block
+        blockidx++;
+
+        M = std::make_unique< TRkMatrix< value_t > >( *rowcl, *colcl, std::move( U ), std::move( V ) );
+    }// if
+    else if ( type == 3 )
+    {
+        //
+        // structured matrix
+        //
+
+        // number of row sons
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_rsons, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+        const uint  nrsons = val;
+
+        if ( nrsons != rowcl->nsons() )
+            HERROR( ERR_MAT_STRUCT, "netcdf_read_mat", "matrix size incompatible with cluster" );
+        
+        // number of column sons
+        NETCDF_CHECK( nc_get_vars, ( nc_file, nc_csons, &start, &count, &stride, &val ), "netcdf_read_mat" );
+
+        const uint  ncsons = val;
+
+        if ( ncsons != colcl->nsons() )
+            HERROR( ERR_MAT_STRUCT, "netcdf_read_mat", "matrix size incompatible with cluster" );
+
+        //
+        // create matrix and recursively read sub blocks
+        //
+
+        auto  B = std::make_unique< TBlockMatrix< value_t > >( *rowcl, *colcl );
+
+        B->set_block_struct( nrsons, ncsons );
+
+        // next block
+        blockidx++;
+        
+        for ( uint  j = 0; j < ncsons; ++j )
+        {
+            for ( uint  i = 0; i < nrsons; ++i )
+            {
+                auto  B_ij = netcdf_read_mat< value_t >( nc_file, nc_type, nc_rows, nc_cols, nc_rank,
+                                                         nc_rsons, nc_csons, nc_coeffs,
+                                                         blockidx, coeffidx, rowcl->son(i), colcl->son(j) );
+
+                B->set_block( i, j, B_ij.release() );
+            }// for
+        }// for
+
+        M = std::move( B );
+    }// if
+    else
+        HERROR( ERR_NETCDF, "netcdf_read_mat", to_string( "unknown matrix type %d", type ) );
+
+    M->set_id( blockidx-1 );
+    
+    return M;
+}
+
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+netcdf_read_mat ( int                  nc_file,
+                  const std::string &  prefix,
+                  const TCluster *     rowcl,
+                  const TCluster *     colcl )
+{
+    auto    name = std::string();
+    char    dimname[ NC_MAX_NAME + 1 ];
+
+    // blocks
+    size_t  blocks    = 0;
+    int     nc_blocks = 0;
+    
+    name = prefix + "_blocks";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_blocks ), "netcdf_read_mat" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_blocks, dimname, & blocks ), "netcdf_read_mat" );
+
+    // coeffs
+    size_t  coeffs    = 0;
+    int     nc_coeffs = 0;
+    
+    name = prefix + "_coeffs";
+    NETCDF_CHECK( nc_inq_dimid, ( nc_file, name.c_str(), &nc_coeffs ), "netcdf_read_mat" );
+    NETCDF_CHECK( nc_inq_dim,   ( nc_file, nc_coeffs, dimname, &coeffs ), "netcdf_read_mat" );
+
+    // type
+    int  nc_type = 0;
+    
+    name = prefix + "_type";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_type ), "netcdf_read_mat" );
+
+    // rows
+    int  nc_rows = 0;
+    
+    name = prefix + "_rows";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_rows ), "netcdf_read_mat" );
+
+    // cols
+    int  nc_cols = 0;
+    
+    name = prefix + "_cols";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_cols ), "netcdf_read_mat" );
+
+    // rank
+    int  nc_rank = 0;
+    
+    name = prefix + "_rank";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_rank ), "netcdf_read_mat" );
+
+    // rsons
+    int  nc_rsons = 0;
+    
+    name = prefix + "_rsons";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_rsons ), "netcdf_read_mat" );
+
+    // csons
+    int  nc_csons = 0;
+    
+    name = prefix + "_csons";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_csons ), "netcdf_read_mat" );
+
+    // coeff variable
+    int  nc_coeff = 0;
+    
+    name = prefix + "_coeff";
+    NETCDF_CHECK( nc_inq_varid, ( nc_file, name.c_str(), &nc_coeff ), "netcdf_read_mat" );
+
+    //
+    // read actual matrix
+    //
+
+    size_t  blockidx = 0;
+    size_t  coeffidx = 0;
+    
+    auto  M = netcdf_read_mat< value_t >( nc_file, nc_type, nc_rows, nc_cols, nc_rank,
+                                          nc_rsons, nc_csons, nc_coeff,
+                                          blockidx, coeffidx, rowcl, colcl );
+    
+    if ( blocks != blockidx )
+        HERROR( ERR_NETCDF, "netcdf_read_mat", "inconsistent number of blocks" );
+    
+    if ( coeffs != coeffidx )
+        HERROR( ERR_NETCDF, "netcdf_read_mat", "inconsistent number of coefficients" );
+
+    return  M;
+}
+
+}// namespace anonymous
+
+#endif
+
+template < typename value_t >
+std::unique_ptr< TMatrix< value_t > >
+TH2LibMatrixIO::read  ( const std::string &  filename ) const
+{
+    #if USE_NETCDF == 0
+    
+    HERROR( ERR_NONETCDF, "(TH2LibMatrixIO) read", "" );
+
+    return std::unique_ptr< TMatrix< value_t > >();
+
+    #else
+
+    int  nc_file = 0;
+    int  nc_sons = 0;
+    
+    NETCDF_CHECK( nc_open, ( filename.c_str(), NC_NOWRITE, &nc_file ), "(TH2LibMatrixIO) read" );
+
+    auto  rct = netcdf_read_cl( nc_file, "rc" );
+    auto  cct = decltype( rct )();
+    
+    if ( nc_inq_varid( nc_file, "cc_sons", &nc_sons ) == NC_NOERR )
+        cct = netcdf_read_cl( nc_file, "cc" );
+    else
+        cct = std::move( std::unique_ptr< TCluster >( rct->copy() ) );
+
+    auto  M = netcdf_read_mat< value_t >( nc_file, "ma", rct.get(), cct.get() );
+
+    return  M;
+    
+    #endif
+}
+
+#define INST_H2Lib( type ) \
+    template void TH2LibMatrixIO::write< type > ( const TMatrix< type > *, const std::string & ) const; \
+    template std::unique_ptr< TMatrix< type > > TH2LibMatrixIO::read< type > ( const std::string & ) const;
+
+INST_H2Lib( float )
+INST_H2Lib( double )
+INST_H2Lib( std::complex< float > )
+INST_H2Lib( std::complex< double > )
 
 }// namespace Hpro
