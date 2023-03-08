@@ -64,7 +64,8 @@ parse_int_fmt ( const std::string &  fmt,
     const bool  r = phrase_parse( fmt.begin(), fmt.end(),
                                   ( -char_('(') >>
                                     uint_[ ref(n) = _1 ] >>
-                                    char_("iI") >>
+                                    // use | operator because of problems with string syntax and optimization
+                                    ( char_('i') | char_('I') ) >>
                                     uint_[ ref(l) = _1 ] >>
                                     -char_(')') ),
                                   space );
@@ -85,7 +86,8 @@ parse_flt_fmt ( const std::string &  fmt,
     const bool  r = phrase_parse( fmt.begin(), fmt.end(),
                                   ( -char_('(') >>
                                     uint_[ ref(n) = _1 ] >>
-                                    char_("defDEF") >>
+                                    // use | operator because of problems with string syntax and optimization
+                                    ( char_('d') | char_('e') | char_('f') | char_('D') | char_('E') | char_('F') ) >>
                                     uint_[ ref(l) = _1 ] >>
                                     char_('.') >>
                                     uint_ >>
