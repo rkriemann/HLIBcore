@@ -130,6 +130,19 @@ public:
         b._is_owner = false;
     }
 
+    //! ctor with general data pointer \a ptr and size \a n
+    MemBlock  ( value_t *   aptr,
+                const bool  ais_owner = false )
+            : _data( nullptr )
+            , _is_owner( false )
+            #if HPRO_MEMBLOCK_REF_COUNT == 1
+            , _nreferences( 0 )
+            , _owner( nullptr )
+            #endif
+    {
+        init( aptr, ais_owner );
+    }
+    
     //! dtor removing all data <b> even if references exist </b>!
     ~MemBlock  ()
     {

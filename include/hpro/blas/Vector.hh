@@ -207,6 +207,32 @@ public:
         }// switch
     }
 
+    //! direct setting of vector from raw data pointer \a ptr, \a length and \a stride
+    Vector ( value_t *            aptr,
+             const size_t         alength,
+             const size_t         astride,
+             const copy_policy_t  p = copy_reference )
+            : MemBlock< value_t >( aptr, p == copy_value )
+            , _length( alength )
+            , _stride( 0 )
+    {
+        switch ( p )
+        {
+            case copy_reference :
+                _stride = astride;
+                super_t::init( aptr, false );
+                break;
+                
+            case copy_value :
+                super_t::alloc_wo_value( _length );
+                _stride = 1;
+        
+                for ( idx_t  i = 0; i < idx_t(_length); i++ )
+                    (*this)(i) = aptr[ i * astride ];
+                break;
+        }// switch
+    }
+
     //! copy operator (always copy reference! for real data copy, use copy function below!)
     Vector & operator = ( const Vector & v )
     {
