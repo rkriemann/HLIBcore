@@ -17,22 +17,22 @@
 
 #include <immintrin.h>
 
-#if USE_AMDLIBM == 1
+#if HPRO_USE_AMDLIBM == 1
 extern "C" void  amd_vrda_exp     ( int  n, double *  f, double *  res );
 extern "C" void  amd_vrda_sincos  ( int  n, double *  f, double *  res_s, double *  res_c );
 #endif
 
-#if USE_ACML == 1
+#if HPRO_USE_ACML == 1
 extern "C" void  vrda_exp         ( int  n, double *  f, double *  res );
 extern "C" void  vrda_sincos      ( int  n, double *  f, double *  res_s, double *  res_c );
 #endif
 
-#if USE_SVML == 1
+#if HPRO_USE_SVML == 1
 extern "C"  __m256d  _mm256_exp_pd     ( __m256d );
 extern "C"  __m256d  _mm256_sincos_pd  ( __m256d *, __m256d );
 #endif
 
-#if USE_LIBMVEC == 1
+#if HPRO_USE_LIBMVEC == 1
 extern "C" __m256   _ZGVcN8v_expf ( __m256   x );
 extern "C" __m256   _ZGVcN8v_sinf ( __m256   x );
 extern "C" __m256   _ZGVcN8v_cosf ( __m256   x );
@@ -114,15 +114,15 @@ struct simd_traits< float, ISA_AVX2 >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm256_exp_ps( x );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVcN8v_expf( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         packed_t  res;
     
@@ -132,7 +132,7 @@ struct simd_traits< float, ISA_AVX2 >
 
         return res;
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         packed_t  res;
     
@@ -170,23 +170,23 @@ struct simd_traits< float, ISA_AVX2 >
                               packed_t &       s,
                               packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm256_sincos_ps( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVcN8v_sinf( a );
         c = _ZGVcN8v_cosf( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         amd_vrda_sincos( 8,
             reinterpret_cast< float * >( const_cast< packed_t * >( & a ) ),
             reinterpret_cast< float * >( & s ),
             reinterpret_cast< float * >( & c ) );
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         vrda_sincos( 8,
                      reinterpret_cast< float * >( const_cast< packed_t * >( & a ) ),
@@ -203,7 +203,7 @@ struct simd_traits< float, ISA_AVX2 >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );
@@ -347,15 +347,15 @@ struct simd_traits< double, ISA_AVX2 >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm256_exp_pd( x );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVdN4v_exp( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         packed_t  res;
     
@@ -365,7 +365,7 @@ struct simd_traits< double, ISA_AVX2 >
 
         return res;
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         packed_t  res;
     
@@ -399,23 +399,23 @@ struct simd_traits< double, ISA_AVX2 >
                               packed_t &       s,
                               packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm256_sincos_pd( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVdN4v_sin( a );
         c = _ZGVdN4v_cos( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         amd_vrda_sincos( 4,
                          reinterpret_cast< double * >( const_cast< packed_t * >( & a ) ),
                          reinterpret_cast< double * >( & s ),
                          reinterpret_cast< double * >( & c ) );
         
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         vrda_sincos( 4,
                      reinterpret_cast< double * >( const_cast< packed_t * >( & a ) ),
@@ -432,7 +432,7 @@ struct simd_traits< double, ISA_AVX2 >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );

@@ -17,28 +17,28 @@
 
 #include <immintrin.h>
 
-#if USE_AMDLIBM == 1
+#if HPRO_USE_AMDLIBM == 1
 extern "C" void  amd_vrsa_expf    ( int  n, float *   f, float *   res );
 extern "C" void  amd_vrsa_sincosf ( int  n, float *   f, float *   res_s, float *   res_c );
 extern "C" void  amd_vrda_exp     ( int  n, double *  f, double *  res );
 extern "C" void  amd_vrda_sincos  ( int  n, double *  f, double *  res_s, double *  res_c );
 #endif
 
-#if USE_ACML == 1
+#if HPRO_USE_ACML == 1
 extern "C" void  vrsa_expf        ( int  n, float *   f, float *   res );
 extern "C" void  vrsa_sincosf     ( int  n, float *   f, float *   res_s, float *   res_c );
 extern "C" void  vrda_exp         ( int  n, double *  f, double *  res );
 extern "C" void  vrda_sincos      ( int  n, double *  f, double *  res_s, double *  res_c );
 #endif
 
-#if USE_SVML == 1
+#if HPRO_USE_SVML == 1
 extern "C"  __m512   _mm512_exp_ps     ( __m512 );
 extern "C"  __m512   _mm512_sincos_ps  ( __m512 *, __m512 );
 extern "C"  __m512d  _mm512_exp_pd     ( __m512d );
 extern "C"  __m512d  _mm512_sincos_pd  ( __m512d *, __m512d );
 #endif
 
-#if USE_LIBMVEC == 1
+#if HPRO_USE_LIBMVEC == 1
 extern "C" __m512   _ZGVeN16v_expf  ( __m512   x );
 extern "C" __m512   _ZGVeN16v_sinf  ( __m512   x );
 extern "C" __m512   _ZGVeN16v_cosf  ( __m512   x );
@@ -102,7 +102,7 @@ struct simd_traits< float, ISA_AVX512F >
 
     static packed_t  rsqrt  ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         return _mm512_invsqrt_ps( x );
 
@@ -128,15 +128,15 @@ struct simd_traits< float, ISA_AVX512F >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm512_exp_ps( x );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVeN16v_expf( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         packed_t  res;
     
@@ -146,7 +146,7 @@ struct simd_traits< float, ISA_AVX512F >
 
         return res;
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         packed_t  res;
     
@@ -178,23 +178,23 @@ struct simd_traits< float, ISA_AVX512F >
                               packed_t &       s,
                               packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm512_sincos_ps( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVeN16v_sinf( a );
         c = _ZGVeN16v_cosf( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         amd_vrda_sincos( vector_size,
                          reinterpret_cast< value_t * >( const_cast< packed_t * >( & a ) ),
                          reinterpret_cast< value_t * >( & s ),
                          reinterpret_cast< value_t * >( & c ) );
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         vrda_sincos( vector_size,
                      reinterpret_cast< value_t * >( const_cast< packed_t * >( & a ) ),
@@ -213,7 +213,7 @@ struct simd_traits< float, ISA_AVX512F >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         for ( int i = 0; i < vector_size; ++i )
             Math::sincos( sa[i], ss[i], sc[i] );
@@ -321,7 +321,7 @@ struct simd_traits< double, ISA_AVX512F >
 
     static packed_t  rsqrt  ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         return _mm512_invsqrt_pd( x );
 
@@ -347,15 +347,15 @@ struct simd_traits< double, ISA_AVX512F >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm512_exp_pd( x );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVeN8v_exp( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         packed_t  res;
     
@@ -365,7 +365,7 @@ struct simd_traits< double, ISA_AVX512F >
 
         return res;
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         packed_t  res;
     
@@ -403,23 +403,23 @@ struct simd_traits< double, ISA_AVX512F >
                           packed_t &       s,
                           packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm512_sincos_pd( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVeN8v_sin( a );
         c = _ZGVeN8v_cos( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
 
         amd_vrda_sincos( vector_size,
                          reinterpret_cast< value_t * >( const_cast< packed_t * >( & a ) ),
                          reinterpret_cast< value_t * >( & s ),
                          reinterpret_cast< value_t * >( & c ) );
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
 
         vrda_sincos( vector_size,
                      reinterpret_cast< value_t * >( const_cast< packed_t * >( & a ) ),
@@ -438,7 +438,7 @@ struct simd_traits< double, ISA_AVX512F >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );

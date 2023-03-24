@@ -23,7 +23,7 @@ using namespace std;
 // Chaco declaration and wrapper
 //
 
-#if USE_CHACO == 1
+#if HPRO_USE_CHACO == 1
 
 // external call to CHACO routine
 extern "C" {
@@ -118,7 +118,7 @@ TChacoAlgPartStrat::partition ( const TGraph &  graph,
     size_t           nright   = 0;
     vector< idx_t >  part( nnodes, 0 );
 
-#if USE_CHACO == 1
+#if HPRO_USE_CHACO == 1
     partition_graph( nnodes, graph.adj_list_ptr(), graph.adj_nodes(), part );
 #else
     HERROR( ERR_NOCHACO, "(TChacoAlgPartStratAlgo) partition", "" );

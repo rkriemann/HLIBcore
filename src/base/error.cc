@@ -16,12 +16,12 @@
 #include <errno.h>
 #include <time.h>
 
-#if HAS_BACKTRACE == 1
+#if HPRO_HAS_BACKTRACE == 1
 #include <execinfo.h>
 #include <dlfcn.h>
 #endif
 
-#if HAS_CXXDEMANGLE == 1
+#if HPRO_HAS_CXXDEMANGLE == 1
 #include <cxxabi.h>
 #endif
 
@@ -58,13 +58,13 @@ void exception ( const std::string &  msg );
 namespace
 {
 
-#if HAS_BACKTRACE == 1
+#if HPRO_HAS_BACKTRACE == 1
 
 std::string
 demangle ( char *      symbol,
            const bool  only_funcname = false )
 {
-    #if HAS_CXXDEMANGLE == 1
+    #if HPRO_HAS_CXXDEMANGLE == 1
     
     char    no_output    = '\0';
     char *  begin_name   = nullptr;
@@ -414,7 +414,7 @@ prnlog ( const std::string &  prefix,
     time_t  t            = time( nullptr );
     char    timestr[256] = "\0";
 
-#if defined(WINDOWS) || defined(_WIN32) || defined(_WIN64) || HAS_LOCALTIME_R == 1
+#if defined(WINDOWS) || defined(_WIN32) || defined(_WIN64) || HPRO_HAS_LOCALTIME_R == 1
     struct tm   timeval;
 
     localtime_r( & t, & timeval );
@@ -698,7 +698,7 @@ syserror ( const int errcode )
 #if defined(WINDOWS) || defined(_WIN32) || defined(_WIN64)
     strerror_s( buffer, sizeof(buffer), errcode );
 #else
-#  if HAS_STRERROR_R == 1
+#  if HPRO_HAS_STRERROR_R == 1
     strerror_r( errcode, buffer, sizeof(buffer) );
 #  else
     return ::strerror( errcode );
@@ -786,7 +786,7 @@ void
 backtrace  ( const int  max_entries,
              const int  skip )
 {
-    #if HAS_BACKTRACE == 1
+    #if HPRO_HAS_BACKTRACE == 1
     
     void *   callstack[1024];
     int      nsym    = ::backtrace( callstack, sizeof(callstack) / sizeof(callstack[0]) );

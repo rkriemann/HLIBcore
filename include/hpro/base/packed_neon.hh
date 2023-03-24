@@ -119,7 +119,7 @@ struct simd_traits< float, ISA_NEON >
 
         store( a, sa );
 
-        #if HAS_SINCOS == 1    
+        #if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );

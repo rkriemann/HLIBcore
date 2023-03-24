@@ -214,16 +214,16 @@ template <> std::complex< double > nan< std::complex< double > > () { return std
 //
 ///////////////////////////////////////////////////
 
-#if HAS_GETRUSAGE == 1
+#if HPRO_HAS_GETRUSAGE == 1
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
 
-#if HAS_LWPINFO == 1
+#if HPRO_HAS_LWPINFO == 1
 #include <sys/lwp.h>
 #endif
 
-#if HAS_GETTIMEOFDAY == 1
+#if HPRO_HAS_GETTIMEOFDAY == 1
 #include <sys/time.h>
 #include <time.h>
 #endif
@@ -294,7 +294,7 @@ TDuration::to_string_ext () const
 double
 cpu_time ()
 {
-#if HAS_LWPINFO == 1
+#if HPRO_HAS_LWPINFO == 1
             
     struct lwpinfo  lwpinfo_data;
     double          sec, nsec;
@@ -306,7 +306,7 @@ cpu_time ()
             
     return sec + 1e-9 * nsec;
             
-#elif HAS_CLOCKGETTIME == 1
+#elif HPRO_HAS_CLOCKGETTIME == 1
             
     struct timespec ts;
 
@@ -314,7 +314,7 @@ cpu_time ()
 
     return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
             
-#elif HAS_GETRUSAGE == 1
+#elif HPRO_HAS_GETRUSAGE == 1
             
     struct rusage  rusage_data;
     double         sec, usec;
@@ -326,7 +326,7 @@ cpu_time ()
             
     return sec + 1e-6 * usec;
             
-#elif HAS_GETPROCESSTIMES == 1
+#elif HPRO_HAS_GETPROCESSTIMES == 1
             
     static const HANDLE  pid = GetCurrentProcess();
     FILETIME             createtm, exittm, kerneltm, usertm;
@@ -346,7 +346,7 @@ cpu_time ()
     else
         return 0.0;
             
-#elif HAS_GETTICKCOUNT == 1
+#elif HPRO_HAS_GETTICKCOUNT == 1
 
     //
     // fall back to GetTickCount
@@ -369,11 +369,11 @@ cpu_time ()
 double
 cpu_time_thread ()
 {
-#if HAS_LWPINFO == 1
+#if HPRO_HAS_LWPINFO == 1
             
     ... // TODO
             
-#elif HAS_CLOCKGETTIME == 1
+#elif HPRO_HAS_CLOCKGETTIME == 1
             
     struct timespec ts;
 
@@ -381,7 +381,7 @@ cpu_time_thread ()
 
     return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
             
-#elif HAS_GETRUSAGE == 1
+#elif HPRO_HAS_GETRUSAGE == 1
             
     struct rusage  rusage_data;
     double         sec, usec;
@@ -393,7 +393,7 @@ cpu_time_thread ()
             
     return sec + 1e-6 * usec;
             
-#elif HAS_GETPROCESSTIMES == 1
+#elif HPRO_HAS_GETPROCESSTIMES == 1
 
     static const HANDLE  pid = GetCurrentThread();
     FILETIME             createtm, exittm, kerneltm, usertm;
@@ -413,7 +413,7 @@ cpu_time_thread ()
     else
         return 0.0;
             
-#elif HAS_GETTICKCOUNT == 1
+#elif HPRO_HAS_GETTICKCOUNT == 1
 
     //
     // fall back to GetTickCount
@@ -436,7 +436,7 @@ cpu_time_thread ()
 double
 wall_time ()
 {
-#if HAS_CLOCKGETTIME == 1
+#if HPRO_HAS_CLOCKGETTIME == 1
             
     struct timespec ts;
 
@@ -444,7 +444,7 @@ wall_time ()
 
     return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
             
-#elif HAS_GETTIMEOFDAY == 1
+#elif HPRO_HAS_GETTIMEOFDAY == 1
             
     struct timeval  timeval_data;
             
@@ -452,7 +452,7 @@ wall_time ()
 
     return double(timeval_data.tv_sec) + 1e-6 * double(timeval_data.tv_usec);
 
-#elif HAS_GETTICKCOUNT == 1
+#elif HPRO_HAS_GETTICKCOUNT == 1
             
     ulong ticks = GetTickCount();
 

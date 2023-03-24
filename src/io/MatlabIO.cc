@@ -13,7 +13,7 @@
 
 #include "hpro/config.h"
 
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #endif
@@ -36,7 +36,7 @@ namespace Hpro
 
 namespace fs = boost::filesystem;
 
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
 namespace io = boost::iostreams;
 #endif
 
@@ -703,7 +703,8 @@ mat5_read_element ( std::istream &         in,
         
     if ( type == MI_COMPRESSED )
     {
-#if HAS_BOOST_IOSTREAMS == 1
+        #if HPRO_HAS_BOOST_IOSTREAMS == 1
+        
         std::string  inbuf( size, '\0' );
 
         in.read( const_cast< char * >( inbuf.data() ), size );
@@ -756,11 +757,11 @@ mat5_read_element ( std::istream &         in,
                 
         return;
 
-#else
+        #else
         
         HERROR( ERR_NOT_IMPL, "mat5_read_element", "compression not supported" );
         
-#endif
+        #endif
     }// if
     else if ( type != MI_MATRIX )
         HERROR( ERR_NOT_IMPL, "mat5_read_element", "only miMatrix is supported" );
@@ -942,7 +943,7 @@ mat5_guess_type ( std::istream &         in,
         
     if ( type == MI_COMPRESSED )
     {
-        #if HAS_BOOST_IOSTREAMS == 1
+        #if HPRO_HAS_BOOST_IOSTREAMS == 1
         
         std::string  inbuf( size, '\0' );
 

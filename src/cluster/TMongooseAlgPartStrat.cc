@@ -12,7 +12,7 @@
 
 #include "hpro/config.h"
 
-#if USE_MONGOOSE == 1
+#if HPRO_USE_MONGOOSE == 1
 #include <Mongoose.hpp>
 #endif
 
@@ -26,7 +26,7 @@ namespace Hpro
 // Mongoose declaration and wrapper
 //
 
-#if USE_MONGOOSE == 1
+#if HPRO_USE_MONGOOSE == 1
 
 namespace
 {
@@ -110,7 +110,7 @@ TMongooseAlgPartStrat::partition ( const TGraph &  graph,
     size_t              nright   = 0;
     std::vector< int >  part( nnodes, 0 );
 
-#if USE_MONGOOSE == 1
+#if HPRO_USE_MONGOOSE == 1
     partition_graph( graph, part );
 #else
     HERROR( ERR_NOMONGOOSE, "(TMongooseAlgPartStrat) partition", "" );

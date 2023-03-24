@@ -20,7 +20,7 @@
 
 #include "hpro/config.h"
 
-#if USE_HDF5 == 1
+#if HPRO_USE_HDF5 == 1
 
 #  if (defined(__GNUC__) || defined(__clang__)) && !defined(__ICC)
 #    pragma GCC diagnostic push
@@ -35,7 +35,7 @@
 
 #endif
 
-#if USE_NETCDF == 1
+#if HPRO_USE_NETCDF == 1
 #  include <netcdf.h>
 #endif
 
@@ -1220,7 +1220,7 @@ mtx_guess_value_type ( const std::string &  filename )
 // input and output in HDF5 format
 //
 
-#if USE_HDF5 == 1
+#if HPRO_USE_HDF5 == 1
     
 using namespace H5;
 
@@ -1684,7 +1684,7 @@ THDF5MatrixIO::write ( const TMatrix< value_t > *  A,
 //
 // write matrix \a A with name \a mname to file \a fname
 //
-#if USE_HDF5 == 1
+#if HPRO_USE_HDF5 == 1
 template < typename value_t >
 void
 THDF5MatrixIO::write ( const TMatrix< value_t > *  A,
@@ -1717,7 +1717,7 @@ THDF5MatrixIO::write ( const TMatrix< value_t > * ,
 #endif
 
 
-#if USE_HDF5 == 1
+#if HPRO_USE_HDF5 == 1
 template < typename value_t >
 void
 THDF5MatrixIO::write ( const BLAS::Matrix< value_t > &  A,
@@ -1749,7 +1749,7 @@ THDF5MatrixIO::write ( const BLAS::Matrix< value_t > &,
 //
 // read and return matrix from file \a fname
 //
-#if USE_HDF5 == 1
+#if HPRO_USE_HDF5 == 1
 template < typename value_t >
 std::unique_ptr< TMatrix< value_t > >
 THDF5MatrixIO::read  ( const std::string &  filename ) const
@@ -1802,7 +1802,7 @@ void
 TH2LibMatrixIO::write ( const TMatrix< value_t > *  /* A */,
                         const std::string &         /* filename */ ) const
 {
-    #if USE_NETCDF == 0
+    #if HPRO_USE_NETCDF == 0
     
     HERROR( ERR_NONETCDF, "(TH2LibMatrixIO) write", "" );
 
@@ -1813,7 +1813,7 @@ TH2LibMatrixIO::write ( const TMatrix< value_t > *  /* A */,
     #endif
 }
 
-#if USE_NETCDF == 1
+#if HPRO_USE_NETCDF == 1
 
 #define NETCDF_CHECK( call, args, func )                                \
     {                                                                   \
@@ -2211,7 +2211,7 @@ template < typename value_t >
 std::unique_ptr< TMatrix< value_t > >
 TH2LibMatrixIO::read  ( const std::string &  filename ) const
 {
-    #if USE_NETCDF == 0
+    #if HPRO_USE_NETCDF == 0
     
     HERROR( ERR_NONETCDF, "(TH2LibMatrixIO) read", "" );
 

@@ -69,6 +69,29 @@ TMatrix< value_t >::TMatrix ( const TBlockCluster *  bc )
 // construct matrix of size defined by block cluster \a c
 //
 template < typename value_t >
+TMatrix< value_t >::TMatrix ( const TIndexSet &  arowis,
+                              const TIndexSet &  acolis )
+        : _id(-1)
+        , _cluster(nullptr)
+        , _row_ofs(0)
+        , _col_ofs(0)
+        , _procs(PROCSET_INVALID)
+        , _matform(MATFORM_NONSYM)
+        , _parent( nullptr )
+        , _prev_in_block_row( nullptr )
+        , _next_in_block_row( nullptr )
+        , _prev_in_block_col( nullptr )
+        , _next_in_block_col( nullptr )
+        , _row_diag( nullptr )
+        , _col_diag( nullptr )
+{
+    set_block_is( bis( arowis, acolis ) );
+}
+
+//
+// construct matrix of size defined by block cluster \a c
+//
+template < typename value_t >
 TMatrix< value_t >::TMatrix ( const TBlockIndexSet &  bis )
         : _id(-1)
         , _cluster(nullptr)

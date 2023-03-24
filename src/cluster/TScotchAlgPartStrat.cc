@@ -11,7 +11,7 @@
 
 #include "hpro/config.h"
 
-#if USE_SCOTCH == 1
+#if HPRO_USE_SCOTCH == 1
 extern "C" {
 #include "scotch/scotch.h"
 }
@@ -29,7 +29,7 @@ namespace Hpro
 // Scotch declaration and wrapper
 //
 
-#if USE_SCOTCH == 1
+#if HPRO_USE_SCOTCH == 1
 
 namespace
 {
@@ -121,7 +121,7 @@ partition_graph ( const TGraph &          graph,
 //
 // partition graph into two sets
 //
-#if USE_SCOTCH == 1
+#if HPRO_USE_SCOTCH == 1
 void
 TScotchAlgPartStrat::partition ( const TGraph &  graph,
                                  TNodeSet &      left,

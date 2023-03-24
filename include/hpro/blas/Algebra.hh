@@ -26,7 +26,7 @@
 // switch MKL to sequential mode before calling MKL functions
 // and switch it back to standard behaviour afterwards
 //
-#if USE_MKL == 1 && USE_MKL_SEQ == 0
+#if HPRO_USE_MKL == 1 && HPRO_USE_MKL_SEQ == 0
 
 #  include <mkl_service.h>
 

@@ -108,6 +108,10 @@ private:
     //! construct matrix of size defined by block cluster \a bcl
     TMatrix ( const TBlockCluster *   bcl );
 
+    //! construct matrix of size defined by block index set \a rowis × \a colis
+    TMatrix ( const TIndexSet &       rowis,
+              const TIndexSet &       colis );
+
     //! construct matrix of size defined by block index set \a bis
     TMatrix ( const TBlockIndexSet &  bis );
 

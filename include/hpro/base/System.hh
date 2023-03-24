@@ -24,13 +24,13 @@ namespace Hpro
 //
 ///////////////////////////////////////////////////
 
-#if USE_AMDLIBM == 1
+#if HPRO_USE_AMDLIBM == 1
 
 extern "C" void  amd_sincos  ( double, double *, double * );
 
 #endif
 
-#if USE_ACML == 1
+#if HPRO_USE_ACML == 1
 
 extern "C" void  fastsincos  ( double, double *, double * );
 
@@ -147,19 +147,19 @@ sincos  ( const float  f,
           float &      s,
           float &      c )
 {
-    #if USE_SVML == 1
+    #if HPRO_USE_SVML == 1
         
     ::sincosf( f, & s, & c );
         
-    #elif USE_AMDLIBM == 1
+    #elif HPRO_USE_AMDLIBM == 1
         
     amd_sincos( f, & s, & c );
         
-    #elif USE_ACML == 1
+    #elif HPRO_USE_ACML == 1
         
     fastsincos( f, & s, & c );
         
-    #elif HAS_SINCOS == 1
+    #elif HPRO_HAS_SINCOS == 1
         
     ::sincosf( f, & s, & c );
         
@@ -175,19 +175,19 @@ sincos  ( const double f,
           double &     s,
           double &     c )
 {
-    #if USE_SVML == 1
+    #if HPRO_USE_SVML == 1
         
     ::sincos( f, & s, & c );
         
-    #elif USE_AMDLIBM == 1
+    #elif HPRO_USE_AMDLIBM == 1
         
     amd_sincos( f, & s, & c );
         
-    #elif USE_ACML == 1
+    #elif HPRO_USE_ACML == 1
         
     fastsincos( f, & s, & c );
         
-    #elif HAS_SINCOS == 1
+    #elif HPRO_HAS_SINCOS == 1
         
     ::sincos( f, & s, & c );
         

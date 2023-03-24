@@ -42,7 +42,7 @@ cpuid ( int     lvl,
         uint &  ecx,
         uint &  edx )
 {
-    #if ( HAS_CPUID == 1 ) &&                                   \
+    #if ( HPRO_HAS_CPUID == 1 ) &&                                   \
         (( defined(__GNUC__) || defined(__INTEL_COMPILER) ) &&  \
          ( defined(LINUX)    || defined(DARWIN) ))
 
@@ -269,7 +269,7 @@ struct local_variables_t
         // check CPU features
         //
     
-        #if HAS_CPUID == 1 && ( defined(__GNUC__) || defined(__INTEL_COMPILER) )
+        #if HPRO_HAS_CPUID == 1 && ( defined(__GNUC__) || defined(__INTEL_COMPILER) )
         {
             uint  lvl, eax, ebx, ecx, edx;
 
@@ -282,21 +282,21 @@ struct local_variables_t
             {
                 cpuid( 1, eax, ebx, ecx, edx );
 
-                #if HAS_SSE3 == 1
+                #if HPRO_HAS_SSE3 == 1
                 
                 if (( CPUID_SSE3 = (( ecx & ( 1 <<  0 ) ) != 0 ) ))
                     SIMD_SIZE = 128 / 8;
                 
                 #endif
                 
-                #if HAS_AVX == 1
+                #if HPRO_HAS_AVX == 1
                 
                 if (( CPUID_AVX = (( ecx & ( 1 << 28 ) ) != 0 ) ))
                     SIMD_SIZE = 256 / 8;
                 
                 #endif
                 
-                #if HAS_AVX2 == 1
+                #if HPRO_HAS_AVX2 == 1
                 
                 if (( CPUID_AVX2 = (( ecx & ( 1 << 12 ) ) != 0 ) ))
                     SIMD_SIZE = 256 / 8;
@@ -308,7 +308,7 @@ struct local_variables_t
             {
                 cpuid( 7, eax, ebx, ecx, edx );
                 
-                #if HAS_AVX512F == 1
+                #if HPRO_HAS_AVX512F == 1
                 
                 if (( CPUID_AVX512F = (( ebx & ( 1 << 16 ) ) != 0 ) ))
                     SIMD_SIZE = 512 / 8;
@@ -318,21 +318,21 @@ struct local_variables_t
         }
         #endif
 
-        #if HAS_MIC == 1
+        #if HPRO_HAS_MIC == 1
         
         MIC_ARCH  = true;
         SIMD_SIZE = 512 / 8;
         
         #endif
 
-        #if HAS_VSX == 1
+        #if HPRO_HAS_VSX == 1
 
         VSX       = true;
         SIMD_SIZE = 128 / 8;
         
         #endif
 
-        #if HAS_NEON == 1
+        #if HPRO_HAS_NEON == 1
 
         NEON      = true;
         SIMD_SIZE = 128 / 8;

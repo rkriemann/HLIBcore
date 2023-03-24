@@ -22,65 +22,65 @@
  * set to 0 otherwise 
  */
 
-#define USE_TBB                  @USE_TBB@
-#define USE_ZLIB                 @USE_ZLIB@
-#define USE_METIS                @USE_METIS@
-#define USE_SCOTCH               @USE_SCOTCH@
-#define USE_CHACO                @USE_CHACO@
-#define USE_MONGOOSE             @USE_MONGOOSE@
-#define USE_FFTW3                0
-#define USE_GSL                  @USE_GSL@
-#define USE_CAIRO                0
-#define USE_HDF5                 @USE_HDF5@
-#define USE_NETCDF               @USE_NETCDF@
-#define USE_AMDLIBM              @USE_AMDLIBM@
-#define USE_ACML                 @USE_ACML@
-#define USE_SVML                 @USE_SVML@
-#define USE_LIBMVEC              @USE_LIBMVEC@
-#define USE_MKL                  @USE_MKL@
-#define USE_MKL_SEQ              @USE_MKL_SEQ@
-#define USE_VAMPIRTRACE          0
+#define HPRO_USE_TBB                  @USE_TBB@
+#define HPRO_USE_ZLIB                 @USE_ZLIB@
+#define HPRO_USE_METIS                @USE_METIS@
+#define HPRO_USE_SCOTCH               @USE_SCOTCH@
+#define HPRO_USE_CHACO                @USE_CHACO@
+#define HPRO_USE_MONGOOSE             @USE_MONGOOSE@
+#define HPRO_USE_FFTW3                0
+#define HPRO_USE_GSL                  @USE_GSL@
+#define HPRO_USE_CAIRO                0
+#define HPRO_USE_HDF5                 @USE_HDF5@
+#define HPRO_USE_NETCDF               @USE_NETCDF@
+#define HPRO_USE_AMDLIBM              @USE_AMDLIBM@
+#define HPRO_USE_ACML                 @USE_ACML@
+#define HPRO_USE_SVML                 @USE_SVML@
+#define HPRO_USE_LIBMVEC              @USE_LIBMVEC@
+#define HPRO_USE_MKL                  @USE_MKL@
+#define HPRO_USE_MKL_SEQ              @USE_MKL_SEQ@
+#define HPRO_USE_VAMPIRTRACE          0
 
 /*
  * set to 1 if the following functions are available and
  * set to 0 otherwise 
  */
 
-#define HAS_CLOCKGETTIME         @HAS_CLOCKGETTIME@
-#define HAS_GETTIMEOFDAY         @HAS_GETTIMEOFDAY@
-#define HAS_GETTICKCOUNT         @HAS_GETTICKCOUNT@
-#define HAS_GETPROCESSTIMES      @HAS_GETPROCESSTIMES@
-#define HAS_LOCALTIME_R          @HAS_LOCALTIME_R@
-#define HAS_GETRUSAGE            @HAS_GETRUSAGE@
-#define HAS_LWPINFO              @HAS_LWPINFO@
-#define HAS_C99COMPLEX           0
+#define HPRO_HAS_CLOCKGETTIME         @HAS_CLOCKGETTIME@
+#define HPRO_HAS_GETTIMEOFDAY         @HAS_GETTIMEOFDAY@
+#define HPRO_HAS_GETTICKCOUNT         @HAS_GETTICKCOUNT@
+#define HPRO_HAS_GETPROCESSTIMES      @HAS_GETPROCESSTIMES@
+#define HPRO_HAS_LOCALTIME_R          @HAS_LOCALTIME_R@
+#define HPRO_HAS_GETRUSAGE            @HAS_GETRUSAGE@
+#define HPRO_HAS_LWPINFO              @HAS_LWPINFO@
+#define HPRO_HAS_C99COMPLEX           0
 
-#define HAS_GETPAGESIZE          0 /* @HAS_GETPAGESIZE@ */
-#define HAS_MMAP                 0 /* @HAS_MMAP@ */
+#define HPRO_HAS_GETPAGESIZE          0 /* @HAS_GETPAGESIZE@ */
+#define HPRO_HAS_MMAP                 0 /* @HAS_MMAP@ */
 
-#define HAS_STRERROR_R           @HAS_STRERROR_R@
-#define HAS_BACKTRACE            @HAS_BACKTRACE@
-#define HAS_CXXDEMANGLE          @HAS_CXXDEMANGLE@
+#define HPRO_HAS_STRERROR_R           @HAS_STRERROR_R@
+#define HPRO_HAS_BACKTRACE            @HAS_BACKTRACE@
+#define HPRO_HAS_CXXDEMANGLE          @HAS_CXXDEMANGLE@
 
-#define HAS_UNORDERED_MAP        0
-#define HAS_BOOST_UNORDERED_MAP  1
-#define HAS_BOOST_IOSTREAMS      @HAS_BOOST_IOSTREAMS@
+#define HPRO_HAS_UNORDERED_MAP        0
+#define HPRO_HAS_BOOST_UNORDERED_MAP  1
+#define HPRO_HAS_BOOST_IOSTREAMS      @HAS_BOOST_IOSTREAMS@
 
-#define HAS_GEJSV                @HAS_GEJSV@
-#define HAS_GESVJ                @HAS_GESVJ@
-#define HAS_SINCOS               @HAS_SINCOS@
-#define HAS_GEQP3_TRUNC          0
+#define HPRO_HAS_GEJSV                @HAS_GEJSV@
+#define HPRO_HAS_GESVJ                @HAS_GESVJ@
+#define HPRO_HAS_SINCOS               @HAS_SINCOS@
+#define HPRO_HAS_GEQP3_TRUNC          0
 
-#define HAS_ILP64                @HAS_ILP64@
+#define HPRO_USE_ILP64                @USE_ILP64@
 
-#define HAS_CPUID                @HAS_CPUID@
-#define HAS_SSE3                 @HAS_SSE3@
-#define HAS_AVX                  @HAS_AVX@
-#define HAS_AVX2                 @HAS_AVX2@
-#define HAS_MIC                  @HAS_MIC@
-#define HAS_AVX512F              @HAS_AVX512F@
-#define HAS_VSX                  @HAS_VSX@
-#define HAS_NEON                 @HAS_NEON@
+#define HPRO_HAS_CPUID                @HAS_CPUID@
+#define HPRO_HAS_SSE3                 @HAS_SSE3@
+#define HPRO_HAS_AVX                  @HAS_AVX@
+#define HPRO_HAS_AVX2                 @HAS_AVX2@
+#define HPRO_HAS_MIC                  @HAS_MIC@
+#define HPRO_HAS_AVX512F              @HAS_AVX512F@
+#define HPRO_HAS_VSX                  @HAS_VSX@
+#define HPRO_HAS_NEON                 @HAS_NEON@
 
 /*
  * set to 1 to activate various features or change
@@ -98,7 +98,7 @@
 #define HPRO_COUNT_FLOPS         0
 
 /* activate to enable old TBB functions */
-#define HAS_TBB_DEPRECATED       0
+#define HPRO_HAS_TBB_DEPRECATED  0
 
 /*
  * define type of network environment

@@ -76,7 +76,7 @@ namespace LOGGING
 
 #if FUNC_STAT == 1
 
-#define  HAS_LOGGING
+#define  HPRO_HAS_LOGGING
 
 using  mutex_t = std::mutex;
 using  lock_t  = std::scoped_lock;
@@ -1135,7 +1135,7 @@ qrp_trunc ( T &                              A,
     using  value_t = typename T::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
 
-    #if HAS_GEQP3_TRUNC == 1
+    #if HPRO_HAS_GEQP3_TRUNC == 1
 
     //
     // do QRP and determine ranks on-the-fly, stopping if accuracy was reached
@@ -1867,7 +1867,7 @@ gesvj    ( T1 &   A,
            T2 &   S,
            T3 &   V )
 {
-    #if HAS_GESVJ == 1
+    #if HPRO_HAS_GESVJ == 1
     
     LOG_COUNTER( gesvj );
     LOG_TIC( gesvj );
@@ -2218,7 +2218,7 @@ lasvd ( T1 &                                                            U,
     }// if
     else if (( ln == n ) && ( lm == m ))
     {
-        #if HAS_GESVJ == 1
+        #if HPRO_HAS_GESVJ == 1
         if ( CFG::BLAS::use_gesvj && ( U.nrows() >= U.ncols() ))
         {
             gesvj( U, S, V );
@@ -2245,7 +2245,7 @@ lasvd ( T1 &                                                            U,
             Matrix< value_t >  TV( V, Range( 0, lm-1 ), Range( 0, lmin-1 ) );
             Vector< real_t>    TS( S, Range( 0, lmin-1 ) );
 
-            #if HAS_GESVJ == 1
+            #if HPRO_HAS_GESVJ == 1
             if ( CFG::BLAS::use_gesvj && ( U.nrows() >= U.ncols() ))
             {
                 gesvj( TU, TS, TV );
@@ -4432,7 +4432,7 @@ factorise_ortho ( Matrix< T > &      A,
 void
 print_statistics ()
 {
-    #ifdef HAS_LOGGING
+    #ifdef HPRO_HAS_LOGGING
     
     size_t  napprox = LOGGING::napprox;
     size_t  ntrunc  = LOGGING::ntrunc;
@@ -4459,7 +4459,7 @@ print_statistics ()
 void
 reset_statistics ()
 {
-    #ifdef HAS_LOGGING
+    #ifdef HPRO_HAS_LOGGING
     
     LOGGING::napprox = 0;
     LOGGING::ntrunc  = 0;

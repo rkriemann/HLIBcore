@@ -8,7 +8,7 @@
 
 #include "hpro/config.h"
 
-#if USE_GSL == 1
+#if HPRO_USE_GSL == 1
 #  include <gsl/gsl_sf_bessel.h>
 #  include <gsl/gsl_sf_gamma.h>
 #else
@@ -45,7 +45,7 @@ compute_Bessel ( const double  d,
     {
         const double temp =  d / rho;
 
-        #if USE_GSL == 1
+        #if HPRO_USE_GSL == 1
         return scale_fac * gsl_sf_bessel_Knu( nu, temp ) * std::pow( temp, nu );
         #else
         return scale_fac * std::cyl_bessel_k( nu, temp ) * std::pow( temp, nu );
@@ -67,7 +67,7 @@ TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                 
     , _length( length )
     , _nu( nu )
     , _sigmasq( sigma*sigma )
-    #if USE_GSL == 1
+    #if HPRO_USE_GSL == 1
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * gsl_sf_gamma(nu) ) )
     #else
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * std::tgamma( nu ) ) )
@@ -87,7 +87,7 @@ TMaternCovCoeffFn< point_t >::TMaternCovCoeffFn ( const value_t                 
     , _length( length )
     , _nu( nu )
     , _sigmasq( sigma*sigma )
-    #if USE_GSL == 1
+    #if HPRO_USE_GSL == 1
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * gsl_sf_gamma(nu) ) )
     #else
     , _scale_fac( _sigmasq / ( std::pow(2.0, nu-1) * std::tgamma( nu ) ) )

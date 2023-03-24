@@ -12,7 +12,7 @@
 
 #include <boost/filesystem.hpp>
 
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -38,7 +38,7 @@ namespace Hpro
 
 namespace fs = boost::filesystem;
 
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
 namespace io = boost::iostreams;
 #endif
 
@@ -179,7 +179,7 @@ open_read ( const std::string &  filename )
     if ( ! fs::exists( filename ) )
         HERROR( ERR_FNEXISTS, "open_read", filename );
     
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
     
     auto      in  = std::make_unique< io::filtering_istream >();
     fs::path  filepath( filename );
@@ -205,7 +205,7 @@ open_read ( const std::string &  filename )
 std::unique_ptr< std::ostream >
 open_write ( const std::string &  filename )
 {
-#if HAS_BOOST_IOSTREAMS == 1
+#if HPRO_HAS_BOOST_IOSTREAMS == 1
     
     auto      out = std::make_unique< io::filtering_ostream >();
     fs::path  filepath( filename );

@@ -18,9 +18,9 @@
 #include <altivec.h>
 
 // VSX exp/sincos from libmass
-#define USE_MASS  1
+#define HPRO_USE_MASS  1
 
-#if USE_MASS == 1
+#if HPRO_USE_MASS == 1
 extern "C" vector double expd2    ( vector double vx );
 extern "C" void          sincosd2 ( vector double vx, vector double * vs, vector double * vc );
 #endif
@@ -98,7 +98,7 @@ struct simd_traits< double, ISA_VSX >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_MASS == 1
+        #if HPRO_USE_MASS == 1
     
         return expd2( x );
 
@@ -124,7 +124,7 @@ struct simd_traits< double, ISA_VSX >
                           packed_t &       s,
                           packed_t &       c )
     {
-        #if USE_MASS == 1
+        #if HPRO_USE_MASS == 1
 
         sincosd2( a, & s, & c );
     
@@ -138,7 +138,7 @@ struct simd_traits< double, ISA_VSX >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );

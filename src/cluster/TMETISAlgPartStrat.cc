@@ -12,7 +12,7 @@
 
 #include "hpro/config.h"
 
-#if USE_METIS == 1
+#if HPRO_USE_METIS == 1
 extern "C" {
 #include <metis.h>
 }
@@ -35,7 +35,7 @@ namespace Hpro
 // METIS declaration and wrapper
 //
 
-#if USE_METIS == 1
+#if HPRO_USE_METIS == 1
 
 namespace
 {
@@ -178,7 +178,7 @@ partition_graph ( const TGraph &                graph,
 //
 TMETISAlgPartStrat::TMETISAlgPartStrat ( const bool use_random )
 {
-    #if USE_METIS == 1 && defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
+    #if HPRO_USE_METIS == 1 && defined(METIS_VER_MAJOR) && METIS_VER_MAJOR >= 5
 
     static TMutex  mutex;
 
@@ -214,7 +214,7 @@ TMETISAlgPartStrat::partition ( const TGraph &  graph,
     size_t                      nright   = 0;
     std::vector< metis_idx_t >  part( nnodes, 0 );
 
-#if USE_METIS == 1
+#if HPRO_USE_METIS == 1
     partition_graph( graph, part );
 #else
     HERROR( ERR_NOMETIS, "(TMETISAlgPartStrat) partition", "" );

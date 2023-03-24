@@ -197,7 +197,7 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'HAS_VSX'                 : 'check',
              'HAS_NEON'                : 'check',
 
-             'HAS_ILP64'               : 'no',
+             'ILP64'                   : 'no',
 
              'HAS_C99COMPLEX'          : 'check',
 
@@ -567,9 +567,9 @@ def parse_cmdline ( args, env ):
 
 
         elif opt in ( '--enable-ilp64' ):
-            env['HAS_ILP64'] = 'yes'
+            env['ILP64'] = 'yes'
         elif opt in ( '--disable-ilp64' ):
-            env['HAS_ILP64'] = 'no'
+            env['ILP64'] = 'no'
 
 
         elif opt in ( '--with-cpuflags' ):
@@ -757,7 +757,7 @@ def print_env ( env ):
 
     print( '' ) 
     print_bold( 'LAPACK', env['LAPACK_LIB'] )
-    if env['HAS_ILP64'] == 'yes':
+    if env['ILP64'] == 'yes':
         print_bold( 'ILP64', 'yes' )
 
     print( '' ) 
@@ -2882,8 +2882,7 @@ def main ( compenv ):
                   'MIC',
                   'AVX512F',
                   'VSX',
-                  'NEON',
-                  'ILP64' ):
+                  'NEON' ):
         define = 'HAS_' + func
         if compenv[define] == 'yes' : compenv[define] = '1'
         else :                        compenv[define] = '0'
@@ -2893,7 +2892,7 @@ def main ( compenv ):
 
     for feat in ( 'ZLIB', 'METIS', 'SCOTCH', 'CHACO', 'MONGOOSE',
                   'GSL', 'HDF5', 'NETCDF', 'SVML', 'LIBMVEC', 'AMDLIBM',
-                  'ACML', 'MKL', 'MKL_SEQ' ):
+                  'ACML', 'MKL', 'MKL_SEQ', 'ILP64' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
 
@@ -2904,8 +2903,10 @@ def main ( compenv ):
     compenv['CFGCFLAGS']  = ''
     compenv['CFGLFLAGS']  = ''
 
-    if compenv['LAPACK_LIB'] == 'CLAPACK' : compenv['CFGLFLAGS'] += ' -lclapack'
-    else :                                  compenv['CFGLFLAGS'] += ' ' + compenv['LAPACK_LIB']
+    # LAPACK is chosen by application, not by HLIBpro
+    # !!! conflict with MKL possible !!!
+    # if compenv['LAPACK_LIB'] == 'CLAPACK' : compenv['CFGLFLAGS'] += ' -lclapack'
+    # else :                                  compenv['CFGLFLAGS'] += ' ' + compenv['LAPACK_LIB']
 
     if compenv['BOOSTCFLAGS' ] != '' :     
         compenv['CXXFLAGS']  += ' ' + compenv['BOOSTCFLAGS'] 
@@ -2971,7 +2972,7 @@ def main ( compenv ):
 
     # set version for hpro-config
     compenv['VERSION'] = compenv["MAJVERSION"] + '.' + compenv["MINVERSION"]
-    
+
     write_makefile( 'include/hpro/config.h.in', 'include/hpro/config.h', compenv )
     write_script(   'bin/hpro-config.in',       'bin/hpro-config',       compenv )
 

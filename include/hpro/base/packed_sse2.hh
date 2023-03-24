@@ -17,28 +17,28 @@
 
 #include <emmintrin.h>
 
-#if USE_AMDLIBM == 1
+#if HPRO_USE_AMDLIBM == 1
 extern "C" __m128d  amd_vrf4_expf    ( __m128 );
 extern "C" void     amd_vrf4_sincosf ( __m128, __m128 *, __m128 * );
 extern "C" __m128d  amd_vrd2_exp     ( __m128d );
 extern "C" void     amd_vrd2_sincos  ( __m128d, __m128d *, __m128d * );
 #endif
 
-#if USE_ACML == 1
+#if HPRO_USE_ACML == 1
 extern "C" __m128d  __vrs4_expf      ( __m128d );
 extern "C" void     __vrs4_sincosf   ( __m128d, __m128d *, __m128d * );
 extern "C" __m128d  __vrd2_exp       ( __m128d );
 extern "C" void     __vrd2_sincos    ( __m128d, __m128d *, __m128d * );
 #endif
 
-#if USE_SVML == 1
+#if HPRO_USE_SVML == 1
 extern "C"  __m128   _mm_exp_ps      ( __m128 );
 extern "C"  __m128   _mm_sincos_ps   ( __m128 *, __m128 );
 extern "C"  __m128d  _mm_exp_pd      ( __m128d );
 extern "C"  __m128d  _mm_sincos_pd   ( __m128d *, __m128d );
 #endif
 
-#if USE_LIBMVEC == 1
+#if HPRO_USE_LIBMVEC == 1
 extern "C" __m128   _ZGVbN4v_expf ( __m128   x );
 extern "C" __m128   _ZGVbN4v_sinf ( __m128   x );
 extern "C" __m128   _ZGVbN4v_cosf ( __m128   x );
@@ -123,19 +123,19 @@ struct simd_traits< float, ISA_SSE2 >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm_exp_ps( x );
 
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVbN4v_expf( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
     
         return amd_vrf4_exp( x );
 
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
     
         return __vrf4_exp( x );
 
@@ -163,20 +163,20 @@ struct simd_traits< float, ISA_SSE2 >
                           packed_t &       s,
                           packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm_sincos_ps( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVbN4v_sinf( a );
         c = _ZGVbN4v_cosf( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
     
         amd_vrf4_sincos( a, & s, & c );
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
     
         __vrf4_sincos( a, & s, & c );
     
@@ -190,7 +190,7 @@ struct simd_traits< float, ISA_SSE2 >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );
@@ -374,19 +374,19 @@ struct simd_traits< double, ISA_SSE2 >
     
     static packed_t  exp    ( const packed_t  x )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
     
         return _mm_exp_pd( x );
 
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
     
         return _ZGVbN2v_exp( x );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
     
         return amd_vrd2_exp( x );
 
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
     
         return __vrd2_exp( x );
 
@@ -412,20 +412,20 @@ struct simd_traits< double, ISA_SSE2 >
                           packed_t &       s,
                           packed_t &       c )
     {
-        #if USE_SVML == 1
+        #if HPRO_USE_SVML == 1
 
         s = _mm_sincos_pd( & c, a );
     
-        #elif USE_LIBMVEC == 1
+        #elif HPRO_USE_LIBMVEC == 1
 
         s = _ZGVbN2v_sin( a );
         c = _ZGVbN2v_cos( a );
     
-        #elif USE_AMDLIBM == 1
+        #elif HPRO_USE_AMDLIBM == 1
     
         amd_vrd2_sincos( a, & s, & c );
     
-        #elif USE_ACML == 1
+        #elif HPRO_USE_ACML == 1
     
         __vrd2_sincos( a, & s, & c );
     
@@ -439,7 +439,7 @@ struct simd_traits< double, ISA_SSE2 >
 
         store( a, sa );
 
-        #  if HAS_SINCOS == 1    
+        #  if HPRO_HAS_SINCOS == 1    
 
         Math::sincos( sa[0], ss[0], sc[0] );
         Math::sincos( sa[1], ss[1], sc[1] );

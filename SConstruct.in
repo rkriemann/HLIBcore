@@ -28,7 +28,6 @@ fcflags       = Split( '@FCFLAGS@' )
 defines       = Split( '@DEFINES@' )
 debug         = Split( '@DBGFLAGS@' )
 optim         = Split( '@OPTFLAGS@' )
-profile       = Split( '@PROFLAGS@' )
 lflags        = Split( '@LFLAGS@' )
 
 lapack        = '@LAPACK_LIB@'
@@ -108,10 +107,8 @@ if system in ( 'Microsoft', 'MSWin32', 'MSWin64' ):
 #
 
 opts = Variables( cache_file )
-opts.Add( BoolVariable( 'fullmsg',  'set to enable full output',                        0 ) )
-opts.Add( BoolVariable( 'debug',    'set to enable building with debug informations',   1 ) )
-opts.Add( BoolVariable( 'profile',  'set to enable building with profile informations', 0 ) )
-opts.Add( BoolVariable( 'optimise', 'set to enable building with optimisation',         0 ) )
+opts.Add( BoolVariable( 'fullmsg',   'set to enable full output',                        0 ) )
+opts.Add( EnumVariable( 'buildtype', 'how to build HLIBcore (debug/release)', 'debug', allowed_values = [ 'debug', 'release' ], ignorecase = 2 ) )
 if system == 'Windows':
     opts.Add( BoolVariable( 'shared', 'set to enable building of shared libraries',   1 ) )
     opts.Add( BoolVariable( 'static', 'set to enable building of static libraries',   0 ) )
@@ -152,19 +149,12 @@ if not opt_env['fullmsg'] :
     base_env.Replace( INSTALLSTR      = " Install   $TARGET" )
 
 # add flags for specific compilation modes
-if base_env['profile']:
-    base_env.Append( CFLAGS       = profile )
-    base_env.Append( CXXFLAGS     = profile )
-    base_env.Append( FORTRANFLAGS = profile )
-    base_env.Append( LINKFLAGS    = profile )
-
-if base_env['debug']:
+if base_env['buildtype'] == 'debug' :
     base_env.Append( CFLAGS       = debug )
     base_env.Append( CXXFLAGS     = debug )
     base_env.Append( FORTRANFLAGS = debug )
     base_env.Append( LINKFLAGS    = debug )
-
-if base_env['optimise']:
+elif base_env['buildtype'] == 'release' :
     base_env.Append( CFLAGS       = optim )
     base_env.Append( CXXFLAGS     = optim )
     base_env.Append( FORTRANFLAGS = optim )
@@ -300,14 +290,12 @@ def show_options ( target, source, env ):
     print() 
     print( 'Type  \'scons <option>=<value> ...\'  where <option> is one of' )
     print()
-    print( '  Option   | Description                                       | Value' )
-    print( ' ----------+---------------------------------------------------+-------' )
-    print( '  fullmsg  | enable/disable full output                        |', opt_env['fullmsg'] )
-    print( '  debug    | enable/disable building with debug informations   |', opt_env['debug'] )
-    print( '  profile  | enable/disable building with profile informations |', opt_env['profile'] )
-    print( '  optimise | enable/disable building with optimisation         |', opt_env['optimise'] )
-    print( '  static   | enable/disable building of static libraries       |', opt_env['static'] )
-    print( '  shared   | enable/disable building of shared libraries       |', opt_env['shared'] )
+    print( '  Option    | Description                                       | Value' )
+    print( ' -----------+---------------------------------------------------+-------' )
+    print( '  fullmsg   | enable/disable full output                        |', opt_env['fullmsg'] )
+    print( '  buildtype | define build type for library (debug,release)     |', opt_env['buildtype'] )
+    print( '  static    | enable/disable building of static libraries       |', opt_env['static'] )
+    print( '  shared    | enable/disable building of shared libraries       |', opt_env['shared'] )
     print() 
 
 options_cmd = base_env.Command( 'phony-target-options', None, show_options )

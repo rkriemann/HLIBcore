@@ -13,7 +13,7 @@
 #include "hpro/config.h"
 
 // prevents issues with Windows build environment and dot-wrappers
-#if USE_MKL == 1
+#if HPRO_USE_MKL == 1
 namespace MKL {
 #include <mkl_cblas.h>
 }
@@ -73,7 +73,7 @@ reset_flops ()
 /////////////////////////////////////////////////////////////////
 
 // define 32-bit integers vs. 64-bit integers
-#if HAS_ILP64 == 1
+#if HPRO_USE_ILP64 == 1
 using  blas_int_t = long;   // ILP64
 #else
 using  blas_int_t = int;    // LP64
@@ -1113,7 +1113,7 @@ sgeqp3_  ( const blas_int_t *   m,
            const blas_int_t *   lwork,
            blas_int_t *         info );
 
-#if HAS_GEQP3_TRUNC == 1
+#if HPRO_HAS_GEQP3_TRUNC == 1
 
 CFUNCDECL
 void
@@ -1397,7 +1397,7 @@ dgeqp3_  ( const blas_int_t *   m,
            const blas_int_t *   lwork,
            blas_int_t *         info );
 
-#if HAS_GEQP3_TRUNC == 1
+#if HPRO_HAS_GEQP3_TRUNC == 1
 
 CFUNCDECL
 void
@@ -1629,7 +1629,7 @@ cgeqp3_  ( const blas_int_t *     m,
            float *                rwork,
            blas_int_t *           info );
 
-#if HAS_GEQP3_TRUNC == 1
+#if HPRO_HAS_GEQP3_TRUNC == 1
 
 CFUNCDECL
 void
@@ -1848,7 +1848,7 @@ zgeqp3_  ( const blas_int_t *           m,
            double *                     rwork,
            blas_int_t *                 info );
 
-#if HAS_GEQP3_TRUNC == 1
+#if HPRO_HAS_GEQP3_TRUNC == 1
 
 CFUNCDECL
 void
@@ -2091,7 +2091,7 @@ dot ( const blas_int_t  n,
 
     std::complex< float >  res;
     
-    #if USE_MKL == 1
+    #if HPRO_USE_MKL == 1
 
     MKL::cblas_cdotc_sub( n, x, incx, y, incy, & res );
     
@@ -2114,7 +2114,7 @@ dot ( const blas_int_t  n,
 
     std::complex< double >  res;
     
-    #if USE_MKL == 1
+    #if HPRO_USE_MKL == 1
 
     MKL::cblas_zdotc_sub( n, x, incx, y, incy, & res );
     
@@ -2162,7 +2162,7 @@ dotu ( const blas_int_t  n,
     
     std::complex< float >  res;
     
-    #if USE_MKL == 1
+    #if HPRO_USE_MKL == 1
 
     MKL::cblas_cdotu_sub( n, x, incx, y, incy, & res );
     
@@ -2185,7 +2185,7 @@ dotu ( const blas_int_t  n,
     
     std::complex< double >  res;
     
-    #if USE_MKL == 1
+    #if HPRO_USE_MKL == 1
 
     MKL::cblas_zdotu_sub( n, x, incx, y, incy, & res );
     
@@ -2603,7 +2603,7 @@ HPRO_GEQP3_FUNC( std::complex< double >, zgeqp3_ )
 
 #undef HPRO_GEQP3_FUNC
 
-#if HAS_GEQP3_TRUNC == 1
+#if HPRO_HAS_GEQP3_TRUNC == 1
 
 //
 // *geqp3trunc
