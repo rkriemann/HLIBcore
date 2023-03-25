@@ -1363,6 +1363,57 @@ eigen ( T1 &                              M,
 }
 
 //
+// compute eigenvalues and eigenvectors of the hermitian matrix \a M
+//
+template < typename T1 >
+std::enable_if_t< is_matrix< T1 >::value, void >
+eigen_herm ( T1 &                              M,
+             Vector< typename T1::value_t > &  eig_val,
+             Matrix< typename T1::value_t > &  eig_vec )
+{
+    using  value_t = typename T1::value_t;
+    using  real_t  = typename real_type< value_t >::type_t;
+    
+    const size_t  n = M.nrows();
+    blas_int_t    info = 0;
+    value_t       work_query = value_t(0);
+    real_t        rdummy     = 0;
+
+    if (( eig_vec.nrows() != M.nrows() ) || ( eig_vec.ncols() != M.ncols() ))
+        eig_vec= std::move( Matrix< value_t >( M.nrows(), M.ncols() ) );
+        
+    // work space query
+    heev( 'V', 'L', blas_int_t(n), eig_vec.data(), blas_int_t(eig_vec.col_stride()),
+          & rdummy, & work_query, LAPACK_WS_QUERY, & rdummy, info );
+
+    if ( info < 0 )
+        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
+        
+    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
+    Vector< real_t >   seig_val( n );
+    vector< value_t >  work( lwork );
+    vector< real_t >   rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
+    
+    copy( M, eig_vec );
+    
+    MKL_SEQ_START;
+    
+    heev( 'V', 'L', blas_int_t(n), eig_vec.data(), blas_int_t(eig_vec.col_stride()),
+          seig_val.data(), work.data(), lwork, rwork.data(), info );
+    
+    MKL_SEQ_END;
+    
+    if ( eig_val.length() != n )
+        eig_val = std::move( Vector< value_t >( n ) );
+    
+    for ( idx_t  i = 0; i < idx_t(n); ++i )
+        eig_val(i) = seig_val(i);
+    
+    if ( info < 0 )
+        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
+}
+
+//
 // compute eigenvalues and eigenvectors of matrix \a M
 //
 template < typename T1 >

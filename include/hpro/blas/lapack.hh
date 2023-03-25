@@ -2659,16 +2659,16 @@ HPRO_GEQP3TRUNC_FUNC( std::complex< double >, zgeqp3trunc_ )
 // *syev/*heev
 //
 #define HPRO_HEEV_FUNC( type, func )                                    \
-    inline void heev ( const char        jobz,                          \
-                       const char        uplo,                          \
-                       const blas_int_t  n,                             \
-                       type *            A,                             \
-                       const blas_int_t  ldA,                           \
-                       type *            W,                             \
-                       type *            work,                          \
-                       const blas_int_t  lwork,                         \
-                       type *,                                          \
-                       blas_int_t &      info ) {                       \
+    inline void heev ( const char            jobz,                      \
+                       const char            uplo,                      \
+                       const blas_int_t      n,                         \
+                       type *                A,                         \
+                       const blas_int_t      ldA,                       \
+                       real_type_t< type > * W,                         \
+                       type *                work,                      \
+                       const blas_int_t      lwork,                     \
+                       real_type_t< type > *,                           \
+                       blas_int_t &          info ) {                   \
         info = 0;                                                       \
         func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, & info ); }
 
@@ -2677,17 +2677,24 @@ HPRO_HEEV_FUNC( double, dsyev_ )
 
 #undef HPRO_HEEV_FUNC
 
-// #define HPRO_HEEV_FUNC( type, func )                                        
-//     void heev<type> ( const char jobz, const char uplo, const blas_int_t n, 
-//                       type * A, const blas_int_t ldA, real_type< type >::type_t * W,   
-//                       type * work, const blas_int_t lwork, real_type< type >::type_t * rwork, blas_int_t & info ) { 
-//         info = 0;                                                       
-//         func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, rwork, & info ); }
+#define HPRO_HEEV_FUNC( type, func )                                    \
+    inline void heev ( const char            jobz,                      \
+                       const char            uplo,                      \
+                       const blas_int_t      n,                         \
+                       type *                A,                         \
+                       const blas_int_t      ldA,                       \
+                       real_type_t< type > * W,                         \
+                       type *                work,                      \
+                       const blas_int_t      lwork,                     \
+                       real_type_t< type > * rwork,                     \
+                       blas_int_t & info ) {                            \
+        info = 0;                                                       \
+        func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, rwork, & info ); }
 
-// HPRO_HEEV_FUNC( std::complex< float >,  cheev_ )
-// HPRO_HEEV_FUNC( std::complex< double >, zheev_ )
+HPRO_HEEV_FUNC( std::complex< float >,  cheev_ )
+HPRO_HEEV_FUNC( std::complex< double >, zheev_ )
 
-// #undef HPRO_HEEV_FUNC
+#undef HPRO_HEEV_FUNC
 
 //
 // *syevx/*heevx
@@ -2709,8 +2716,8 @@ HPRO_HEEV_FUNC( double, dsyev_ )
                         blas_int_t *                iwork,              \
                         blas_int_t &                info ) {            \
         char                      range = 'I';                          \
-        real_type< type >::type_t  vl, vu;                               \
-        real_type< type >::type_t  abstol = 0;                           \
+        real_type< type >::type_t  vl, vu;                              \
+        real_type< type >::type_t  abstol = 0;                          \
         blas_int_t                       ifail  = 0;                    \
         info = 0;                                                       \
         func( & jobz, & range, & uplo, & n, A, & ldA, & vl, & vu, & il, & iu, \

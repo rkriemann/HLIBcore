@@ -93,10 +93,10 @@ template void tsqr< Matrix< float > >              ( Matrix< float > &          
 template void tsqr< Matrix< double > >             ( Matrix< double > &           A,
                                                      Matrix< double > &           R,
                                                      const size_t                 ntile );
-template void tsqr< Matrix< std::complex<float> > >     ( Matrix< std::complex<float> > &   A,
+template void tsqr< Matrix< std::complex<float> > >( Matrix< std::complex<float> > &   A,
                                                      Matrix< std::complex<float> > &   R,
                                                      const size_t                 ntile );
-template void tsqr< Matrix< std::complex<double> > >    ( Matrix< std::complex<double> > &  A,
+template void tsqr< Matrix< std::complex<double> > >( Matrix< std::complex<double> > &  A,
                                                      Matrix< std::complex<double> > &  R,
                                                      const size_t                 ntile );
 
@@ -106,6 +106,14 @@ template void eigen< Matrix< float > >   ( Matrix< float > &            M,
 template void eigen< Matrix< double > >  ( Matrix< double > &           M,
                                            Vector< double > &           eig_val,
                                            Matrix< double > &           eig_vec );
+
+#define INST_EIGEN_HERM( type ) \
+    template void eigen_herm< Matrix< type > >   ( Matrix< type > &, Vector< type > &, Matrix< type > & )
+
+INST_EIGEN_HERM( float );
+INST_EIGEN_HERM( double );
+INST_EIGEN_HERM( std::complex< float > );
+INST_EIGEN_HERM( std::complex< double > );
 
 template void eigen< Matrix< float > >   ( Matrix< float > &            M,
                                            const Range &                eig_range,

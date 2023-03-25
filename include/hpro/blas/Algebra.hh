@@ -1762,6 +1762,16 @@ eigen ( T1 &                              M,
 
 //!
 //! \ingroup  BLAS_Module
+//! \brief compute eigenvalues and eigenvectors of the hermitian matrix \a M
+//!
+template < typename T1 >
+std::enable_if_t< is_matrix< T1 >::value, void >
+eigen_herm ( T1 &                              M,
+             Vector< typename T1::value_t > &  eig_val,
+             Matrix< typename T1::value_t > &  eig_vec );
+
+//!
+//! \ingroup  BLAS_Module
 //! \brief compute selected (by \a eig_range) eigenvalues and eigenvectors 
 //!        of the \b symmetric matrix \a M
 //!        - the lower half of \a M is accessed
