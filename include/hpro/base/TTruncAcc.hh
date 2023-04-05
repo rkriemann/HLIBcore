@@ -29,6 +29,15 @@ template < typename value_t >
 class TMatrix;
 
 //!
+//! different norms within truncation
+//!
+enum trunc_norm_t
+{
+    spectral_norm,
+    frobenius_norm
+};
+
+//!
 //! \class  TTruncAcc
 //! \brief  Defines accuracy for truncation of low rank blocks.
 //!
@@ -37,18 +46,21 @@ class TTruncAcc
 private:
     //! @cond
     
-    //! fixed truncation rank (negative means no limit)
-    int     _rank;
-    
     //! relative truncation accuracy
-    double  _rel_eps;
-
-    //! upper limit for truncation rank (negative means no limit)
-    int     _max_rank;
+    double        _rel_eps;
 
     //! absolute truncation accuracy
-    double  _abs_eps;
+    double        _abs_eps;
 
+    //! fixed truncation rank (negative means no limit)
+    int           _rank;
+    
+    //! upper limit for truncation rank (negative means no limit)
+    int           _max_rank;
+
+    //! norm to be used for truncation
+    trunc_norm_t  _norm_mode;
+    
     //! @endcond
     
 public:
@@ -61,10 +73,11 @@ public:
     //! construct accuracy object for exact truncation
     //!
     TTruncAcc ()
-            : _rank(-1)
-            , _rel_eps(0.0)
-            , _max_rank(-1)
+            : _rel_eps(0.0)
             , _abs_eps(CFG::Arith::abs_eps)
+            , _rank(-1)
+            , _max_rank(-1)
+            , _norm_mode( spectral_norm )
     {}
 
     //!
@@ -72,31 +85,48 @@ public:
     //!
     TTruncAcc ( const int     k,
                 const double  absolute_eps = CFG::Arith::abs_eps )
-            : _rank(std::max(0,k))
-            , _rel_eps(0.0)
-            , _max_rank(-1)
+            : _rel_eps(0.0)
             , _abs_eps(absolute_eps)
+            , _rank(std::max(0,k))
+            , _max_rank(-1)
+            , _norm_mode( spectral_norm )
+    {}
+
+    //!
+    //! construct accuracy object for fixed accuracy truncation
+    //! in spectral norm
+    //!
+    TTruncAcc ( const double  relative_eps,
+                const double  absolute_eps = CFG::Arith::abs_eps )
+            : _rel_eps(relative_eps)
+            , _abs_eps(absolute_eps)
+            , _rank(-1)
+            , _max_rank(-1)
+            , _norm_mode( spectral_norm )
     {}
 
     //!
     //! construct accuracy object for fixed accuracy truncation
     //!
-    TTruncAcc ( const double  relative_eps,
-                const double  absolute_eps = CFG::Arith::abs_eps )
-            : _rank(-1)
-            , _rel_eps(relative_eps)
+    TTruncAcc ( const trunc_norm_t  anorm_mode,
+                const double        arelative_eps,
+                const double        aabsolute_eps = CFG::Arith::abs_eps )
+            : _rel_eps(arelative_eps)
+            , _abs_eps(aabsolute_eps)
+            , _rank(-1)
             , _max_rank(-1)
-            , _abs_eps(absolute_eps)
+            , _norm_mode( anorm_mode )
     {}
 
     //!
     //! copy constructor
     //!
     TTruncAcc ( const TTruncAcc &  ta )
-            : _rank(-1)
-            , _rel_eps(0.0)
-            , _max_rank(-1)
+            : _rel_eps(0.0)
             , _abs_eps(CFG::Arith::abs_eps)
+            , _rank(-1)
+            , _max_rank(-1)
+            , _norm_mode( ta._norm_mode )
     {
         *this = ta;
     }
@@ -194,6 +224,9 @@ public:
         _max_rank = std::max( 0, k );
     }
 
+    //! return norm mode of truncation
+    trunc_norm_t  norm_mode () const { return _norm_mode; }
+    
     //! copy operator
     TTruncAcc & operator = ( const TTruncAcc & ta )
     {
@@ -221,6 +254,7 @@ public:
 
 //!
 //! create accuracy object with fixed (relative) precision \a relative_eps
+//! using spectral norm in truncation
 //!
 inline
 TTruncAcc
@@ -228,6 +262,18 @@ fixed_prec ( const double  relative_eps,
              const double  absolute_eps = CFG::Arith::abs_eps )
 {
     return TTruncAcc( relative_eps, absolute_eps );
+}
+
+//!
+//! create accuracy object with fixed (relative) precision \a relative_eps
+//!
+inline
+TTruncAcc
+fixed_prec ( const trunc_norm_t  norm_mode,
+             const double        relative_eps,
+             const double        absolute_eps = CFG::Arith::abs_eps )
+{
+    return TTruncAcc( norm_mode, relative_eps, absolute_eps );
 }
 
 //!

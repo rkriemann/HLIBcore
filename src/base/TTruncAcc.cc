@@ -29,11 +29,11 @@ namespace
 //
 // ratio of singular-values compared to highest considered as non-zero
 //
-template <typename T>
-T
+template < typename value_t >
+value_t
 svd_eps ()
 {
-    return Limits::epsilon<T>();
+    return Limits::epsilon< value_t >();
 }
 
 }// namespace anonymous
@@ -48,93 +48,104 @@ svd_eps ()
 // return truncation rank based on internal strategy
 // and given singular values \a sv
 //
-template <typename T>
+template < typename value_t >
 size_t
-TTruncAcc::trunc_rank ( const BLAS::Vector< T > &  sv ) const
+TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
 {
-#if 1
-    
-    T      eps = T(0);
-    idx_t  k   = idx_t( sv.length() );
-
-    // initialise with either fixed rank or fixed accuracy
-    if ( is_fixed_rank() )
+    if ( _norm_mode == spectral_norm )
     {
-        eps = svd_eps< T >() * Math::abs( sv(0) );
-        k   = idx_t( std::min( sv.length(), rank() ) );
-    }// if
-    else
-    {
-        eps = T( rel_eps() ) * Math::abs( sv(0) );
-        k   = idx_t( sv.length() );
-    }// else
-
-    // apply absolute lower limit for singular values
-    eps = std::max( eps, T( abs_eps() ) );
-
-    // apply maximal rank
-    if ( has_max_rank() )
-        k = std::min( k, idx_t( max_rank() ) );
-
-    // compare singular values and stop, if truncation rank was reached
-    for ( idx_t  i = 0; i < k; ++i )
-    {
-        if ( Math::abs( sv(i) ) < eps )
-        {
-            k = i;
-            break;
-        }// if
-    }// for
-    
-    return k;
-    
-#else
-    
-    T      eps  = T(0);
-    idx_t  k    = idx_t( sv.length() );
-    T      norm = T(0);
-
-    // compute Frobenius norm of untruncated matrix
-    for ( idx_t  i = 0; i < idx_t(sv.length()); ++i )
-        norm += Math::square( sv(i) );
-    norm = Math::sqrt( norm );
-            
-    // initialise with either fixed rank or fixed accuracy
-    if ( is_fixed_rank() )
-    {
-        eps = svd_eps< T >() * norm;
-        k   = idx_t( min( sv.length(), rank() ) );
-    }// if
-    else
-    {
-        eps = T( rel_eps() ) * norm;
-        k   = idx_t( sv.length() );
-    }// else
-
-    // apply absolute lower limit for singular values
-    eps = max( eps, T( abs_eps() ) );
-
-    // apply maximal rank
-    if ( has_max_rank() )
-        k = min( k, idx_t( max_rank() ) );
-
-    // compare singular values and stop, if truncation rank was reached
-    T  rest = T(0);
-    
-    for ( idx_t  i = k-1; i >= 0; --i )
-    {
-        rest += Math::square( sv(i) );
+        //
+        // with fixed precision: find k such that σ_(k+1) ≤ β
+        // with β = σ_0 · ε for relative error and
+        //      β = ε       for absolute error
+        //
         
-        if ( Math::sqrt( rest ) > eps )
-        {
-            k = min( idx_t( sv.length() ), i+1 );
-            break;
-        }// if
-    }// for
+        auto   eps = value_t(0);
+        idx_t  k   = idx_t( sv.length() );
 
-    return k;
+        // initialise with either fixed rank or fixed accuracy
+        if ( is_fixed_rank() )
+        {
+            eps = svd_eps< value_t >() * Math::abs( sv(0) );
+            k   = idx_t( std::min( sv.length(), rank() ) );
+        }// if
+        else
+        {
+            eps = value_t( rel_eps() ) * Math::abs( sv(0) );
+            k   = idx_t( sv.length() );
+        }// else
+
+        // apply absolute lower limit for singular values
+        eps = std::max( eps, value_t( abs_eps() ) );
+
+        // apply maximal rank
+        if ( has_max_rank() )
+            k = std::min( k, idx_t( max_rank() ) );
+
+        // compare singular values and stop, if truncation rank was reached
+        for ( idx_t  i = 0; i < k; ++i )
+        {
+            if ( Math::abs( sv(i) ) < eps )
+            {
+                k = i;
+                break;
+            }// if
+        }// for
     
-#endif
+        return k;
+    }// if
+    else // _norm_mode == frobenius_norm
+    {
+        //
+        // with fixed precision: find smallest k such that √(Σ_i=k^n σ_i²) ≤ β
+        // with β = ε |A|_F = ε √(Σ_i=1^n σ_i²) for relative error and
+        //      β = ε                           for absolute error
+        //
+        
+        auto   eps  = value_t(0);
+        idx_t  k    = idx_t( sv.length() );
+        auto   norm = value_t(0);
+
+        // compute Frobenius norm of matrix as √(Σ_i σ_i²)
+        for ( idx_t  i = 0; i < idx_t(sv.length()); ++i )
+            norm += Math::square( sv(i) );
+        norm = Math::sqrt( norm );
+            
+        // initialise with either fixed rank or fixed accuracy
+        if ( is_fixed_rank() )
+        {
+            eps = svd_eps< value_t >() * norm;
+            k   = idx_t( std::min( sv.length(), rank() ) );
+        }// if
+        else
+        {
+            eps = value_t( rel_eps() ) * norm;
+            k   = idx_t( sv.length() );
+        }// else
+
+        // apply absolute lower limit for singular values
+        eps = std::max( eps, value_t( abs_eps() ) );
+
+        // apply maximal rank
+        if ( has_max_rank() )
+            k = std::min( k, idx_t( max_rank() ) );
+
+        // find smallest k such that √(Σ_k^n σ_i²) ≤ ε
+        auto  rest = value_t(0);
+    
+        for ( idx_t  i = k-1; i >= 0; --i )
+        {
+            rest += Math::square( sv(i) );
+        
+            if ( Math::sqrt( rest ) > eps )
+            {
+                k = std::min( idx_t( sv.length() ), i+1 );
+                break;
+            }// if
+        }// for
+
+        return k;
+    }// else
 }
 
 // instantiate the above method
@@ -147,10 +158,20 @@ template size_t TTruncAcc::trunc_rank< double > ( const BLAS::Vector< double > &
 std::string
 TTruncAcc::to_string () const
 {
-    if ( is_fixed_rank() )
-        return Hpro::to_string( "k = %d", rank() );
+    if ( norm_mode() == spectral_norm )
+    {
+        if ( is_fixed_rank() )
+            return Hpro::to_string( "spectral( k = %d )", rank() );
+        else
+            return Hpro::to_string( "spectral( ε = %.4e )", rel_eps() );
+    }// if
     else
-        return Hpro::to_string( "ε = %.4e", rel_eps() );
+    {
+        if ( is_fixed_rank() )
+            return Hpro::to_string( "frobenius( k = %d )", rank() );
+        else
+            return Hpro::to_string( "frobenius( ε = %.4e )", rel_eps() );
+    }// else
 }
 
 //////////////////////////////////////////////////////////////////
