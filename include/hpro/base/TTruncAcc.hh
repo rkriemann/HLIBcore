@@ -278,12 +278,24 @@ fixed_prec ( const trunc_norm_t  norm_mode,
 
 //!
 //! create accuracy object with fixed absolute precision \a absolute_eps
+//! using spectral norm in truncation
 //!
 inline
 TTruncAcc
 absolute_prec ( const double  absolute_eps )
 {
     return TTruncAcc( double(0), absolute_eps );
+}
+
+//!
+//! create accuracy object with fixed absolute precision \a absolute_eps
+//!
+inline
+TTruncAcc
+absolute_prec ( const trunc_norm_t  norm_mode,
+                const double        absolute_eps )
+{
+    return TTruncAcc( norm_mode, double(0), absolute_eps );
 }
 
 //!
