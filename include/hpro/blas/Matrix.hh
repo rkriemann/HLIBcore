@@ -161,6 +161,34 @@ public:
         }// switch
     }
 
+    //! direct setting of matrix from raw data pointer \a ptr, \a nrows, \a rowstride, \a ncols and \a colstride
+    Matrix ( value_t *            aptr,
+             const size_t         anrows,
+             const size_t         arowstride,
+             const size_t         ancols,
+             const size_t         acolstride,
+             const copy_policy_t  p = copy_reference )
+            : MemBlock< value_t >( aptr, p == copy_value )
+            , _length{ anrows, ancols }
+            , _stride{ arowstride, acolstride }
+    {
+        switch ( p )
+        {
+            case copy_reference :
+                break;
+                
+            case copy_value :
+                super_t::alloc_wo_value( anrows * ancols );
+                _stride[0] = 1;
+                _stride[1] = anrows;
+        
+                for ( idx_t j = 0; j < idx_t( _length[1] ); j++ )
+                    for ( idx_t i = 0; i < idx_t( _length[0] ); i++ )
+                        (*this)(i,j) = aptr[ j * acolstride + i * arowstride ];
+                break;
+        }// switch
+    }
+
     //! copy operator for matrices (always copy reference! for real copy, use BLAS::copy)
     Matrix & operator = ( const Matrix &  M )
     {
