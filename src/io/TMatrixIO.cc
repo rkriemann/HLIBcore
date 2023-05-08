@@ -1237,7 +1237,7 @@ h5_write_dense ( H5File *                         file,
     if ( is_complex_type< value_t >::value )
         HERROR( ERR_CONSISTENCY, "", "" );
     
-    hsize_t    dims[2] = { A.nrows(), A.ncols() };
+    hsize_t    dims[2] = { A.ncols(), A.nrows() };
     DataSpace  dataspace( 2, dims );
 
     //
@@ -1281,7 +1281,7 @@ h5_write_dense ( H5File *                                         file,
     if ( is_complex_type< value_t >::value )
         HERROR( ERR_CONSISTENCY, "", "" );
     
-    hsize_t    dims[2] = { A.nrows(), A.ncols() };
+    hsize_t    dims[2] = { A.ncols(), A.nrows() };
     DataSpace  dataspace( 2, dims );
 
     //
@@ -1656,7 +1656,7 @@ h5_read_dense_c ( hid_t                file,
     
     // std::cout << dims[0] << " × " << dims[1] << std::endl;
 
-    auto  M = BLAS::Matrix< value_t >( dims[0], dims[1] );
+    auto  M = BLAS::Matrix< value_t >( dims[1], dims[0] );
 
     status = H5Dread( dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, M.data() );
     
