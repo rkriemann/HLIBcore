@@ -668,6 +668,8 @@ strerror ( const uint ec )
         case ERR_NOCAIRO         : return "no Cairo support compiled in";
         case ERR_NOHDF5          : return "no HDF5 support compiled in";
         case ERR_NOMONGOOSE      : return "no Mongoose support compiled in";
+        case ERR_NONETCDF        : return "no NetCDF support compiled in";
+        case ERR_NETCDF          : return "error during NetCDF I/O";
 
         case ERR_MPI             : return "error in call to MPI function";
 

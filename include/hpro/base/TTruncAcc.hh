@@ -230,10 +230,11 @@ public:
     //! copy operator
     TTruncAcc & operator = ( const TTruncAcc & ta )
     {
-        _rank     = ta._rank;
-        _max_rank = ta._max_rank;
-        _rel_eps  = ta._rel_eps;
-        _abs_eps  = ta._abs_eps;
+        _rank      = ta._rank;
+        _max_rank  = ta._max_rank;
+        _rel_eps   = ta._rel_eps;
+        _abs_eps   = ta._abs_eps;
+        _norm_mode = ta._norm_mode;
 
         return *this;
     }

@@ -76,7 +76,7 @@ namespace LOGGING
 
 #if FUNC_STAT == 1
 
-#define  HPRO_HAS_LOGGING
+#define  HAS_LOGGING
 
 using  mutex_t = std::mutex;
 using  lock_t  = std::scoped_lock;
@@ -4483,7 +4483,7 @@ factorise_ortho ( Matrix< T > &      A,
 void
 print_statistics ()
 {
-    #ifdef HPRO_HAS_LOGGING
+    #ifdef HAS_LOGGING
     
     size_t  napprox = LOGGING::napprox;
     size_t  ntrunc  = LOGGING::ntrunc;
@@ -4510,7 +4510,7 @@ print_statistics ()
 void
 reset_statistics ()
 {
-    #ifdef HPRO_HAS_LOGGING
+    #ifdef HAS_LOGGING
     
     LOGGING::napprox = 0;
     LOGGING::ntrunc  = 0;

@@ -63,6 +63,10 @@ hdf5          = '@HDF5@'
 hdf5_cflags   = '@HDF5CFLAGS@'
 hdf5_lflags   = '@HDF5LFLAGS@'
 
+netcdf        = '@NETCDF@'
+netcdf_cflags = '@NETCDFCFLAGS@'
+netcdf_lflags = '@NETCDFLFLAGS@'
+
 cxxlibs       = '@CXXLIBS@'
 
 # indicate, that CPU is X86 compatible and compiler supports SSE/AVX
@@ -234,6 +238,13 @@ if hdf5 == 'yes':
         hlibpro_env.MergeFlags( hdf5_cflags + ' ' + hdf5_lflags )
     else:
         hlibpro_env.MergeFlags( hdf5_cflags )
+
+# add NetCDF
+if netcdf == 'yes':
+    if system == 'Windows':
+        hlibpro_env.MergeFlags( netcdf_cflags + ' ' + netcdf_lflags )
+    else:
+        hlibpro_env.MergeFlags( netcdf_cflags )
 
 # create special environment for various instruction sets
 sse3_env   = hlibpro_env.Clone()
