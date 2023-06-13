@@ -217,11 +217,11 @@ public:
     virtual void    truncate     ( const TTruncAcc & acc );
 
     //! set this ≔ A·B^H
-    void            set_lrmat    ( const BLAS::Matrix< value_t > &     A,
-                                   const BLAS::Matrix< value_t > &     B );
+    virtual void    set_lrmat    ( const BLAS::Matrix< value_t > &  A,
+                                   const BLAS::Matrix< value_t > &  B );
     
-    void            set_lrmat    ( BLAS::Matrix< value_t > &&     A,
-                                   BLAS::Matrix< value_t > &&     B )
+    virtual void    set_lrmat    ( BLAS::Matrix< value_t > &&  A,
+                                   BLAS::Matrix< value_t > &&  B )
     {
         if (( A.nrows() != _mat_A.nrows() ) ||
             ( B.nrows() != _mat_B.nrows() ) ||
