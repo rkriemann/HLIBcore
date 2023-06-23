@@ -9,6 +9,7 @@
 //
 
 #include <atomic>
+#include <cstdint>
 
 #include "hpro/config.h"
 
@@ -74,9 +75,9 @@ reset_flops ()
 
 // define 32-bit integers vs. 64-bit integers
 #if HPRO_USE_ILP64 == 1
-using  blas_int_t = long;   // ILP64
+using  blas_int_t = int64_t;   // ILP64
 #else
-using  blas_int_t = int;    // LP64
+using  blas_int_t = int32_t;   // LP64
 #endif
 
 /////////////////////////////////////////////////////////////////

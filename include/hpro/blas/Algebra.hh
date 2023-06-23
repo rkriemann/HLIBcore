@@ -79,6 +79,23 @@ fill ( const T1  f,
 
 //!
 //! \ingroup  BLAS_Module
+//! \brief    sum elements in vector
+//!
+template < typename T1 >
+std::enable_if_t< is_vector< T1 >::value, value_type_t< T1 > >
+sum ( T1 &  x )
+{
+    const idx_t  n = idx_t(x.length());
+    auto         s = value_type_t< T1 >( 0 );
+
+    for ( idx_t  i = 0; i < n; ++i )
+        s += x(i);
+
+    return s;
+}
+
+//!
+//! \ingroup  BLAS_Module
 //! \brief    fill vector with repeated function evaluation, x_i = f()
 //!
 // template < typename T1,
