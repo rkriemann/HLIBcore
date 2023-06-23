@@ -278,6 +278,30 @@ fixed_prec ( const trunc_norm_t  norm_mode,
 }
 
 //!
+//! create accuracy object with relative precision \a relative_eps
+//! using spectral norm in truncation
+//!
+inline
+TTruncAcc
+relative_prec ( const double  relative_eps,
+                const double  absolute_eps = CFG::Arith::abs_eps )
+{
+    return TTruncAcc( relative_eps, absolute_eps );
+}
+
+//!
+//! create accuracy object with relative precision \a relative_eps
+//!
+inline
+TTruncAcc
+relative_prec ( const trunc_norm_t  norm_mode,
+                const double        relative_eps,
+                const double        absolute_eps = CFG::Arith::abs_eps )
+{
+    return TTruncAcc( norm_mode, relative_eps, absolute_eps );
+}
+
+//!
 //! create accuracy object with fixed absolute precision \a absolute_eps
 //! using spectral norm in truncation
 //!

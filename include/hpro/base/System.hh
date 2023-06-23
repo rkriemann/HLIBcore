@@ -49,26 +49,26 @@ template < typename T >  constexpr T  pi () { return T(3.14159265358979323846264
 //
 
 // return minimum/maximum of \a f1 and \a f2
-template < typename T >  T  min     ( const T  f1, const T  f2 ) noexcept { return std::min( f1, f2 ); }
-template < typename T >  T  max     ( const T  f1, const T  f2 ) noexcept { return std::max( f1, f2 ); }
+template < typename T >  constexpr T  min     ( const T  f1, const T  f2 ) noexcept { return std::min( f1, f2 ); }
+template < typename T >  constexpr T  max     ( const T  f1, const T  f2 ) noexcept { return std::max( f1, f2 ); }
 
 // limit \a f to interval [f_min,f_max]
-template < typename T >  T  limit   ( const T  f_min,
-                                      const T  f,
-                                      const T  f_max ) noexcept { return std::min( f_max, std::max( f_min, f ) ); }
+template < typename T >  constexpr T  limit   ( const T  f_min,
+                                                const T  f,
+                                                const T  f_max ) noexcept { return std::min( f_max, std::max( f_min, f ) ); }
 
 // return true if lb < f < ub
-template < typename T >  bool  inside ( const T  lb,
-                                        const T  f,
-                                        const T  ub ) noexcept 
+template < typename T >  constexpr bool  inside ( const T  lb,
+                                                  const T  f,
+                                                  const T  ub ) noexcept 
 {
     return (( lb < f ) && ( f < ub ));
 }
 
 // return true if lb ≤ f ≤ ub
-template < typename T >  bool  inside_eq ( const T  lb,
-                                           const T  f,
-                                           const T  ub ) noexcept 
+template < typename T >  constexpr bool  inside_eq ( const T  lb,
+                                                     const T  f,
+                                                     const T  ub ) noexcept 
 {
     return (( lb <= f ) && ( f <= ub ));
 }
@@ -78,25 +78,25 @@ template < typename T >  bool  inside_eq ( const T  lb,
 //
 
 // return conjugate value
-template < typename T >  T                  conj   ( const T                  f ) { return f; }
-template < typename T >  std::complex< T >  conj   ( const std::complex< T >  f ) { return std::conj( f ); }
+template < typename T >  constexpr T                  conj   ( const T                  f ) { return f; }
+template < typename T >  constexpr std::complex< T >  conj   ( const std::complex< T >  f ) { return std::conj( f ); }
 
 // return absolute value of argument
-template < typename T >  T                  abs    ( const T                  f ) { return std::abs( f ); }
-template < typename T >  T                  abs    ( const std::complex< T >  f ) { return std::abs( f ); }
+template < typename T >  constexpr T                  abs    ( const T                  f ) { return std::abs( f ); }
+template < typename T >  constexpr T                  abs    ( const std::complex< T >  f ) { return std::abs( f ); }
 
 // return signum of argument
-template < typename T >  T                  sign   ( const T                  f ) { return (f == T(0) ? T(0) : (f > T(0) ? T(1) : T(-1))); }
-template < typename T >  std::complex< T >  sign   ( const std::complex< T >  f ) { return f / abs( f ); }
+template < typename T >  constexpr T                  sign   ( const T                  f ) { return (f == T(0) ? T(0) : (f > T(0) ? T(1) : T(-1))); }
+template < typename T >  constexpr std::complex< T >  sign   ( const std::complex< T >  f ) { return f / abs( f ); }
 
 // return square of argument
-template < typename T >  T                  square ( const T                  f ) { return f*f; }
+template < typename T >  constexpr T                  square ( const T                  f ) { return f*f; }
 
 // return square root of argument
-template < typename T >  T                  sqrt   ( const T                  f ) { return std::sqrt(f); }
+template < typename T >  constexpr T                  sqrt   ( const T                  f ) { return std::sqrt(f); }
 
 // return reciprocal square root of argument
-template < typename T >  T                  rsqrt  ( const T                  f ) { return T(1) / sqrt(f); }
+template < typename T >  constexpr T                  rsqrt  ( const T                  f ) { return T(1) / sqrt(f); }
 
 //
 // power and logarithms
@@ -104,42 +104,42 @@ template < typename T >  T                  rsqrt  ( const T                  f 
 
 // compute x raised to the power of y
 template < typename T1,
-           typename T2 > auto               pow    ( const T1                 x,
-                                                     const T2                 y ) { return std::pow( x, y ); }
+           typename T2 > constexpr auto               pow    ( const T1                 x,
+                                                               const T2                 y ) { return std::pow( x, y ); }
 
 // compute e raised to the power of x
-template < typename T >  T                  exp    ( const T                  f ) { return std::exp( f ); }
+template < typename T >  constexpr T                  exp    ( const T                  f ) { return std::exp( f ); }
 
 // compute base 2 logarithm of integers
 uint  log2  ( const uint  n );
 
 // compute natural logarithm
-template < typename T >  T                  log    ( const T                  f ) { return std::log( f ); }
+template < typename T >  constexpr T                  log    ( const T                  f ) { return std::log( f ); }
 
 // compute base 10 logarithm
-template < typename T >  T                  log10  ( const T                  f ) { return std::log10( f ); }
+template < typename T >  constexpr T                  log10  ( const T                  f ) { return std::log10( f ); }
 
 //
 // rounding
 //
 
 // round argument down to the nearest integer
-template < typename T >  T                  floor  ( const T                  f ) { return std::floor( f ); }
+template < typename T >  constexpr T                  floor  ( const T                  f ) { return std::floor( f ); }
     
 // round argument up to the nearest integer
-template < typename T >  T                  ceil   ( const T                  f ) { return std::ceil( f ); }
+template < typename T >  constexpr T                  ceil   ( const T                  f ) { return std::ceil( f ); }
     
 //
 // trigonometry
 //
 
 // return sine and cosing of argument
-template < typename T >  T                  sin   ( const T                  f ) { return std::sin( f ); }
-template < typename T >  T                  cos   ( const T                  f ) { return std::cos( f ); }
+template < typename T >  constexpr T                  sin   ( const T                  f ) { return std::sin( f ); }
+template < typename T >  constexpr T                  cos   ( const T                  f ) { return std::cos( f ); }
 
 // return arc sine and cosing of argument
-template < typename T >  T                  asin  ( const T                  f ) { return std::asin( f ); }
-template < typename T >  T                  acos  ( const T                  f ) { return std::acos( f ); }
+template < typename T >  constexpr T                  asin  ( const T                  f ) { return std::asin( f ); }
+template < typename T >  constexpr T                  acos  ( const T                  f ) { return std::acos( f ); }
 
 // simultaneously compute sine and cosine
 inline void

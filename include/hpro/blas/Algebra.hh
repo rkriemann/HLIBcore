@@ -1284,11 +1284,9 @@ prod_diag ( T1 &         M,
 {
     using  value_t = typename T1::value_t;
     
-    const Range  row_is( 0, idx_t( M.nrows() )-1 );
-    
     for ( idx_t  i = 0; i < k; ++i )
     {
-        Vector< value_t >  Mi( M, row_is, i );
+        auto  Mi = M.column( i );
 
         scale( value_t(D(i)), Mi );
     }// for
