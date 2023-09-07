@@ -276,7 +276,7 @@ TCardBSPPartStrat::partition ( const TCoordinate * coord,
         // choose largest dimension
         //
         
-        const uint  dim      = bbox.min().dim();
+        const uint  dim      = bbox.dim();
         double      max_size = -1.0;
 
         max_dim = 0;
@@ -871,4 +871,4 @@ TAutoBSPPartStrat::partition ( const TCoordinate * coord,
         _card.partition( coord, dofs, left, right, bbox, son_bbox, depth );
 }
 
-}// namespace
+}// namespace Hpro

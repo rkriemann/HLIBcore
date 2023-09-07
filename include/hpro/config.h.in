@@ -40,6 +40,7 @@
 #define HPRO_USE_MKL                  @USE_MKL@
 #define HPRO_USE_MKL_SEQ              @USE_MKL_SEQ@
 #define HPRO_USE_VAMPIRTRACE          0
+#define HPRO_USE_CGAL                 @USE_CGAL@
 
 /*
  * set to 1 if the following functions are available and

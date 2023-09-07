@@ -103,6 +103,7 @@ sources = [ 'base/String.cc',
             'cluster/TMongooseAlgPartStrat.cc',
             'cluster/TPermutation.cc',
             'cluster/TScotchAlgPartStrat.cc',
+            'cluster/TSFCCTBuilder.cc',
             'cluster/TStdGeomAdmCond.cc',
 
             'io/baseio.cc',

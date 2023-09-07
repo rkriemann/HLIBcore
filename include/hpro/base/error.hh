@@ -312,6 +312,7 @@ enum { NO_ERROR            = 0,         // no error occured
        ERR_NOMONGOOSE      = 1310,      // no Mongoose support available
        ERR_NONETCDF        = 1311,      // no NetCDF support available
        ERR_NETCDF          = 1312,      // error during NetCDF I/O
+       ERR_NOCGAL          = 1313,      // no CGAL support available
        
        ERR_MPI             = 1400,      // error in call to MPI function
        

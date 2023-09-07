@@ -158,6 +158,33 @@ TBBox::join ( const TBBox & bbox )
     }// for
 }
     
+//
+// extend local bbox by given point
+//
+void
+TBBox::extend ( const TPoint &  p )
+{
+    if ( min().dim() == 0 )
+    {
+        _bb_min = p;
+        _bb_max = p;
+    }// if
+    else
+    {
+        if (( min().dim() != p.dim() ) ||
+            ( max().dim() != p.dim() ))
+            HERROR( ERR_ARG, "(TBBox) extent", "given point has different spatial dimension" );
+        
+        const uint  mdim = min().dim(); // assuming that min and max have same dimension
+        
+        for ( uint i = 0; i < mdim; i++ )
+        {
+            min()[i] = std::min( min()[i], p[i] );
+            max()[i] = std::max( max()[i], p[i] );
+        }// for
+    }// else
+}
+    
 ///////////////////////////////////////////////
 //
 // misc.

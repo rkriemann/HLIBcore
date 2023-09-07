@@ -108,16 +108,20 @@ public:
     //! \param   coord   : geometry information for each index
     //! \param   idx_ofs : start renumbering indices from \a idx_ofs
     //!
-    virtual std::unique_ptr< TClusterTree >  build  ( const TCoordinate *      coord,
-                                                      const idx_t              idx_ofs = 0 ) const;
+    virtual
+    std::unique_ptr< TClusterTree >
+    build  ( const TCoordinate *      coord,
+             const idx_t              idx_ofs = 0 ) const;
 
     //! recursively build cluster tree for indices in \a dofs
-    virtual std::unique_ptr< TGeomCluster >  divide ( const TNodeSet &         dofs,
-                                                      const uint               lvl,
-                                                      const TBBox &            bbox,
-                                                      const TOptClusterSize &  csize,
-                                                      const idx_t              index_ofs,
-                                                      data_t &                 data ) const = 0;
+    virtual
+    std::unique_ptr< TGeomCluster >
+    divide ( const TNodeSet &         dofs,
+             const uint               lvl,
+             const TBBox &            bbox,
+             const TOptClusterSize &  csize,
+             const idx_t              index_ofs,
+             data_t &                 data ) const = 0;
 
     //
     // give access to local parameters
@@ -191,12 +195,14 @@ public:
     //
 
     //! recursively build cluster tree for indices in \a dofs
-    virtual std::unique_ptr< TGeomCluster >  divide ( const TNodeSet &         dofs,
-                                                      const uint               lvl,
-                                                      const TBBox &            bbox,
-                                                      const TOptClusterSize &  csize,
-                                                      const idx_t              index_ofs,
-                                                      data_t &                 data ) const;
+    virtual
+    std::unique_ptr< TGeomCluster >
+    divide ( const TNodeSet &         dofs,
+             const uint               lvl,
+             const TBBox &            bbox,
+             const TOptClusterSize &  csize,
+             const idx_t              index_ofs,
+             data_t &                 data ) const;
 };
 
 //!
@@ -253,31 +259,39 @@ public:
 
     //! build nested dissection cluster tree out of coordinate set \a coord and
     //! additional connectivity defined by local sparse matrix
-    virtual std::unique_ptr< TClusterTree >  build     ( const TCoordinate *      coord,
-                                                         const idx_t              idx_ofs = 0 ) const;
+    virtual
+    std::unique_ptr< TClusterTree >
+    build     ( const TCoordinate *      coord,
+                const idx_t              idx_ofs = 0 ) const;
 
     //! build nested dissection cluster tree out of coordinate set \a coord and
     //! additional connectivity defined by sparse matrix \a S
-    virtual std::unique_ptr< TClusterTree >  build     ( const TCoordinate *        coord,
-                                                         any_const_sparse_matrix_t  S,
-                                                         const idx_t                idx_ofs = 0 ) const;
+    virtual
+    std::unique_ptr< TClusterTree >
+    build     ( const TCoordinate *        coord,
+                any_const_sparse_matrix_t  S,
+                const idx_t                idx_ofs = 0 ) const;
     
     //! recursively build cluster tree
-    virtual std::unique_ptr< TGeomCluster >  divide    ( const TNodeSet &         dofs,
-                                                         const uint               lvl,
-                                                         const TBBox &            bbox,
-                                                         const TOptClusterSize &  csize,
-                                                         const idx_t              index_ofs,
-                                                         data_t &                 data ) const;
+    virtual
+    std::unique_ptr< TGeomCluster >
+    divide    ( const TNodeSet &         dofs,
+                const uint               lvl,
+                const TBBox &            bbox,
+                const TOptClusterSize &  csize,
+                const idx_t              index_ofs,
+                data_t &                 data ) const;
 
     //! recursively build cluster tree for interfaces clusters
-    virtual std::unique_ptr< TGeomCluster >  divide_if ( const TNodeSet &         dofs,
-                                                         const uint               lvl,
-                                                         const uint               max_lvl,
-                                                         const TBBox &            bbox,
-                                                         const TOptClusterSize &  csize,
-                                                         const idx_t              index_ofs,
-                                                         data_t &                 data ) const;
+    virtual
+    std::unique_ptr< TGeomCluster >
+    divide_if ( const TNodeSet &         dofs,
+                const uint               lvl,
+                const uint               max_lvl,
+                const TBBox &            bbox,
+                const TOptClusterSize &  csize,
+                const idx_t              index_ofs,
+                data_t &                 data ) const;
 };
 
 //!
@@ -338,6 +352,44 @@ public:
              const uint                     lvl,
              const idx_t                    index_ofs,
              data_t &                       data ) const;
+};
+
+//!
+//! \ingroup  Cluster_Module
+//! \class    TSFCCTBuilder
+//! \brief    construct cluster tree using space filling curves
+//!
+class TSFCCTBuilder : public TGeomCTBuilder
+{
+public:
+    //////////////////////////////////////////////
+    //
+    // constructor and destructor
+    //
+
+    //! ctor
+    TSFCCTBuilder ( const uint  n_min        = CFG::Cluster::nmin,
+                    const uint  min_leaf_lvl = 0 );
+
+    //! dtor
+    virtual ~TSFCCTBuilder ();
+
+    //////////////////////////////////////////////
+    //
+    // clustertree creation
+    //
+
+    //! build cluster tree out of given coordinate set \a coord
+    virtual std::unique_ptr< TClusterTree >  build  ( const TCoordinate *      coord,
+                                                      const idx_t              idx_ofs = 0 ) const;
+    
+    //! recursively build cluster tree for indices in \a dofs
+    virtual std::unique_ptr< TGeomCluster >  divide ( const TNodeSet &         dofs,
+                                                      const uint               lvl,
+                                                      const TBBox &            bbox,
+                                                      const TOptClusterSize &  csize,
+                                                      const idx_t              index_ofs,
+                                                      data_t &                 data ) const;
 };
 
 }// namespace Hpro

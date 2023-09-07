@@ -670,6 +670,7 @@ strerror ( const uint ec )
         case ERR_NOMONGOOSE      : return "no Mongoose support compiled in";
         case ERR_NONETCDF        : return "no NetCDF support compiled in";
         case ERR_NETCDF          : return "error during NetCDF I/O";
+        case ERR_NOCGAL          : return "no CGAL support compiled in";
 
         case ERR_MPI             : return "error in call to MPI function";
 

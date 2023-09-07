@@ -102,6 +102,9 @@ public:
     //! join local bbox with \a box
     void join ( const TBBox & box );
     
+    //! extend local bbox by given point
+    void extend ( const TPoint &  p );
+    
     ///////////////////////////////////////////////
     //
     // misc.

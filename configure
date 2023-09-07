@@ -138,6 +138,10 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'NETCDF'       : 'check',
              'NETCDFCFLAGS' : '$pkgconfig( --cflags netcdf )$',
              'NETCDFLFLAGS' : '$pkgconfig( --libs netcdf )$',
+
+             'CGAL'         : 'check',
+             'CGALDIR'      : '',
+             'CGALCFLAGS'   : '-I@CGALDIR@/include',
              
              'AMDLIBM'      : 'check',
              'AMDLIBMDIR'   : '',
@@ -161,7 +165,7 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'MKL_SEQ'      : 'check',
 
              'VAMPIRTRACE'  : 'no',
-
+             
              #
              # functions and features
              #
@@ -389,6 +393,8 @@ def usage ( status ):
     print( '    --with-netcdf              turn on/off usage of NetCDF' )
     print( '      --netcdf-cflags          flags to compile with NetCDF' )
     print( '      --netcdf-lflags          flags to link with NetCDF' )
+    print( '    --with-cgal                turn on/off usage of CGAL' )
+    print( '      --cgal-cflags            flags to compile with CGAL' )
     print( '    --with-amdlibm[=dir]       turn on/off usage of AMDLIBM with optional prefix "dir"' )
     print( '      --amdlibm-cflags=lflags  flags to compile with AMDLIBM' )
     print( '      --amdlibm-lflags=lflags  flags to link with AMDLIBM' )
@@ -486,6 +492,10 @@ def parse_cmdline ( args, env ):
                                  [ '--without-netcdf',   'none',     None ],
                                  [ '--netcdf-cflags',    'required', env['NETCDFCFLAGS'] ],
                                  [ '--netcdf-lflags',    'required', env['NETCDFLFLAGS'] ],
+
+                                 [ '--with-cgal',       'none',     None ],
+                                 [ '--without-cgal',    'none',     None ],
+                                 [ '--cgal-cflags',     'required', env['CGALCFLAGS'] ],
 
                                  [ '--with-amdlibm',    'optional', env['AMDLIBMDIR'] ],
                                  [ '--without-amdlibm', 'none',     None ],
@@ -672,6 +682,14 @@ def parse_cmdline ( args, env ):
             env['NETCDFLFLAGS'] = arg
 
 
+        elif opt in ( '--with-cgal' ):
+            env['CGAL'] = 'yes'
+        elif opt in ( '--without-cgal' ):
+            env['CGAL'] = 'no'
+        elif opt in ( '--cgal-cflags' ):
+            env['CGALCFLAGS'] = arg
+
+
         elif opt in ( '--with-vtrace' ):
             env['VAMPIRTRACE'] = 'yes'
         elif opt in ( '--without-vtrace' ):
@@ -836,6 +854,14 @@ def print_env ( env ):
             print_bold( 'NETCDFLFLAGS', env['NETCDFLFLAGS'] )
         else :
             print_bold( 'NETCDF', 'yes', env['NETCDFCFLAGS'] + ' ' + env['NETCDFLFLAGS'] )
+
+    if env['CGAL'] == 'yes':
+        if verbose > 1:
+            print_bold( 'CGAL', 'yes' )
+            print_bold( 'CGALDIR',    env['CGALDIR'] )
+            print_bold( 'CGALCFLAGS', env['CGALCFLAGS'] )
+        else :
+            print_bold( 'CGAL', 'yes', env['CGALCFLAGS'] )
 
     if env['AMDLIBM'] == 'yes':
         if verbose > 1:
@@ -1689,6 +1715,22 @@ def testsrc ( name ):
          
         ########################################################################
 
+        'CGAL' :
+
+        """
+         #include <vector>
+         #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+         #include <CGAL/hilbert_sort.h>
+         int main () {
+           typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+           typedef K::Point_2                                          Point;
+           std::vector<Point> v;
+           CGAL::hilbert_sort( v.begin(), v.end() );
+           return 0; }
+        """,
+         
+        ########################################################################
+
         'AMD libm' :
 
         """
@@ -2535,6 +2577,14 @@ def test_environment ( env ):
         else:
             env['NETCDF'] = 'yes'
 
+    if compenv['CGAL'] == 'yes' or compenv['CGAL'] == 'check':
+        cflags = compenv['CGALCFLAGS']
+
+        if check_lib( 'CGAL', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + cflags ):
+            env['CGAL'] = 'yes'
+        else:
+            env['CGAL'] = 'check'
+
     if compenv['SVML'] == 'yes' or compenv['SVML'] == 'check':
         lflags = compenv['SVMLLFLAGS']
 
@@ -2890,9 +2940,9 @@ def main ( compenv ):
     if compenv['HAS_CPUID'] == 'yes'  : compenv['HAS_CPUID'] = '1'
     else :                              compenv['HAS_CPUID'] = '0'
 
-    for feat in ( 'ZLIB', 'METIS', 'SCOTCH', 'CHACO', 'MONGOOSE',
-                  'GSL', 'HDF5', 'NETCDF', 'SVML', 'LIBMVEC', 'AMDLIBM',
-                  'ACML', 'MKL', 'MKL_SEQ', 'ILP64' ):
+    for feat in ( 'ZLIB', 'METIS', 'SCOTCH', 'CHACO', 'MONGOOSE', 'GSL', 'HDF5', 'NETCDF', 'CGAL',
+                  'SVML', 'LIBMVEC', 'AMDLIBM', 'ACML', 'MKL', 'MKL_SEQ',
+                  'ILP64' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
 
@@ -2944,6 +2994,8 @@ def main ( compenv ):
     if compenv['NETCDF'] == 'yes' :
         compenv['CFGCFLAGS'] += ' ' + compenv['NETCDFCFLAGS'] 
         compenv['CFGLFLAGS'] += ' ' + compenv['NETCDFLFLAGS']
+    if compenv['CGAL'] == 'yes' :
+        compenv['CFGCFLAGS'] += ' ' + compenv['CGALCFLAGS'] 
     if compenv['AMDLIBM'] == 'yes':
         compenv['CFGLFLAGS'] += ' ' + compenv['AMDLIBMLFLAGS']
     if compenv['ACML']    == 'yes':

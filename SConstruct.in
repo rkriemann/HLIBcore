@@ -67,6 +67,9 @@ netcdf        = '@NETCDF@'
 netcdf_cflags = '@NETCDFCFLAGS@'
 netcdf_lflags = '@NETCDFLFLAGS@'
 
+cgal          = '@CGAL@'
+cgal_cflags   = '@CGALCFLAGS@'
+
 cxxlibs       = '@CXXLIBS@'
 
 # indicate, that CPU is X86 compatible and compiler supports SSE/AVX
@@ -293,6 +296,10 @@ if netcdf == 'yes':
         hlibpro_env.MergeFlags( netcdf_cflags + ' ' + netcdf_lflags )
     else:
         hlibpro_env.MergeFlags( netcdf_cflags )
+
+# add CGAL
+if cgal == 'yes':
+    hlibpro_env.MergeFlags( cgal_cflags )
 
 # create special environment for various instruction sets
 sse3_env   = hlibpro_env.Clone()
