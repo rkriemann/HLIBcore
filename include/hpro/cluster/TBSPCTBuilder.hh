@@ -362,14 +362,29 @@ public:
 class TSFCCTBuilder : public TGeomCTBuilder
 {
 public:
+    //!
+    //! various partitioning options
+    //!
+    enum partition_type_t
+    {
+        binary,   // standard, binary partitioning
+        blr       // single level partitioning (no hierarchy)
+    };
+
+protected:
+    //! partitioning type
+    partition_type_t  _part_type;
+    
+public:
     //////////////////////////////////////////////
     //
     // constructor and destructor
     //
 
     //! ctor
-    TSFCCTBuilder ( const uint  n_min        = CFG::Cluster::nmin,
-                    const uint  min_leaf_lvl = 0 );
+    TSFCCTBuilder ( const partition_type_t  part_type    = binary,
+                    const uint              n_min        = CFG::Cluster::nmin,
+                    const uint              min_leaf_lvl = 0 );
 
     //! dtor
     virtual ~TSFCCTBuilder ();

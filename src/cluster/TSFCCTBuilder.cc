@@ -123,9 +123,11 @@ struct sorting_traits_3_t
 //
 // ctor
 //
-TSFCCTBuilder::TSFCCTBuilder ( const uint  n_min,
-                               const uint  min_leaf_lvl )
+TSFCCTBuilder::TSFCCTBuilder ( const partition_type_t  part_type,
+                               const uint              n_min,
+                               const uint              min_leaf_lvl )
         : TGeomCTBuilder( n_min, min_leaf_lvl )
+        , _part_type( part_type )
 {}
 
 //
@@ -328,163 +330,243 @@ TSFCCTBuilder::divide ( const TNodeSet &         dofs,
         
         return build_leaf( dofs, lvl, index_ofs, bbox, data );
     }// if
-    
+
     //
-    // if size of cluster leaves is at most optimal size don't split cluster
-    //
-
-    if ( ! csize.is_optimal( dofs.nnodes() ) )
-    {
-        auto  son = divide( dofs, lvl+1, bbox, csize.recurse(), index_ofs, data );
-
-        if ( son.get() == nullptr )
-            HERROR( ERR_NULL, "(TBSPCTBuilder) divide", "son cluster" );
-
-        auto  cluster = std::make_unique< TGeomCluster >( son->first(), son->last(), son->bbox() );
-        
-        cluster->set_nsons( 1 );
-        cluster->set_son( 0, son.release() );
-
-        return cluster;
-    }// if
-    
-    //
-    // divide sons
+    // decide upon partitioning type how to split
     // ASSUMPTION: all dofs are ordered according to SFC and therefore, just split sets in half
     //
 
-    TBBox     cl_bbox( bbox );
-    TNodeSet  left, right;
-    TBBox     left_bbox, right_bbox;
-
-    if ( _adjust_bb )
-        cl_bbox = compute_bb( dofs, data );
-
-    const idx_t  half = dofs.nnodes() / 2;
-
-    left.resize( half );
-    right.resize( dofs.nnodes() - half );
-    
-    for ( idx_t  i = 0; i < half; ++i )
+    if ( _part_type == binary )
     {
-        const auto  c = data.coord->coord( dofs[i] );
-        const auto  p = TPoint( data.coord->dim(), c );
-        
-        left.append( dofs[i] );
+        //
+        // if size of cluster leaves is at most optimal size don't split cluster
+        //
 
-        //
-        // set up bounding box
-        //
+        if ( ! csize.is_optimal( dofs.nnodes() ) )
+        {
+            auto  son = divide( dofs, lvl+1, bbox, csize.recurse(), index_ofs, data );
+
+            if ( son.get() == nullptr )
+                HERROR( ERR_NULL, "(TBSPCTBuilder) divide", "son cluster" );
+
+            auto  cluster = std::make_unique< TGeomCluster >( son->first(), son->last(), son->bbox() );
         
-        if ( i == 0 )
-        {
-            left_bbox.min() = p;
-            left_bbox.max() = p;
+            cluster->set_nsons( 1 );
+            cluster->set_son( 0, son.release() );
+
+            return cluster;
         }// if
-        else
+    
+        //
+        // divide into two sons
+        //
+
+        TBBox     cl_bbox( bbox );
+        TNodeSet  left, right;
+        TBBox     left_bbox, right_bbox;
+
+        if ( _adjust_bb )
+            cl_bbox = compute_bb( dofs, data );
+
+        const idx_t  half = dofs.nnodes() / 2;
+
+        left.resize( half );
+        right.resize( dofs.nnodes() - half );
+    
+        for ( idx_t  i = 0; i < half; ++i )
         {
+            const auto  c = data.coord->coord( dofs[i] );
+            const auto  p = TPoint( data.coord->dim(), c );
+        
+            left.append( dofs[i] );
             left_bbox.extend( p );
-        }// else
-    }// for
+        }// for
                      
-    for ( idx_t  i = half; i < idx_t(dofs.nnodes()); ++i )
-    {
-        const auto  c = data.coord->coord( dofs[i] );
-        const auto  p = TPoint( data.coord->dim(), c );
+        for ( idx_t  i = half; i < idx_t(dofs.nnodes()); ++i )
+        {
+            const auto  c = data.coord->coord( dofs[i] );
+            const auto  p = TPoint( data.coord->dim(), c );
         
-        right.append( dofs[i] );
+            right.append( dofs[i] );
+            right_bbox.extend( p );
+        }// for
+                     
+        HDEBUG( to_string( "(TSFCCTBuilder) divide : left = %d, right = %d", left.nnodes(), right.nnodes() ) );
+    
+        // if one of the subsets is empty => continue with this cluster
+        if      ( left.nnodes()  == 0 ) return divide( right, lvl+1, right_bbox, csize.recurse(), index_ofs, data );
+        else if ( right.nnodes() == 0 ) return divide( left,  lvl+1, left_bbox,  csize.recurse(), index_ofs, data );
+
+        // consistency check
+        if ( left.nnodes() + right.nnodes() != dofs.nnodes() )
+            HERROR( ERR_CONSISTENCY, "(TSFCCTBuilder) divide", "lost nodes during divide" );
+    
+        //
+        // recursive call for building clustertrees with sons
+        //
+
+        auto         sons      = std::array< std::unique_ptr< TGeomCluster >, 2 >();
+        const idx_t  left_ofs  = index_ofs;
+        const idx_t  right_ofs = index_ofs + idx_t( left.nnodes() );
+        
+
+        auto  build_soncl =
+            [this,lvl,&csize,&data] ( TNodeSet &     sdofs,
+                                      const TBBox &  sbbox,
+                                      const idx_t    sofs ) -> std::unique_ptr< TGeomCluster >
+            {
+                auto  cl = divide( sdofs, lvl+1, sbbox, csize.recurse(), sofs, data );
+                
+                if ( cl.get() == nullptr )
+                    HERROR( ERR_NULL, "(TSFCCTBuilder) divide", "son cluster" );
+                
+                sdofs.remove_all();
+                sdofs.resize( 0 );
+
+                return cl;
+            };
+
+        sons[0] = build_soncl( left,  left_bbox,  left_ofs  );
+        sons[1] = build_soncl( right, right_bbox, right_ofs );
 
         //
-        // set up bounding box
+        // set bounding box of cluster
         //
-        
-        if ( i == half )
+
+        if ( _adjust_bb )
         {
-            right_bbox.min() = p;
-            right_bbox.max() = p;
+            // as union of bb of sons
+            cl_bbox = sons[0]->bbox();
+            cl_bbox.join( sons[1]->bbox() );
         }// if
         else
         {
-            right_bbox.extend( p );
+            // as provided by argument and updated with son-bboxes
+            cl_bbox.join( sons[0]->bbox() );
+            cl_bbox.join( sons[1]->bbox() );
         }// else
-    }// for
-                     
-    HDEBUG( to_string( "(TSFCCTBuilder) divide : left = %d, right = %d", left.nnodes(), right.nnodes() ) );
+
+        check_bb( cl_bbox, data );
+
+        //
+        // finally build cluster
+        //
     
-    // if one of the subsets is empty => continue with this cluster
-    if      ( left.nnodes()  == 0 ) return divide( right, lvl+1, right_bbox, csize.recurse(), index_ofs, data );
-    else if ( right.nnodes() == 0 ) return divide( left,  lvl+1, left_bbox,  csize.recurse(), index_ofs, data );
+        auto  cluster = std::make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
+                                                          std::max( sons[0]->last(),  sons[1]->last()  ),
+                                                          cl_bbox );
 
-    // consistency check
-    if ( left.nnodes() + right.nnodes() != dofs.nnodes() )
-        HERROR( ERR_CONSISTENCY, "(TSFCCTBuilder) divide", "lost nodes during divide" );
+        cluster->set_nsons( 2 );
+        cluster->set_son( 0, sons[0].release() );
+        cluster->set_son( 1, sons[1].release() );
     
-    //
-    // recursive call for building clustertrees with sons
-    //
-
-    auto         sons      = std::array< std::unique_ptr< TGeomCluster >, 2 >();
-    const idx_t  left_ofs  = index_ofs;
-    const idx_t  right_ofs = index_ofs + idx_t( left.nnodes() );
-        
-
-    auto  build_soncl =
-        [this,lvl,&csize,&data] ( TNodeSet &     sdofs,
-                                  const TBBox &  sbbox,
-                                  const idx_t    sofs ) -> std::unique_ptr< TGeomCluster >
-        {
-            auto  cl = divide( sdofs, lvl+1, sbbox, csize.recurse(), sofs, data );
-                
-            if ( cl.get() == nullptr )
-                HERROR( ERR_NULL, "(TSFCCTBuilder) divide", "son cluster" );
-                
-            sdofs.remove_all();
-            sdofs.resize( 0 );
-
-            return cl;
-        };
-
-    sons[0] = build_soncl( left,  left_bbox,  left_ofs  );
-    sons[1] = build_soncl( right, right_bbox, right_ofs );
-
-    //
-    // set bounding box of cluster
-    //
-
-    if ( _adjust_bb )
+        return cluster;
+    }// if
+    else if ( _part_type == blr )
     {
         //
-        // as union of bb of sons
+        // divide into n/nmin sons
         //
 
-        cl_bbox = sons[0]->bbox();
-        cl_bbox.join( sons[1]->bbox() );
+        TBBox     cl_bbox( bbox );
+        TNodeSet  left, right;
+        TBBox     left_bbox, right_bbox;
+
+        if ( _adjust_bb )
+            cl_bbox = compute_bb( dofs, data );
+
+        const uint  nsons    = dofs.nnodes() / data.nmin;
+        auto        son_sets = std::vector< TNodeSet >( nsons );
+        auto        son_bbox = std::vector< TBBox >( nsons );
+        auto        son_ofs  = std::vector< idx_t >( nsons );
+        size_t      pos      = 0;
+
+        for ( uint  son_idx = 0; son_idx < nsons-1; ++son_idx )
+        {
+            son_sets[ son_idx ].resize( data.nmin );
+            son_ofs[  son_idx ] = index_ofs + pos;
+            
+            for ( idx_t  dof_idx = 0; dof_idx < data.nmin; ++dof_idx, ++pos )
+            {
+                const auto  c = data.coord->coord( dofs[pos] );
+                const auto  p = TPoint( data.coord->dim(), c );
+        
+                son_sets[ son_idx ].append( dofs[ pos ] );
+                son_bbox[ son_idx ].extend( p );
+            }// for
+        }// for
+
+        //
+        // last son gets the rest
+        //
+
+        son_sets[ nsons-1 ].resize( dofs.nnodes() - pos );
+        son_ofs[  nsons-1 ] = index_ofs + pos;
+            
+        while ( pos < dofs.nnodes() )
+        {
+            const auto  c = data.coord->coord( dofs[ pos ] );
+            const auto  p = TPoint( data.coord->dim(), c );
+        
+            son_sets[ nsons-1 ].append( dofs[ pos ] );
+            son_bbox[ nsons-1 ].extend( p );
+            ++pos;
+        }// else
+        
+        //
+        // build son clusters
+        //
+
+        auto  sons = std::vector< std::unique_ptr< TGeomCluster > >( nsons );
+
+        for ( uint  i = 0; i < nsons; ++i )
+            sons[i] = build_leaf( son_sets[i], lvl+1, son_ofs[i], son_bbox[i], data );
+        
+        //
+        // set bounding box of cluster
+        //
+
+        if ( _adjust_bb )
+        {
+            // as union of bb of sons
+            cl_bbox = son_bbox[0];
+
+            for ( uint  i = 1; i < nsons; ++i )
+                cl_bbox.join( son_bbox[i] );
+        }// if
+        else
+        {
+            // as provided by argument and updated with son-bboxes
+            for ( uint  i = 0; i < nsons; ++i )
+                cl_bbox.join( son_bbox[i] );
+        }// else
+
+        check_bb( cl_bbox, data );
+
+        //
+        // finally build cluster
+        //
+
+        auto  first   = sons[0]->first();
+        auto  last    = sons[0]->last();
+
+        for ( uint  i = 1; i < nsons; ++i )
+        {
+            first = std::min( first, sons[i]->first() );
+            last  = std::max( last,  sons[i]->last() );
+        }// for
+        
+        auto  cluster = std::make_unique< TGeomCluster >( first, last, cl_bbox );
+
+        cluster->set_nsons( nsons );
+
+        for ( uint  i = 0; i < nsons; ++i )
+            cluster->set_son( i, sons[i].release() );
+    
+        return cluster;
     }// if
     else
-    {
-        //
-        // as provided by argument and updated with son-bboxes
-        //
-        
-        cl_bbox.join( sons[0]->bbox() );
-        cl_bbox.join( sons[1]->bbox() );
-    }// else
-
-    check_bb( cl_bbox, data );
-
-    //
-    // finally build cluster
-    //
-    
-    auto  cluster = std::make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
-                                                      std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                      cl_bbox );
-
-    cluster->set_nsons( 2 );
-    cluster->set_son( 0, sons[0].release() );
-    cluster->set_son( 1, sons[1].release() );
-    
-    return cluster;
+        HERROR( ERR_CONSISTENCY, "(TSFCTBuilder) divide", "unknown partition type" );
 }
 
 }// namespace Hpro

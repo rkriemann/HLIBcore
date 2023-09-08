@@ -100,7 +100,7 @@ sub usage
     print "    -V, --version        : print version number\n";
     print "\n";
     print "  Supported systems and compilers:\n";
-    print "    Linux   : gcc-2/../12, icc-5/../19, clang-3..12, pgi, PathScale 2, Sun Studio 10/11\n";
+    print "    Linux   : gcc-2/../13, icc-5/../19, clang-3..12, pgi, PathScale 2, Sun Studio 10/11\n";
     print "    Solaris : gcc-2/../4, Sun Studio 10/11, SunCC-5, KaiCC\n";
     print "    AIX     : gcc, xlC\n";
     print "    IRIX    : gcc, mipscc\n";
@@ -377,7 +377,7 @@ sub get_cflags
                 elsif ( /power8/ )        { $cflags = "-mcpu=power8 -maltivec -mvsx "; }
             }
         }
-        elsif ( $compiler =~ /gcc-[56789]\.?/ or $compiler =~ /gcc-1[012]\.?/ )
+        elsif ( $compiler =~ /gcc-[56789]\.?/ or $compiler =~ /gcc-1[0123]\.?/ )
         {
             for ( $cpu )
             {
@@ -704,7 +704,7 @@ sub get_cflags
         }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Linux/Cygwin$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Linux/Cygwin$tc{N}\n" );
         }
     }
     elsif ( $system eq "Solaris" )
@@ -795,7 +795,7 @@ sub get_cflags
         }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Solaris$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Solaris$tc{N}\n" );
         }
     }
     elsif ( $system eq "AIX" )
@@ -820,7 +820,7 @@ sub get_cflags
         }
         else
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}AIX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}AIX$tc{N}\n" );
         }
     }
     elsif ( $system eq "IRIX" )
@@ -830,7 +830,7 @@ sub get_cflags
         elsif ( $compiler =~ /mipscc/ ) { $cflags = "-mips4 -$bits"; }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}IRIX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}IRIX$tc{N}\n" );
         }
     }
     elsif ( $system eq "Darwin" )
@@ -860,7 +860,7 @@ sub get_cflags
         }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Darwin$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Darwin$tc{N}\n" );
         }
     }
     elsif ( $system eq "Tru64" )
@@ -880,7 +880,7 @@ sub get_cflags
         }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Tru64$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Tru64$tc{N}\n" );
         }
     }
     elsif ( $system eq "HP-UX" )
@@ -899,7 +899,7 @@ sub get_cflags
         }
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}HP-UX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}HP-UX$tc{N}\n" );
         }
     }
     elsif ( $system eq "Win32" )
@@ -931,13 +931,13 @@ sub get_cflags
 	}
         else 
         {
-            error( "get_cflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Win32$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Win32$tc{N}\n" );
         }
     }
 
     if ( $cflags eq "undef" )
     {
-        error( "get_cflags: CPU \"$tc{F}$cpu$tc{N}\" not supported by compiler \"$tc{F}$compiler$tc{N}\" on $tc{F}$system$tc{N}\n" );
+        error( "CPU \"$tc{F}$cpu$tc{N}\" not supported by compiler \"$tc{F}$compiler$tc{N}\" on $tc{F}$system$tc{N}\n" );
         
         $cflags = ""; 
     }
@@ -975,7 +975,7 @@ sub get_optflags
                     $oflags .= " -malign-double -fprefetch-loop-arrays"; 
                 }
             }
-            elsif ( /gcc-[4-9]/ or /gcc-1[012]/ )
+            elsif ( /gcc-[4-9]/ or /gcc-1[0123]/ )
             { 
                 $oflags = "-O3 -fomit-frame-pointer -ffast-math -funroll-loops";
                 
@@ -1157,7 +1157,7 @@ sub get_optflags
 
     if ( $oflags eq "undef" )
     {
-        error( "get_cflags: CPU \"$tc{F}$cpu$tc{N}\" not supported by compiler \"$tc{F}$compiler$tc{N}\" on $tc{F}$system$tc{N}\n" );
+        error( "CPU \"$tc{F}$cpu$tc{N}\" not supported by compiler \"$tc{F}$compiler$tc{N}\" on $tc{F}$system$tc{N}\n" );
         $oflags = "";
     }
 
@@ -1185,7 +1185,7 @@ sub get_warnflags
         {
             $wflags  = "-Wall";
         }
-        elsif ( $compiler =~ /gcc-(3\.4|[4-9]|1[012]\.?)/ )
+        elsif ( $compiler =~ /gcc-(3\.4|[4-9]|1[0123]\.?)/ )
         {
             if ( $language =~ /.*C.*/ ) {
                 $wflags  = "-Wall -Wextra -Wno-long-long -Wshadow -Wpacked -Wundef -Wchar-subscripts -Wno-unknown-pragmas";
@@ -1237,7 +1237,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Linux/Cygwin$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Linux/Cygwin$tc{N}\n" );
         }
     }
     elsif ( $system eq "Solaris" )
@@ -1267,7 +1267,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Solaris$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Solaris$tc{N}\n" );
         }
     }
     elsif ( $system eq "AIX" )
@@ -1280,7 +1280,7 @@ sub get_warnflags
         }
         else
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}AIX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}AIX$tc{N}\n" );
         }
     }
     elsif ( $system eq "IRIX" )
@@ -1290,7 +1290,7 @@ sub get_warnflags
         elsif ( $compiler =~ /mipscc/ ) { }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}IRIX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}IRIX$tc{N}\n" );
         }
     }
     elsif ( $system eq "Darwin" )
@@ -1303,7 +1303,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Darwin$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Darwin$tc{N}\n" );
         }
     }
     elsif ( $system eq "Tru64" )
@@ -1316,7 +1316,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Tru64$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Tru64$tc{N}\n" );
         }
     }
     elsif ( $system eq "HP-UX" )
@@ -1326,7 +1326,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}HP-UX$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}HP-UX$tc{N}\n" );
         }
     }
     elsif ( $system eq "Win32" )
@@ -1341,7 +1341,7 @@ sub get_warnflags
         }
         else 
         {
-            error( "get_warnflags: compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Win32$tc{N}\n" );
+            error( "compiler \"$tc{F}$compiler$tc{N}\" not supported on $tc{F}Win32$tc{N}\n" );
         }
     }
 
@@ -1499,6 +1499,7 @@ sub lookup_x86
             elsif ( $model eq "87"  ) { return "knl"; }         # Knights Landing
             elsif ( $model eq "94"  ) { return "skylake"; }     # Skylake-Mobile
             elsif ( $model eq "158" ) { return "coffeelake"; }  # Coffeelake
+            elsif ( $model eq "183" ) { return "skylake"; }     # RaptorLake
             else  { error( "cpuflags : unknown Intel Pentium/Core model \"$tc{F}$model$tc{N}\"\n" );
                     return "pentiumpro"; }
         }

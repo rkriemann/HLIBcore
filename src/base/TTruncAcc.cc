@@ -52,6 +52,10 @@ template < typename value_t >
 size_t
 TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
 {
+    // in case of empty matrix
+    if ( sv.length() > 0 && ( sv(0) == value_t(0) ))
+        return 0;
+        
     if ( _norm_mode == spectral_norm )
     {
         //
