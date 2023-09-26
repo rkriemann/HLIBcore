@@ -716,6 +716,22 @@ copy_diag   ( const TMatrix< value_t > & A )
     return copy_diag( &A );
 }
 
+//!
+//! return real part of matrix \a A
+//!
+template < typename value_t >
+std::unique_ptr< TMatrix< real_type_t< value_t > > >
+restrict_re  ( const TMatrix< value_t > *  A,
+               const TTruncAcc &           acc );
+
+//!
+//! return imaginary part of matrix \a A
+//!
+template < typename value_t >
+std::unique_ptr< TMatrix< real_type_t< value_t > > >
+restrict_im  ( const TMatrix< value_t > *  A,
+               const TTruncAcc &           acc );
+
 //////////////////////////////////////////////////////////
 //
 // debug helpers

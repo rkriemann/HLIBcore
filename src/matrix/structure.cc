@@ -715,7 +715,338 @@ get_nblocks_dense  ( const TMatrix< value_t > *   M )
         return 0;
 }   
 
-#define INST_ALL( type ) \
+//////////////////////////////////////////////////////////
+//
+// extract real/imaginary parts
+//
+
+//
+// return real part of matrix \a M
+//
+template < typename value_t >
+std::unique_ptr< TMatrix< real_type_t< value_t > > >
+restrict_re ( const TMatrix< value_t > *  M,
+              const TTruncAcc &           acc )
+{
+    using  real_t = real_type_t< value_t >;
+    
+    if ( M == nullptr )
+        HERROR( ERR_ARG, "restrict_im", "matrix is null" );
+
+    // return copy in case of real valued matrix
+    if constexpr ( ! is_complex_type< value_t >::value )
+        return M->copy();
+    
+    if ( is_hmat( M ) )
+    {
+        auto  HM = cptrcast( M, THMatrix< value_t > );
+        auto  C  = std::make_unique< THMatrix< real_t > >();
+        auto  HC = ptrcast( C.get(), THMatrix< real_t > );
+
+        HC->copy_struct_from_all( HM );
+        HC->comp_min_max_idx();
+        HC->set_row_perm( HM->row_perm_e2i(), HM->row_perm_i2e() );
+        HC->set_col_perm( HM->col_perm_e2i(), HM->col_perm_i2e() );
+        
+        for ( uint  i = 0; i < HC->nblock_rows(); ++i )
+        {
+            for ( uint  j = 0; j < HC->nblock_cols(); ++j )
+            {
+                if ( HM->block( i, j ) != nullptr )
+                {
+                    auto  H_ij = restrict_re( HM->block( i, j ), acc );
+                    
+                    H_ij->set_parent( HC );
+                    HC->set_block( i, j, H_ij.release() );
+                }// if
+            }// for
+        }// for
+
+        C->set_id( M->id() );
+        
+        return C;
+    }// if
+    else if ( is_blocked( M ) )
+    {
+        auto  BM = cptrcast( M, TBlockMatrix< value_t > );
+        auto  C  = std::make_unique< TBlockMatrix< real_t > >();
+        auto  BC = ptrcast( C.get(), TBlockMatrix< real_t > );
+
+        BC->copy_struct_from_all( BM );
+        
+        for ( uint  i = 0; i < BC->nblock_rows(); ++i )
+        {
+            for ( uint  j = 0; j < BC->nblock_cols(); ++j )
+            {
+                if ( BM->block( i, j ) != nullptr )
+                {
+                    auto  B_ij = restrict_re( BM->block( i, j ), acc );
+                    
+                    B_ij->set_parent( BC );
+                    BC->set_block( i, j, B_ij.release() );
+                }// if
+            }// for
+        }// for
+
+        C->set_id( M->id() );
+        
+        return C;
+    }// if
+    else if ( is_dense( M ) )
+    {
+        //
+        // restrict to imaginary part
+        //
+        
+        auto  DM = cptrcast( M, TDenseMatrix< value_t > )->blas_mat();
+        auto  C  = std::make_unique< TDenseMatrix< real_t > >( M->row_is(), M->col_is() );
+        auto  DC = C->blas_mat();
+        
+        for ( size_t  j = 0; j < DC.ncols(); ++j )
+            for ( size_t  i = 0; i < DC.nrows(); ++i )
+                DC(i,j) = std::real( DM(i,j) );
+        
+        C->set_id( M->id() );
+        C->set_form( M->form() );
+        C->set_procs( M->procs() );
+        
+        return C;
+    }// if
+    else if ( is_lowrank( M ) )
+    {
+        //
+        // approximate restriction to real part
+        //
+            
+        auto  RM   = cptrcast( M, TRkMatrix< value_t > );
+        auto  A    = RM->blas_mat_A();
+        auto  B    = RM->blas_mat_B();
+        auto  lacc = acc( RM->row_is(), RM->col_is() );
+
+        //
+        // U × V' = (U_r + i·U_i) × (V_r + i·V_i)'
+        //        = (U_r + i·U_i) × (V_r' - i·V_i')
+        //        = (U_r × V_r' + U_i × V_i' ) + i·( U_i × V_r' - U_r × V_i' )
+        //        =       [U_r,  U_i] × [V_r, V_i]'
+        //          + i · [U_i, -U_r] × [V_r, V_i]'
+        //
+
+        const auto  nrows = RM->nrows();
+        const auto  ncols = RM->ncols();
+        const auto  k     = RM->rank();
+        auto        Ure   = BLAS::Matrix< real_t >( nrows, 2*k );
+        auto        Vre   = BLAS::Matrix< real_t >( ncols, 2*k );
+
+        // copy [U_r, U_i] to Ure
+        for ( uint  l = 0; l < k; ++l )
+        {
+            for ( uint  i = 0; i < nrows; ++i )
+            {
+                Ure(i,l)   = std::real( A(i,l) );
+                Ure(i,k+l) = std::imag( A(i,l) );
+            }// for
+        }// for
+
+        // copy [V_r, V_i] to Vre
+        for ( uint  l = 0; l < k; ++l )
+        {
+            for ( uint  i = 0; i < ncols; ++i )
+            {
+                Vre(i,l)   = std::real( B(i,l) );
+                Vre(i,k+l) = std::imag( B(i,l) );
+            }// for
+        }// for
+
+        // reduce rank
+        BLAS::truncate_svd( Ure, Vre, lacc );
+            
+        auto  R = std::make_unique< TRkMatrix< real_t > >( M->row_is(), M->col_is(), std::move( Ure ), std::move( Vre ) );
+
+        R->set_id( M->id() );
+        R->set_form( M->form() );
+        R->set_procs( M->procs() );
+
+        return R;
+    }// if
+    else
+        HERROR( ERR_MAT_TYPE, "restrict_re", "unsupported matrix type " + M->typestr() );
+}
+
+//
+// return imaginary part of matrix \a M
+//
+template < typename value_t >
+std::unique_ptr< TMatrix< real_type_t< value_t > > >
+restrict_im ( const TMatrix< value_t > *  M,
+              const TTruncAcc &           acc )
+{
+    using  real_t = real_type_t< value_t >;
+    
+    constexpr bool  real_valued = ! is_complex_type< value_t >::value;
+    
+    if ( M == nullptr )
+        HERROR( ERR_ARG, "restrict_im", "matrix is null" );
+    
+    if ( is_hmat( M ) )
+    {
+        auto  HM = cptrcast( M, THMatrix< value_t > );
+        auto  C  = std::make_unique< THMatrix< real_t > >();
+        auto  HC = ptrcast( C.get(), THMatrix< real_t > );
+
+        HC->copy_struct_from_all( HM );
+        HC->comp_min_max_idx();
+        HC->set_row_perm( HM->row_perm_e2i(), HM->row_perm_i2e() );
+        HC->set_col_perm( HM->col_perm_e2i(), HM->col_perm_i2e() );
+        
+        for ( uint  i = 0; i < HC->nblock_rows(); ++i )
+        {
+            for ( uint  j = 0; j < HC->nblock_cols(); ++j )
+            {
+                if ( HM->block( i, j ) != nullptr )
+                {
+                    auto  H_ij = restrict_im( HM->block( i, j ), acc );
+                    
+                    H_ij->set_parent( HC );
+                    HC->set_block( i, j, H_ij.release() );
+                }// if
+            }// for
+        }// for
+
+        C->set_id( M->id() );
+        
+        return C;
+    }// if
+    else if ( is_blocked( M ) )
+    {
+        auto  BM = cptrcast( M, TBlockMatrix< value_t > );
+        auto  C  = std::make_unique< TBlockMatrix< real_t > >();
+        auto  BC = ptrcast( C.get(), TBlockMatrix< real_t > );
+
+        BC->copy_struct_from_all( BM );
+        
+        for ( uint  i = 0; i < BC->nblock_rows(); ++i )
+        {
+            for ( uint  j = 0; j < BC->nblock_cols(); ++j )
+            {
+                if ( BM->block( i, j ) != nullptr )
+                {
+                    auto  B_ij = restrict_im( BM->block( i, j ), acc );
+                    
+                    B_ij->set_parent( BC );
+                    BC->set_block( i, j, B_ij.release() );
+                }// if
+            }// for
+        }// for
+
+        C->set_id( M->id() );
+        
+        return C;
+    }// if
+    else if ( is_dense( M ) )
+    {
+        //
+        // restrict to imaginary part
+        //
+            
+        auto  C  = std::make_unique< TDenseMatrix< real_t > >( M->row_is(), M->col_is() );
+
+        if ( ! real_valued )
+        {
+            auto  DM = cptrcast( M, TDenseMatrix< value_t > )->blas_mat();
+            auto  DC = C->blas_mat();
+            
+            for ( size_t  j = 0; j < DC.ncols(); ++j )
+                for ( size_t  i = 0; i < DC.nrows(); ++i )
+                    DC(i,j) = std::imag( DM(i,j) );
+        }// if
+        
+        C->set_id( M->id() );
+        C->set_form( M->form() );
+        C->set_procs( M->procs() );
+        
+        return C;
+    }// if
+    else if ( is_lowrank( M ) )
+    {
+        //
+        // return zero matrix in case of real value
+        //
+        
+        if ( real_valued )
+        {
+            auto  R = std::make_unique< TRkMatrix< real_t > >( M->row_is(), M->col_is() );
+            
+            R->set_id( M->id() );
+            R->set_form( M->form() );
+            R->set_procs( M->procs() );
+
+            return R;
+        }// if
+        
+        //
+        // approximate restriction to imaginary part
+        //
+            
+        auto  RM   = cptrcast( M, TRkMatrix< value_t > );
+        auto  A    = RM->blas_mat_A();
+        auto  B    = RM->blas_mat_B();
+        auto  lacc = acc( RM->row_is(), RM->col_is() );
+
+        //
+        // U × V' = (U_r + i·U_i) × (V_r + i·V_i)'
+        //        = (U_r + i·U_i) × (V_r' - i·V_i')
+        //        = (U_r × V_r' + U_i × V_i' ) + i·( U_i × V_r' - U_r × V_i' )
+        //        =       [U_r,  U_i] × [V_r, V_i]'
+        //          + i · [U_i, -U_r] × [V_r, V_i]'
+        //
+
+        const auto  nrows = RM->nrows();
+        const auto  ncols = RM->ncols();
+        const auto  k     = RM->rank();
+        auto        Uim   = BLAS::Matrix< real_t >( nrows, 2*k );
+        auto        Vim   = BLAS::Matrix< real_t >( ncols, 2*k );
+
+        // copy [U_i, -U_r] to Uim
+        for ( uint  l = 0; l < k; ++l )
+        {
+            for ( uint  i = 0; i < nrows; ++i )
+            {
+                Uim(i,l)   =  std::imag( A(i,l) );
+                Uim(i,k+l) = -std::real( A(i,l) );
+            }// for
+        }// for
+
+        // copy [V_r, V_i] to Vim
+        for ( uint  l = 0; l < k; ++l )
+        {
+            for ( uint  i = 0; i < ncols; ++i )
+            {
+                Vim(i,l)   = std::real( B(i,l) );
+                Vim(i,k+l) = std::imag( B(i,l) );
+            }// for
+        }// for
+
+        // reduce rank
+        BLAS::truncate_svd( Uim, Vim, lacc );
+            
+        auto  R = std::make_unique< TRkMatrix< real_t > >( M->row_is(), M->col_is(), std::move( Uim ), std::move( Vim ) );
+
+        R->set_id( M->id() );
+        R->set_form( M->form() );
+        R->set_procs( M->procs() );
+
+        return R;
+    }// if
+    else
+        HERROR( ERR_MAT_TYPE, "restrict_im", "unsupported matrix type " + M->typestr() );
+    
+}
+
+//
+// explicit template instantiations
+//
+
+#define INST_ALL( type )                                                \
     template bool is_diag ( const TMatrix< type > * );                  \
     template bool is_dd ( const TMatrix< type > * );                    \
     template bool is_flat ( const TMatrix< type > * );                  \
@@ -733,7 +1064,9 @@ get_nblocks_dense  ( const TMatrix< value_t > *   M )
     template size_t get_nblocks ( const TMatrix< type > * );            \
     template size_t get_nblocks_leaf ( const TMatrix< type > * );       \
     template size_t get_nblocks_lowrank ( const TMatrix< type > * );    \
-    template size_t get_nblocks_dense  ( const TMatrix< type > * );
+    template size_t get_nblocks_dense  ( const TMatrix< type > * ); \
+    template std::unique_ptr< TMatrix< real_type_t< type > > > restrict_re ( const TMatrix< type > *, const TTruncAcc & ); \
+    template std::unique_ptr< TMatrix< real_type_t< type > > > restrict_im ( const TMatrix< type > *, const TTruncAcc & );
 
 INST_ALL( float )
 INST_ALL( double )
