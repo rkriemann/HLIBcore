@@ -311,6 +311,14 @@ public:
     //! copy complete structural information from given matrix
     virtual void copy_struct_from ( const TMatrix< value_t > *  M );
     
+    //! copy complete structural information from given matrix with different type
+    template < typename T_value_M >
+    void copy_struct_from_all ( const TBlockMatrix< T_value_M > * M )
+    {
+        TMatrix< value_t >::copy_struct_from_all( M );
+        set_block_struct( M->block_rows(), M->block_cols() );
+    }
+        
     //
     // RTTI
     //

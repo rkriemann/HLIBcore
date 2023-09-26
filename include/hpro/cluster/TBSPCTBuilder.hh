@@ -363,17 +363,27 @@ class TSFCCTBuilder : public TGeomCTBuilder
 {
 public:
     //!
-    //! various partitioning options
+    //! various options
     //!
-    enum partition_type_t
+    enum cluster_type_t
     {
-        binary,   // standard, binary partitioning
-        blr       // single level partitioning (no hierarchy)
+        binary,     // standard, binary partitioning
+        blr         // single level partitioning (no hierarchy)
+    };
+
+    enum split_type_t
+    {
+        volume,     // split based on volume
+        diameter,   // split based on diameter
+        cardinality // split based on cardinality
     };
 
 protected:
     //! partitioning type
-    partition_type_t  _part_type;
+    cluster_type_t  _cl_type;
+
+    //! splitting type
+    split_type_t    _split_type;
     
 public:
     //////////////////////////////////////////////
@@ -382,9 +392,10 @@ public:
     //
 
     //! ctor
-    TSFCCTBuilder ( const partition_type_t  part_type    = binary,
-                    const uint              n_min        = CFG::Cluster::nmin,
-                    const uint              min_leaf_lvl = 0 );
+    TSFCCTBuilder ( const cluster_type_t  cl_type      = binary,
+                    const split_type_t    split_type   = cardinality,
+                    const uint            n_min        = CFG::Cluster::nmin,
+                    const uint            min_leaf_lvl = 0 );
 
     //! dtor
     virtual ~TSFCCTBuilder ();
@@ -405,6 +416,15 @@ public:
                                                       const TOptClusterSize &  csize,
                                                       const idx_t              index_ofs,
                                                       data_t &                 data ) const;
+
+protected:
+    //! split into <nsub> sub sets
+    virtual
+    std::pair< std::vector< TNodeSet >,
+               std::vector< TBBox > >
+    split ( const uint        nsub,
+            const TNodeSet &  dofs,
+            data_t &          data ) const;
 };
 
 }// namespace Hpro

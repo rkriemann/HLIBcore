@@ -258,10 +258,9 @@ private:
     //! e.g. size, offsets and field type
     //!
 
-    virtual void copy_struct_from ( const TMatrix * M )
+    template < typename T_value_M >
+    void copy_struct_from_all ( const TMatrix< T_value_M > * M )
     {
-        // _cluster = M->_cluster;
-
         set_id( M->id() );
         set_form( M->form() );
         set_ofs( M->row_ofs(), M->col_ofs() );
@@ -269,6 +268,11 @@ private:
         set_procs( M->procs() );
     }
     
+    virtual void copy_struct_from ( const TMatrix * M )
+    {
+        copy_struct_from_all( M );
+    }
+
     ///////////////////////////////////////////
     //
     // access to hierarchy data

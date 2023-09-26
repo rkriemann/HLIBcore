@@ -91,6 +91,9 @@ public:
     //! return diameter of box
     double diameter () const;
 
+    //! return volume of box
+    double volume   () const;
+
     //! return distance to \a box
     double distance ( const TBBox & box ) const;
 

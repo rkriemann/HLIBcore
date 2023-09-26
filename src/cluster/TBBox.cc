@@ -49,6 +49,30 @@ TBBox::diameter () const
 }
 
 //
+// return volume to given box
+//
+double
+TBBox::volume () const
+{
+    const auto  mdim = min().dim();
+
+    if ( mdim == 0 )
+        return 0;
+    
+    auto  vol = double(1);
+
+    for ( uint i = 0; i < mdim; i++ )
+    {
+        const auto  min_i = min()[i];
+        const auto  max_i = max()[i];
+
+        vol *= ( max_i - min_i );
+    }// for
+
+    return vol;
+}
+
+//
 // return distance to given box
 //
 double

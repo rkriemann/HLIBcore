@@ -160,6 +160,16 @@ public:
     // copy complete structural information from given matrix
     virtual void  copy_struct_from ( const TMatrix< value_t > * M );
     
+    //! copy complete structural information from given matrix with different type
+    template < typename T_value_M >
+    void copy_struct_from_all ( const THMatrix< T_value_M > * M )
+    {
+        TBlockMatrix< value_t >::copy_struct_from_all( M );
+        comp_min_max_idx();
+        set_row_perm( M->row_perm_e2i(), M->row_perm_i2e() );
+        set_col_perm( M->col_perm_e2i(), M->col_perm_i2e() );
+    }
+
     // return appropriate vector-types for matrix
     virtual auto  row_vector   () const -> std::unique_ptr< TVector< value_t > >;
     virtual auto  col_vector   () const -> std::unique_ptr< TVector< value_t > >;
