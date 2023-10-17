@@ -81,7 +81,7 @@ TBlockCluster::TBlockCluster ( TBlockCluster *  aparent,
 
 TBlockCluster::~TBlockCluster ()
 {
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
         delete _sons[i];
 }
 
@@ -142,8 +142,8 @@ TBlockCluster::set_clusters ( TCluster *  row_cl,
 // change block layout
 //
 void
-TBlockCluster::set_layout  ( const uint  anrows,
-                             const uint  ancols )
+TBlockCluster::set_layout  ( const size_t  anrows,
+                             const size_t  ancols )
 {
     if (( anrows == _nrows ) && ( ancols == _ncols ))
         return;
@@ -179,13 +179,13 @@ TBlockCluster::make_leaf ()
 //
 
 // void
-// TBlockCluster::set_nsons ( const uint n )
+// TBlockCluster::set_nsons ( const size_t n )
 // {
-//     uint  old = nsons();
+//     size_t  old = nsons();
     
 //     _sons.resize( n );
 
-//     for ( uint i = old; i < n; i++ )
+//     for ( size_t i = old; i < n; i++ )
 //         _sons[i] = nullptr;
 // }
 
@@ -194,8 +194,8 @@ TBlockCluster::make_leaf ()
 // {
 //     if ((_rowcl != nullptr) && (_colcl != nullptr))
 //     {
-//         uint  tn = _rowcl->nsons();
-//         uint  sn = _colcl->nsons();
+//         size_t  tn = _rowcl->nsons();
+//         size_t  sn = _colcl->nsons();
 
 //         // if one of the clusters has a son, the other cluster
 //         // automatically also has a son (itself)
@@ -213,7 +213,7 @@ TBlockCluster *
 TBlockCluster::son_cl ( const TCluster *  row_cl,
                         const TCluster *  col_cl )
 {
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( _sons[i] == nullptr )
             continue;
@@ -229,7 +229,7 @@ const TBlockCluster *
 TBlockCluster::son_cl ( const TCluster *  row_cl,
                         const TCluster *  col_cl ) const
 {
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( _sons[i] == nullptr )
             continue;
@@ -246,8 +246,8 @@ TBlockCluster::son_cl ( const TCluster *  row_cl,
 //
 
 TBlockCluster *
-TBlockCluster::son ( const uint  i,
-                     const uint  j )
+TBlockCluster::son ( const size_t  i,
+                     const size_t  j )
 {
     const auto  idx = ( j * nrows()) + i;
 
@@ -258,8 +258,8 @@ TBlockCluster::son ( const uint  i,
 }
     
 const TBlockCluster *
-TBlockCluster::son ( const uint  i,
-                     const uint  j ) const
+TBlockCluster::son ( const size_t  i,
+                     const size_t  j ) const
 {
     const auto  idx = ( j * nrows()) + i;
     
@@ -273,7 +273,7 @@ TBlockCluster::son ( const uint  i,
 // set i'th son
 //
 void
-TBlockCluster::set_son ( const uint     i,
+TBlockCluster::set_son ( const size_t     i,
                          TBlockCluster *  son_bct,
                          const bool       del_son )
 {
@@ -299,7 +299,7 @@ TBlockCluster::add_son ( TBlockCluster *  son_bct )
     // check sons and assign first free son
     //
 
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( _sons[i] == nullptr )
         {
@@ -315,8 +315,8 @@ TBlockCluster::add_son ( TBlockCluster *  son_bct )
 // set son block-wise
 //
 void
-TBlockCluster::set_son ( const uint     i,
-                         const uint     j,
+TBlockCluster::set_son ( const size_t     i,
+                         const size_t     j,
                          TBlockCluster *  son_bct,
                          const bool       del_son )
 {
@@ -334,19 +334,19 @@ TBlockCluster::set_son ( const uint     i,
 //
 // return number of nodes in tree
 //
-uint
+size_t
 TBlockCluster::nnodes () const
 {
-    return uint(Hpro::Tree::nnodes( this ));
+    return Hpro::Tree::nnodes( this );
 }
 
 //
 // return depth of tree
 //
-uint
+size_t
 TBlockCluster::depth () const
 {
-    return uint(Hpro::Tree::depth( this ));
+    return Hpro::Tree::depth( this );
 }
 
 //
@@ -365,7 +365,7 @@ TBlockCluster::collect_leaves ( list< TBlockCluster * > &  leaves,
         // collect children
         //
         
-        for ( uint i = 0; i < nsons(); i++ )
+        for ( size_t i = 0; i < nsons(); i++ )
         {
             if ( _sons[i] != nullptr )
                 _sons[i]->collect_leaves( leaves, tdepth, level + 1 );
@@ -384,7 +384,7 @@ TBlockCluster::set_procs ( const TProcSet &  ps,
 
     if ( recursive )
     {
-        for ( uint i = 0; i < nsons(); i++ )
+        for ( size_t i = 0; i < nsons(); i++ )
         {
             if ( _sons[i] != nullptr )
                 _sons[i]->set_procs( ps, true );
@@ -412,7 +412,7 @@ TBlockCluster::assign_procs ()
         // broadcast processor set to sons
         //
         
-        for ( uint i = 0; i < nsons(); i++ )
+        for ( size_t i = 0; i < nsons(); i++ )
         {
             if (( _sons[i] != nullptr ) && ( _sons[i]->procs() == PROCSET_INVALID ))
                 _sons[i]->set_procs( procs() );
@@ -428,7 +428,7 @@ TBlockCluster::assign_procs ()
         
         TProcSet  ps = PROCSET_INVALID;
 
-        for ( uint i = 0; i < nsons(); i++ )
+        for ( size_t i = 0; i < nsons(); i++ )
         {
             if ( _sons[i] == nullptr )
                 continue;
@@ -494,7 +494,7 @@ TBlockCluster::compute_c_sp () const
         
         if ( ! bc->is_leaf() )
         {
-            for ( uint i = 0; i < bc->nsons(); i++ )
+            for ( size_t i = 0; i < bc->nsons(); i++ )
             {
                 if ( bc->son(i) != nullptr )
                     nodes.push_front( bc->son(i) );
@@ -508,8 +508,8 @@ TBlockCluster::compute_c_sp () const
 uint
 TBlockCluster::compute_c_sh ( const uint nprocs ) const
 {
-    const auto  n_rowcl = uint( rowcl()->size() );
-    const auto  n_colcl = uint( colcl()->size() );
+    const auto  n_rowcl = rowcl()->size();
+    const auto  n_colcl = colcl()->size();
 
     //
     // first compute c_sh^rowcl
@@ -536,9 +536,9 @@ TBlockCluster::compute_c_sh ( const uint nprocs ) const
         }// for
     }// while
 
-    for ( uint i = 0; i < n_rowcl; i++ )
+    for ( size_t i = 0; i < n_rowcl; i++ )
     {
-        uint loc_p = 0;
+        uint  loc_p = 0;
 
         for ( uint j = 0; j < nprocs; j++ )
             loc_p += pinfo[ i * nprocs + j ];
@@ -554,7 +554,7 @@ TBlockCluster::compute_c_sh ( const uint nprocs ) const
     
     pinfo.resize( n_colcl * nprocs, 0 );
 
-    for ( uint i = 0; i < n_colcl*nprocs; i++ )
+    for ( size_t i = 0; i < n_colcl*nprocs; i++ )
         pinfo[i] = 0;
 
     for ( auto  leaf : leaves )
@@ -571,7 +571,7 @@ TBlockCluster::compute_c_sh ( const uint nprocs ) const
         }// for
     }// while
 
-    for ( uint i = 0; i < n_colcl; i++ )
+    for ( size_t i = 0; i < n_colcl; i++ )
     {
         uint loc_p = 0;
 
@@ -637,9 +637,9 @@ TBlockCluster::copy  () const
     
     bc->set_layout( nrows(), ncols() );
 
-    for ( uint i = 0; i < nrows(); i++ )
+    for ( size_t i = 0; i < nrows(); i++ )
     {
-        for ( uint j = 0; j < ncols(); j++ )
+        for ( size_t j = 0; j < ncols(); j++ )
         {
             if ( son(i,j) != nullptr )
                 bc->set_son( i, j, son(i,j)->copy() );
@@ -657,13 +657,14 @@ TBlockCluster::byte_size () const
 {
     size_t count = 0;
 
-    count += ( sizeof(TBlockCluster*) +
-               sizeof(TCluster*) * 2 +
+    count += ( sizeof(_id) +
+               sizeof(_parent) +
+               sizeof(_rowcl) + sizeof(_colcl) +
                sizeof(_sons) + sizeof(TBlockCluster*) * _sons.size() +
-               sizeof(bool) +
-               sizeof(uint) );
+               sizeof(_adm) +
+               sizeof(_procs) );
 
-    for ( uint  i = 0; i < nsons(); i ++ )
+    for ( size_t  i = 0; i < nsons(); i ++ )
         if (son(i) != nullptr)
             count += son(i)->byte_size();
 
@@ -686,9 +687,9 @@ flatten_leaf ( TBlockCluster *  root )
 
     std::vector< TBlockCluster * >  bcls( 1 );
     std::vector< TBlockCluster * >  sons;
-    uint                            nrows      = 1;
-    uint                            ncols      = 1;
-    uint                            level      = 0;
+    size_t                          nrows      = 1;
+    size_t                          ncols      = 1;
+    size_t                          level      = 0;
     bool                            found_leaf = false;
         
     bcls[0] = root;
@@ -699,12 +700,12 @@ flatten_leaf ( TBlockCluster *  root )
         // first, determine layout of next level
         //
 
-        vector< uint >  son_nrows( nrows, 0 );
-        vector< uint >  son_ncols( ncols, 0 );
+        vector< size_t >  son_nrows( nrows, 0 );
+        vector< size_t >  son_ncols( ncols, 0 );
         
-        for ( uint  i = 0; i < nrows; ++i )
+        for ( size_t  i = 0; i < nrows; ++i )
         {
-            for ( uint  j = 0; j < ncols; ++j )
+            for ( size_t  j = 0; j < ncols; ++j )
             {
                 auto  bcl = bcls[ j * nrows + i ];
 
@@ -724,10 +725,10 @@ flatten_leaf ( TBlockCluster *  root )
         }// for
 
         // sum up nrows/ncols and replace values by offsets
-        uint  new_nrows = 0;
-        uint  new_ncols = 0;
+        size_t  new_nrows = 0;
+        size_t  new_ncols = 0;
         
-        for ( uint  i = 0; i < nrows; ++i )
+        for ( size_t  i = 0; i < nrows; ++i )
         {
             const auto  ofs = new_nrows;
             
@@ -735,7 +736,7 @@ flatten_leaf ( TBlockCluster *  root )
             son_nrows[i]  = ofs;
         }// for
 
-        for ( uint  i = 0; i < ncols; ++i )
+        for ( size_t  i = 0; i < ncols; ++i )
         {
             const auto  ofs = new_ncols;
             
@@ -745,26 +746,26 @@ flatten_leaf ( TBlockCluster *  root )
 
         sons.resize( new_nrows * new_ncols );
 
-        for ( uint  i = 0; i < new_nrows; ++i )
-            for ( uint  j = 0; j < new_ncols; ++j )
+        for ( size_t  i = 0; i < new_nrows; ++i )
+            for ( size_t  j = 0; j < new_ncols; ++j )
                 sons[ j * new_nrows + i ] = nullptr;
 
         //
         // now copy sons into new layout
         //
         
-        for ( uint  i = 0; i < nrows; ++i )
+        for ( size_t  i = 0; i < nrows; ++i )
         {
-            for ( uint  j = 0; j < ncols; ++j )
+            for ( size_t  j = 0; j < ncols; ++j )
             {
                 auto  bcl = bcls[ j * nrows + i ];
 
                 if ( bcl == nullptr )
                     continue;
                 
-                for ( uint  ii = 0; ii < bcl->nrows(); ++ii )
+                for ( size_t  ii = 0; ii < bcl->nrows(); ++ii )
                 {
-                    for ( uint  jj = 0; jj < bcl->ncols(); ++jj )
+                    for ( size_t  jj = 0; jj < bcl->ncols(); ++jj )
                     {
                         auto  son_ij = bcl->son( ii, jj );
 
@@ -797,9 +798,9 @@ flatten_leaf ( TBlockCluster *  root )
             {
                 root->set_layout( new_nrows, new_ncols );
 
-                for ( uint  i = 0; i < new_nrows; ++i )
+                for ( size_t  i = 0; i < new_nrows; ++i )
                 {
-                    for ( uint  j = 0; j < new_ncols; ++j )
+                    for ( size_t  j = 0; j < new_ncols; ++j )
                     {
                         root->set_son( i, j, sons[ j * new_nrows + i ], false );
 

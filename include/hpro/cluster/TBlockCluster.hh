@@ -39,8 +39,8 @@ protected:
     TCluster *                      _colcl;
 
     //! block layout
-    uint                            _nrows;
-    uint                            _ncols;
+    size_t                          _nrows;
+    size_t                          _ncols;
     
     //! son-clusters (nrows × ncols)
     std::vector< TBlockCluster * >  _sons;
@@ -131,10 +131,10 @@ public:
     //
 
     //! return number of sons
-    virtual uint  nsons         () const { return uint(_sons.size()); }
+    virtual size_t     nsons         () const { return _sons.size(); }
 
     // //! set number of sons
-    // virtual void    set_nsons     ( const uint  n );
+    // virtual void    set_nsons     ( const size_t  n );
 
     // //! adjust number of sons to number of non-NULL sons in local list
     // virtual void    adjust_nsons  ();
@@ -144,11 +144,11 @@ public:
     //
 
     //! return \a i'th son
-    virtual TBlockCluster *        son         ( const uint  i )       { return _sons[i]; }
-    virtual const TBlockCluster *  son         ( const uint  i ) const { return _sons[i]; }
+    virtual TBlockCluster *        son         ( const size_t  i )       { return _sons[i]; }
+    virtual const TBlockCluster *  son         ( const size_t  i ) const { return _sons[i]; }
 
     //! set \a i'th son to \a son
-    virtual void                   set_son     ( const uint       i,
+    virtual void                   set_son     ( const size_t     i,
                                                  TBlockCluster *  son,
                                                  const bool       del_son = true );
 
@@ -160,24 +160,24 @@ public:
     //
 
     //! change block layout
-    virtual void                   set_layout  ( const uint  nrows,
-                                                 const uint  ncols );
+    virtual void                   set_layout  ( const size_t  nrows,
+                                                 const size_t  ncols );
 
     //! return number of rows
-    virtual uint                   nrows       () const { return _nrows; }
+    virtual size_t                 nrows       () const { return _nrows; }
     
     //! return number of columns
-    virtual uint                   ncols       () const { return _ncols; }
+    virtual size_t                 ncols       () const { return _ncols; }
     
     //! return son at position (\a i, \a j)
-    virtual TBlockCluster *        son         ( const uint  i,
-                                                 const uint  j );
-    virtual const TBlockCluster *  son         ( const uint  i,
-                                                 const uint  j ) const;
+    virtual TBlockCluster *        son         ( const size_t  i,
+                                                 const size_t  j );
+    virtual const TBlockCluster *  son         ( const size_t  i,
+                                                 const size_t  j ) const;
 
     //! set son at position (\a i, \a j) to \a son
-    virtual void                   set_son     ( const uint       i,
-                                                 const uint       j,
+    virtual void                   set_son     ( const size_t       i,
+                                                 const size_t       j,
                                                  TBlockCluster *  son,
                                                  const bool       del_son = true );
 
@@ -201,7 +201,7 @@ public:
         if ( nsons() == 0 )
             return true;
         
-        for ( uint  i = 0; i < nsons(); i++ )
+        for ( size_t  i = 0; i < nsons(); i++ )
             if ( _sons[i] != NULL )
                 return false;
         
@@ -209,13 +209,13 @@ public:
     }
 
     //! make node a leaf
-    virtual void  make_leaf ();
+    virtual void    make_leaf ();
 
     //! return number of nodes in tree
-    virtual uint  nnodes () const;
+    virtual size_t  nnodes () const;
 
     //! return depth of tree
-    virtual uint  depth () const;
+    virtual size_t  depth () const;
 
     ////////////////////////////////////////////////
     //
@@ -231,7 +231,7 @@ public:
     //
 
     //! return true if \a i'th son is present
-    bool has_son ( const uint  i ) const { return (i < nsons() ? _sons[i] != NULL : false); }
+    bool has_son ( const size_t  i ) const { return (i < nsons() ? _sons[i] != NULL : false); }
 
     //! return true if given cluster is a subcluster of this
     bool is_sub_cluster ( const TBlockCluster * c ) const;
@@ -295,7 +295,7 @@ void apply ( const TBlockCluster *  bc,
 
     if ( ! bc->is_leaf() )
     {
-        for ( uint i = 0; i < bc->nsons(); ++i )
+        for ( size_t  i = 0; i < bc->nsons(); ++i )
             apply( bc->son( i ), f );
     }// if
 }
