@@ -132,14 +132,14 @@ TBCBuilder::rec_build ( TBlockCluster *        bc,
     // recurse
     //
 
-    const auto  n_rowcl = std::max< uint >( rowcl->nsons(), 1 );
-    const auto  n_colcl = std::max< uint >( colcl->nsons(), 1 );
+    const auto  n_rowcl = std::max< size_t >( rowcl->nsons(), 1 );
+    const auto  n_colcl = std::max< size_t >( colcl->nsons(), 1 );
 
     bc->set_layout( n_rowcl, n_colcl );
 
-    for ( uint  i = 0; i < n_rowcl; ++i )
+    for ( size_t  i = 0; i < n_rowcl; ++i )
     {
-        for ( uint  j = 0; j < n_colcl; ++j )
+        for ( size_t  j = 0; j < n_colcl; ++j )
         {
             auto *  son_ij = bc->son( i, j );
             
@@ -169,19 +169,19 @@ TBCBuilder::refine ( TBlockCluster *  bc ) const
         return;
     }// if
     
-    const auto  n_rowcl = std::max< uint >( rowcl->nsons(), 1 );
-    const auto  n_colcl = std::max< uint >( colcl->nsons(), 1 );
+    const auto  n_rowcl = std::max< size_t >( rowcl->nsons(), 1 );
+    const auto  n_colcl = std::max< size_t >( colcl->nsons(), 1 );
 
     bc->set_layout( n_rowcl, n_colcl );
 
-    for ( uint  i = 0; i < n_rowcl; ++i )
+    for ( size_t  i = 0; i < n_rowcl; ++i )
     {
         TCluster *  rowcl_i = (rowcl->is_leaf() ? rowcl : rowcl->son(i));
 
         if ( rowcl_i == nullptr )
             HERROR( ERR_NULL, "(TBCBuilder) refine", "son of row-cluster is nullptr" );
             
-        for ( uint  j = 0; j < n_colcl; ++j )
+        for ( size_t  j = 0; j < n_colcl; ++j )
         {
             TCluster  * colcl_j = (colcl->is_leaf() ? colcl : colcl->son(j));
                     

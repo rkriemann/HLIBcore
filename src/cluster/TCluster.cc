@@ -25,7 +25,7 @@ using namespace std;
 
 TCluster::~TCluster ()
 {
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t  i = 0; i < nsons(); i++ )
         delete _sons[i];
 }
 
@@ -33,13 +33,13 @@ TCluster::~TCluster ()
 // set number of sons
 //
 void
-TCluster::set_nsons ( const uint  n )
+TCluster::set_nsons ( const size_t  n )
 {
-    const uint  old = nsons();
+    const size_t  old = nsons();
     
     _sons.resize( n );
 
-    for ( uint  i = old; i < n; i++ )
+    for ( size_t  i = old; i < n; i++ )
         _sons[i] = nullptr;
 }
     
@@ -48,9 +48,9 @@ TCluster::set_nsons ( const uint  n )
 //
 
 void
-TCluster::set_son ( const uint  i,
-                    TCluster *  son_ct,
-                    const bool  del )
+TCluster::set_son ( const size_t  i,
+                    TCluster *    son_ct,
+                    const bool    del )
 {
     if ( del && (_sons[i] != nullptr) && (_sons[i] != son_ct))
         delete _sons[i];
@@ -69,7 +69,7 @@ TCluster::add_son ( TCluster *  son_ct,
     // look for free sons
     //
 
-    for ( uint  i = 0; i < nsons(); i++ )
+    for ( size_t  i = 0; i < nsons(); i++ )
     {
         // stop, if cluster is already a son
         if ( _sons[i] == son_ct )
@@ -96,19 +96,19 @@ TCluster::add_son ( TCluster *  son_ct,
 //
 // return size of tree
 //
-uint
+size_t
 TCluster::nnodes () const
 {
-    return uint( Hpro::Tree::nnodes( this ) );
+    return Hpro::Tree::nnodes( this );
 }
 
 //
 // return depth of tree
 //
-uint
+size_t
 TCluster::depth () const
 {
-    return uint( Hpro::Tree::depth( this ) );
+    return Hpro::Tree::depth( this );
 }
 
 //
@@ -123,7 +123,7 @@ TCluster::collect_leaves ( list< TCluster * > &  leaves,
         leaves.push_back( const_cast< TCluster * >( this ) );
     else
     {
-        for ( uint i = 0; i < nsons(); i++ )
+        for ( size_t i = 0; i < nsons(); i++ )
             if ( _sons[i] != nullptr )
                 _sons[i]->collect_leaves( leaves, tdepth, level+1 );
     }// for
@@ -141,7 +141,7 @@ TCluster::copy  () const
     c->set_nsons( nsons() );
     c->set_domain( is_domain() );
 
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( son(i) != nullptr )
             c->set_son( i, son(i)->copy() );
@@ -161,7 +161,7 @@ TCluster::print ( const uint ofs ) const
 
     cout << *this << endl;
 
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( son(i) != nullptr )
             son(i)->print( ofs + 4 );
@@ -176,7 +176,7 @@ TCluster::byte_size () const
 {
     size_t count = ( TIndexSet::byte_size() + sizeof(_sons) + sizeof(TCluster*) * _sons.size() + sizeof(bool) );
     
-    for ( uint i = 0; i < nsons(); i++ )
+    for ( size_t i = 0; i < nsons(); i++ )
     {
         if ( son(i) != nullptr )
             count += son(i)->byte_size();
@@ -199,9 +199,9 @@ flatten ( TCluster * cl )
     //
 
     std::list< TCluster * >  new_sons;
-    uint                     n_new_sons = 0;
+    size_t                   n_new_sons = 0;
 
-    for ( uint  i = 0; i < cl->nsons(); ++i )
+    for ( size_t  i = 0; i < cl->nsons(); ++i )
     {
         auto  son_i = cl->son(i);
         
@@ -217,7 +217,7 @@ flatten ( TCluster * cl )
             {
                 flatten( son_i );
 
-                for ( uint  j = 0; j < son_i->nsons(); ++j )
+                for ( size_t  j = 0; j < son_i->nsons(); ++j )
                 {
                     new_sons.push_back( son_i->son(j) );
                     n_new_sons++;
@@ -235,7 +235,7 @@ flatten ( TCluster * cl )
     // replace sons by new sons
     //
 
-    uint  pos = 0;
+    size_t  pos = 0;
 
     // std::cout << "nnew_sons = " << new_sons.size() << std::endl;
     

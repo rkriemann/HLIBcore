@@ -84,19 +84,19 @@ public:
     //
 
     //! return number of sons
-    virtual uint             nsons       () const { return uint(_sons.size()); }
+    virtual size_t           nsons       () const { return _sons.size(); }
 
     //! set number of sons
-    virtual void             set_nsons   ( const uint  n );
+    virtual void             set_nsons   ( const size_t  n );
     
     //! return i'th son
-    virtual TCluster *       son         ( const uint  i )       { return _sons[i]; }
+    virtual TCluster *       son         ( const size_t  i )       { return _sons[i]; }
 
     //! return i'th son
-    virtual const TCluster * son         ( const uint  i ) const { return _sons[i]; }
+    virtual const TCluster * son         ( const size_t  i ) const { return _sons[i]; }
 
     //! set i'th son. If \a del is true, former son_i is deleted
-    virtual void             set_son     ( const uint  i,
+    virtual void             set_son     ( const size_t  i,
                                            TCluster *    son,
                                            const bool    del = true );
 
@@ -114,7 +114,7 @@ public:
         if ( nsons() == 0 )
             return true;
         
-        for ( uint  i = 0; i < nsons(); i++ )
+        for ( size_t  i = 0; i < nsons(); i++ )
             if ( _sons[i] != NULL )
                 return false;
         
@@ -122,10 +122,10 @@ public:
     }
 
     //! return no of nodes
-    virtual uint  nnodes  () const;
+    virtual size_t  nnodes  () const;
 
     //! return depth of tree
-    virtual uint  depth   () const;
+    virtual size_t  depth   () const;
 
     ////////////////////////////////////////////////////////
     //
