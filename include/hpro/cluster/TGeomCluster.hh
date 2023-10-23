@@ -114,6 +114,12 @@ public:
     HPRO_RTTI_DERIVED( TGeomCluster, TCluster );
 };
 
-}// namespace
+//
+// return true of given cluster is of type TGeomCluster
+//
+inline bool is_geom_cluster  ( const TCluster *  cl ) noexcept { return IS_TYPE( cl, TGeomCluster ); }
+inline bool is_geom_cluster  ( const TCluster &  cl ) noexcept { return is_geom_cluster( & cl ); }
+
+}// namespace Hpro
 
 #endif  // __HPRO_TGEOMCLUSTER_HH
