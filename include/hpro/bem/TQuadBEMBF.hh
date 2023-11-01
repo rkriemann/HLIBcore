@@ -76,6 +76,9 @@ protected:
     // if true, the quad. order is reduced depending on triangle distance
     bool            _quad_dist_adaptive;
     
+    // relative error for adaptive order
+    const real_t    _ada_error;
+    
     //! @endcond
     
 public:
@@ -90,7 +93,8 @@ public:
     TQuadBEMBF ( const ansatzsp_t *  ansatzsp,
                  const testsp_t *    testsp,
                  const uint          order    = CFG::BEM::quad_order,
-                 const bool          dist_ada = CFG::BEM::adaptive_quad_order );
+                 const bool          dist_ada = CFG::BEM::adaptive_quad_order,
+                 const real_t        ada_err  = 0 );
 
     //! destructor
     virtual ~TQuadBEMBF () {}
@@ -200,7 +204,8 @@ public:
     TInvarBasisQuadBEMBF ( const ansatzsp_t *  ansatzsp,
                            const testsp_t *    testsp,
                            const uint          order    = CFG::BEM::quad_order,
-                           const bool          dist_ada = CFG::BEM::adaptive_quad_order );
+                           const bool          dist_ada = CFG::BEM::adaptive_quad_order,
+                           const real_t        ada_err  = 0 );
 
     //! destructor
     virtual ~TInvarBasisQuadBEMBF () {}

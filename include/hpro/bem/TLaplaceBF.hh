@@ -77,6 +77,10 @@ public:
                     const testsp_t *    atestsp,
                     const uint          quad_order = CFG::BEM::quad_order );
 
+    TLaplaceSLPBF ( const ansatzsp_t *  aansatzsp,
+                    const testsp_t *    atestsp,
+                    const real_t        quad_error );
+
     virtual ~TLaplaceSLPBF () {}
 
     // return format of bilinear form, e.g. symmetric

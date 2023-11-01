@@ -33,10 +33,12 @@ template < typename ansatzsp_t,
 TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::TQuadBEMBF ( const ansatzsp_t *  aansatzsp,
                                                           const testsp_t *    atestsp,
                                                           const uint          aorder,
-                                                          const bool          dist_ada )
+                                                          const bool          dist_ada,
+                                                          const real_t        ada_err )
         : TBEMBF< ansatzsp_t, testsp_t, value_t >( aansatzsp, atestsp )
         , _quad_order( aorder )
         , _quad_dist_adaptive( dist_ada )
+        , _ada_error( ada_err )
 {
     //
     // build quad-points and with up to max-order

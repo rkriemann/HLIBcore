@@ -660,6 +660,7 @@ TBlockCluster::byte_size () const
     count += ( sizeof(_id) +
                sizeof(_parent) +
                sizeof(_rowcl) + sizeof(_colcl) +
+               sizeof(_nrows) + sizeof(_ncols) +
                sizeof(_sons) + sizeof(TBlockCluster*) * _sons.size() +
                sizeof(_adm) +
                sizeof(_procs) );
