@@ -80,6 +80,12 @@ public:
                      const testsp_t *    atestsp,
                      const uint          quad_order = CFG::BEM::quad_order );
 
+    TMaxwellEFIEBF ( const value_t       kappa,
+                     const real_t        eta,
+                     const ansatzsp_t *  aansatzsp,
+                     const testsp_t *    atestsp,
+                     const real_t        quad_error );
+
     virtual ~TMaxwellEFIEBF () {}
 
     // return format of bilinear form, e.g. symmetric
@@ -207,6 +213,11 @@ public:
                      const ansatzsp_t *  aansatzsp,
                      const testsp_t *    atestsp,
                      const uint          quad_order = CFG::BEM::quad_order );
+
+    TMaxwellMFIEBF ( const value_t       kappa,
+                     const ansatzsp_t *  aansatzsp,
+                     const testsp_t *    atestsp,
+                     const real_t        quad_error );
 
     virtual ~TMaxwellMFIEBF () {}
 

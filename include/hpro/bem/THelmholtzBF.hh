@@ -82,6 +82,11 @@ public:
                       const testsp_t *    atestsp,
                       const uint          quad_order = CFG::BEM::quad_order );
 
+    THelmholtzSLPBF ( const value_t       kappa,
+                      const ansatzsp_t *  aansatzsp,
+                      const testsp_t *    atestsp,
+                      const real_t        quad_error );
+
     virtual ~THelmholtzSLPBF () {}
     
     // return format of bilinear form, e.g. symmetric
@@ -161,6 +166,12 @@ public:
                       const testsp_t *    atestsp,
                       const bool          adjoint    = false,
                       const uint          quad_order = CFG::BEM::quad_order );
+
+    THelmholtzDLPBF ( const value_t       kappa,
+                      const ansatzsp_t *  aansatzsp,
+                      const testsp_t *    atestsp,
+                      const bool          adjoint,
+                      const real_t        quad_error );
 
     virtual ~THelmholtzDLPBF () {}
 

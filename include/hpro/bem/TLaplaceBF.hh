@@ -162,6 +162,11 @@ public:
                     const bool          adjoint    = false,
                     const uint          quad_order = CFG::BEM::quad_order );
 
+    TLaplaceDLPBF ( const ansatzsp_t *  aansatzsp,
+                    const testsp_t *    atestsp,
+                    const bool          adjoint,
+                    const real_t        quad_error );
+
     virtual ~TLaplaceDLPBF () {}
     
     // return format of bilinear form, e.g. symmetric

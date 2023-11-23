@@ -46,7 +46,7 @@ public:
 
     TMassBF ( const ansatzsp_t *  aansatzsp,
               const testsp_t *    atestsp,
-              const uint          order = CFG::BEM::quad_order );
+              const uint          quad_order = CFG::BEM::quad_order );
 
     virtual ~TMassBF () {}
 

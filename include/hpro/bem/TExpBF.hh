@@ -60,6 +60,10 @@ public:
              const testsp_t *    atestsp,
              const uint          quad_order = CFG::BEM::quad_order );
 
+    TExpBF ( const ansatzsp_t *  aansatzsp,
+             const testsp_t *    atestsp,
+             const real_t        quad_error );
+
     virtual ~TExpBF () {}
 
     // return format of bilinear form, e.g. symmetric

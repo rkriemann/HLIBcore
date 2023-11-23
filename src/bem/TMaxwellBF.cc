@@ -109,6 +109,101 @@ const double ONE_OVER_4PI = double(1) / (double(4) * Math::pi< double >());
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+auto
+efie_kernel_fn ( const value_t  ikappa )
+{
+    using  real_t = real_type_t< value_t >;
+
+    if ( CFG::BEM::use_simd )
+    {
+        if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
+        {
+            using  packed_t = packed< real_t, ISA_AVX512F >;
+            
+            HINFO( "(TMaxwellEFIEBF) using AVX512F kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
+        {
+            using  packed_t = packed< real_t, ISA_MIC >;
+            
+            HINFO( "(TMaxwellEFIEBF) using MIC kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
+        {
+            using  packed_t = packed< real_t, ISA_AVX2 >;
+            
+            HINFO( "(TMaxwellEFIEBF) using AVX2 kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
+        {
+            using  packed_t = packed< real_t, ISA_AVX >;
+            
+            HINFO( "(TMaxwellEFIEBF) using AVX kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
+        {
+            using  packed_t = packed< real_t, ISA_SSE3 >;
+            
+            HINFO( "(TMaxwellEFIEBF) using SSE3 kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
+        {
+            using  packed_t = packed< real_t, ISA_VSX >;
+            
+            HINFO( "(TMaxwellEFIEBF) using VSX kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
+        {
+            using  packed_t = packed< real_t, ISA_NEON >;
+            
+            HINFO( "(TMaxwellEFIEBF) using NEON kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_slp_re_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_slp_im_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_slp_simd< value_t, ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else
+        {
+            HINFO( "(TMaxwellEFIEBF) using standard kernel" );
+            
+            return helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
+        }// else
+    }// if
+    else
+    {
+        HINFO( "(TMaxwellEFIEBF) using standard kernel" );
+            
+        return helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
+    }// else
+}
+
 //
 // ctor
 // 
@@ -124,93 +219,23 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::TMaxwellEFIEBF ( const value_t       kap
         , _eta( eta )
         , _ikappa_times_eta( _ikappa * _eta )
         , _eta_over_ikappa( _eta / _ikappa )
-{
-    if ( CFG::BEM::use_simd )
-    {
-        if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
-        {
-            using  packed_t = packed< real_t, ISA_AVX512F >;
-            
-            HINFO( "(TMaxwellEFIEBF) using AVX512F kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
-        {
-            using  packed_t = packed< real_t, ISA_MIC >;
-            
-            HINFO( "(TMaxwellEFIEBF) using MIC kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
-        {
-            using  packed_t = packed< real_t, ISA_AVX2 >;
-            
-            HINFO( "(TMaxwellEFIEBF) using AVX2 kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
-        {
-            using  packed_t = packed< real_t, ISA_AVX >;
-            
-            HINFO( "(TMaxwellEFIEBF) using AVX kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                        _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
-        {
-            using  packed_t = packed< real_t, ISA_SSE3 >;
-            
-            HINFO( "(TMaxwellEFIEBF) using SSE3 kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
-        {
-            using  packed_t = packed< real_t, ISA_VSX >;
-            
-            HINFO( "(TMaxwellEFIEBF) using VSX kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
-        {
-            using  packed_t = packed< real_t, ISA_NEON >;
-            
-            HINFO( "(TMaxwellEFIEBF) using NEON kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_re_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_slp_im_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_slp_simd< value_t, T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else
-        {
-            HINFO( "(TMaxwellEFIEBF) using standard kernel" );
-            
-            _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
-        }// else
-    }// if
-    else
-    {
-        HINFO( "(TMaxwellEFIEBF) using standard kernel" );
-            
-        _kernel_fn = helmholtz_slp_flt< ansatzsp_t, testsp_t, value_t >;
-    }// else
-}
+        , _kernel_fn( efie_kernel_fn< T_ansatzsp, T_testsp, value_t >( _ikappa ) )
+{}
+
+template < typename  T_ansatzsp,
+           typename  T_testsp >
+TMaxwellEFIEBF< T_ansatzsp, T_testsp >::TMaxwellEFIEBF ( const value_t       kappa,
+                                                         const real_t        eta,
+                                                         const ansatzsp_t *  aansatzsp,
+                                                         const testsp_t *    atestsp,
+                                                         const real_t        quad_error )
+        : TQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, 10, true, quad_error )
+        , _ikappa( value_t( 0, 1 ) * kappa )
+        , _eta( eta )
+        , _ikappa_times_eta( _ikappa * _eta )
+        , _eta_over_ikappa( _eta / _ikappa )
+        , _kernel_fn( efie_kernel_fn< T_ansatzsp, T_testsp, value_t >( _ikappa ) )
+{}
 
 template < typename  T_ansatzsp,
            typename  T_testsp >
@@ -602,6 +627,101 @@ helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &              tri0,
     }// for
 }
 
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+auto
+mfie_kernel_fn ( const value_t  ikappa )
+{
+    using  real_t = real_type_t< value_t >;
+
+    if ( CFG::BEM::use_simd )
+    {
+        if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
+        {
+            using  packed_t = packed< real_t, ISA_AVX512F >;
+
+            HINFO( "(TMaxwellMFIEBF) using AVX512F kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
+        {
+            using  packed_t = packed< real_t, ISA_MIC >;
+
+            HINFO( "(TMaxwellMFIEBF) using MIC kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
+        {
+            using  packed_t = packed< real_t, ISA_AVX2 >;
+
+            HINFO( "(TMaxwellMFIEBF) using AVX2 kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
+        {
+            using  packed_t = packed< real_t, ISA_AVX >;
+
+            HINFO( "(TMaxwellMFIEBF) using AVX kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
+        {
+            using  packed_t = packed< real_t, ISA_SSE3 >;
+
+            HINFO( "(TMaxwellMFIEBF) using SSE3 kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
+        {
+            using  packed_t = packed< real_t, ISA_VSX >;
+
+            HINFO( "(TMaxwellMFIEBF) using VSX kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
+        {
+            using  packed_t = packed< real_t, ISA_NEON >;
+
+            HINFO( "(TMaxwellMFIEBF) using NEON kernel" );
+            
+            if      ( std::real( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_re_simd< ansatzsp_t, testsp_t, packed_t >;
+            else if ( std::imag( ikappa ) == real_t(0) ) return helmholtz_dlp_wo_normal_im_simd< ansatzsp_t, testsp_t, packed_t >;
+            else                                         return helmholtz_dlp_wo_normal_simd< ansatzsp_t, testsp_t, packed_t >;
+        }// if
+        else
+        {
+            HINFO( "(TMaxwellMFIEBF) using standard kernel" );
+            
+            return helmholtz_dlp_wo_normal_flt< ansatzsp_t, testsp_t >;
+        }// else
+    }// if
+    else
+    {
+        HINFO( "(TMaxwellMFIEBF) using standard kernel" );
+            
+        return helmholtz_dlp_wo_normal_flt< ansatzsp_t, testsp_t >;
+    }// else
+}
+
 //
 // ctor
 //
@@ -613,93 +733,19 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::TMaxwellMFIEBF ( const value_t       kap
                                                          const uint          quad_order )
         : TQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
         , _ikappa( value_t( 0, 1 ) * kappa )
-{
-    if ( CFG::BEM::use_simd )
-    {
-        if ( CFG::Mach::has_avx512f() && CFG::BEM::use_simd_avx512f )
-        {
-            using  packed_t = packed< real_t, ISA_AVX512F >;
+        , _kernel_fn( mfie_kernel_fn< T_ansatzsp, T_testsp, value_t >( _ikappa ) )
+{}
 
-            HINFO( "(TMaxwellMFIEBF) using AVX512F kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_mic() && CFG::BEM::use_simd_mic )
-        {
-            using  packed_t = packed< real_t, ISA_MIC >;
-
-            HINFO( "(TMaxwellMFIEBF) using MIC kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_avx2() && CFG::BEM::use_simd_avx2 )
-        {
-            using  packed_t = packed< real_t, ISA_AVX2 >;
-
-            HINFO( "(TMaxwellMFIEBF) using AVX2 kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_avx() && CFG::BEM::use_simd_avx )
-        {
-            using  packed_t = packed< real_t, ISA_AVX >;
-
-            HINFO( "(TMaxwellMFIEBF) using AVX kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
-        {
-            using  packed_t = packed< real_t, ISA_SSE3 >;
-
-            HINFO( "(TMaxwellMFIEBF) using SSE3 kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
-        {
-            using  packed_t = packed< real_t, ISA_VSX >;
-
-            HINFO( "(TMaxwellMFIEBF) using VSX kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
-        {
-            using  packed_t = packed< real_t, ISA_NEON >;
-
-            HINFO( "(TMaxwellMFIEBF) using NEON kernel" );
-            
-            if      ( std::real( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_re_simd< T_ansatzsp, T_testsp, packed_t >;
-            else if ( std::imag( _ikappa ) == real_t(0) ) _kernel_fn = helmholtz_dlp_wo_normal_im_simd< T_ansatzsp, T_testsp, packed_t >;
-            else                                          _kernel_fn = helmholtz_dlp_wo_normal_simd< T_ansatzsp, T_testsp, packed_t >;
-        }// if
-        else
-        {
-            HINFO( "(TMaxwellMFIEBF) using standard kernel" );
-            
-            _kernel_fn = helmholtz_dlp_wo_normal_flt< T_ansatzsp, T_testsp >;
-        }// else
-    }// if
-    else
-    {
-        HINFO( "(TMaxwellMFIEBF) using standard kernel" );
-            
-        _kernel_fn = helmholtz_dlp_wo_normal_flt< T_ansatzsp, T_testsp >;
-    }// else
-}
+template < typename  T_ansatzsp,
+           typename  T_testsp >
+TMaxwellMFIEBF< T_ansatzsp, T_testsp >::TMaxwellMFIEBF ( const value_t       kappa,
+                                                         const ansatzsp_t *  aansatzsp,
+                                                         const testsp_t *    atestsp,
+                                                         const real_t        quad_error )
+        : TQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, 10, true, quad_error )
+        , _ikappa( value_t( 0, 1 ) * kappa )
+        , _kernel_fn( mfie_kernel_fn< T_ansatzsp, T_testsp, value_t >( _ikappa ) )
+{}
 
 template < typename  T_ansatzsp,
            typename  T_testsp >

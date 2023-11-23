@@ -111,6 +111,73 @@ exp_flt ( const TGrid::triangle_t &                             tri0,
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+auto
+exp_kernel_fn ()
+{
+    using  real_t = real_type_t< value_t >;
+
+    if ( CFG::BEM::use_simd )
+    {
+        if ( CFG::Mach::has_avx512f()  && CFG::BEM::use_simd_avx512f  )
+        {
+            HINFO( "(TExpBF) using AVX512F kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_AVX512F > >;
+        }// if
+        else if ( CFG::Mach::has_mic()  && CFG::BEM::use_simd_mic  )
+        {
+            HINFO( "(TExpBF) using MIC kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_MIC > >;
+        }// if
+        else if ( CFG::Mach::has_avx2()  && CFG::BEM::use_simd_avx2  )
+        {
+            HINFO( "(TExpBF) using AVX2 kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_AVX2 > >;
+        }// if
+        else if ( CFG::Mach::has_avx()  && CFG::BEM::use_simd_avx  )
+        {
+            HINFO( "(TExpBF) using AVX kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_AVX > >;
+        }// if
+        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
+        {
+            HINFO( "(TExpBF) using SSE3 kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_SSE3 > >;
+        }// if
+        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
+        {
+            HINFO( "(TExpBF) using VSX kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_VSX > >;
+        }// if
+        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
+        {
+            HINFO( "(TExpBF) using NEON kernel" );
+            
+            return exp_simd< value_t, ansatzsp_t, testsp_t, packed< real_t, ISA_NEON > >;
+        }// if
+        else
+        {
+            HINFO( "(TExpBF) using FPU kernel" );
+            
+            return exp_flt< ansatzsp_t, testsp_t, value_t >;
+        }// else
+    }// if
+    else
+    {
+        HINFO( "(TExpBF) using FPU kernel" );
+            
+        return exp_flt< ansatzsp_t, testsp_t, value_t >;
+    }// else
+}
+
 template < typename  T_ansatzsp,
            typename  T_testsp,
            typename  T_value >
@@ -118,65 +185,18 @@ TExpBF< T_ansatzsp, T_testsp, T_value >::TExpBF ( const ansatzsp_t *  aansatzsp,
                                                   const testsp_t *    atestsp,
                                                   const uint          quad_order )
         : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
-{
-    if ( CFG::BEM::use_simd )
-    {
-        if ( CFG::Mach::has_avx512f()  && CFG::BEM::use_simd_avx512f  )
-        {
-            HINFO( "(TExpBF) using AVX512F kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_AVX512F > >;
-        }// if
-        else if ( CFG::Mach::has_mic()  && CFG::BEM::use_simd_mic  )
-        {
-            HINFO( "(TExpBF) using MIC kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_MIC > >;
-        }// if
-        else if ( CFG::Mach::has_avx2()  && CFG::BEM::use_simd_avx2  )
-        {
-            HINFO( "(TExpBF) using AVX2 kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_AVX2 > >;
-        }// if
-        else if ( CFG::Mach::has_avx()  && CFG::BEM::use_simd_avx  )
-        {
-            HINFO( "(TExpBF) using AVX kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_AVX > >;
-        }// if
-        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
-        {
-            HINFO( "(TExpBF) using SSE3 kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_SSE3 > >;
-        }// if
-        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
-        {
-            HINFO( "(TExpBF) using VSX kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_VSX > >;
-        }// if
-        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
-        {
-            HINFO( "(TExpBF) using NEON kernel" );
-            
-            _kernel_fn = exp_simd< value_t, T_ansatzsp, T_testsp, packed< real_t, ISA_NEON > >;
-        }// if
-        else
-        {
-            HINFO( "(TExpBF) using FPU kernel" );
-            
-            _kernel_fn = exp_flt< ansatzsp_t, testsp_t, value_t >;
-        }// else
-    }// if
-    else
-    {
-        HINFO( "(TExpBF) using FPU kernel" );
-            
-        _kernel_fn = exp_flt< ansatzsp_t, testsp_t, value_t >;
-    }// else
-}
+        , _kernel_fn( exp_kernel_fn< T_ansatzsp, T_testsp, T_value >() )
+{}
+
+template < typename  T_ansatzsp,
+           typename  T_testsp,
+           typename  T_value >
+TExpBF< T_ansatzsp, T_testsp, T_value >::TExpBF ( const ansatzsp_t *  aansatzsp,
+                                                  const testsp_t *    atestsp,
+                                                  const real_t        quad_error )
+        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, 10, true, quad_error )
+        , _kernel_fn( exp_kernel_fn< T_ansatzsp, T_testsp, T_value >() )
+{}
 
 //
 // eval kernel function at quadrature points

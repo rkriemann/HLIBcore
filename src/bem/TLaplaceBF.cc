@@ -359,6 +359,73 @@ laplace_dlp_flt ( const idx_t                            tri_id,
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+template < typename  ansatzsp_t,
+           typename  testsp_t,
+           typename  value_t >
+auto
+laplace_dlp_kernel_fn ()
+{
+    using  real_t = real_type_t< value_t >;
+    
+    if ( CFG::BEM::use_simd )
+    {
+        if ( CFG::Mach::has_avx512f()  && CFG::BEM::use_simd_avx512f  )
+        {
+            HINFO( "(TLaplaceDLPBF) using AVX512F kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_AVX512F > >;
+        }// if
+        else if ( CFG::Mach::has_mic()  && CFG::BEM::use_simd_mic  )
+        {
+            HINFO( "(TLaplaceDLPBF) using MIC kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_MIC > >;
+        }// if
+        else if ( CFG::Mach::has_avx2()  && CFG::BEM::use_simd_avx2  )
+        {
+            HINFO( "(TLaplaceDLPBF) using AVX2 kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_AVX2 > >;
+        }// if
+        else if ( CFG::Mach::has_avx()  && CFG::BEM::use_simd_avx  )
+        {
+            HINFO( "(TLaplaceDLPBF) using AVX kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_AVX > >;
+        }// if
+        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
+        {
+            HINFO( "(TLaplaceDLPBF) using SSE3 kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_SSE3 > >;
+        }// if
+        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
+        {
+            HINFO( "(TLaplaceDLPBF) using VSX kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_VSX > >;
+        }// if
+        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
+        {
+            HINFO( "(TLaplaceDLPBF) using NEON kernel" );
+            
+            return laplace_dlp_simd< ansatzsp_t, testsp_t, packed< real_t, ISA_NEON > >;
+        }// if
+        else
+        {
+            HINFO( "(TLaplaceDLPBF) using FPU kernel" );
+            
+            return laplace_dlp_flt< ansatzsp_t, testsp_t, value_t >;
+        }// else
+    }// if
+    else
+    {
+        HINFO( "(TLaplaceDLPBF) using FPU kernel" );
+            
+        return laplace_dlp_flt< ansatzsp_t, testsp_t, value_t >;
+    }// else
+}
+
 //
 // ctor
 //
@@ -371,65 +438,20 @@ TLaplaceDLPBF< T_ansatzsp, T_testsp, T_value >::TLaplaceDLPBF ( const ansatzsp_t
                                                                 const uint          quad_order )
         : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, quad_order )
         , _adjoint( adjoint )
-{
-    if ( CFG::BEM::use_simd )
-    {
-        if ( CFG::Mach::has_avx512f()  && CFG::BEM::use_simd_avx512f  )
-        {
-            HINFO( "(TLaplaceDLPBF) using AVX512F kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_AVX512F > >;
-        }// if
-        else if ( CFG::Mach::has_mic()  && CFG::BEM::use_simd_mic  )
-        {
-            HINFO( "(TLaplaceDLPBF) using MIC kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_MIC > >;
-        }// if
-        else if ( CFG::Mach::has_avx2()  && CFG::BEM::use_simd_avx2  )
-        {
-            HINFO( "(TLaplaceDLPBF) using AVX2 kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_AVX2 > >;
-        }// if
-        else if ( CFG::Mach::has_avx()  && CFG::BEM::use_simd_avx  )
-        {
-            HINFO( "(TLaplaceDLPBF) using AVX kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_AVX > >;
-        }// if
-        else if ( CFG::Mach::has_sse3() && CFG::BEM::use_simd_sse3 )
-        {
-            HINFO( "(TLaplaceDLPBF) using SSE3 kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_SSE3 > >;
-        }// if
-        else if ( CFG::Mach::has_vsx() && CFG::BEM::use_simd_vsx )
-        {
-            HINFO( "(TLaplaceDLPBF) using VSX kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_VSX > >;
-        }// if
-        else if ( CFG::Mach::has_neon() && CFG::BEM::use_simd_neon )
-        {
-            HINFO( "(TLaplaceDLPBF) using NEON kernel" );
-            
-            _kernel_fn = laplace_dlp_simd< T_ansatzsp, T_testsp, packed< real_t, ISA_NEON > >;
-        }// if
-        else
-        {
-            HINFO( "(TLaplaceDLPBF) using FPU kernel" );
-            
-            _kernel_fn = laplace_dlp_flt< T_ansatzsp, T_testsp, value_t >;
-        }// else
-    }// if
-    else
-    {
-        HINFO( "(TLaplaceDLPBF) using FPU kernel" );
-            
-        _kernel_fn = laplace_dlp_flt< T_ansatzsp, T_testsp, value_t >;
-    }// else
-}
+        , _kernel_fn( laplace_dlp_kernel_fn< T_ansatzsp, T_testsp, T_value >() )
+{}
+
+template < typename  T_ansatzsp,
+           typename  T_testsp,
+           typename  T_value >
+TLaplaceDLPBF< T_ansatzsp, T_testsp, T_value >::TLaplaceDLPBF ( const ansatzsp_t *  aansatzsp,
+                                                                const testsp_t *    atestsp,
+                                                                const bool          adjoint,
+                                                                const real_t        quad_error )
+        : TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, value_t >( aansatzsp, atestsp, 10, true, quad_error )
+        , _adjoint( adjoint )
+        , _kernel_fn( laplace_dlp_kernel_fn< T_ansatzsp, T_testsp, T_value >() )
+{}
 
 //
 // eval kernel function at quadrature points
