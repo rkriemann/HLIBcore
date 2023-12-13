@@ -283,7 +283,7 @@ TInvarBasisQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx
 }
 
 //
-// specialisation for constant basis functions: it is more efficient to
+// specialization for constant basis functions: it is more efficient to
 // handle this case per index instead of per triangle as in the general
 // implementation above
 // (only for real case; in complex case it is slower?)
@@ -421,6 +421,139 @@ TInvarBasisQuadBEMBF< TConstFnSpace< float >, TConstFnSpace< float >, float >::e
 
 template <>
 void
+TInvarBasisQuadBEMBF< TConstFnSpace< float >,
+                      TConstFnSpace< float >,
+                      std::complex< float > >::eval  ( const vector< idx_t > &                  row_ind,
+                                                       const vector< idx_t > &                  col_ind,
+                                                       BLAS::Matrix< std::complex< float > > &  values ) const
+{
+    const size_t        nrows     = row_ind.size();
+    const size_t        ncols     = col_ind.size();
+    const ansatzsp_t *  ansatz_sp = this->ansatz_space();
+    const testsp_t *    test_sp   = this->test_space();
+        
+    //
+    // compute integral over support triangle pair for each (i,j)
+    //
+                
+    if ( this->_quad_dist_adaptive && ( this->_ada_error > 0 ) )
+    {
+        for ( size_t  col = 0; col < ncols; col++ )
+        {
+            const idx_t        j       = col_ind[ col ];
+            const idx_t        tri1idx = *(test_sp->support(j).begin());
+            const auto         J1      = value_t( test_sp->grid()->tri_size( tri1idx ) );
+            TGrid::triangle_t  tri1    = test_sp->grid()->triangle( tri1idx );
+        
+            for ( size_t  row = 0; row < nrows; row++ )
+            {
+                const idx_t        i       = row_ind[ row ];
+                const idx_t        tri0idx = *(ansatz_sp->support(i).begin());
+                const auto         J0      = value_t( ansatz_sp->grid()->tri_size( tri0idx ) );
+                TGrid::triangle_t  tri0    = ansatz_sp->grid()->triangle( tri0idx );
+
+                //
+                // increase quadrature order until error criterion is met
+                //
+            
+                auto    value   = value_t(0);
+                bool    init    = true;
+                auto    ncommon = reorder_common( tri0.vtx, tri1.vtx );
+
+                for ( uint  torder = 1; torder <= this->_quad_order; ++torder )
+                {
+                    auto  rule = quad_rule( ncommon, torder );
+
+                    if ( rule == nullptr )
+                        HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+                    const size_t  npts        = rule->npts;
+                    const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+                    auto          kvalues     = std::vector< value_t >( padded_npts );
+
+                    eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kvalues );
+
+                    auto  val = value_t( 0 );
+                
+                    for ( size_t  iv = 0; iv < npts; ++iv )
+                        val += value_t( rule->w[iv] ) * kvalues[ iv ];
+                
+                    const auto  diff = std::abs( value - val );
+
+                    value = val;
+                
+                    if ( init )
+                        init = false;
+                    else
+                    {
+                        if ( diff / std::abs( value ) <= this->_ada_error )
+                            break;
+                    }// else
+                }// for
+            
+                values( idx_t( row ), idx_t( col ) ) = J0 * J1 * value;
+            }// for
+        }// for
+    }// if
+    else
+    {
+        vector< value_t >  kernel_values;
+    
+        for ( size_t  col = 0; col < ncols; col++ )
+        {
+            const idx_t        j       = col_ind[ col ];
+            const idx_t        tri1idx = *(test_sp->support(j).begin());
+            const auto         J1      = value_t( test_sp->grid()->tri_size( tri1idx ) );
+            TGrid::triangle_t  tri1    = test_sp->grid()->triangle( tri1idx );
+        
+            for ( size_t  row = 0; row < nrows; row++ )
+            {
+                const idx_t        i       = row_ind[ row ];
+                const idx_t        tri0idx = *(ansatz_sp->support(i).begin());
+                const auto         J0      = value_t( ansatz_sp->grid()->tri_size( tri0idx ) );
+                TGrid::triangle_t  tri0    = ansatz_sp->grid()->triangle( tri0idx );
+        
+                //
+                // decide about relative position of triangles, choose quadrature points
+                // and determine points of triangles s.t. order is as expected
+                //
+
+                const tripair_quad_rule_t< float > *  rule    = nullptr;
+                uint                                  ncommon = reorder_common( tri0.vtx, tri1.vtx );
+                uint                                  torder  = this->_quad_order;
+
+                if ( this->_quad_dist_adaptive && ( ncommon == 0 ))
+                    torder = adjust_order( tri0.vtx, tri1.vtx, torder );
+                
+                rule = quad_rule( ncommon, torder );
+                
+                if ( rule == nullptr )
+                    HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+                //
+                // compute kernel at quadrature points
+                //
+
+                value_t       value       = value_t(0);
+                const size_t  npts        = rule->npts;
+                const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+
+                if ( kernel_values.size() < padded_npts )
+                    kernel_values.resize( padded_npts );
+            
+                eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kernel_values );
+            
+                for ( size_t  iv = 0; iv < npts; ++iv )
+                    value += value_t( rule->w[iv] ) * kernel_values[ iv ];
+
+                values( idx_t( row ), idx_t( col ) ) = J0 * J1 * value;
+            }// for
+        }// for
+    }// if
+}
+
+template <>
+void
 TInvarBasisQuadBEMBF< TConstFnSpace< double >, TConstFnSpace< double >, double >::eval  ( const vector< idx_t > &   row_ind,
                                                                                           const vector< idx_t > &   col_ind,
                                                                                           BLAS::Matrix< double > &  values ) const
@@ -485,6 +618,139 @@ TInvarBasisQuadBEMBF< TConstFnSpace< double >, TConstFnSpace< double >, double >
                     else
                     {
                         if ( diff / value <= this->_ada_error )
+                            break;
+                    }// else
+                }// for
+            
+                values( idx_t( row ), idx_t( col ) ) = J0 * J1 * value;
+            }// for
+        }// for
+    }// if
+    else
+    {
+        vector< value_t >  kernel_values;
+    
+        for ( size_t  col = 0; col < ncols; col++ )
+        {
+            const idx_t        j       = col_ind[ col ];
+            const idx_t        tri1idx = *(test_sp->support(j).begin());
+            const auto         J1      = value_t( test_sp->grid()->tri_size( tri1idx ) );
+            TGrid::triangle_t  tri1    = test_sp->grid()->triangle( tri1idx );
+        
+            for ( size_t  row = 0; row < nrows; row++ )
+            {
+                const idx_t        i       = row_ind[ row ];
+                const idx_t        tri0idx = *(ansatz_sp->support(i).begin());
+                const auto         J0      = value_t( ansatz_sp->grid()->tri_size( tri0idx ) );
+                TGrid::triangle_t  tri0    = ansatz_sp->grid()->triangle( tri0idx );
+
+                //
+                // decide about relative position of triangles, choose quadrature points
+                // and determine points of triangles s.t. order is as expected
+                //
+
+                const tripair_quad_rule_t< double > *  rule    = nullptr;
+                uint                                   ncommon = reorder_common( tri0.vtx, tri1.vtx );
+                uint                                   torder  = this->_quad_order;
+
+                if ( this->_quad_dist_adaptive && ( ncommon == 0 ))
+                    torder = adjust_order( tri0.vtx, tri1.vtx, torder );
+                
+                rule = quad_rule( ncommon, torder );
+                
+                if ( rule == nullptr )
+                    HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+                //
+                // compute kernel at quadrature points
+                //
+
+                value_t       value       = value_t(0);
+                const size_t  npts        = rule->npts;
+                const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+
+                if ( kernel_values.size() < padded_npts )
+                    kernel_values.resize( padded_npts );
+            
+                eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kernel_values );
+            
+                for ( size_t  iv = 0; iv < npts; ++iv )
+                    value += value_t( rule->w[iv] ) * kernel_values[ iv ];
+
+                values( idx_t( row ), idx_t( col ) ) = J0 * J1 * value;
+            }// for
+        }// for
+    }// else
+}
+
+template <>
+void
+TInvarBasisQuadBEMBF< TConstFnSpace< double >,
+                      TConstFnSpace< double >,
+                      std::complex< double > >::eval  ( const vector< idx_t > &                   row_ind,
+                                                        const vector< idx_t > &                   col_ind,
+                                                        BLAS::Matrix< std::complex< double > > &  values ) const
+{
+    const size_t        nrows     = row_ind.size();
+    const size_t        ncols     = col_ind.size();
+    const ansatzsp_t *  ansatz_sp = this->ansatz_space();
+    const testsp_t *    test_sp   = this->test_space();
+        
+    //
+    // compute integral over support triangle pair for each (i,j)
+    //
+                
+    if ( this->_quad_dist_adaptive && ( this->_ada_error > 0 ) )
+    {
+        for ( size_t  col = 0; col < ncols; col++ )
+        {
+            const idx_t        j       = col_ind[ col ];
+            const idx_t        tri1idx = *(test_sp->support(j).begin());
+            const auto         J1      = value_t( test_sp->grid()->tri_size( tri1idx ) );
+            TGrid::triangle_t  tri1    = test_sp->grid()->triangle( tri1idx );
+        
+            for ( size_t  row = 0; row < nrows; row++ )
+            {
+                const idx_t        i       = row_ind[ row ];
+                const idx_t        tri0idx = *(ansatz_sp->support(i).begin());
+                const auto         J0      = value_t( ansatz_sp->grid()->tri_size( tri0idx ) );
+                TGrid::triangle_t  tri0    = ansatz_sp->grid()->triangle( tri0idx );
+
+                //
+                // increase quadrature order until error criterion is met
+                //
+            
+                auto    value   = value_t(0);
+                bool    init    = true;
+                auto    ncommon = reorder_common( tri0.vtx, tri1.vtx );
+
+                for ( uint  torder = 1; torder <= this->_quad_order; ++torder )
+                {
+                    auto  rule = quad_rule( ncommon, torder );
+
+                    if ( rule == nullptr )
+                        HERROR( ERR_NULL, "(TInvarBasisQuadBEMBF) eval", "quadrature rule is nullptr" );
+
+                    const size_t  npts        = rule->npts;
+                    const size_t  padded_npts = CFG::Mach::simd_padded_size< value_t >( npts );
+                    auto          kvalues     = std::vector< value_t >( padded_npts );
+
+                    eval_kernel( tri0idx, tri1idx, tri0, tri1, rule, kvalues );
+
+                    auto  val = value_t( 0 );
+                
+                    for ( size_t  iv = 0; iv < npts; ++iv )
+                        val += value_t( rule->w[iv] ) * kvalues[ iv ];
+                
+                    const auto  diff = std::abs( value - val );
+
+                    value = val;
+                
+                    if ( init )
+                        init = false;
+                    else
+                    {
+                        if ( diff / std::abs( value ) <= this->_ada_error )
                             break;
                     }// else
                 }// for
