@@ -107,13 +107,13 @@ template void eigen< Matrix< double > >  ( Matrix< double > &           M,
                                            Vector< double > &           eig_val,
                                            Matrix< double > &           eig_vec );
 
-#define INST_EIGEN_HERM( type ) \
-    template void eigen_herm< Matrix< type > >   ( Matrix< type > &, Vector< type > &, Matrix< type > & )
+#define INST_EIGEN_HERM( type, real_t )                                 \
+    template void eigen_herm< Matrix< type > >   ( Matrix< type > &, Vector< real_t > &, Matrix< type > & )
 
-INST_EIGEN_HERM( float );
-INST_EIGEN_HERM( double );
-INST_EIGEN_HERM( std::complex< float > );
-INST_EIGEN_HERM( std::complex< double > );
+INST_EIGEN_HERM( float, float );
+INST_EIGEN_HERM( double, double );
+INST_EIGEN_HERM( std::complex< float >, float );
+INST_EIGEN_HERM( std::complex< double >, double );
 
 template void eigen< Matrix< float > >   ( Matrix< float > &            M,
                                            const Range &                eig_range,

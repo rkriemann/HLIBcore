@@ -1781,9 +1781,9 @@ eigen ( T1 &                              M,
 //!
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value, void >
-eigen_herm ( T1 &                              M,
-             Vector< typename T1::value_t > &  eig_val,
-             Matrix< typename T1::value_t > &  eig_vec );
+eigen_herm ( T1 &                                             M,
+             Vector< real_type_t< typename T1::value_t > > &  eig_val,
+             Matrix< typename T1::value_t > &                 eig_vec );
 
 //!
 //! \ingroup  BLAS_Module

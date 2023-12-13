@@ -1367,9 +1367,9 @@ eigen ( T1 &                              M,
 //
 template < typename T1 >
 std::enable_if_t< is_matrix< T1 >::value, void >
-eigen_herm ( T1 &                              M,
-             Vector< typename T1::value_t > &  eig_val,
-             Matrix< typename T1::value_t > &  eig_vec )
+eigen_herm ( T1 &                                             M,
+             Vector< real_type_t< typename T1::value_t > > &  eig_val,
+             Matrix< typename T1::value_t > &                 eig_vec )
 {
     using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
@@ -1389,8 +1389,10 @@ eigen_herm ( T1 &                              M,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
         
+    if ( eig_val.length() != n )
+        eig_val = std::move( Vector< real_t >( n ) );
+    
     const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    Vector< real_t >   seig_val( n );
     vector< value_t >  work( lwork );
     vector< real_t >   rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
     
@@ -1399,15 +1401,9 @@ eigen_herm ( T1 &                              M,
     MKL_SEQ_START;
     
     heev( 'V', 'L', blas_int_t(n), eig_vec.data(), blas_int_t(eig_vec.col_stride()),
-          seig_val.data(), work.data(), lwork, rwork.data(), info );
+          eig_val.data(), work.data(), lwork, rwork.data(), info );
     
     MKL_SEQ_END;
-    
-    if ( eig_val.length() != n )
-        eig_val = std::move( Vector< value_t >( n ) );
-    
-    for ( idx_t  i = 0; i < idx_t(n); ++i )
-        eig_val(i) = seig_val(i);
     
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
