@@ -710,6 +710,126 @@ TBlockMatrix< value_t >::apply_add  ( const value_t                    alpha,
     }// if
 }
 
+template < typename value_t >
+void
+TBlockMatrix< value_t >::apply_add  ( const value_t                    alpha,
+                                      const BLAS::Matrix< value_t > &  X,
+                                      BLAS::Matrix< value_t > &        Y,
+                                      const matop_t                    op ) const
+{
+    if ( alpha == value_t(0) )
+        return;
+        
+    if ( op == apply_normal )
+    {
+        const matop_t  sym_op = this->is_symmetric() ? apply_transposed : apply_adjoint;
+            
+        for ( uint i = 0; i < nblock_rows(); i++ )
+        {
+            for ( uint j = 0; j < nblock_cols(); j++ )
+            {
+                const auto  A_ij = block(i,j);
+                    
+                if ( A_ij == nullptr )
+                    continue;
+
+                {
+                    // multiply with sub block
+                    auto  TX = B::Matrix< value_t >( X, A_ij->col_is() - this->col_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                
+                    A_ij->apply_add( alpha, TX, TY, op );
+                }
+
+                // in case of symmetry, the same again but transposed
+                if ( ! this->is_nonsym() && ( i > j ) && ( block( j, i ) == nullptr  ))
+                {
+                    auto  TX = B::Matrix< value_t >( X, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->col_is() - this->col_ofs(), B::Range::all );
+
+                    A_ij->apply_add( alpha, TX, TY, sym_op );
+                }// if
+            }// for
+        }// for
+    }// if
+    else if ( op == apply_transposed )
+    {
+        for ( uint i = 0; i < nblock_rows(); i++ )
+        {
+            for ( uint j = 0; j < nblock_cols(); j++ )
+            {
+                const auto  A_ij = block(i,j);
+                    
+                if ( A_ij == nullptr )
+                    continue;
+
+                {
+                    // multiply with sub block
+                    auto  TX = B::Matrix< value_t >( X, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->col_is() - this->col_ofs(), B::Range::all );
+                    
+                    A_ij->apply_add( alpha, TX, TY, op );
+                }
+
+                // in case of symmetry, the same again but transposed
+                if ( ! this->is_nonsym() && ( i > j ) && ( block( j, i ) == nullptr  ))
+                {
+                    auto  TX = B::Matrix< value_t >( X, A_ij->col_is() - this->col_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                        
+                    if ( this->is_hermitian() )
+                    {
+                        // multiply with conjugated but not transposed matrix B
+                        // via: y = conj(B) x  ⇔  conj(y) = B conj(x)
+                        HERROR( ERR_NOT_IMPL, "", "" );
+                    }// if
+                    else
+                    {
+                        A_ij->apply_add( alpha, TX, TY, apply_normal );
+                    }// else
+                }// if
+            }// for
+        }// for
+    }// if
+    else if ( op == apply_adjoint )
+    {
+        for ( uint i = 0; i < block_rows(); i++ )
+            for ( uint j = 0; j < block_cols(); j++ )
+            {
+                const auto  A_ij = block(i,j);
+                    
+                if ( A_ij == nullptr )
+                    continue;
+
+                {
+                    // multiply with sub block
+                    auto  TX = B::Matrix< value_t >( X, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->col_is() - this->col_ofs(), B::Range::all );
+                    
+                    A_ij->apply_add( alpha, TX, TY, op );
+                }
+
+                // in case of symmetry, the same again but transposed
+                if ( ! this->is_nonsym() && ( i > j ) && ( block( j, i ) == nullptr ))
+                {
+                    auto  TX = B::Matrix< value_t >( X, A_ij->col_is() - this->col_ofs(), B::Range::all );
+                    auto  TY = B::Matrix< value_t >( Y, A_ij->row_is() - this->row_ofs(), B::Range::all );
+                        
+                    if ( this->is_symmetric() )
+                    {
+                        // multiply with conjugated but not transposed matrix B
+                        // via: y = conj(B) x <=> conj(y) = B conj(x)
+                        HERROR( ERR_NOT_IMPL, "", "" );
+                    }// if
+                    else
+                    {
+                        A_ij->apply_add( alpha, TX, TY, apply_normal );
+                    }// else
+                }// if
+            }// for
+    }// if
+}
+
 ///////////////////////////////////////////
 //
 // block-handling

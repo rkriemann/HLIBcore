@@ -249,6 +249,11 @@ public:
                                 BLAS::Vector< value_t > &        y,
                                 const matop_t                    op = apply_normal ) const;
 
+    virtual void  apply_add   ( const value_t                    alpha,
+                                const BLAS::Matrix< value_t > &  X,
+                                BLAS::Matrix< value_t > &        Y,
+                                const matop_t                    op = apply_normal ) const;
+
     using TMatrix< value_t >::apply_add;
 
     /////////////////////////////////////////////////
