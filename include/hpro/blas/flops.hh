@@ -12,30 +12,32 @@
 #ifndef _FLOPS_H_
 #define _FLOPS_H_
 
+using flops_t = double;
+
 /************************************************************************
  *           Generic formula coming from LAWN 41
  ***********************************************************************/
 
-#define FMULS_DOT(__n)      (double(__n))
-#define FADDS_DOT(__n)      (double(__n)-1.)
+#define FMULS_DOT(__n)      (flops_t(__n))
+#define FADDS_DOT(__n)      (flops_t(__n)-1.)
 
-#define FMULS_AXPY(__n)      (double(__n))
-#define FADDS_AXPY(__n)      (double(__n))
+#define FMULS_AXPY(__n)      (flops_t(__n))
+#define FADDS_AXPY(__n)      (flops_t(__n))
 
-#define FMULS_GER(__m, __n) (double(__m) * double(__n) + double(__m))
-#define FADDS_GER(__m, __n) (double(__m) * double(__n)              )
+#define FMULS_GER(__m, __n) (flops_t(__m) * flops_t(__n) + flops_t(__m))
+#define FADDS_GER(__m, __n) (flops_t(__m) * flops_t(__n)              )
 
-#define FMULS_TRMV(__n) (0.5 * double(__n) * ( double(__n) + 1. ) + 2.*double(__n))
-#define FADDS_TRMV(__n) (0.5 * double(__n) * ( double(__n) - 1. ))
+#define FMULS_TRMV(__n) (0.5 * flops_t(__n) * ( flops_t(__n) + 1. ) + 2.*flops_t(__n))
+#define FADDS_TRMV(__n) (0.5 * flops_t(__n) * ( flops_t(__n) - 1. ))
 
-#define FMULS_TRSV(__n) (0.5 * double(__n) * ( double(__n) + 1. ))
-#define FADDS_TRSV(__n) (0.5 * double(__n) * ( double(__n) - 1. ))
+#define FMULS_TRSV(__n) (0.5 * flops_t(__n) * ( flops_t(__n) + 1. ))
+#define FADDS_TRSV(__n) (0.5 * flops_t(__n) * ( flops_t(__n) - 1. ))
 
 /*
  * Level 2 BLAS 
  */  
-#define FMULS_GEMV(__m, __n) (double(__m) * double(__n) + 2. * double(__m))
-#define FADDS_GEMV(__m, __n) (double(__m) * double(__n)                   )
+#define FMULS_GEMV(__m, __n) (flops_t(__m) * flops_t(__n) + 2. * flops_t(__m))
+#define FADDS_GEMV(__m, __n) (flops_t(__m) * flops_t(__n)                   )
 
 #define FMULS_SYMV(__n) FMULS_GEMV( (__n), (__n) )
 #define FADDS_SYMV(__n) FADDS_GEMV( (__n), (__n) )
@@ -45,26 +47,26 @@
 /*
  * Level 3 BLAS 
  */
-#define FMULS_GEMM(__m, __n, __k) (double(__m) * double(__n) * double(__k))
-#define FADDS_GEMM(__m, __n, __k) (double(__m) * double(__n) * double(__k))
+#define FMULS_GEMM(__m, __n, __k) (flops_t(__m) * flops_t(__n) * flops_t(__k))
+#define FADDS_GEMM(__m, __n, __k) (flops_t(__m) * flops_t(__n) * flops_t(__k))
 
 #define FMULS_SYMM(__side, __m, __n) ( ( (__side) == 'L' ) ? FMULS_GEMM((__m), (__m), (__n)) : FMULS_GEMM((__m), (__n), (__n)) )
 #define FADDS_SYMM(__side, __m, __n) ( ( (__side) == 'L' ) ? FADDS_GEMM((__m), (__m), (__n)) : FADDS_GEMM((__m), (__n), (__n)) )
 #define FMULS_HEMM FMULS_SYMM
 #define FADDS_HEMM FADDS_SYMM
 
-#define FMULS_SYRK(__k, __n) (0.5 * double(__k) * double(__n) * (double(__n)+1.))
-#define FADDS_SYRK(__k, __n) (0.5 * double(__k) * double(__n) * (double(__n)+1.))
+#define FMULS_SYRK(__k, __n) (0.5 * flops_t(__k) * flops_t(__n) * (flops_t(__n)+1.))
+#define FADDS_SYRK(__k, __n) (0.5 * flops_t(__k) * flops_t(__n) * (flops_t(__n)+1.))
 #define FMULS_HERK FMULS_SYRK
 #define FADDS_HERK FADDS_SYRK
 
-#define FMULS_SYR2K(__n, __k) (double(__k) * double(__n) * double(__n)              )
-#define FADDS_SYR2K(__n, __k) (double(__k) * double(__n) * double(__n) + double(__n))
+#define FMULS_SYR2K(__n, __k) (flops_t(__k) * flops_t(__n) * flops_t(__n)              )
+#define FADDS_SYR2K(__n, __k) (flops_t(__k) * flops_t(__n) * flops_t(__n) + flops_t(__n))
 #define FMULS_HER2K FMULS_SYR2K
 #define FADDS_HER2K FADDS_SYR2K
 
-#define FMULS_TRMM_2(__m, __n) (0.5 * double(__n) * double(__m) * (double(__m)+1.))
-#define FADDS_TRMM_2(__m, __n) (0.5 * double(__n) * double(__m) * (double(__m)-1.))
+#define FMULS_TRMM_2(__m, __n) (0.5 * flops_t(__n) * flops_t(__m) * (flops_t(__m)+1.))
+#define FADDS_TRMM_2(__m, __n) (0.5 * flops_t(__n) * flops_t(__m) * (flops_t(__m)-1.))
 
 
 #define FMULS_TRMM(__side, __m, __n) ( ( (__side) == 'L' ) ? FMULS_TRMM_2((__m), (__n)) : FMULS_TRMM_2((__n), (__m)) )
@@ -76,25 +78,25 @@
 /*
  * Lapack
  */
-#define FMULS_GETRF(__m, __n) ( ((__m) < (__n)) ? (0.5 * double(__m) * (double(__m) * (double(__n) - (1./3.) * (__m) - 1. ) + double(__n)) + (2. / 3.) * (__m)) \
-                                :                 (0.5 * double(__n) * (double(__n) * (double(__m) - (1./3.) * (__n) - 1. ) + double(__m)) + (2. / 3.) * (__n)) )
-#define FADDS_GETRF(__m, __n) ( ((__m) < (__n)) ? (0.5 * double(__m) * (double(__m) * (double(__n) - (1./3.) * (__m)      ) - double(__n)) + (1. / 6.) * (__m)) \
-                                :                 (0.5 * double(__n) * (double(__n) * (double(__m) - (1./3.) * (__n)      ) - double(__m)) + (1. / 6.) * (__n)) )
+#define FMULS_GETRF(__m, __n) ( ((__m) < (__n)) ? (0.5 * flops_t(__m) * (flops_t(__m) * (flops_t(__n) - (1./3.) * (__m) - 1. ) + flops_t(__n)) + (2. / 3.) * (__m)) \
+                                :                 (0.5 * flops_t(__n) * (flops_t(__n) * (flops_t(__m) - (1./3.) * (__n) - 1. ) + flops_t(__m)) + (2. / 3.) * (__n)) )
+#define FADDS_GETRF(__m, __n) ( ((__m) < (__n)) ? (0.5 * flops_t(__m) * (flops_t(__m) * (flops_t(__n) - (1./3.) * (__m)      ) - flops_t(__n)) + (1. / 6.) * (__m)) \
+                                :                 (0.5 * flops_t(__n) * (flops_t(__n) * (flops_t(__m) - (1./3.) * (__n)      ) - flops_t(__m)) + (1. / 6.) * (__n)) )
 
-#define FMULS_GETRI(__n) ( double(__n) * ((5. / 6.) + double(__n) * ((2. / 3.) * double(__n) + 0.5)) )
-#define FADDS_GETRI(__n) ( double(__n) * ((5. / 6.) + double(__n) * ((2. / 3.) * double(__n) - 1.5)) )
+#define FMULS_GETRI(__n) ( flops_t(__n) * ((5. / 6.) + flops_t(__n) * ((2. / 3.) * flops_t(__n) + 0.5)) )
+#define FADDS_GETRI(__n) ( flops_t(__n) * ((5. / 6.) + flops_t(__n) * ((2. / 3.) * flops_t(__n) - 1.5)) )
 
-#define FMULS_GETRS(__n, __nrhs) (double(__nrhs) * double(__n) *  double(__n)       )
-#define FADDS_GETRS(__n, __nrhs) (double(__nrhs) * double(__n) * (double(__n) - 1. ))
+#define FMULS_GETRS(__n, __nrhs) (flops_t(__nrhs) * flops_t(__n) *  flops_t(__n)       )
+#define FADDS_GETRS(__n, __nrhs) (flops_t(__nrhs) * flops_t(__n) * (flops_t(__n) - 1. ))
 
-#define FMULS_POTRF(__n) (double(__n) * (((1. / 6.) * double(__n) + 0.5) * double(__n) + (1. / 3.)))
-#define FADDS_POTRF(__n) (double(__n) * (((1. / 6.) * double(__n)      ) * double(__n) - (1. / 6.)))
+#define FMULS_POTRF(__n) (flops_t(__n) * (((1. / 6.) * flops_t(__n) + 0.5) * flops_t(__n) + (1. / 3.)))
+#define FADDS_POTRF(__n) (flops_t(__n) * (((1. / 6.) * flops_t(__n)      ) * flops_t(__n) - (1. / 6.)))
 
-#define FMULS_POTRI(__n) ( double(__n) * ((2. / 3.) + double(__n) * ((1. / 3.) * double(__n) + 1. )) )
-#define FADDS_POTRI(__n) ( double(__n) * ((1. / 6.) + double(__n) * ((1. / 3.) * double(__n) - 0.5)) )
+#define FMULS_POTRI(__n) ( flops_t(__n) * ((2. / 3.) + flops_t(__n) * ((1. / 3.) * flops_t(__n) + 1. )) )
+#define FADDS_POTRI(__n) ( flops_t(__n) * ((1. / 6.) + flops_t(__n) * ((1. / 3.) * flops_t(__n) - 0.5)) )
 
-#define FMULS_POTRS(__n, __nrhs) (double(__nrhs) * double(__n) * (double(__n) + 1. ))
-#define FADDS_POTRS(__n, __nrhs) (double(__nrhs) * double(__n) * (double(__n) - 1. ))
+#define FMULS_POTRS(__n, __nrhs) (flops_t(__nrhs) * flops_t(__n) * (flops_t(__n) + 1. ))
+#define FADDS_POTRS(__n, __nrhs) (flops_t(__nrhs) * flops_t(__n) * (flops_t(__n) - 1. ))
 
 //SPBTRF
 //SPBTRS
@@ -102,24 +104,24 @@
 //SSYTRI
 //SSYTRS
 
-#define FMULS_GEQRF(__m, __n) (((__m) > (__n)) ? (double(__n) * (double(__n) * (  0.5-(1./3.) * double(__n) + double(__m)) +    double(__m) + 23. / 6.)) \
-                               :                 (double(__m) * (double(__m) * ( -0.5-(1./3.) * double(__m) + double(__n)) + 2.*double(__n) + 23. / 6.)) )
-#define FADDS_GEQRF(__m, __n) (((__m) > (__n)) ? (double(__n) * (double(__n) * (  0.5-(1./3.) * double(__n) + double(__m))                    +  5. / 6.)) \
-                               :                 (double(__m) * (double(__m) * ( -0.5-(1./3.) * double(__m) + double(__n)) +    double(__n) +  5. / 6.)) )
+#define FMULS_GEQRF(__m, __n) (((__m) > (__n)) ? (flops_t(__n) * (flops_t(__n) * (  0.5-(1./3.) * flops_t(__n) + flops_t(__m)) +    flops_t(__m) + 23. / 6.)) \
+                               :                 (flops_t(__m) * (flops_t(__m) * ( -0.5-(1./3.) * flops_t(__m) + flops_t(__n)) + 2.*flops_t(__n) + 23. / 6.)) )
+#define FADDS_GEQRF(__m, __n) (((__m) > (__n)) ? (flops_t(__n) * (flops_t(__n) * (  0.5-(1./3.) * flops_t(__n) + flops_t(__m))                    +  5. / 6.)) \
+                               :                 (flops_t(__m) * (flops_t(__m) * ( -0.5-(1./3.) * flops_t(__m) + flops_t(__n)) +    flops_t(__n) +  5. / 6.)) )
 
 #define FMULS_GEQLF(__m, __n) FMULS_GEQRF(__m, __n)
 #define FADDS_GEQLF(__m, __n) FADDS_GEQRF(__m, __n)
 
-#define FMULS_GERQF(__m, __n) (((__m) > (__n)) ? (double(__n) * (double(__n) * (  0.5-(1./3.) * double(__n) + double(__m)) +    double(__m) + 29. / 6.)) \
-                               :                 (double(__m) * (double(__m) * ( -0.5-(1./3.) * double(__m) + double(__n)) + 2.*double(__n) + 29. / 6.)) )
-#define FADDS_GERQF(__m, __n) (((__m) > (__n)) ? (double(__n) * (double(__n) * ( -0.5-(1./3.) * double(__n) + double(__m)) +    double(__m) +  5. / 6.)) \
-                               :                 (double(__m) * (double(__m) * (  0.5-(1./3.) * double(__m) + double(__n)) +                  +  5. / 6.)) )
+#define FMULS_GERQF(__m, __n) (((__m) > (__n)) ? (flops_t(__n) * (flops_t(__n) * (  0.5-(1./3.) * flops_t(__n) + flops_t(__m)) +    flops_t(__m) + 29. / 6.)) \
+                               :                 (flops_t(__m) * (flops_t(__m) * ( -0.5-(1./3.) * flops_t(__m) + flops_t(__n)) + 2.*flops_t(__n) + 29. / 6.)) )
+#define FADDS_GERQF(__m, __n) (((__m) > (__n)) ? (flops_t(__n) * (flops_t(__n) * ( -0.5-(1./3.) * flops_t(__n) + flops_t(__m)) +    flops_t(__m) +  5. / 6.)) \
+                               :                 (flops_t(__m) * (flops_t(__m) * (  0.5-(1./3.) * flops_t(__m) + flops_t(__n)) +                  +  5. / 6.)) )
 
 #define FMULS_GELQF(__m, __n) FMULS_GERQF(__m, __n)
 #define FADDS_GELQF(__m, __n) FADDS_GERQF(__m, __n)
 
-#define FMULS_UNGQR(__m, __n, __k) (double(__k) * (2.* double(__m) * double(__n) +            2. * double(__n) - 5./3. + double(__k) * ( 2./3. * double(__k) - (double(__m) + double(__n)) - 1.)))
-#define FADDS_UNGQR(__m, __n, __k) (double(__k) * (2.* double(__m) * double(__n) + double(__n) - double(__m) + 1./3. + double(__k) * ( 2./3. * double(__k) - (double(__m) + double(__n))     )))
+#define FMULS_UNGQR(__m, __n, __k) (flops_t(__k) * (2.* flops_t(__m) * flops_t(__n) +            2. * flops_t(__n) - 5./3. + flops_t(__k) * ( 2./3. * flops_t(__k) - (flops_t(__m) + flops_t(__n)) - 1.)))
+#define FADDS_UNGQR(__m, __n, __k) (flops_t(__k) * (2.* flops_t(__m) * flops_t(__n) + flops_t(__n) - flops_t(__m) + 1./3. + flops_t(__k) * ( 2./3. * flops_t(__k) - (flops_t(__m) + flops_t(__n))     )))
 #define FMULS_UNGQL FMULS_UNGQR
 #define FMULS_ORGQR FMULS_UNGQR
 #define FMULS_ORGQL FMULS_UNGQR
@@ -127,8 +129,8 @@
 #define FADDS_ORGQR FADDS_UNGQR
 #define FADDS_ORGQL FADDS_UNGQR
 
-#define FMULS_UNGRQ(__m, __n, __k) (double(__k) * (2.* double(__m) * double(__n) + double(__m) + double(__n) - 2./3. + double(__k) * ( 2./3. * double(__k) - (double(__m) + double(__n)) - 1.)))
-#define FADDS_UNGRQ(__m, __n, __k) (double(__k) * (2.* double(__m) * double(__n) + double(__m) - double(__n) + 1./3. + double(__k) * ( 2./3. * double(__k) - (double(__m) + double(__n))     )))
+#define FMULS_UNGRQ(__m, __n, __k) (flops_t(__k) * (2.* flops_t(__m) * flops_t(__n) + flops_t(__m) + flops_t(__n) - 2./3. + flops_t(__k) * ( 2./3. * flops_t(__k) - (flops_t(__m) + flops_t(__n)) - 1.)))
+#define FADDS_UNGRQ(__m, __n, __k) (flops_t(__k) * (2.* flops_t(__m) * flops_t(__n) + flops_t(__m) - flops_t(__n) + 1./3. + flops_t(__k) * ( 2./3. * flops_t(__k) - (flops_t(__m) + flops_t(__n))     )))
 #define FMULS_UNGLQ FMULS_UNGRQ
 #define FMULS_ORGRQ FMULS_UNGRQ
 #define FMULS_ORGLQ FMULS_UNGRQ
@@ -136,27 +138,27 @@
 #define FADDS_ORGRQ FADDS_UNGRQ
 #define FADDS_ORGLQ FADDS_UNGRQ
 
-#define FMULS_GEQRS(__m, __n, __nrhs) (double(__nrhs) * (double(__n) * ( 2.* double(__m) - 0.5 * double(__n) + 2.5)))
-#define FADDS_GEQRS(__m, __n, __nrhs) (double(__nrhs) * (double(__n) * ( 2.* double(__m) - 0.5 * double(__n) + 0.5)))
+#define FMULS_GEQRS(__m, __n, __nrhs) (flops_t(__nrhs) * (flops_t(__n) * ( 2.* flops_t(__m) - 0.5 * flops_t(__n) + 2.5)))
+#define FADDS_GEQRS(__m, __n, __nrhs) (flops_t(__nrhs) * (flops_t(__n) * ( 2.* flops_t(__m) - 0.5 * flops_t(__n) + 0.5)))
 
 //UNMQR, UNMLQ, UNMQL, UNMRQ (Left)
 //UNMQR, UNMLQ, UNMQL, UNMRQ (Right)
 
-#define FMULS_TRTRI(__n) (double(__n) * (double(__n) * ( 1./6. * double(__n) + 0.5 ) + 1./3.))
-#define FADDS_TRTRI(__n) (double(__n) * (double(__n) * ( 1./6. * double(__n) - 0.5 ) + 1./3.))
+#define FMULS_TRTRI(__n) (flops_t(__n) * (flops_t(__n) * ( 1./6. * flops_t(__n) + 0.5 ) + 1./3.))
+#define FADDS_TRTRI(__n) (flops_t(__n) * (flops_t(__n) * ( 1./6. * flops_t(__n) - 0.5 ) + 1./3.))
 
-#define FMULS_GEHRD(__n) ( double(__n) * (double(__n) * (5./3. *double(__n) + 0.5) - 7./6.) - 13. )
-#define FADDS_GEHRD(__n) ( double(__n) * (double(__n) * (5./3. *double(__n) - 1. ) - 2./3.) -  8. )
+#define FMULS_GEHRD(__n) ( flops_t(__n) * (flops_t(__n) * (5./3. *flops_t(__n) + 0.5) - 7./6.) - 13. )
+#define FADDS_GEHRD(__n) ( flops_t(__n) * (flops_t(__n) * (5./3. *flops_t(__n) - 1. ) - 2./3.) -  8. )
 
-#define FMULS_SYTRD(__n) ( double(__n) *  ( double(__n) * ( 2./3. * double(__n) + 2.5 ) - 1./6. ) - 15.)
-#define FADDS_SYTRD(__n) ( double(__n) *  ( double(__n) * ( 2./3. * double(__n) + 1.  ) - 8./3. ) -  4.)
+#define FMULS_SYTRD(__n) ( flops_t(__n) *  ( flops_t(__n) * ( 2./3. * flops_t(__n) + 2.5 ) - 1./6. ) - 15.)
+#define FADDS_SYTRD(__n) ( flops_t(__n) *  ( flops_t(__n) * ( 2./3. * flops_t(__n) + 1.  ) - 8./3. ) -  4.)
 #define FMULS_HETRD FMULS_SYTRD
 #define FADDS_HETRD FADDS_SYTRD
 
-#define FMULS_GEBRD(__m, __n) ( ((__m) >= (__n)) ? (double(__n) * (double(__n) * (2. * double(__m) - 2./3. * double(__n) + 2. )                 + 20./3.)) \
-                                :                  (double(__m) * (double(__m) * (2. * double(__n) - 2./3. * double(__m) + 2. )                 + 20./3.)) )
-#define FADDS_GEBRD(__m, __n) ( ((__m) >= (__n)) ? (double(__n) * (double(__n) * (2. * double(__m) - 2./3. * double(__n) + 1. ) - double(__m) +  5./3.)) \
-                                :                  (double(__m) * (double(__m) * (2. * double(__n) - 2./3. * double(__m) + 1. ) - double(__n) +  5./3.)) )
+#define FMULS_GEBRD(__m, __n) ( ((__m) >= (__n)) ? (flops_t(__n) * (flops_t(__n) * (2. * flops_t(__m) - 2./3. * flops_t(__n) + 2. )                 + 20./3.)) \
+                                :                  (flops_t(__m) * (flops_t(__m) * (2. * flops_t(__n) - 2./3. * flops_t(__m) + 2. )                 + 20./3.)) )
+#define FADDS_GEBRD(__m, __n) ( ((__m) >= (__n)) ? (flops_t(__n) * (flops_t(__n) * (2. * flops_t(__m) - 2./3. * flops_t(__n) + 1. ) - flops_t(__m) +  5./3.)) \
+                                :                  (flops_t(__m) * (flops_t(__m) * (2. * flops_t(__n) - 2./3. * flops_t(__m) + 1. ) - flops_t(__n) +  5./3.)) )
 
 
 /*******************************************************************************
@@ -188,10 +190,10 @@
 #define FLOPS_DGER(__m, __n) (     FMULS_GER((__m), (__n)) +       FADDS_GER((__m), (__n)) )
 #define FLOPS_SGER(__m, __n) (     FMULS_GER((__m), (__n)) +       FADDS_GER((__m), (__n)) )
  
-#define FLOPS_ZGESVD(__m, __n) (14. * double(__m)*double(__n)*double(__n) + 8. * double(__n) * double(__n) * double(__n))
-#define FLOPS_CGESVD(__m, __n) (14. * double(__m)*double(__n)*double(__n) + 8. * double(__n) * double(__n) * double(__n))
-#define FLOPS_DGESVD(__m, __n) (14. * double(__m)*double(__n)*double(__n) + 8. * double(__n) * double(__n) * double(__n))
-#define FLOPS_SGESVD(__m, __n) (14. * double(__m)*double(__n)*double(__n) + 8. * double(__n) * double(__n) * double(__n))
+#define FLOPS_ZGESVD(__m, __n) (14. * flops_t(__m)*flops_t(__n)*flops_t(__n) + 8. * flops_t(__n) * flops_t(__n) * flops_t(__n))
+#define FLOPS_CGESVD(__m, __n) (14. * flops_t(__m)*flops_t(__n)*flops_t(__n) + 8. * flops_t(__n) * flops_t(__n) * flops_t(__n))
+#define FLOPS_DGESVD(__m, __n) (14. * flops_t(__m)*flops_t(__n)*flops_t(__n) + 8. * flops_t(__n) * flops_t(__n) * flops_t(__n))
+#define FLOPS_SGESVD(__m, __n) (14. * flops_t(__m)*flops_t(__n)*flops_t(__n) + 8. * flops_t(__n) * flops_t(__n) * flops_t(__n))
  
 #define FLOPS_ZGESDD(__m, __n) FLOPS_ZGESVD(__m,__n)
 #define FLOPS_CGESDD(__m, __n) FLOPS_CGESVD(__m,__n)
