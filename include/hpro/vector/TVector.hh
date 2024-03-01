@@ -187,7 +187,10 @@ public:
     //
     
     //! return size in bytes used by this object
-    virtual size_t  byte_size  () const { return sizeof(_ofs); }
+    virtual size_t  byte_size        () const { return sizeof(_ofs); }
+
+    //! return size of (floating point) data in bytes handled by this object
+    virtual size_t data_byte_size    () const { return 0; }
 
     //! return size in bytes used by this distributed object,
     //! i.e. of all distributed sub vectors

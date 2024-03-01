@@ -1240,12 +1240,39 @@ TBlockMatrix< value_t >::byte_size () const
     {
         for ( uint j = 0; j < block_cols(); j++ )
         {
-            const TMatrix< value_t >  * A_ij = block(i,j);
+            auto  A_ij = block(i,j);
             
             if ( A_ij != nullptr )
             {
                 size += ulong(A_ij->byte_size());
             }// if
+        }// for
+    }// for
+
+    return size;
+}
+
+//
+// return size of (floating point) data in bytes handled by this object
+//
+template < typename value_t >
+size_t
+TBlockMatrix< value_t >::data_byte_size () const
+{
+    size_t  size = 0;
+    
+    //
+    // compute memory consumption of sub blocks
+    //
+
+    for ( uint i = 0; i < block_rows(); i++ )
+    {
+        for ( uint j = 0; j < block_cols(); j++ )
+        {
+            auto  A_ij = block(i,j);
+            
+            if ( A_ij != nullptr )
+                size += A_ij->data_byte_size();
         }// for
     }// for
 

@@ -331,6 +331,12 @@ public:
         return sizeof( value_t ) * _length[0] * _length[1] + sizeof(_length) + sizeof(_stride) + sizeof(MemBlock< value_t >);
     }
 
+    //! return size of (floating point) data in bytes handled by this object
+    size_t  data_byte_size () const
+    {
+        return sizeof( value_t ) * _length[0] * _length[1];
+    }
+
     //
     // tests
     //

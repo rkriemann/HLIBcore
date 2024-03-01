@@ -313,6 +313,9 @@ public:
     //! return size in bytes used by this object
     virtual size_t byte_size () const;
 
+    //! return size of (floating point) data in bytes handled by this object
+    virtual size_t data_byte_size () const;
+
     //! copy complete structural information from given matrix
     virtual void copy_struct_from ( const TMatrix< value_t > *  M );
     
