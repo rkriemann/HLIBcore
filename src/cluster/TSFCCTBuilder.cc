@@ -6,6 +6,7 @@
 // Copyright   : Max Planck Institute MIS 2004-2023. All Rights Reserved.
 //
 
+#include <array>
 #include <algorithm>
 
 #include <hpro/config.h>
