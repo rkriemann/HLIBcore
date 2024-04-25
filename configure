@@ -393,7 +393,7 @@ def usage ( status ):
     print( '    --with-netcdf              turn on/off usage of NetCDF' )
     print( '      --netcdf-cflags          flags to compile with NetCDF' )
     print( '      --netcdf-lflags          flags to link with NetCDF' )
-    print( '    --with-cgal                turn on/off usage of CGAL' )
+    print( '    --with-cgal[=dir]          turn on/off usage of CGAL with optional prefix "dir"' )
     print( '      --cgal-cflags            flags to compile with CGAL' )
     print( '    --with-amdlibm[=dir]       turn on/off usage of AMDLIBM with optional prefix "dir"' )
     print( '      --amdlibm-cflags=lflags  flags to compile with AMDLIBM' )
@@ -493,9 +493,9 @@ def parse_cmdline ( args, env ):
                                  [ '--netcdf-cflags',    'required', env['NETCDFCFLAGS'] ],
                                  [ '--netcdf-lflags',    'required', env['NETCDFLFLAGS'] ],
 
-                                 [ '--with-cgal',       'none',     None ],
-                                 [ '--without-cgal',    'none',     None ],
-                                 [ '--cgal-cflags',     'required', env['CGALCFLAGS'] ],
+                                 [ '--with-cgal',      'optional', env['CGALDIR'] ],
+                                 [ '--without-cgal',   'none',     None ],
+                                 [ '--cgal-cflags',    'required', env['CGALCFLAGS'] ],
 
                                  [ '--with-amdlibm',    'optional', env['AMDLIBMDIR'] ],
                                  [ '--without-amdlibm', 'none',     None ],
@@ -684,6 +684,7 @@ def parse_cmdline ( args, env ):
 
         elif opt in ( '--with-cgal' ):
             env['CGAL'] = 'yes'
+            env['CGALDIR'] = arg
         elif opt in ( '--without-cgal' ):
             env['CGAL'] = 'no'
         elif opt in ( '--cgal-cflags' ):
