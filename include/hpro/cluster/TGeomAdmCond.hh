@@ -107,6 +107,34 @@ public:
 
 //!
 //! \ingroup  Cluster_Module
+//! \class    TWeakGeomAdmCond
+//! \brief    blocks are admissible if clusters have positive distance
+//!
+class TWeakGeomAdmCond : public TAdmCondition
+{
+public:
+    ///////////////////////////////////////////
+    //
+    // constructor and destructor
+    //
+
+    TWeakGeomAdmCond ()
+            : TAdmCondition()
+    {}
+
+    virtual ~TWeakGeomAdmCond () {}
+
+    ///////////////////////////////////////////
+    //
+    // check block-cluster if admissible
+    //
+
+    //! return true if \a cl is either weakly or strongly admissible
+    virtual bool is_adm ( const TBlockCluster * cl ) const;
+};
+
+//!
+//! \ingroup  Cluster_Module
 //! \class    THiLoFreqGeomAdmCond
 //! \brief    Admissibility for high and low frequency regimes
 //!

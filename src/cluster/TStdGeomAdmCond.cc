@@ -152,4 +152,45 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     return TStdGeomAdmCond::is_adm( c );
 }
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//
+// TWeakGeomAdmCond (implementation)
+//
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+//
+// test positive distance for admissibility
+//
+bool
+TWeakGeomAdmCond::is_adm ( const TBlockCluster * c ) const
+{
+    const TGeomCluster  * rowcl, * colcl;
+
+    if ( ! IS_TYPE( c->rowcl(), TGeomCluster ) ||
+         ! IS_TYPE( c->colcl(), TGeomCluster ) )
+        HERROR( ERR_CT_TYPE, "(TWeakGeomAdmCond) is_adm", 
+               c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
+    
+    rowcl = cptrcast( c->rowcl(), TGeomCluster );
+    colcl = cptrcast( c->colcl(), TGeomCluster );
+
+    if ( rowcl == colcl )
+        return false;
+
+    //
+    // if both clusters are domain clusters it is admissible (since rowcl != colcl)
+    //
+
+    if ( rowcl->is_domain() && colcl->is_domain() )
+        return true;
+
+    //
+    // test distance between clusters
+    //
+    
+    return rowcl->distance( colcl ) > 0.0;
+}
+
 }// namespace Hpro
