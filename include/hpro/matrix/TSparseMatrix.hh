@@ -343,6 +343,9 @@ public:
     //! return size in bytes used by this object
     virtual size_t byte_size () const;
 
+    //! return size of (floating point) data in bytes handled by this object
+    virtual size_t data_byte_size () const { return n_non_zero() * sizeof(value_t); }
+
     //
     // tests
     //

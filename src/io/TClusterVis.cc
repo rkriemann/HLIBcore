@@ -513,10 +513,10 @@ print_rec ( const TBlockCluster *            cluster,
     const bool      omit    = ( double(max_size) / double(max_cl_size) > opts.max_size_ratio );
     
     // collect sons if ...
-    if ( ! is_leaf && ! omit &&  // still large enough and
+    if ( ! is_leaf && ! omit &&                                                             // still large enough and
          ( opts.all_nodes ||                                                                // should print all nodes or
            ( opts.single_proc && cl_procs.is_in( opts.pid ) && ( cl_procs.size() > 1 )) ||  // should print single proc and is local or
-           ( opts.procs && (( cl_procs.size() > 1 ) || ( cl_procs == PROCSET_INVALID )))))   // should print proc sets and shared
+           ( opts.procs && (( cl_procs.size() > 1 ) || ( cl_procs == PROCSET_INVALID )))))  // should print proc sets and shared
     {
         for ( uint  i = 0; i < cluster->nsons(); ++i )
         {

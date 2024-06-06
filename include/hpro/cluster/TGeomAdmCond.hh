@@ -75,7 +75,7 @@ public:
 //!
 //! \ingroup  Cluster_Module
 //! \class    TWeakStdGeomAdmCond
-//! \brief    Combination of standard and weak admissibility
+//! \brief    Combination of standard and weak (vertex) admissibility
 //!
 class TWeakStdGeomAdmCond : public TStdGeomAdmCond
 {
