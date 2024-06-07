@@ -190,7 +190,7 @@ for file in [ 'laplace', 'helmholtz', 'maxwell', 'exp' ] :
                                    [ mic,    'mic'  ] ] :
         obj = None
         src = join( 'bem', ( '%s_simd.cc' % ( file ) ) )
-        if env['shared']: 
+        if env['linktype'] == 'shared': 
             obj = isa_env.SharedObject( target = join( 'bem', ( '%s_%s%s' % ( file, isa_name, env['SHOBJSUFFIX'] ) ) ), source = src )
         else :
             obj = isa_env.StaticObject( target = join( 'bem', ( '%s_%s%s' % ( file, isa_name, env['OBJSUFFIX']   ) ) ), source = src )
@@ -200,10 +200,10 @@ for file in [ 'laplace', 'helmholtz', 'maxwell', 'exp' ] :
 # library definition
 #
 
-if env['shared']:
+if env['linktype'] == 'shared': 
     hlibpro = env.SharedLibrary( 'hpro', sources + mach_obj )
 
-elif env['static']:
+elif env['linktype'] == 'static': 
     hlibpro = env.StaticLibrary( 'hpro', sources + mach_obj )
 
 #

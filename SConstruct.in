@@ -90,10 +90,9 @@ lapack_base   = '@LAPACK_BASE@'
 # various options
 fullmsg       = False
 buildtype     = 'debug'
+linktype      = 'static'
 warn          = False
 color         = True
-static        = True
-shared        = False
 
 ############################################################
 #
@@ -158,21 +157,18 @@ opts.Add( EnumVariable( 'buildtype', 'how to build HLIBcore (debug/release)', 'd
 opts.Add( BoolVariable( 'warn',      'enable building with compiler warnings', warn ) )
 opts.Add( BoolVariable( 'color',     'use colored output during compilation',  color ) )
 if system == 'Windows':
-    opts.Add( BoolVariable( 'shared', 'set to enable building of shared libraries',   1 ) )
-    opts.Add( BoolVariable( 'static', 'set to enable building of static libraries',   0 ) )
+    opts.Add( EnumVariable( 'linktype',  'how to link with HLIBpro (static/shared)', 'shared', allowed_values = [ 'static', 'shared' ], ignorecase = 2 ) )
 else:
-    opts.Add( BoolVariable( 'shared', 'set to enable building of shared libraries',   0 ) )
-    opts.Add( BoolVariable( 'static', 'set to enable building of static libraries',   1 ) )
+    opts.Add( EnumVariable( 'linktype',  'how to link with HLIBpro (static/shared)', 'static', allowed_values = [ 'static', 'shared' ], ignorecase = 2 ) )
 
 # read options from cache_file
 opt_env = Environment( options = opts )
 
 buildtype = opt_env['buildtype']
+linktype  = opt_env['linktype']
 fullmsg   = opt_env['fullmsg']
 warn      = opt_env['warn']
 color     = opt_env['color']
-static    = opt_env['static']
-shared    = opt_env['shared']
 
 ############################################################
 #
@@ -220,10 +216,6 @@ elif buildtype == 'release' :
 base_env.Append( CFLAGS       = ccflags )
 base_env.Append( CXXFLAGS     = cxxflags )
 base_env.Append( FORTRANFLAGS = fcflags )
-
-# static overwrites shared
-if base_env['static']:
-    base_env['shared'] = 0
 
 hlibpro_env = base_env.Clone()
 
@@ -362,8 +354,7 @@ def show_options ( target, source, env ):
     print( '  {0}Option{1}    │ {0}Description{1}                                       │ {0}Value{1}'.format( colors['bold'], colors['reset'] ) )
     print( ' ───────────┼───────────────────────────────────────────────────┼─────────' )
     print( '  {0}buildtype{1} │ define build type for library (debug,release)     │'.format( colors['bold'], colors['reset'] ), buildtype )
-    print( '  {0}static{1}    │ enable/disable building of static libraries       │'.format( colors['bold'], colors['reset'] ), bool_str[ static ] )
-    print( '  {0}shared{1}    │ enable/disable building of shared libraries       │'.format( colors['bold'], colors['reset'] ), bool_str[ shared ] )
+    print( '  {0}linktype{1}  │ define how to link with library (static,shared)   │'.format( colors['bold'], colors['reset'] ), linktype )
     print( '  {0}fullmsg{1}   │ enable/disable full output                        │'.format( colors['bold'], colors['reset'] ), bool_str[ fullmsg ] )
     print( '  {0}color{1}     │ use colored output                                │'.format( colors['bold'], colors['reset'] ), bool_str[ color ] )
     print() 
