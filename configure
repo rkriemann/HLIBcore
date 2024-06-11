@@ -983,8 +983,8 @@ def replace ( str, item, rpl ) :
 def read_cache ( env ):
     if os.path.exists( cache ):
         f        = open( cache, 'r' )
-        p_assign = re.compile( '(.*) = (.*)' )
-        p_ws     = re.compile( '(^ *| *$)' )
+        p_assign = re.compile( r'(.*) = (.*)' )
+        p_ws     = re.compile( r'(^ *| *$)' )
 
         for line in f:
             line = re.sub( '\n', '', line )
@@ -1030,7 +1030,7 @@ def write_makefile ( tmpl, make, env ) :
         fin  = open( tmpl, 'r' );
         fout = open( make, 'w' );
 
-        at_re = re.compile( '@(.*?)@' )
+        at_re = re.compile( r'@(.*?)@' )
 
         for line in fin:
             # replace @variables@ by content in environment
@@ -1071,7 +1071,7 @@ def expand ( entry, env ):
     while changed:
         changed = False
         
-        m = re.search( '@([a-zA-Z]+[a-zA-Z0-9_]*)@', entry )
+        m = re.search( r'@([a-zA-Z]+[a-zA-Z0-9_]*)@', entry )
         if m != None:
             key     = m.group(1)
             val     = ''
@@ -1088,7 +1088,7 @@ def expand ( entry, env ):
             entry   = re.sub( '@'+key+'@', val, entry )
             changed = True
 
-        m = re.search( '\$(.+?)\((.+?)\)\$', entry )
+        m = re.search( r'\$(.+?)\((.+?)\)\$', entry )
         if m != None:
             prog = m.group(1)
             parg = m.group(2)
@@ -1191,16 +1191,16 @@ def detect_cxx_libs ( compiler ):
 
     options = ( '-v', '-V', '--version', '-qversion' )
     
-    gcc_re      = re.compile( '^(gcc|g\+\+).* (\d+)\.(\d+)', re.I )
-    icc_re      = re.compile( '(intel.*compiler.*version.* (\d+)\.(\d+))|(icc \(ICC\).*(\d+)\.(\d+))', re.I )
-    pgi_re      = re.compile( 'pg(cc|CC|f77|f90) (\d+)\.(\d+)', re.I )
-    pathcc_re   = re.compile( 'PathScale.* Version (\d+)\.(\d+)', re.I )
-    suncc_re    = re.compile( '(forte developer .* c\+* (\d+)\.(\d+))|(sun workshop .* c\+* (\d+)\.(\d+))|(sun c\+* (\d+)\.(\d+))', re.I )
-    acc_re      = re.compile( 'hp.*ansi.*a\.(\d+)', re.I )
-    mipscc_re   = re.compile( 'mipspro compilers.* (\d+)\.(\d+)', re.I )
-    xlc_re      = re.compile( '(IBM XL .* Version (\d+)\.(\d+))|(IBM XL .* Edition V(\d+)\.(\d+))|(C for AIX version (\d+)\.(\d+))', re.I )
-    compaqcc_re = re.compile( 'Compaq C V(\d+)\.(\d+)', re.I )
-    msvc_re     = re.compile( 'Microsoft .* C\/C\+\+ .* Version (\d+)\.(\d+)', re.I )
+    gcc_re      = re.compile( r'^(gcc|g\+\+).* (\d+)\.(\d+)', re.I )
+    icc_re      = re.compile( r'(intel.*compiler.*version.* (\d+)\.(\d+))|(icc \(ICC\).*(\d+)\.(\d+))', re.I )
+    pgi_re      = re.compile( r'pg(cc|CC|f77|f90) (\d+)\.(\d+)', re.I )
+    pathcc_re   = re.compile( r'PathScale.* Version (\d+)\.(\d+)', re.I )
+    suncc_re    = re.compile( r'(forte developer .* c\+* (\d+)\.(\d+))|(sun workshop .* c\+* (\d+)\.(\d+))|(sun c\+* (\d+)\.(\d+))', re.I )
+    acc_re      = re.compile( r'hp.*ansi.*a\.(\d+)', re.I )
+    mipscc_re   = re.compile( r'mipspro compilers.* (\d+)\.(\d+)', re.I )
+    xlc_re      = re.compile( r'(IBM XL .* Version (\d+)\.(\d+))|(IBM XL .* Edition V(\d+)\.(\d+))|(C for AIX version (\d+)\.(\d+))', re.I )
+    compaqcc_re = re.compile( r'Compaq C V(\d+)\.(\d+)', re.I )
+    msvc_re     = re.compile( r'Microsoft .* C\/C\+\+ .* Version (\d+)\.(\d+)', re.I )
     
     for opt in options:
         try :
@@ -1242,8 +1242,8 @@ def detect_fortran_libs ( compiler ):
 
     options = ( '-v', '-V', '--version', '-qversion' )
     
-    gcc_re   = re.compile( '^(gcc|g\+\+).* (\d+)\.(\d+)', re.I )
-    ifort_re = re.compile( '(intel.*compiler.*version.* (\d+)\.(\d+))|(icc \(ICC\).*(\d+)\.(\d+))', re.I )
+    gcc_re   = re.compile( r'^(gcc|g\+\+).* (\d+)\.(\d+)', re.I )
+    ifort_re = re.compile( r'(intel.*compiler.*version.* (\d+)\.(\d+))|(icc \(ICC\).*(\d+)\.(\d+))', re.I )
     
     for opt in options:
         try :
@@ -2715,7 +2715,7 @@ def getopt ( args, options ):
 
     ret_args = []
     optlist  = []
-    reeq     = re.compile( '(.*?)=(.*)' )
+    reeq     = re.compile( r'(.*?)=(.*)' )
 
     while args != []:
 
