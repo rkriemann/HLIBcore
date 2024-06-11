@@ -1779,11 +1779,11 @@ eigen ( T1 &                              M,
 //! \ingroup  BLAS_Module
 //! \brief compute eigenvalues and eigenvectors of the hermitian matrix \a M
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen_herm ( T1 &                                             M,
-             Vector< real_type_t< typename T1::value_t > > &  eig_val,
-             Matrix< typename T1::value_t > &                 eig_vec );
+template < typename value_t >
+void
+eigen_herm ( Matrix< value_t > &                 M,
+             Vector< real_type_t< value_t > > &  eig_val,
+             Matrix< value_t > &                 eig_vec );
 
 //!
 //! \ingroup  BLAS_Module

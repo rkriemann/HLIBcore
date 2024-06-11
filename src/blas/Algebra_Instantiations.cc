@@ -108,7 +108,7 @@ template void eigen< Matrix< double > >  ( Matrix< double > &           M,
                                            Matrix< double > &           eig_vec );
 
 #define INST_EIGEN_HERM( type, real_t )                                 \
-    template void eigen_herm< Matrix< type > >   ( Matrix< type > &, Vector< real_t > &, Matrix< type > & )
+    template void eigen_herm< type >   ( Matrix< type > &, Vector< real_t > &, Matrix< type > & )
 
 INST_EIGEN_HERM( float, float );
 INST_EIGEN_HERM( double, double );

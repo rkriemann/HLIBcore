@@ -1365,13 +1365,12 @@ eigen ( T1 &                              M,
 //
 // compute eigenvalues and eigenvectors of the hermitian matrix \a M
 //
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen_herm ( T1 &                                             M,
-             Vector< real_type_t< typename T1::value_t > > &  eig_val,
-             Matrix< typename T1::value_t > &                 eig_vec )
+template < typename value_t >
+void
+eigen_herm ( Matrix< value_t > &                 M,
+             Vector< real_type_t< value_t > > &  eig_val,
+             Matrix< value_t > &                 eig_vec )
 {
-    using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
     
     const size_t  n = M.nrows();
