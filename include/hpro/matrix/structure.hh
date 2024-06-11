@@ -336,6 +336,21 @@ size_t get_nblocks_dense  ( const TMatrix< value_t > *  M );
 template < typename value_t >
 size_t get_nblocks_dense  ( const TMatrix< value_t > &  M ) { return get_nblocks_dense( &M ); }
 
+//!
+//! return number of level in matrix
+//!
+template < typename value_t >
+size_t get_nlevel         ( const TMatrix< value_t > &  M );
+
+template < typename value_t >
+size_t get_nlevel         ( const TMatrix< value_t > *  M )
+{
+    if ( M == nullptr )
+        return 0;
+    
+    return get_nlevel( *M );
+}
+
 }// namespace Hpro
 
 #endif  // __HPRO_STRUCTURE_HH

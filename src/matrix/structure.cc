@@ -715,6 +715,31 @@ get_nblocks_dense  ( const TMatrix< value_t > *   M )
         return 0;
 }   
 
+//!
+//! return number of level in matrix
+//!
+template < typename value_t >
+size_t
+get_nlevel ( const TMatrix< value_t > &  M )
+{
+    if ( is_blocked( M ) )
+    {
+        auto    B    = cptrcast( &M, TBlockMatrix< value_t > );
+        size_t  nlvl = 0;
+
+        for ( uint  i = 0; i < B->nblock_rows(); ++i )
+            for ( uint  j = 0; j < B->nblock_cols(); ++j )
+            {
+                if ( B->block( i, j ) != nullptr )
+                    nlvl = std::max( nlvl, get_nlevel( *(B->block( i, j )) ) );
+            }// for
+
+        return nlvl;
+    }// if
+    else
+        return 1;
+}
+
 //////////////////////////////////////////////////////////
 //
 // extract real/imaginary parts
@@ -1064,7 +1089,8 @@ restrict_im ( const TMatrix< value_t > *  M,
     template size_t get_nblocks ( const TMatrix< type > * );            \
     template size_t get_nblocks_leaf ( const TMatrix< type > * );       \
     template size_t get_nblocks_lowrank ( const TMatrix< type > * );    \
-    template size_t get_nblocks_dense  ( const TMatrix< type > * ); \
+    template size_t get_nblocks_dense  ( const TMatrix< type > * );     \
+    template size_t get_nlevel ( const TMatrix< type > & );             \
     template std::unique_ptr< TMatrix< real_type_t< type > > > restrict_re ( const TMatrix< type > *, const TTruncAcc & ); \
     template std::unique_ptr< TMatrix< real_type_t< type > > > restrict_im ( const TMatrix< type > *, const TTruncAcc & );
 
