@@ -734,7 +734,7 @@ get_nlevel ( const TMatrix< value_t > &  M )
                     nlvl = std::max( nlvl, get_nlevel( *(B->block( i, j )) ) );
             }// for
 
-        return nlvl;
+        return nlvl + 1; // plus this level
     }// if
     else
         return 1;
