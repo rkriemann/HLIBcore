@@ -95,10 +95,12 @@ public:
     //! return row cluster
     TCluster *             rowcl        ()       { return _rowcl; }
     const TCluster *       rowcl        () const { return _rowcl; }
+    TIndexSet              rowis        () const { if ( _rowcl != nullptr ) { return *_rowcl; } else { return TIndexSet(); } }
 
     //! return column cluster
     TCluster *             colcl        ()       { return _colcl; }
     const TCluster *       colcl        () const { return _colcl; }
+    TIndexSet              colis        () const { if ( _colcl != nullptr ) { return *_colcl; } else { return TIndexSet(); } }
 
     //! set row cluster
     void                   set_rowcl    ( TCluster *  cl );
