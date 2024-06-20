@@ -298,11 +298,11 @@ TSAMGVectorIO::read ( const std::string & filename ) const
     std::unique_ptr< std::istream >  in_ptr;
     
     if ( fs::exists( frmpath ) )
-        in_ptr = std::move( open_read( frmpath.string() ) );
+        in_ptr = open_read( frmpath.string() );
     else
     {
         if ( fs::exists( frmpath.string() + compress_ext ) )
-            in_ptr = std::move( open_read( frmpath.string() + compress_ext ) );
+            in_ptr = open_read( frmpath.string() + compress_ext );
         else
             HERROR( ERR_FNEXISTS, "(TSAMGMatrixIO) read", frmpath.string() + "(" + compress_ext + ")" );
     }// else
@@ -326,7 +326,7 @@ TSAMGVectorIO::read ( const std::string & filename ) const
     // read vector
     //
 
-    in_ptr = std::move( open_read( filename ) );
+    in_ptr = open_read( filename );
 
     std::istream &  amg_in = * in_ptr.get();
 

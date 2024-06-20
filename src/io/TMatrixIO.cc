@@ -469,7 +469,7 @@ TSAMGMatrixIO::write ( const TMatrix< value_t > *  A,
         // write matrix to amg file
         //
         
-        out_ptr = std::move( open_write( filename ) );
+        out_ptr = open_write( filename );
 
         std::ostream &  amg_out = * out_ptr.get();
         
@@ -566,7 +566,7 @@ TSAMGMatrixIO::write ( const TMatrix< value_t > *  A,
         // write matrix to amg file
         //
         
-        out_ptr = std::move( open_write( filename ) );
+        out_ptr = open_write( filename );
 
         std::ostream &  amg_out = * out_ptr.get();
         
@@ -639,11 +639,11 @@ TSAMGMatrixIO::read ( const std::string &  filename ) const
     std::unique_ptr< std::istream >  in_ptr;
     
     if ( fs::exists( frmpath ) )
-        in_ptr = std::move( open_read( frmpath.string() ) );
+        in_ptr = open_read( frmpath.string() );
     else
     {
         if ( fs::exists( frmpath.string() + compress_ext ) )
-            in_ptr = std::move( open_read( frmpath.string() + compress_ext ) );
+            in_ptr = open_read( frmpath.string() + compress_ext );
         else
             HERROR( ERR_FNEXISTS, "(TSAMGMatrixIO) read", frmpath.string() + "(" + compress_ext + ")" );
     }// else
@@ -669,7 +669,7 @@ TSAMGMatrixIO::read ( const std::string &  filename ) const
     // read matrix
     //
 
-    in_ptr = std::move( open_read( filename ) );
+    in_ptr = open_read( filename );
 
     std::istream &  amg_in = * in_ptr.get();
 
@@ -2230,7 +2230,7 @@ TH2LibMatrixIO::read  ( const std::string &  filename ) const
     if ( nc_inq_varid( nc_file, "cc_sons", &nc_sons ) == NC_NOERR )
         cct = netcdf_read_cl( nc_file, "cc" );
     else
-        cct = std::move( std::unique_ptr< TCluster >( rct->copy() ) );
+        cct = std::unique_ptr< TCluster >( rct->copy() );
 
     auto  M = netcdf_read_mat< value_t >( nc_file, "ma", rct.get(), cct.get() );
 

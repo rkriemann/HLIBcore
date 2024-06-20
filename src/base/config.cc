@@ -376,8 +376,9 @@ namespace
 {
 
 const uint    HPRO_MAJOR_VERSION = 3;
-const uint    HPRO_MINOR_VERSION = 0;
-const char *  HPRO_VERSION       = "3.0";
+const uint    HPRO_MINOR_VERSION = 1;
+const uint    HPRO_PATCH_LEVEL   = 2;
+const char *  HPRO_VERSION       = "3.1.2";
 
 }// namespace anonymous
 

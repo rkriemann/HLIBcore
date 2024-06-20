@@ -46,7 +46,7 @@ fconf    = { 'source'   : 'conftest.f',
 # default compilation options
 compenv  = { 'LIBNAME'      : 'hpro',
              'MAJVERSION'   : '3',
-             'MINVERSION'   : '0',
+             'MINVERSION'   : '1',
              
              'PREFIX'       : '.',
              'OBJDIR'       : '',

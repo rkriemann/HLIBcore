@@ -64,6 +64,7 @@ void  set_nthreads ( const uint  n );
 // version information
 uint         major_version ();
 uint         minor_version ();
+uint         patch_level   ();
 std::string  version       ();
 
 // verbosity level
