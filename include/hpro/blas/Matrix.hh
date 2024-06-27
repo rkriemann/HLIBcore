@@ -256,6 +256,18 @@ public:
         return super_t::_data[ j * _stride[1] + i * _stride[0] ];
     }
 
+    //! return pointer to coefficient (i,j)
+    value_t *    ptr          ( const idx_t i, const idx_t j ) noexcept
+    {
+        HASSERT( i < idx_t(_length[0]) && j < idx_t(_length[1]), ERR_ARR_BOUND, "(Matrix) operator ()", "" );
+        return super_t::_data + ( j * _stride[1] + i * _stride[0] );
+    }
+    const value_t *  ptr      ( const idx_t i, const idx_t j ) const noexcept
+    {
+        HASSERT( i < idx_t(_length[0]) && j < idx_t(_length[1]), ERR_ARR_BOUND, "(Matrix) operator ()", "" );
+        return super_t::_data + ( j * _stride[1] + i * _stride[0] );
+    }
+
     //! return pointer to internal data
     value_t *    data         () const noexcept { return super_t::_data; }
 
