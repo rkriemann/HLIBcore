@@ -13,9 +13,6 @@
 namespace Hpro
 {
 
-using std::unique_ptr;
-using std::make_unique;
-
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 //
@@ -38,10 +35,10 @@ TBCBuilder::TBCBuilder ( const uint                  min_lvl,
 // build a block-clustertree
 //
 
-unique_ptr< TBlockClusterTree >
-TBCBuilder::build ( const TClusterTree  * rowct,
-                    const TClusterTree  * colct,
-                    const TAdmCondition * ac ) const
+std::unique_ptr< TBlockClusterTree >
+TBCBuilder::build ( const TClusterTree *   rowct,
+                    const TClusterTree *   colct,
+                    const TAdmCondition *  ac ) const
 {
     if ((rowct == nullptr) || (colct == nullptr))
         HERROR( ERR_ARG, "(TBCBuilder) build", "cluster tree arguments are nullptr" );
@@ -53,15 +50,31 @@ TBCBuilder::build ( const TClusterTree  * rowct,
     // call recursive procedure for building the tree
     //
 
+    auto  root = build( rowcl, colcl, ac );
+
+    return std::make_unique< TBlockClusterTree >( root.release(), rowct, colct );
+}
+
+std::unique_ptr< TBlockCluster >
+TBCBuilder::build ( const TCluster *       rowcl,
+                    const TCluster *       colcl,
+                    const TAdmCondition *  ac ) const
+{
+    if ((rowcl == nullptr) || (colcl == nullptr))
+        HERROR( ERR_ARG, "(TBCBuilder) build", "cluster arguments are nullptr" );
+
+    //
+    // call recursive procedure for building the tree
+    //
+
     auto  root = create_bc( nullptr,
                             const_cast< TCluster * >( rowcl ),
                             const_cast< TCluster * >( colcl ) );
 
     rec_build( root.get(), ac, 0 );
 
-    return make_unique< TBlockClusterTree >( root.release(), rowct, colct );
+    return root;
 }
-
 ////////////////////////////////////////////////
 //
 // recusivly build a block-clustertree
@@ -198,16 +211,16 @@ TBCBuilder::refine ( TBlockCluster *  bc ) const
 //
 // create new object for a block-cluster
 //
-unique_ptr< TBlockCluster >
+std::unique_ptr< TBlockCluster >
 TBCBuilder::create_bc ( TBlockCluster * parent ) const
 {
-    return make_unique< TBlockCluster >( parent );
+    return std::make_unique< TBlockCluster >( parent );
 }
 
 //
 // create new object for a block-cluster
 //
-unique_ptr< TBlockCluster >
+std::unique_ptr< TBlockCluster >
 TBCBuilder::create_bc ( TBlockCluster *  parent,
                         TCluster *       rowcl,
                         TCluster *       colcl ) const

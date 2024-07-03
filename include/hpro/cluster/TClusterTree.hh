@@ -75,6 +75,14 @@ public:
     //! return internal to external permutation
     const TPermutation * perm_i2e () const { return _perm_i2e; }
 
+    //! release ownership of data (use with care!!!)
+    void                 release_data ()
+    {
+        _root     = nullptr;
+        _perm_e2i = nullptr;
+        _perm_i2e = nullptr;
+    }
+    
     ////////////////////////////////////////////////
     //
     // manage tree

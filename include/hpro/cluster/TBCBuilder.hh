@@ -56,12 +56,17 @@ public:
 
     //! build block cluster tree for \a rowct × \a colct with
     //! admissibility condition \a ac
-    virtual std::unique_ptr< TBlockClusterTree >  build ( const TClusterTree   * rowct,
-                                                          const TClusterTree   * colct,
-                                                          const TAdmCondition  * ac ) const;
+    virtual auto  build  ( const TClusterTree   * rowct,
+                           const TClusterTree   * colct,
+                           const TAdmCondition  * ac ) const -> std::unique_ptr< TBlockClusterTree >;
+    
+    //! same as above but creating standard block cluster
+    virtual auto  build  ( const TCluster *       rowcl,
+                           const TCluster *       colcl,
+                           const TAdmCondition *  ac ) const -> std::unique_ptr< TBlockCluster >;
 
     //! refine given block cluster
-    virtual void refine     ( TBlockCluster *  bc ) const;
+    virtual void  refine ( TBlockCluster *  bc ) const;
     
 protected:
     //! recusivly build a block cluster tree for \a rowcl × \a colcl
