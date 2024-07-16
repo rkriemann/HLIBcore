@@ -115,7 +115,7 @@ public:
     //! return block index set of block cluster
     TBlockIndexSet         is           () const
     {
-        if (( _rowcl != NULL ) && ( _colcl != NULL ))
+        if (( _rowcl != nullptr ) && ( _colcl != nullptr ))
             return TBlockIndexSet( * _rowcl, * _colcl );
         else
             return TBlockIndexSet();
@@ -138,7 +138,7 @@ public:
     // //! set number of sons
     // virtual void    set_nsons     ( const size_t  n );
 
-    // //! adjust number of sons to number of non-NULL sons in local list
+    // //! adjust number of sons to number of non-nullptr sons in local list
     // virtual void    adjust_nsons  ();
 
     //
@@ -204,7 +204,7 @@ public:
             return true;
         
         for ( size_t  i = 0; i < nsons(); i++ )
-            if ( _sons[i] != NULL )
+            if ( _sons[i] != nullptr )
                 return false;
         
         return true;
@@ -233,13 +233,13 @@ public:
     //
 
     //! return true if \a i'th son is present
-    bool has_son ( const size_t  i ) const { return (i < nsons() ? _sons[i] != NULL : false); }
+    bool has_son ( const size_t  i ) const { return (i < nsons() ? _sons[i] != nullptr : false); }
 
     //! return true if given cluster is a subcluster of this
     bool is_sub_cluster ( const TBlockCluster * c ) const;
     
     //! return object of same type
-    virtual TBlockCluster * create () const { return new TBlockCluster( NULL ); }
+    virtual TBlockCluster * create () const { return new TBlockCluster( nullptr ); }
 
     //! collect leaves or nodes with depth \a depth in tree
     void collect_leaves ( std::list< TBlockCluster * > &  leaves,
@@ -247,7 +247,10 @@ public:
                           const int                       level = 0 ) const;
 
     //! compute sparsity constant of tree
-    uint compute_c_sp () const;
+    //! - if \a leaves is true, only leaf blocks are counted
+    //! - if \a adm is true, only admissible blocks (leaves) are counted
+    uint compute_c_sp ( const bool  leaves = false,
+                        const bool  adm    = false ) const;
 
     //! compute sharing constant of tree for index set partition with \a nprocs processors
     uint compute_c_sh ( const uint  nprocs ) const;
@@ -264,14 +267,26 @@ public:
     //! return string representation
     std::string  to_string () const
     {
-        if ( rowcl() != NULL )
-            if ( colcl() != NULL ) return rowcl()->to_string() + " × " + colcl()->to_string();
-            else                   return rowcl()->to_string() + " × ∅";
+        if ( rowcl() != nullptr )
+            if ( colcl() != nullptr ) return rowcl()->to_string() + " × " + colcl()->to_string();
+            else                      return rowcl()->to_string() + " × ∅";
         else
-            if ( colcl() != NULL ) return "∅ × " + colcl()->to_string();
-            else                   return "∅ × ∅";
+            if ( colcl() != nullptr ) return "∅ × " + colcl()->to_string();
+            else                      return "∅ × ∅";
     }
 };
+
+//
+//! compute sparsity constant of tree
+//
+inline
+uint
+compute_c_sp ( const TBlockCluster &  bc,
+               const bool             leaves = false,
+               const bool             adm    = false  )
+{
+    return bc.compute_c_sp( leaves, adm );
+}
 
 //!
 //! \ingroup  Cluster_Module

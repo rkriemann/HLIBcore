@@ -457,7 +457,8 @@ TBlockCluster::assign_procs ()
 //
 
 uint
-TBlockCluster::compute_c_sp () const
+TBlockCluster::compute_c_sp ( const bool  leaves,
+                              const bool  adm ) const
 {
     using  cluster_map_t = std::unordered_map< const TCluster *, uint >;
 
@@ -472,24 +473,34 @@ TBlockCluster::compute_c_sp () const
     // count block clusters per cluster
     //
 
-    list< const TBlockCluster * > nodes;
-    uint                          c_sp = 0;
+    auto  nodes = list< const TBlockCluster * >();
+    uint  c_sp  = 0;
     
     nodes.push_back( this );
     
-    while ( nodes.size() > 0 )
+    while ( ! nodes.empty() )
     {
-        const TBlockCluster * bc  = behead( nodes );
-        const TCluster *      row = bc->rowcl();
-        const TCluster *      col = bc->colcl();
-        
-        rowcl_no[ row ]++;
-        c_sp = std::max( c_sp, rowcl_no[ row ] );
-        
-        if ( ! same_ct )
+        auto  bc   = behead( nodes );
+        auto  row  = bc->rowcl();
+        auto  col  = bc->colcl();
+        bool  skip = false;
+
+        if ( leaves && ! bc->is_leaf() )
+            skip = true;
+
+        if ( adm && ! bc->is_adm() )
+            skip = true;
+            
+        if ( ! skip )
         {
-            colcl_no[ col ]++;
-            c_sp = std::max( c_sp, colcl_no[ col ] );
+            rowcl_no[ row ]++;
+            c_sp = std::max( c_sp, rowcl_no[ row ] );
+        
+            if ( ! same_ct )
+            {
+                colcl_no[ col ]++;
+                c_sp = std::max( c_sp, colcl_no[ col ] );
+            }// if
         }// if
         
         if ( ! bc->is_leaf() )
