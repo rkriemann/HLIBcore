@@ -107,13 +107,21 @@ void
 write_grid  ( const TGrid *        grid,
               const std::string &  filename );
 
+inline
+void
+write_grid  ( const TGrid &        grid,
+              const std::string &  filename )
+{
+    write_grid( & grid, filename );
+}
+
 //////////////////////////////////////////////////////////////
 //!
 //! \ingroup  IO_Module
 //! \class    THLibGridIO
 //! \brief    Class for grid I/O in HLIB format.
 //!
-class THLibGridIO : public TGridIO
+class THproGridIO : public TGridIO
 {
 public:
     //////////////////////////////////////
@@ -121,9 +129,9 @@ public:
     // constructor and destructor
     //
 
-    THLibGridIO () {}
+    THproGridIO () {}
 
-    virtual ~THLibGridIO () {}
+    virtual ~THproGridIO () {}
 
     //////////////////////////////////////
     //
@@ -139,6 +147,8 @@ public:
     write  ( const TGrid *        grid,
              const std::string &  filename ) const;
 };
+
+using THLibGridIO = THproGridIO;
 
 //////////////////////////////////////////////////////////////
 //!

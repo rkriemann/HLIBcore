@@ -112,7 +112,7 @@ class TPCABSPPartStrat : public TBSPPartStrat
 {
 private:
     // use cardinality balanced clustering
-    const bool           _use_card;
+    const bool  _use_card;
     
 public:
     //!

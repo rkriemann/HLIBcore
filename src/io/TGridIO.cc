@@ -74,7 +74,7 @@ TAutoGridIO::read  ( const string & filename ) const
         
     switch ( guess_format( filename ) )
     {
-        case FMT_HPRO_GRID : gio = make_unique< THLibGridIO >(); break;
+        case FMT_HPRO_GRID : gio = make_unique< THproGridIO >(); break;
         case FMT_PLY       : gio = make_unique< TPlyGridIO >(); break;
         case FMT_SURFMESH  : gio = make_unique< TSurfMeshGridIO >(); break;
         case FMT_GMSH      : gio = make_unique< TGMSHGridIO >(); break;
@@ -98,7 +98,7 @@ TAutoGridIO::write  ( const TGrid *   grid,
         
     switch ( guess_format( filename ) )
     {
-        case FMT_HPRO_GRID : gio = make_unique< THLibGridIO >(); break;
+        case FMT_HPRO_GRID : gio = make_unique< THproGridIO >(); break;
         case FMT_PLY       : gio = make_unique< TPlyGridIO >(); break;
         case FMT_SURFMESH  : gio = make_unique< TSurfMeshGridIO >(); break;
         case FMT_GMSH      : gio = make_unique< TGMSHGridIO >(); break;
@@ -131,7 +131,7 @@ write_grid  ( const TGrid *        grid,
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 //
-// THLibGridIO
+// THproGridIO
 //
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -141,10 +141,10 @@ write_grid  ( const TGrid *        grid,
 //
 
 unique_ptr< TGrid >
-THLibGridIO::read ( const string & filename ) const
+THproGridIO::read ( const string & filename ) const
 {
     if ( ! fs::exists( filename ) )
-        HERROR( ERR_FNEXISTS, "(THLibGridIO) read", filename );
+        HERROR( ERR_FNEXISTS, "(THproGridIO) read", filename );
     
     unique_ptr< std::istream >  in_ptr( open_read( filename ) );
     std::istream &              in = * in_ptr.get();
@@ -174,7 +174,7 @@ THLibGridIO::read ( const string & filename ) const
         if ( parts[0] == "nv" )
         {
             if ( n_vertices > 0 )
-                HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read",
+                HERROR( ERR_GRID_FORMAT, "(THproGridIO) read",
                        "multiple definition of vertex number" );
 
             n_vertices = str_to_int( parts[1] );
@@ -182,7 +182,7 @@ THLibGridIO::read ( const string & filename ) const
         else if ( parts[0] == "ne" )
         {
             if ( n_edges > 0 )
-                HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read",
+                HERROR( ERR_GRID_FORMAT, "(THproGridIO) read",
                        "multiple definition of edge number" );
 
             n_edges = str_to_int( parts[1] );
@@ -190,7 +190,7 @@ THLibGridIO::read ( const string & filename ) const
         else if ( parts[0] == "nt" )
         {
             if ( n_faces > 0 )
-                HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read",
+                HERROR( ERR_GRID_FORMAT, "(THproGridIO) read",
                        "multiple definition of triangle number" );
 
             n_faces = str_to_int( parts[1] );
@@ -203,13 +203,13 @@ THLibGridIO::read ( const string & filename ) const
     }// while
 
     if ( n_vertices == 0 )
-        HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "no vertices in grid" );
+        HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "no vertices in grid" );
 
-    if ( n_edges == 0 )
-        HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "no edges in grid" );
+    // if ( n_edges == 0 )
+    //     HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "no edges in grid" );
 
     if ( n_faces == 0 )
-        HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "no faces in grid" );
+        HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "no faces in grid" );
     
     /////////////////////////////////////////////////////////////////
     //
@@ -238,7 +238,7 @@ THLibGridIO::read ( const string & filename ) const
             if (( line[0] == 'e' ) || ( line[0] == 't' ))
                 break;
 
-            HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "expected vertex" );
+            HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "expected vertex" );
         }// if
 
         //
@@ -284,7 +284,7 @@ THLibGridIO::read ( const string & filename ) const
             if ( line[0] == 't' )
                 break;
 
-            HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "expected edge" );
+            HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "expected edge" );
         }// if
 
         std::getline( in, line );
@@ -316,7 +316,7 @@ THLibGridIO::read ( const string & filename ) const
         }// if
 
         if ( line[0] != 't' )
-            HERROR( ERR_GRID_FORMAT, "(THLibGridIO) read", "expected triangle" );
+            HERROR( ERR_GRID_FORMAT, "(THproGridIO) read", "expected triangle" );
 
         //
         // read cell depending on dimension
@@ -334,7 +334,7 @@ THLibGridIO::read ( const string & filename ) const
 
         for ( uint j = 0; j < 3; j++ )
             if ( vid[j] > n_vertices-1 )
-                HERROR( ERR_GRID_DATA, "(THLibGridIO) read",
+                HERROR( ERR_GRID_DATA, "(THproGridIO) read",
                        "invalid vertex id " + to_string( "%d", vid[j] ) );
 
         triangles[id].vtx[0] = vid[0];
@@ -354,7 +354,7 @@ THLibGridIO::read ( const string & filename ) const
 }
 
 void
-THLibGridIO::write  ( const TGrid *   grid,
+THproGridIO::write  ( const TGrid *   grid,
                       const string &  filename ) const
 {
     if ( grid == nullptr )

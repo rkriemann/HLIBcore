@@ -124,6 +124,37 @@ public:
     std::string  to_string () const;
 };
 
-}// namespace
+//!
+//! return intersection of bboxes
+//!
+inline
+TBBox
+intersection ( const TBBox &  bbox1,
+               const TBBox &  bbox2 )
+{
+    if ( bbox1.dim() != bbox2.dim() )
+        HERROR( ERR_ARG, "intersection", "bboxes have different dimension" );
+    
+    TBBox  inter( bbox1 );
+
+    for ( uint  i = 0; i < bbox1.dim(); ++i )
+    {
+        const  auto  r1 = bbox1.min()[i];
+        const  auto  r2 = bbox1.max()[i];
+
+        const  auto  c1 = bbox2.min()[i];
+        const  auto  c2 = bbox2.max()[i];
+
+        if      ( c2 <  r1 ) { inter.min()[i] = inter.max()[i] = 0; }
+        else if ( c2 <= r2 ) { inter.min()[i] = std::max( r1, c1 ); inter.max()[i] = c2; }
+        else if ( c1 <= r2 ) { inter.min()[i] = c1;                 inter.max()[i] = r2; }
+        else if ( c1 >  r2 ) { inter.min()[i] = inter.max()[i] = 0; }
+        else                 { inter.min()[i] = inter.max()[i] = 0; } // not reachable
+    }// for
+
+    return inter;
+}
+
+}// namespace Hpro
 
 #endif  // __HPRO_TBBOX_HH
