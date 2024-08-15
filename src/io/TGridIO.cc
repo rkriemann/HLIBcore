@@ -402,7 +402,7 @@ THproGridIO::write  ( const TGrid *   grid,
     
     out << "#" << std::endl
         << "# triangle list" << std::endl
-        << "#";
+        << "#" << std::endl;
 
     for ( idx_t  i = 0; i < idx_t(grid->n_triangles()); ++i )
     {
