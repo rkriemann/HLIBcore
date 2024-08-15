@@ -383,7 +383,7 @@ THproGridIO::write  ( const TGrid *   grid,
     
     out << "#" << std::endl
         << "# vertex list" << std::endl
-        << "#";
+        << "#" << std::endl;
 
     for ( idx_t  i = 0; i < idx_t(grid->n_vertices()); ++i )
     {
