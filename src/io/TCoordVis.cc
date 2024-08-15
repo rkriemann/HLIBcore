@@ -310,7 +310,7 @@ vtk_write_pointset ( ostream &           out,
         
         for ( uint  i = 0; i < coord->ncoord(); ++i )
         {
-            out << "1 " << " ";
+            out << "1 ";
         }// for
         out << std::endl;
     }// if

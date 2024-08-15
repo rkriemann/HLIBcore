@@ -1173,10 +1173,54 @@ TGMSHGridIO::read ( const string & filename ) const
 }
 
 void
-TGMSHGridIO::write  ( const TGrid *,
-                      const string & ) const
+TGMSHGridIO::write  ( const TGrid *   grid,
+                      const string &  filename ) const
 {
-    HERROR( ERR_NOT_IMPL, "", "" );
+    if ( grid == nullptr )
+        return;
+
+    auto    out_ptr = open_write( filename );
+    auto &  out     = *out_ptr;
+
+    //
+    // header
+    //
+
+    out << "$MeshFormat" << std::endl
+        << "2.0 0 8" << std::endl
+        << "$EndMeshFormat" << std::endl;
+
+    //
+    // nodes (id coord0 coord1 coord2)
+    //
+
+    out << "$Nodes" << std::endl
+        << grid->n_vertices() << std::endl;
+    
+    for ( uint  i = 0; i < grid->n_vertices(); ++i )
+    {
+        const auto  coord = grid->vertex( i );
+        
+        out << i+1 << " " << coord[0] << " " << coord[1] << " " << coord[2] << std::endl;
+    }// for
+
+    out << "$EndNodes" << std::endl;
+
+    //
+    // triangles (type=2 2 2 1 1 vtx0 vtx1 vtx2)
+    //
+
+    out << "$Elements" << std::endl
+        << grid->n_triangles() << std::endl;
+    
+    for ( uint  i = 0; i < grid->n_triangles(); ++i )
+    {
+        const auto  tri = grid->triangle( i );
+
+        out << "2 2 2 1 1 " << tri.vtx[0]+1 << " " << tri.vtx[1]+1 << " " << tri.vtx[2]+1 << std::endl;
+    }// for
+
+    out << "$EndElements" << std::endl;
 }
 
 }// namespace
