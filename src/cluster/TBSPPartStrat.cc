@@ -407,7 +407,7 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
     
     for ( auto  dof : dofs )
     {
-        const double * coo = coord->coord( dof );
+        const auto  coo = coord->coord( dof );
         
         for ( uint j = 0; j < dim; ++j )
             center[j] += coo[ j ];
@@ -418,19 +418,23 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
     //
     // determine principle component
     //
-    // let X = (coord_0,coord_1,…) and X_c = X - center (for each column)
+    // let X   = (coord_0,coord_1,…) and
+    //     X_c = X - center          (for each column)
     //
 
     TPoint  dir( dim );
     
     {
-        B::Matrix< double >  C( dim, dim );
-        B::Vector< double >  x( dim );
-
+        //
         // compute covariance matrix C = 1/n X_c^T·X_c
+        //
+        
+        auto  C = B::Matrix< double >( dim, dim );
+        auto  x = B::Vector< double >( dim );
+
         for ( auto  dof : dofs )
         {
-            const double * coo = coord->coord( dof );
+            const auto  coo = coord->coord( dof );
             
             // add (x_i - x_center) · (x_i - x_center)^T
             for ( uint j = 0; j < dim; ++j )
@@ -441,25 +445,36 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 
         B::scale( 1.0 / double( ndofs ), C );
         
-#if 1
+        #if 0
+
+        //
         // compute main direction (first singular vector of C)
+        //
+        
         B::Vector< double >  sv( dim );
         
         B::svd( C, sv );
 
         for ( uint j = 0; j < dim; ++j )
             dir[j] = C(j,0);
-#else
-        // compute main direction (eigen vector to largest eigen value)
-        B::Matrix< double >  eig_vec( dim, dim );
         
-        B::eigen( C, x, eig_vec );
+        #else
 
-        const idx_t  max_idx = B::max_idx( x );
+        //
+        // compute main direction (eigen vector to largest eigen value)
+        //
+        
+        auto  eig_vec = B::Matrix< double >( dim, dim );
+        auto  eig_val = B::Vector< double >( dim );
+        
+        B::eigen_herm( C, eig_val, eig_vec );
+
+        const idx_t  max_idx = B::max_idx( eig_val );
         
         for ( uint j = 0; j < dim; ++j )
             dir[j] = eig_vec(j,max_idx);
-#endif
+        
+        #endif
     }
     
     //
