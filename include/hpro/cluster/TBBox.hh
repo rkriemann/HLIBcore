@@ -107,6 +107,9 @@ public:
     
     //! extend local bbox by given point
     void extend ( const TPoint &  p );
+
+    //! return dimension of intersection with \a bbox
+    uint  overlap_dim ( const TBBox &  bbox ) const;
     
     ///////////////////////////////////////////////
     //

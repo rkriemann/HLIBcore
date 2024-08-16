@@ -54,7 +54,20 @@ TBSphere::distance ( const TBSphere &  bsphere ) const
     
     return  std::max( dist, 0.0 );
 }
-    
+
+//
+// return dimension of intersection with \a bsphere
+//
+uint
+TBSphere::overlap_dim ( const TBSphere &  bsphere ) const
+{
+    // need actual distance in case of touching spheres
+    const auto  dist = ( _center - bsphere._center ).norm2() - _radius - bsphere._radius;
+
+    if ( dist < 0 ) return dim();
+    else            return 0;
+}
+
 ///////////////////////////////////////////////
 //
 // misc.

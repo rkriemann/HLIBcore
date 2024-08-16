@@ -3,16 +3,15 @@
 //
 // Project     : HLIBpro
 // File        : TGeomAdmCond.hh
-// Description : baseclass for all admissibility-conditions
-//               for block-clusters
+// Description : classes for geometry based admissibility-conditions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2024. All Rights Reserved.
 //
 
-#include "hpro/base/TPoint.hh"
-#include "hpro/cluster/types.hh"
+#include <hpro/base/TPoint.hh>
+#include <hpro/cluster/types.hh>
 
-#include "hpro/cluster/TAdmCondition.hh"
+#include <hpro/cluster/TAdmCondition.hh>
 
 namespace Hpro
 {

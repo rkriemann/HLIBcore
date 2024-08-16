@@ -103,6 +103,9 @@ public:
     //! return distance to \a bsphere
     double  distance  ( const TBSphere &  bsphere ) const;
     
+    //! return dimension of intersection with \a bsphere
+    uint  overlap_dim ( const TBSphere &  bsphere ) const;
+    
     ///////////////////////////////////////////////
     //
     // misc.

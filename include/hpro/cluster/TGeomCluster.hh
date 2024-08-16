@@ -10,6 +10,7 @@
 
 #include "hpro/base/types.hh"
 #include "hpro/cluster/TBBox.hh"
+#include "hpro/cluster/TBSphere.hh"
 #include "hpro/cluster/TCluster.hh"
 
 namespace Hpro
@@ -20,6 +21,8 @@ namespace Hpro
 //
 DECLARE_TYPE( TGeomCluster );
 
+using  TBoundingVolume = TBSphere;
+
 //!
 //! \ingroup  Cluster_Module
 //! \class    TGeomCluster
@@ -29,7 +32,7 @@ class TGeomCluster : public TCluster
 {
 private:
     //! the bounding box of the cluster
-    TBBox  _bbox;
+    TBoundingVolume  _bvol;
 
 public:
     ///////////////////////////////////////////////
@@ -47,10 +50,11 @@ public:
     {}
     
     //! construct cluster with index set [\a first_idx, \a last_idx]
-    TGeomCluster ( const idx_t    first_idx,
-                   const idx_t    last_idx,
-                   const TBBox &  abbox )
-            : TCluster( first_idx, last_idx ), _bbox( abbox )
+    TGeomCluster ( const idx_t              first_idx,
+                   const idx_t              last_idx,
+                   const TBoundingVolume &  abvol )
+            : TCluster( first_idx, last_idx )
+            , _bvol( abvol )
     {}
     
     ///////////////////////////////////////////////
@@ -59,13 +63,13 @@ public:
     //
 
     //! return bounding box
-    TBBox &       bbox ()       { return _bbox; }
-    const TBBox & bbox () const { return _bbox; }
+    TBoundingVolume &        bvol ()       { return _bvol; }
+    const TBoundingVolume &  bvol () const { return _bvol; }
 
     //! set bounding box
-    void  set_bbox ( const TBBox &  abbox )
+    void  set_bvol ( const TBoundingVolume &  abvol )
     {
-        _bbox = abbox;
+        _bvol = abvol;
     }
     
     ///////////////////////////////////////////////
@@ -76,20 +80,20 @@ public:
     //! return diameter of cluster
     double diameter () const
     {
-        return bbox().diameter();
+        return bvol().diameter();
     }
     
     //! return distance to cluster \a cl
     double distance ( const TGeomCluster * cl ) const
     {
-        return bbox().distance( cl->bbox() );
+        return bvol().distance( cl->bvol() );
     }
     
     //! return distance to cluster \a cl where \a period defines periodicity of coordinates
     double distance ( const TGeomCluster * cl,
                       const TPoint &       period ) const
     {
-        return bbox().distance( cl->bbox(), period );
+        return bvol().distance( cl->bvol(), period );
     }
     
     ////////////////////////////////////////////////////////
@@ -103,7 +107,7 @@ public:
     //! return size in bytes used by this object
     virtual size_t byte_size () const
     {
-        return TCluster::byte_size() + _bbox.byte_size();
+        return TCluster::byte_size() + _bvol.byte_size();
     }
     
     ///////////////////////////////////////////////////////////

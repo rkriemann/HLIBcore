@@ -208,7 +208,33 @@ TBBox::extend ( const TPoint &  p )
         }// for
     }// else
 }
+
+//
+// return dimension of intersection with \a bbox
+uint
+TBBox::overlap_dim ( const TBBox &  bbox ) const
+{
+    //
+    // count overlapping dimensions
+    //
+
+    //
+    // count number of empty intersections per axis (up to single point)
+    //
+
+    const uint  dim    = dim();
+    uint        n_over = 0;
     
+    if (( bbox.dim() != dim )
+        HERROR( ERR_ARG, "(TBBox) overlap_dim",
+               "different dimension in given bbox" );
+
+    for ( uint i = 0; i < dim; i++ )
+    {
+        // TODO
+    }// for
+}
+
 ///////////////////////////////////////////////
 //
 // misc.
