@@ -59,12 +59,12 @@ struct idxcoord_cmp_t
 // split nodes in <dofs> into sets of size <ndest>
 //
 void
-split ( size_t               ndest,
-        const TCoordinate &  coord,
-        const TNodeSet  &    dofs,
-        const TBBox &        bbox,
-        list< TNodeSet > &   parts,
-        list< TBBox > &      parts_bbox )
+split ( size_t                     ndest,
+        const TCoordinate &        coord,
+        const TNodeSet  &          dofs,
+        const TBoundingVolume &    bvol,
+        list< TNodeSet > &         parts,
+        list< TBoundingVolume > &  parts_bvol )
 {
     //
     // adjust destination size to try to split into similar sized clusters
@@ -79,14 +79,14 @@ split ( size_t               ndest,
     //
     
     uint        split_dim  = 0;
-    const uint  dim      = bbox.min().dim();
+    const uint  dim      = bvol.min().dim();
     double      max_size = -1.0;
 
     for ( uint i = 0; i < dim; i++ )
     {
-        if ( (bbox.max()[i] - bbox.min()[i]) > max_size )
+        if ( (bvol.max()[i] - bvol.min()[i]) > max_size )
         {
-            max_size = bbox.max()[i] - bbox.min()[i];
+            max_size = bvol.max()[i] - bvol.min()[i];
             split_dim  = i;
         }// if
     }// for
@@ -111,7 +111,7 @@ split ( size_t               ndest,
 
     size_t  npart_dofs = 0;
     idx_t   start_ofs  = 0;
-    double  split_pos  = bbox.min()[ split_dim ];
+    double  split_pos  = bvol.min()[ split_dim ];
     
     for ( size_t  i = 0; i < ndofs; i++ )
     {
@@ -138,12 +138,12 @@ split ( size_t               ndest,
 
             parts.push_back( std::move( subset ) );
 
-            TBBox  sub_bbox = bbox;
+            auto  sub_bvol = bvol;
 
-            sub_bbox.min()[ split_dim ] = split_pos;
-            sub_bbox.max()[ split_dim ] = split_pos;
+            sub_bvol.min()[ split_dim ] = split_pos;
+            sub_bvol.max()[ split_dim ] = split_pos;
 
-            parts_bbox.push_back( sub_bbox );
+            parts_bvol.push_back( sub_bvol );
 
             npart_dofs = 0;
             start_ofs  = i+1;
@@ -155,13 +155,13 @@ split ( size_t               ndest,
 // recursively construct leaf level clusters of (max) size nmin
 //
 void
-spatial_sort ( const size_t           nmin,
-               const TBSPPartStrat &  part,
-               const TCoordinate &    coord,
-               const TNodeSet  &      dofs,
-               const TBBox &          bbox,
-               const uint             lvl,
-               list< idx_t > &        sorted )
+spatial_sort ( const size_t             nmin,
+               const TBSPPartStrat &    part,
+               const TCoordinate &      coord,
+               const TNodeSet  &        dofs,
+               const TBoundingVolume &  bvol,
+               const uint               lvl,
+               list< idx_t > &          sorted )
 {
     if ( dofs.size() <= nmin )
     {
@@ -175,10 +175,10 @@ spatial_sort ( const size_t           nmin,
     // split nodes
     //
 
-    TNodeSet         left, right;
-    vector< TBBox >  son_bbox;
+    TNodeSet                   left, right;
+    vector< TBoundingVolume >  son_bvol;
     
-    part.partition( &coord, dofs, left, right, bbox, son_bbox, lvl );
+    part.partition( &coord, dofs, left, right, bvol, son_bvol, lvl );
 
     //
     // recurse
@@ -186,16 +186,16 @@ spatial_sort ( const size_t           nmin,
 
     if ( left.nnodes() == 0 )
     {
-        spatial_sort( nmin, part, coord, right, son_bbox[1], lvl+1, sorted );
+        spatial_sort( nmin, part, coord, right, son_bvol[1], lvl+1, sorted );
     }// if
     else if ( right.nnodes() == 0 )
     {
-        spatial_sort( nmin, part, coord, left,  son_bbox[0], lvl+1, sorted );
+        spatial_sort( nmin, part, coord, left,  son_bvol[0], lvl+1, sorted );
     }// if
     else
     {
-        spatial_sort( nmin, part, coord, left,  son_bbox[0], lvl+1, sorted );
-        spatial_sort( nmin, part, coord, right, son_bbox[1], lvl+1, sorted );
+        spatial_sort( nmin, part, coord, left,  son_bvol[0], lvl+1, sorted );
+        spatial_sort( nmin, part, coord, right, son_bvol[1], lvl+1, sorted );
     }// else
 }
 
@@ -205,29 +205,29 @@ spatial_sort ( const size_t           nmin,
 std::unique_ptr< TGeomCluster >
 build_cluster ( std::list< std::unique_ptr< TGeomCluster > > &  son_clusters )
 {
-    idx_t  min_idx = 0;
-    idx_t  max_idx = 0;
-    TBBox  par_bb;
-    bool   init = false;
+    idx_t            min_idx = 0;
+    idx_t            max_idx = 0;
+    TBoundingVolume  par_bvol;
+    bool             init    = false;
                 
     for ( auto &  son_cl : son_clusters )
     {
         if ( init )
         {
-            par_bb.join( son_cl->bbox() );
+            par_bvol.join( son_cl->bvol() );
             min_idx = std::min( min_idx, son_cl->first() );
             max_idx = std::max( max_idx, son_cl->last() );
         }// if
         else
         {
-            par_bb  = son_cl->bbox();
-            min_idx = son_cl->first();
-            max_idx = son_cl->last();
-            init    = true;
+            par_bvol = son_cl->bvol();
+            min_idx  = son_cl->first();
+            max_idx  = son_cl->last();
+            init     = true;
         }// else
     }// for
 
-    auto   parent = std::make_unique< TGeomCluster >( min_idx, max_idx, par_bb );
+    auto   parent = std::make_unique< TGeomCluster >( min_idx, max_idx, par_bvol );
     uint   spos   = 0;
                 
     parent->set_nsons( son_clusters.size() );
@@ -294,7 +294,7 @@ TMBLRCTBuilder::build ( const TCoordinate *  coord,
     // TCardBSPPartStrat  part( adaptive_split_axis );
     list< idx_t >      sorted;
 
-    spatial_sort( 4, *_part_strat, *coord, dofs, compute_bb( dofs, data ), 0, sorted );
+    spatial_sort( 4, *_part_strat, *coord, dofs, compute_bvol( dofs, data ), 0, sorted );
 
     //
     // leaf level clusters: split index set into requested number of sub sets
@@ -323,7 +323,7 @@ TMBLRCTBuilder::build ( const TCoordinate *  coord,
                 if ( pos == n-1 )
                     cl_idxs.append( idx );
 
-                auto  leaf = build_leaf( cl_idxs, _nlevel, ofs, compute_bb( cl_idxs, data ), data );
+                auto  leaf = build_leaf( cl_idxs, _nlevel, ofs, compute_bvol( cl_idxs, data ), data );
 
                 ofs += leaf->size();
                 cl_idxs.remove_all();
@@ -442,7 +442,7 @@ TMBLRCTBuilder::build ( const TCoordinate *  coord,
 std::unique_ptr< TGeomCluster >
 TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
                          const uint               lvl,
-                         const TBBox &            bbox,
+                         const TBoundingVolume &  bvol,
                          const TOptClusterSize &  csize,
                          const idx_t              index_ofs,
                          data_t &                 data ) const
@@ -453,7 +453,7 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     //
 
     if (( dofs.nnodes() <= data.nmin ) || ( lvl >= _nlevel ))
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     if ( lvl > data.max_lvl )
     {
@@ -461,7 +461,7 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
         if ( _max_lvl == 0 )
             HWARNING( to_string( "in (TMBLRCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
         
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
     }// if
     
     //
@@ -470,12 +470,12 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
 
     if ( ! csize.is_optimal( dofs.nnodes() ) )
     {
-        auto  son = divide( dofs, lvl+1, bbox, csize.recurse(), index_ofs, data );
+        auto  son = divide( dofs, lvl+1, bvol, csize.recurse(), index_ofs, data );
 
         if ( son.get() == nullptr )
             HERROR( ERR_NULL, "(TMBLRCTBuilder) divide", "son cluster" );
 
-        auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bbox() );
+        auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
         
         cluster->set_nsons( 1 );
         cluster->set_son( 0, son.release() );
@@ -492,23 +492,23 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     //    - n · α^l = n_min  and therefore  n_i = n·α^i
     //
 
-    TBBox  dof_bbox( bbox );
+    auto  dof_bvol = bvol;
     
-    if ( _adjust_bb )
-        dof_bbox = compute_bb( dofs, data );
+    if ( _adjust_bvol )
+        dof_bvol = compute_bvol( dofs, data );
 
-    const size_t      n       = dofs.nnodes();
-    // const double      alpha   = std::pow( std::log( data.nmin ) / std::log( n ), 1.0 / ( _nlevel - lvl ) );
-    // const size_t      ndest   = std::max< size_t >( std::pow( n, alpha ), data.nmin );
-    const size_t      nblocks = ( lvl != _nlevel ? std::pow( double( n ) / double( data.nmin ), 1.0 / ( _nlevel - lvl ) ) : 1 );
-    const size_t      ndest   = std::round( double( n ) / double( nblocks ) );
-    list< TNodeSet >  subsets;
-    list< TBBox >     subbboxs;
+    const size_t             n       = dofs.nnodes();
+    // const double             alpha   = std::pow( std::log( data.nmin ) / std::log( n ), 1.0 / ( _nlevel - lvl ) );
+    // const size_t             ndest   = std::max< size_t >( std::pow( n, alpha ), data.nmin );
+    const size_t             nblocks = ( lvl != _nlevel ? std::pow( double( n ) / double( data.nmin ), 1.0 / ( _nlevel - lvl ) ) : 1 );
+    const size_t             ndest   = std::round( double( n ) / double( nblocks ) );
+    list< TNodeSet >         subsets;
+    list< TBoundingVolume >  subbvols;
 
     // DBG::printf( "size / dest / α : %d / %d / %.4f", n, ndest, alpha );
     // DBG::printf( "size / dest / nblocks : %d / %d / %d", n, ndest, nblocks );
 
-    split( ndest, * data.coord, dofs, dof_bbox, subsets, subbboxs );
+    split( ndest, * data.coord, dofs, dof_bvol, subsets, subbvols );
 
     if ( subsets.empty() )
         HERROR( ERR_CONSISTENCY, "", "" );
@@ -517,7 +517,7 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     
     // if only single set remains, can't divide further
     if ( nsons == 1 )
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     // DBG::printf( "#sons = %d", nsons );
     
@@ -532,23 +532,23 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     // copy to vector and set up son index offsets for parallel execution
     //
 
-    vector< TNodeSet >  son_dofs( nsons );
-    vector< TBBox >     son_bbox( nsons );
-    vector< idx_t >     son_ofs( nsons );
-    idx_t               ofs = index_ofs;
-    idx_t               idx = 0;
+    vector< TNodeSet >         son_dofs( nsons );
+    vector< TBoundingVolume >  son_bvol( nsons );
+    vector< idx_t >            son_ofs( nsons );
+    idx_t                      ofs = index_ofs;
+    idx_t                      idx = 0;
 
     while ( ! subsets.empty() )
     {
-        TNodeSet  sdofs = behead( subsets );
-        TBBox     sbbox = behead( subbboxs );
+        TNodeSet         sdofs = behead( subsets );
+        TBoundingVolume  sbvol = behead( subbvols );
 
         son_ofs[ idx ] = ofs;
 
         ofs += sdofs.nnodes();
 
         son_dofs[ idx ] = std::move( sdofs );
-        son_bbox[ idx ] = std::move( sbbox );
+        son_bvol[ idx ] = std::move( sbvol );
         ++idx;
     }// for
     
@@ -558,11 +558,11 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
 
     vector< unique_ptr< TGeomCluster > >  sons( nsons );
 
-    auto  son_divide = [&son_dofs,&son_bbox,&son_ofs,&csize,&data,lvl,&sons,this] ( const uint  i )
+    auto  son_divide = [&son_dofs,&son_bvol,&son_ofs,&csize,&data,lvl,&sons,this] ( const uint  i )
     {
         // DBG::indent( 1 );
         
-        auto  cl = divide( son_dofs[i], lvl+1, son_bbox[i], csize.recurse(), son_ofs[i], data );
+        auto  cl = divide( son_dofs[i], lvl+1, son_bvol[i], csize.recurse(), son_ofs[i], data );
                 
         // DBG::indent( -1 );
         
@@ -579,7 +579,7 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     // set bounding box of cluster
     //
 
-    if ( _adjust_bb )
+    if ( _adjust_bvol )
     {
         //
         // as union of bb of sons
@@ -590,10 +590,10 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
         for ( auto &  son : sons )
         {
             if ( init )
-                dof_bbox.join( son->bbox() );
+                dof_bvol.join( son->bvol() );
             else
             {
-                dof_bbox = son->bbox();
+                dof_bvol = son->bvol();
                 init     = true;
             }// else
         }// for
@@ -601,14 +601,14 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
     else
     {
         //
-        // as provided by argument and updated with son-bboxes
+        // as provided by argument and updated with son-bvoles
         //
         
         for ( auto &  son : sons )
-            dof_bbox.join( son->bbox() );
+            dof_bvol.join( son->bvol() );
     }// else
 
-    check_bb( dof_bbox, data );
+    check_bvol( dof_bvol, data );
 
     //
     // finally build cluster
@@ -635,7 +635,7 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
         }// for
     }
     
-    auto  cluster = make_unique< TGeomCluster >( min_idx, max_idx, dof_bbox );
+    auto  cluster = make_unique< TGeomCluster >( min_idx, max_idx, dof_bvol );
 
     cluster->set_nsons( nsons );
 
@@ -650,12 +650,12 @@ TMBLRCTBuilder::divide ( const TNodeSet &         dofs,
 // recursively build cluster tree based on set of clusters
 //
 std::unique_ptr< TGeomCluster >
-TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
-                         const list< TBBox > &     leaf_bbox,
-                         const TBBox &             bbox,
-                         const uint                lvl,
-                         const idx_t               index_ofs,
-                         data_t &                  data ) const
+TMBLRCTBuilder::divide ( const list< TNodeSet > &         leaves,
+                         const list< TBoundingVolume > &  leaf_bvol,
+                         const TBoundingVolume &          bvol,
+                         const uint                       lvl,
+                         const idx_t                      index_ofs,
+                         data_t &                         data ) const
 {
     //
     // divide set of leaves into subsets based on target size
@@ -681,18 +681,18 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
     //
 
     if ( leaves.size() == 1 )
-        return build_leaf( leaves.front(), lvl, index_ofs, leaf_bbox.front(), data );
+        return build_leaf( leaves.front(), lvl, index_ofs, leaf_bvol.front(), data );
 
     if ( lvl == _nlevel )
     {
-        size_t  ndofs   = 0;
-        TBBox   cl_bbox = leaf_bbox.front();
+        size_t           ndofs   = 0;
+        TBoundingVolume  cl_bvol = leaf_bvol.front();
 
         for ( auto &  cl : leaves )
             ndofs += cl.nnodes();
 
-        for ( auto &  bb : leaf_bbox )
-            cl_bbox.join( bb );
+        for ( auto &  bb : leaf_bvol )
+            cl_bvol.join( bb );
                
         TNodeSet  dofs( ndofs );
         
@@ -700,25 +700,25 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
             for ( auto  i : cl )
                 dofs.append( i );
 
-        return build_leaf( dofs, lvl, index_ofs, cl_bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, cl_bvol, data );
     }// if
          
     //
     // divide cluster
     //
     
-    auto   sons    = list< std::unique_ptr< TGeomCluster > >();
-    auto   iter_cl = leaves.begin();
-    auto   iter_bb = leaf_bbox.begin();
-    idx_t  ofs     = index_ofs;
+    auto   sons      = list< std::unique_ptr< TGeomCluster > >();
+    auto   iter_cl   = leaves.begin();
+    auto   iter_bvol = leaf_bvol.begin();
+    idx_t  ofs       = index_ofs;
 
     while ( iter_cl != leaves.end() )
     {
-        size_t            son_size = 0;
-        list< TNodeSet >  son_leaves;
-        list< TBBox >     son_bboxes;
-        TBBox             son_bbox;
-        bool              init = false;
+        size_t                   son_size = 0;
+        list< TNodeSet >         son_leaves;
+        list< TBoundingVolume >  son_bvoles;
+        TBoundingVolume          son_bvol;
+        bool                     init = false;
 
         while (( son_size < ndest ) && ( iter_cl != leaves.end() ))
         {
@@ -728,18 +728,18 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
             
             if ( ! init )
             {
-                son_bbox = *iter_bb;
+                son_bvol = *iter_bvol;
                 init     = true;
             }// if
             else
-                son_bbox.join( *iter_bb );
+                son_bvol.join( *iter_bvol );
 
             son_size += (*iter_cl).nnodes();
             son_leaves.push_back( *iter_cl++ );
-            son_bboxes.push_back( *iter_bb++ );
+            son_bvoles.push_back( *iter_bvol++ );
         }// while
 
-        auto  son = divide( son_leaves, son_bboxes, son_bbox, lvl+1, ofs, data );
+        auto  son = divide( son_leaves, son_bvoles, son_bvol, lvl+1, ofs, data );
 
         if ( son.get() == nullptr )
             HERROR( ERR_NULL, "(TMBLRCTBuilder) divide", "son cluster" );
@@ -754,9 +754,9 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
     // set bounding box of cluster
     //
 
-    TBBox  cl_bbox( bbox );
+    auto  cl_bvol = bvol;
     
-    if ( _adjust_bb )
+    if ( _adjust_bvol )
     {
         //
         // as union of bb of sons
@@ -767,10 +767,10 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
         for ( auto &  son : sons )
         {
             if ( init )
-                cl_bbox.join( son->bbox() );
+                cl_bvol.join( son->bvol() );
             else
             {
-                cl_bbox = son->bbox();
+                cl_bvol = son->bvol();
                 init    = true;
             }// else
         }// for
@@ -778,14 +778,14 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
     else
     {
         //
-        // as provided by argument and updated with son-bboxes
+        // as provided by argument and updated with son-bvoles
         //
         
         for ( auto &  son : sons )
-            cl_bbox.join( son->bbox() );
+            cl_bvol.join( son->bvol() );
     }// else
 
-    check_bb( cl_bbox, data );
+    check_bvol( cl_bvol, data );
 
     //
     // finally build cluster
@@ -812,7 +812,7 @@ TMBLRCTBuilder::divide ( const list< TNodeSet > &  leaves,
         }// for
     }
     
-    auto  cluster = std::make_unique< TGeomCluster >( min_idx, max_idx, cl_bbox );
+    auto  cluster = std::make_unique< TGeomCluster >( min_idx, max_idx, cl_bvol );
     uint  pos     = 0;
 
     cluster->set_nsons( sons.size() );

@@ -141,7 +141,7 @@ read_config ()
     EVAL_CFG( "Cluster.nmin",                 CFG::Cluster::nmin );
     EVAL_CFG( "Cluster.sort_wrt_size",        CFG::Cluster::sort_wrt_size );
     EVAL_CFG( "Cluster.sync_interface_depth", CFG::Cluster::sync_interface_depth );
-    EVAL_CFG( "Cluster.adjust_bbox",          CFG::Cluster::adjust_bbox );
+    EVAL_CFG( "Cluster.adjust_bvol",          CFG::Cluster::adjust_bvol );
     EVAL_CF2( "Cluster.same_cluster_level",   CFG::Cluster::cluster_level_mode, bool ) 
     EVAL_CFG( "Cluster.build_scc",            CFG::Cluster::build_scc );
     EVAL_CFG( "Cluster.METIS_random",         CFG::Cluster::METIS_random );
@@ -430,7 +430,7 @@ init ()
     EVAL_ENV( "HPRO_Cluster_nmin",                 Cluster::nmin,                 uint );
     EVAL_ENV( "HPRO_Cluster_sort_wrt_size",        Cluster::sort_wrt_size,        bool );
     EVAL_ENV( "HPRO_Cluster_sync_interface_depth", Cluster::sync_interface_depth, bool );
-    EVAL_ENV( "HPRO_Cluster_adjust_bbox",          Cluster::adjust_bbox,          bool );
+    EVAL_ENV( "HPRO_Cluster_adjust_bvol",          Cluster::adjust_bvol,          bool );
     EVAL_EN2( "HPRO_Cluster_same_cluster_level",   Cluster::cluster_level_mode,   bool );
     EVAL_ENV( "HPRO_Cluster_build_scc",            Cluster::build_scc,            bool );
     EVAL_ENV( "HPRO_Cluster_METIS_random",         Cluster::METIS_random,         bool );
@@ -531,7 +531,7 @@ init ()
     EVAL_ENV( "HLIB_Cluster_nmin",                 Cluster::nmin,                 uint );
     EVAL_ENV( "HLIB_Cluster_sort_wrt_size",        Cluster::sort_wrt_size,        bool );
     EVAL_ENV( "HLIB_Cluster_sync_interface_depth", Cluster::sync_interface_depth, bool );
-    EVAL_ENV( "HLIB_Cluster_adjust_bbox",          Cluster::adjust_bbox,          bool );
+    EVAL_ENV( "HLIB_Cluster_adjust_bvol",          Cluster::adjust_bvol,          bool );
     EVAL_EN2( "HLIB_Cluster_same_cluster_level",   Cluster::cluster_level_mode,   bool );
     EVAL_ENV( "HLIB_Cluster_build_scc",            Cluster::build_scc,            bool );
     EVAL_ENV( "HLIB_Cluster_METIS_random",         Cluster::METIS_random,         bool );
@@ -668,7 +668,7 @@ print_parameters ()
     std::cout << "HPRO_Cluster_nmin                  = " << Cluster::nmin << std::endl
               << "HPRO_Cluster_sort_wrt_size         = " << Cluster::sort_wrt_size << std::endl
               << "HPRO_Cluster_sync_interface_depth  = " << Cluster::sync_interface_depth << std::endl
-              << "HPRO_Cluster_adjust_bbox           = " << Cluster::adjust_bbox << std::endl
+              << "HPRO_Cluster_adjust_bvol           = " << Cluster::adjust_bvol << std::endl
               << "HPRO_Cluster_same_cluster_level    = " << (Cluster::cluster_level_mode != 0 ? true : false) << std::endl
               << "HPRO_Cluster_build_scc             = " << Cluster::build_scc << std::endl
               << "HPRO_Cluster_METIS_random          = " << Cluster::METIS_random << std::endl;
@@ -795,9 +795,9 @@ bool                  sort_wrt_size        = false;
 // synchronise depth of interface clusters with domain clusters in ND case (default: true)
 bool                  sync_interface_depth = true;
 
-// adjust bounding box during clustering to set of indices and not as defined by parent
+// adjust bounding volume during clustering to set of indices and not as defined by parent
 // partitioning (default: true)
-bool                  adjust_bbox          = true;
+bool                  adjust_bvol          = true;
 
 // during block cluster tree construction: permit clusters of different level or not
 cluster_level_mode_t  cluster_level_mode   = cluster_level_same;

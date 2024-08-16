@@ -143,7 +143,7 @@ extern bool                  sync_interface_depth;
 
 // adjust bounding box during clustering to set of indices and not as defined by parent
 // partitioning (default: true)
-extern bool                  adjust_bbox;
+extern bool                  adjust_bvol;
 
 // during block cluster tree construction: permit clusters of different level or not
 extern cluster_level_mode_t  cluster_level_mode;

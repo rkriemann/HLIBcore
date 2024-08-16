@@ -57,16 +57,16 @@ THiLoFreqGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     // determine minimal axis in bboxes of cluster
     //
     
-    const TBBox   row_bbox   = rowcl->bbox();
-    const TBBox   col_bbox   = colcl->bbox();
-    const uint    dim        = row_bbox.min().dim();
-    double        row_min    = row_bbox.max()[0] - row_bbox.min()[0];
-    double        col_min    = col_bbox.max()[0] - col_bbox.min()[0];
+    const auto  row_bvol   = rowcl->bvol();
+    const auto  col_bvol   = colcl->bvol();
+    const uint  dim        = row_bvol.dim();
+    double      row_min    = row_bvol.max()[0] - row_bvol.min()[0];
+    double      col_min    = col_bvol.max()[0] - col_bvol.min()[0];
     
     for ( uint  i = 1; i < dim; ++i )
     {
-        row_min = std::min( row_min, row_bbox.max()[i] - row_bbox.min()[i] );
-        col_min = std::min( col_min, col_bbox.max()[i] - col_bbox.min()[i] );
+        row_min = std::min( row_min, row_bvol.max()[i] - row_bvol.min()[i] );
+        col_min = std::min( col_min, col_bvol.max()[i] - col_bvol.min()[i] );
     }// for
     
     const double  r_kappa    = std::min( row_min, col_min ) * _kappa;

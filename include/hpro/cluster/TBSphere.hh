@@ -1,5 +1,5 @@
-#ifndef __HPRO_TBBOX_HH
-#define __HPRO_TBBOX_HH
+#ifndef __HPRO_TBSPHERE_HH
+#define __HPRO_TBSPHERE_HH
 //
 // Project     : HLIBpro
 // File        : TBSphere.hh
@@ -102,6 +102,10 @@ public:
 
     //! return distance to \a bsphere
     double  distance  ( const TBSphere &  bsphere ) const;
+    
+    //! return distance to \a bsphere (not supported)
+    double  distance  ( const TBSphere &  bsphere,
+                        const TPoint &    /* period */ ) const { return distance( bsphere ); }
     
     //! return dimension of intersection with \a bsphere
     uint  overlap_dim ( const TBSphere &  bsphere ) const;

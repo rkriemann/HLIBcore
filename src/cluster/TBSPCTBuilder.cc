@@ -100,7 +100,7 @@ TGeomCTBuilder::TGeomCTBuilder ( const uint  an_min,
     _n_min         = std::max( an_min, uint(1) );
     _min_leaf_lvl  = amin_leaf_lvl;
     _max_lvl       = 0;
-    _adjust_bb     = CFG::Cluster::adjust_bbox;
+    _adjust_bvol   = CFG::Cluster::adjust_bvol;
     _sort_wrt_size = CFG::Cluster::sort_wrt_size;
 }
 
@@ -137,18 +137,18 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     unique_ptr< TGeomCluster > root;
     data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
     TNodeSet                   dofs( max_dof );
-    TBBox                      bbox;
+    TBoundingVolume            bvol;
     TOptClusterSize            csize;
     
     for ( uint i = 0; i < max_dof; i++ )
         dofs.append( i );
 
-    // comput bounding box of root cluster (only if not automatically adjusted)
-    if ( ! _adjust_bb )
-        bbox = compute_bb( dofs, data );
+    // comput bounding volume of root cluster (only if not automatically adjusted)
+    if ( ! _adjust_bvol )
+        bvol = compute_bvol( dofs, data );
     
     // and start partitioning
-    root = divide( dofs, 0, bbox, csize, index_ofs, data );
+    root = divide( dofs, 0, bvol, csize, index_ofs, data );
     
     if ( root.get() == nullptr )
         HERROR( ERR_NULL, "(TGeomCTBuilder) build", "root cluster" );
@@ -192,11 +192,11 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
 // create a leaf in a clustertree
 //
 unique_ptr< TGeomCluster >
-TGeomCTBuilder::build_leaf ( const TNodeSet &  dofs,
-                             const uint        lvl,
-                             const idx_t       index_ofs,
-                             const TBBox &     bbox,
-                             data_t &          data ) const
+TGeomCTBuilder::build_leaf ( const TNodeSet &         dofs,
+                             const uint               lvl,
+                             const idx_t              index_ofs,
+                             const TBoundingVolume &  bvol,
+                             data_t &                 data ) const
 {
     if ( dofs.nnodes() == 0 )
         HERROR( ERR_ARG, "(TGeomCTBuilder) build_leaf", "empty indexset" );
@@ -214,125 +214,114 @@ TGeomCTBuilder::build_leaf ( const TNodeSet &  dofs,
             (*data.perm)[ dof ] = ub++;
     }// for
 
-    TBBox  cl_bbox( bbox );
+    auto  cl_bvol = TBoundingVolume( bvol );
     
-    if ( _adjust_bb )
-        cl_bbox = compute_bb( dofs, data );
+    if ( _adjust_bvol )
+        cl_bvol = compute_bvol( dofs, data );
     
-    update_bb( dofs, cl_bbox, data );
+    update_bvol( dofs, cl_bvol, data );
 
-    if ( cl_bbox.min().dim() == 0 )
-        HERROR( ERR_DIM, "(TGeomCTBuilder) build_leaf", "no bbox" );
+    if ( cl_bvol.dim() == 0 )
+        HERROR( ERR_DIM, "(TGeomCTBuilder) build_leaf", "no bvol" );
     
     if ( size_t( ub - lb ) != dofs.nnodes() )
         HERROR( ERR_CONSISTENCY, "(TGeomCTBuilder) build_leaf", "missing nodes" );
     
-    return make_unique< TGeomCluster >( lb, ub-1, cl_bbox );
+    return make_unique< TGeomCluster >( lb, ub-1, cl_bvol );
 }
 
 namespace 
 {
 
 //
-// return bbox of support of given node
+// return bvol of support of given node
 //
-TBBox
+TBoundingVolume
 support_size ( const node_t         node,
                const bool           only_idx,
                const TCoordinate *  coord )
 {
-    TBBox       bbox;
-    const uint  dim = coord->dim();
+    TBoundingVolume  bvol;
 
-    bbox.min().set_dim( dim );
-    bbox.max().set_dim( dim );
-    
-    // start with coordinate of index
-    for ( uint j = 0; j < dim; j++ )
+    if ( ! only_idx && coord->has_bbox() )
     {
-        bbox.min()[j] = bbox.max()[j] = coord->coord( node )[j];
+        const auto  bsupp = TBBox( coord->bbmin( node ), coord->bbmax( node ) );
 
-        // and add corresponding bounding box data if available
-        if ( ! only_idx && coord->has_bbox() )
-        {
-            bbox.min()[j] = std::min( bbox.min()[j], coord->bbmin( node )[j] );
-            bbox.max()[j] = std::max( bbox.max()[j], coord->bbmax( node )[j] );
-        }// if
-    }// for
+        // this (naturally) assumes that coordinate is _within_ bounding volume!
+        bvol.extend( bsupp );
+    }// if
+    else
+    {
+        bvol.extend( TPoint( coord->dim(), coord->coord( node ) ) );
+    }// else
 
-    return bbox;
+    return bvol;
 }
 
 }// namespace anonymous
 
 //
-// compute bounding box of a cluster
+// compute bounding volume of a cluster
 //
-TBBox
-TGeomCTBuilder::compute_bb ( const TNodeSet &  dofs,
-                             const data_t &    data ) const
+TBoundingVolume
+TGeomCTBuilder::compute_bvol ( const TNodeSet &  dofs,
+                               const data_t &    data ) const
 {
-    TBBox       bbox;
-    const uint  dim = data.coord->dim();
-    
-    bbox.min().set_dim( dim );
-    bbox.max().set_dim( dim );
-    
-    bbox = support_size( dofs[0], true, data.coord );
+    auto  bvol = support_size( dofs[0], true, data.coord );
 
     for ( auto  dof : dofs )
-        bbox.join( support_size( dof, true, data.coord ) );
+        bvol.extend( support_size( dof, true, data.coord ) );
 
-    return bbox;
+    return bvol;
 }
 
 //
-// update bounding box of cluster
+// update bounding volume of cluster
 //
 void
-TGeomCTBuilder::update_bb ( const TNodeSet &  dofs,
-                            TBBox &           bbox,
-                            const data_t &    data ) const
+TGeomCTBuilder::update_bvol ( const TNodeSet &   dofs,
+                              TBoundingVolume &  bvol,
+                              const data_t &     data ) const
 {
     //
-    // update bbox with support of indices
+    // update bvol with support of indices
     //
     
     for ( auto  dof : dofs )
-        bbox.join( support_size( dof, false, data.coord ) );
+        bvol.extend( support_size( dof, false, data.coord ) );
 
-    check_bb( bbox, data );
+    check_bvol( bvol, data );
 }
 
 //
-// check bbox for degenerate axis
+// check bvol for degenerate axis
 //
 void
-TGeomCTBuilder::check_bb ( TBBox &         bbox,
-                           const data_t &  data ) const
+TGeomCTBuilder::check_bvol ( TBoundingVolume &  bvol,
+                             const data_t &     data ) const
 {
     //
-    // check for degenerate axis and enhance box if necessary,
+    // check for degenerate axis and enhance volume if necessary,
     // e.g. if axis-length is too small compared with diameter
     //
 
-    const double BBOX_EPS = 1e-5;
-    double       diam     = Math::square( bbox.min()[0] - bbox.max()[0] );
-    const uint   dim      = data.coord->dim();
+    const double  BVOL_EPS = 1e-5;
+    double        diam     = Math::square( bvol.min()[0] - bvol.max()[0] );
+    const uint    dim      = data.coord->dim();
     
     for ( uint i = 1; i < dim; i++ )
-        diam += Math::square( bbox.min()[i] - bbox.max()[i] );
+        diam += Math::square( bvol.min()[i] - bvol.max()[i] );
 
     diam = Math::sqrt( diam );
 
     for ( uint i = 0; i < dim; i++ )
     {
-        const double diff = bbox.max()[i] - bbox.min()[i];
+        const double diff = bvol.max()[i] - bvol.min()[i];
         
-        if ( diff < BBOX_EPS * diam )
+        if ( diff < BVOL_EPS * diam )
         {
-            bbox.min()[i] -= 0.5 * ( BBOX_EPS * diam - diff );
-            bbox.max()[i] += 0.5 * ( BBOX_EPS * diam - diff );
+            bvol.min()[i] -= 0.5 * ( BVOL_EPS * diam - diff );
+            bvol.max()[i] += 0.5 * ( BVOL_EPS * diam - diff );
         }// if
     }// for
 }
@@ -375,7 +364,7 @@ TBSPCTBuilder::~TBSPCTBuilder ()
 unique_ptr< TGeomCluster >
 TBSPCTBuilder::divide ( const TNodeSet &         dofs,
                         const uint               lvl,
-                        const TBBox &            bbox,
+                        const TBoundingVolume &  bvol,
                         const TOptClusterSize &  csize,
                         const idx_t              index_ofs,
                         data_t &                 data ) const
@@ -386,7 +375,7 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     //
 
     if (( lvl >= data.min_leaf_lvl ) && ( dofs.nnodes() <= data.nmin ))
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     if ( lvl > data.max_lvl )
     {
@@ -394,7 +383,7 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
         if ( _max_lvl == 0 )
             HWARNING( to_string( "in (TBSPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
         
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
     }// if
     
     //
@@ -403,12 +392,12 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
 
     if ( ! csize.is_optimal( dofs.nnodes() ) )
     {
-        auto  son = divide( dofs, lvl+1, bbox, csize.recurse(), index_ofs, data );
+        auto  son = divide( dofs, lvl+1, bvol, csize.recurse(), index_ofs, data );
 
         if ( son.get() == nullptr )
             HERROR( ERR_NULL, "(TBSPCTBuilder) divide", "son cluster" );
 
-        auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bbox() );
+        auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
         
         cluster->set_nsons( 1 );
         cluster->set_son( 0, son.release() );
@@ -420,21 +409,21 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    TBBox            cl_bbox( bbox );
-    TNodeSet         son_dofs[2];
-    vector< TBBox >  son_bbox( 2 );
+    TBoundingVolume            cl_bvol( bvol );
+    TNodeSet                   son_dofs[2];
+    vector< TBoundingVolume >  son_bvol( 2 );
 
-    if ( _adjust_bb )
-        cl_bbox = compute_bb( dofs, data );
+    if ( _adjust_bvol )
+        cl_bvol = compute_bvol( dofs, data );
 
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
     
     HDEBUG( to_string( "(TBSPCTBuilder) divide : left = %d, right = %d",
                        son_dofs[0].nnodes(), son_dofs[1].nnodes() ) );
     
     // if one of the subsets is empty => continue with this cluster
-    if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bbox[1], csize.recurse(), index_ofs, data );
-    else if ( son_dofs[1].nnodes() == 0 ) return divide( son_dofs[0], lvl+1, son_bbox[0], csize.recurse(), index_ofs, data );
+    if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bvol[1], csize.recurse(), index_ofs, data );
+    else if ( son_dofs[1].nnodes() == 0 ) return divide( son_dofs[0], lvl+1, son_bvol[0], csize.recurse(), index_ofs, data );
 
     //
     // sort sets according to size:
@@ -446,7 +435,7 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
         if ( double(son_dofs[0].nnodes()) / double(son_dofs[1].nnodes()) < CLUSTER_SIZE_RATIO )
         {
             std::swap( son_dofs[0], son_dofs[1] );
-            std::swap( son_bbox[0], son_bbox[1] );
+            std::swap( son_bvol[0], son_bvol[1] );
         }// if
     }// if
          
@@ -464,11 +453,11 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
         
 
     auto  build_soncl =
-        [this,lvl,&csize,&data] ( TNodeSet &     sdofs,
-                                  const TBBox &  sbbox,
-                                  const idx_t    sofs ) -> unique_ptr< TGeomCluster >
+        [this,lvl,&csize,&data] ( TNodeSet &               sdofs,
+                                  const TBoundingVolume &  sbvol,
+                                  const idx_t              sofs ) -> unique_ptr< TGeomCluster >
         {
-            auto  cl = divide( sdofs, lvl+1, sbbox, csize.recurse(), sofs, data );
+            auto  cl = divide( sdofs, lvl+1, sbvol, csize.recurse(), sofs, data );
                 
             if ( cl.get() == nullptr )
                 HERROR( ERR_NULL, "(TBSPCTBuilder) divide", "son cluster" );
@@ -479,33 +468,33 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
             return cl;
         };
 
-    sons[0] = build_soncl( son_dofs[0], son_bbox[0], left_ofs  );
-    sons[1] = build_soncl( son_dofs[1], son_bbox[1], right_ofs );
+    sons[0] = build_soncl( son_dofs[0], son_bvol[0], left_ofs  );
+    sons[1] = build_soncl( son_dofs[1], son_bvol[1], right_ofs );
 
     //
-    // set bounding box of cluster
+    // set bounding volume of cluster
     //
 
-    if ( _adjust_bb )
+    if ( _adjust_bvol )
     {
         //
         // as union of bb of sons
         //
 
-        cl_bbox = sons[0]->bbox();
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol = sons[0]->bvol();
+        cl_bvol.join( sons[1]->bvol() );
     }// if
     else
     {
         //
-        // as provided by argument and updated with son-bboxes
+        // as provided by argument and updated with son-bvoles
         //
         
-        cl_bbox.join( sons[0]->bbox() );
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol.join( sons[0]->bvol() );
+        cl_bvol.join( sons[1]->bvol() );
     }// else
 
-    check_bb( cl_bbox, data );
+    check_bvol( cl_bvol, data );
 
     //
     // finally build cluster
@@ -513,7 +502,7 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     
     auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
                                                  std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                 cl_bbox );
+                                                 cl_bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );
@@ -653,7 +642,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     unique_ptr< TGeomCluster > root;
     data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
     TNodeSet                   dofs( max_dof );
-    TBBox                      bbox;
+    TBoundingVolume            bvol;
     TOptClusterSize            csize;
 
     for ( size_t  i = 0; i < max_dof; i++ )
@@ -664,11 +653,11 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
         dofs.append( node_t(i) );
     }// for
 
-    // comput bounding box of root cluster
-    bbox = compute_bb( dofs, data );
+    // comput bounding volume of root cluster
+    bvol = compute_bvol( dofs, data );
 
     // and start partitioning
-    root = divide( dofs, 0, bbox, csize.recurse(), index_ofs, data );
+    root = divide( dofs, 0, bvol, csize.recurse(), index_ofs, data );
     
     if ( root.get() == nullptr )
         HERROR( ERR_NULL, "(TBSPNDCTBuilder) build", "root cluster" );
@@ -692,13 +681,13 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
             perm[ node ] = ub++;
         }// while
         
-        bbox = compute_bb( dofs, data );
-        update_bb(  dofs, bbox, data );
+        bvol = compute_bvol( dofs, data );
+        update_bvol(  dofs, bvol, data );
         
         auto  high_cl  = make_unique< TGeomCluster >( lb, ub-1 );
         auto  new_root = make_unique< TGeomCluster >( index_ofs, ub-1 );
 
-        high_cl->bbox() = bbox;
+        high_cl->bvol() = bvol;
         
         new_root->set_nsons( 2 );
         new_root->set_son( 0, root.release() );
@@ -747,7 +736,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
 unique_ptr< TGeomCluster >
 TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                           const uint               lvl,
-                          const TBBox &            bbox,
+                          const TBoundingVolume &  bvol,
                           const TOptClusterSize &  csize,
                           const idx_t              index_ofs,
                           data_t &                 data ) const
@@ -758,7 +747,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     //
     
     if (( lvl >= data.min_leaf_lvl ) && ( dofs.nnodes() <= data.nmin ))
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     if ( lvl > data.max_lvl )
     {
@@ -766,25 +755,25 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
         if ( _max_lvl == 0 )
             HWARNING( to_string( "in (TBSPNDPCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
         
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
     }// if
 
     //
     // divide sons
     //
 
-    TBBox            cl_bbox( bbox );
-    TNodeSet         son_dofs[2];
-    vector< TBBox >  son_bbox( 2 );
+    TBoundingVolume            cl_bvol( bvol );
+    TNodeSet                   son_dofs[2];
+    vector< TBoundingVolume >  son_bvol( 2 );
 
-    if ( _adjust_bb )
-        cl_bbox = compute_bb( dofs, data );
+    if ( _adjust_bvol )
+        cl_bvol = compute_bvol( dofs, data );
         
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
     
     // if one of the subsets is empty => continue with this cluster
-    if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bbox[1], csize.recurse(), index_ofs, data );
-    else if ( son_dofs[1].nnodes() == 0 ) return divide( son_dofs[0], lvl+1, son_bbox[0], csize.recurse(), index_ofs, data );
+    if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bvol[1], csize.recurse(), index_ofs, data );
+    else if ( son_dofs[1].nnodes() == 0 ) return divide( son_dofs[0], lvl+1, son_bvol[0], csize.recurse(), index_ofs, data );
 
     //
     // if an interface should be build, remove indices from
@@ -871,8 +860,8 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     }// for
 
     // recheck empty sons
-    if ( son_dofs[0].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bbox, data );
-    if ( son_dofs[1].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bbox, data );
+    if ( son_dofs[0].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bvol, data );
+    if ( son_dofs[1].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bvol, data );
 
     // consistency check
     if ( son_dofs[0].nnodes() + son_dofs[1].nnodes() + if_dofs.nnodes() != dofs.nnodes() )
@@ -888,14 +877,14 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     const idx_t                 right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
 
     auto  build_soncl =
-        [this,lvl,&csize,&data] ( TNodeSet &     sdofs,
-                                  const TBBox &  sbbox,
-                                  const idx_t    sofs,
-                                  double &       slvl ) -> unique_ptr< TGeomCluster >
+        [this,lvl,&csize,&data] ( TNodeSet &               sdofs,
+                                  const TBoundingVolume &  sbvol,
+                                  const idx_t              sofs,
+                                  double &                 slvl ) -> unique_ptr< TGeomCluster >
         {
             if ( sdofs.nnodes() > 0 )
             {
-                auto  cl = divide( sdofs, lvl+1, sbbox, csize.recurse(), sofs, data );
+                auto  cl = divide( sdofs, lvl+1, sbvol, csize.recurse(), sofs, data );
 
                 if ( cl.get() == nullptr )
                     HERROR( ERR_NULL, "(TBSPNDCTBuilder) divide", "son cluster" );
@@ -911,8 +900,8 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
             return nullptr;
         };
 
-    sons[0] = build_soncl( son_dofs[0], son_bbox[0], left_ofs,  son_lvl[0] );
-    sons[1] = build_soncl( son_dofs[1], son_bbox[1], right_ofs, son_lvl[1] );
+    sons[0] = build_soncl( son_dofs[0], son_bvol[0], left_ofs,  son_lvl[0] );
+    sons[1] = build_soncl( son_dofs[1], son_bvol[1], right_ofs, son_lvl[1] );
 
     if (( sons[0].get() == nullptr ) || ( sons[1].get() == nullptr ))
         HERROR( ERR_CONSISTENCY, "(TBSPNDCTBuilder) divide", "missing son cluster" );
@@ -925,10 +914,10 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     
     if ( if_dofs.nnodes() > 0 )
     {
-        const idx_t   if_ofs    = index_ofs + idx_t(sons[0]->size()) + idx_t(sons[1]->size());
-        double        reduction = 0.0;
-        TBBox         if_bbox;
-        const double  avg_lvl   = std::max( son_lvl[0], son_lvl[1] );
+        const idx_t      if_ofs    = index_ofs + idx_t(sons[0]->size()) + idx_t(sons[1]->size());
+        double           reduction = 0.0;
+        TBoundingVolume  if_bvol;
+        const double     avg_lvl   = std::max( son_lvl[0], son_lvl[1] );
 
         // compute optimal reduction of clustersize to achieve desired depth
         // reduction = (n_min / |if|)^(1/max_lvl)
@@ -936,9 +925,9 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
             reduction = Math::pow( double(std::max( data.nmin, 1u )) / ( double(if_dofs.nnodes()) ),
                                    1.0 / avg_lvl );
 
-        if_bbox = compute_bb( if_dofs, data );
+        if_bvol = compute_bvol( if_dofs, data );
         
-        if_son = divide_if( if_dofs, lvl+1, std::min( uint(lvl + 1 + avg_lvl), data.max_lvl ), if_bbox,
+        if_son = divide_if( if_dofs, lvl+1, std::min( uint(lvl + 1 + avg_lvl), data.max_lvl ), if_bvol,
                             TOptClusterSize( if_dofs.nnodes(), reduction ), if_ofs, data );
         
         if ( if_son == nullptr )
@@ -950,36 +939,36 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     sons[1]->set_domain( true );
     
     //
-    // set bounding box of cluster
+    // set bounding volume of cluster
     //
 
-    if ( _adjust_bb )
+    if ( _adjust_bvol )
     {
         //
         // as union of bb of sons
         //
 
-        cl_bbox = sons[0]->bbox();
+        cl_bvol = sons[0]->bvol();
 
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol.join( sons[1]->bvol() );
 
         if ( if_son.get() != nullptr )
-            cl_bbox.join( if_son->bbox() );
+            cl_bvol.join( if_son->bvol() );
     }// if
     else
     {
         //
-        // as provided by argument and updated with son-bboxes
+        // as provided by argument and updated with son-bvoles
         //
         
-        cl_bbox.join( sons[0]->bbox() );
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol.join( sons[0]->bvol() );
+        cl_bvol.join( sons[1]->bvol() );
 
         if ( if_son.get() != nullptr )
-            cl_bbox.join( if_son->bbox() );
+            cl_bvol.join( if_son->bvol() );
     }// else
 
-    check_bb( cl_bbox, data );
+    check_bvol( cl_bvol, data );
     
     //
     // create indexset of cluster as union of son-iss
@@ -998,7 +987,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                            std::max( std::max( sons[0]->last(),  sons[1]->last() ),  if_son->last()  ) );
     }// else
     
-    auto  cluster = make_unique< TGeomCluster >( is.first(), is.last(), cl_bbox );
+    auto  cluster = make_unique< TGeomCluster >( is.first(), is.last(), cl_bvol );
 
     if ( if_son.get() != nullptr )
         cluster->set_nsons( 3 );
@@ -1021,20 +1010,20 @@ unique_ptr< TGeomCluster >
 TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
                              const uint               lvl,
                              const uint               max_lvl,
-                             const TBBox &            bbox,
+                             const TBoundingVolume &  bvol,
                              const TOptClusterSize &  csize,
                              const idx_t              index_ofs,
                              data_t &                 data ) const
 {
     auto  recurse =
-        [this,lvl,max_lvl,index_ofs,&dofs,&bbox,&csize,&data] () -> unique_ptr< TGeomCluster >
+        [this,lvl,max_lvl,index_ofs,&dofs,&bvol,&csize,&data] () -> unique_ptr< TGeomCluster >
         {
-            auto  son = divide_if( dofs, lvl+1, max_lvl, bbox, csize.recurse(), index_ofs, data );
+            auto  son = divide_if( dofs, lvl+1, max_lvl, bvol, csize.recurse(), index_ofs, data );
 
             if ( son.get() == nullptr )
                 HERROR( ERR_NULL, "(TBSPNDCTBuilder) divide_if", "son cluster" );
 
-            auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bbox() );
+            auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
 
             cluster->set_nsons( 1 );
             cluster->set_son( 0, son.release() );
@@ -1048,7 +1037,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     //
     
     if (( dofs.nnodes() <= data.nmin ) || ( lvl >= max_lvl ))
-        return build_leaf( dofs, lvl, index_ofs, bbox, data );
+        return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     //
     // if size of cluster leaves is at most optimal size don't split cluster
@@ -1061,14 +1050,14 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    TBBox           cl_bbox( bbox );
-    TNodeSet        son_dofs[2];
-    vector< TBBox > son_bbox( 2 );
+    TBoundingVolume           cl_bvol( bvol );
+    TNodeSet                  son_dofs[2];
+    vector< TBoundingVolume > son_bvol( 2 );
 
-    if ( _adjust_bb )
-        cl_bbox = compute_bb( dofs, data );
+    if ( _adjust_bvol )
+        cl_bvol = compute_bvol( dofs, data );
         
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
     
     // if one of the subsets is empty => recurse
     if (( son_dofs[0].nnodes() == 0 ) || ( son_dofs[1].nnodes() == 0 ))
@@ -1077,7 +1066,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // consistency check
     if ( son_dofs[0].nnodes() + son_dofs[1].nnodes() != dofs.nnodes() )
     {
-        _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+        _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
         HERROR( ERR_CONSISTENCY, "(TBSPNDCTBuilder) divide_if", "lost nodes during divide" );
     }// if
     
@@ -1090,13 +1079,13 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     const idx_t                 right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
 
     auto  build_soncl =
-        [this,lvl,max_lvl,&csize,&data] ( TNodeSet &     sdofs,
-                                          const TBBox &  sbbox,
-                                          const idx_t    sofs ) -> unique_ptr< TGeomCluster >
+        [this,lvl,max_lvl,&csize,&data] ( TNodeSet &               sdofs,
+                                          const TBoundingVolume &  sbvol,
+                                          const idx_t              sofs ) -> unique_ptr< TGeomCluster >
         {
             if ( sdofs.nnodes() > 0 )
             {
-                auto  cl = divide_if( sdofs, lvl+1, max_lvl, sbbox, csize.recurse(), sofs, data );
+                auto  cl = divide_if( sdofs, lvl+1, max_lvl, sbvol, csize.recurse(), sofs, data );
                 
                 if ( cl.get() == nullptr )
                     HERROR( ERR_NULL, "(TBSPNDCTBuilder) divide_if", "son cluster is nullptr" );
@@ -1110,33 +1099,33 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
             return nullptr;
         };
 
-    sons[0] = build_soncl( son_dofs[0], son_bbox[0], left_ofs  );
-    sons[1] = build_soncl( son_dofs[1], son_bbox[1], right_ofs );
+    sons[0] = build_soncl( son_dofs[0], son_bvol[0], left_ofs  );
+    sons[1] = build_soncl( son_dofs[1], son_bvol[1], right_ofs );
 
     //
-    // set bounding box of cluster
+    // set bounding volume of cluster
     //
 
-    if ( _adjust_bb )
+    if ( _adjust_bvol )
     {
         //
         // as union of bb of sons
         //
         
-        cl_bbox = sons[0]->bbox();
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol = sons[0]->bvol();
+        cl_bvol.join( sons[1]->bvol() );
     }// if
     else
     {
         //
-        // as provided by argument and updated with son-bboxes
+        // as provided by argument and updated with son-bvoles
         //
         
-        cl_bbox.join( sons[0]->bbox() );
-        cl_bbox.join( sons[1]->bbox() );
+        cl_bvol.join( sons[0]->bvol() );
+        cl_bvol.join( sons[1]->bvol() );
     }// else
 
-    check_bb( cl_bbox, data );
+    check_bvol( cl_bvol, data );
     
     //
     // create indexset of cluster as union of son-iss
@@ -1144,7 +1133,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     
     auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
                                                  std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                 cl_bbox );
+                                                 cl_bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );

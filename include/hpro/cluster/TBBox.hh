@@ -80,6 +80,13 @@ public:
     //! return spatial dimension of bbox
     uint           dim () const { return _bb_min.dim(); }
     
+    //! set spatial dimension of bbox
+    void           set_dim ( const uint  d )
+    {
+        _bb_min.set_dim( d );
+        _bb_max.set_dim( d );
+    }
+    
     ///////////////////////////////////////////////
     //
     // bounding box properties
@@ -103,10 +110,13 @@ public:
                       const TPoint &  period ) const;
 
     //! join local bbox with \a box
-    void join ( const TBBox & box );
+    void  join ( const TBBox & box );
     
     //! extend local bbox by given point
-    void extend ( const TPoint &  p );
+    void  extend ( const TPoint &  p );
+
+    //! extend local bbox by given bbox
+    void  extend ( const TBBox &  bbox ) { join( bbox ); }
 
     //! return dimension of intersection with \a bbox
     uint  overlap_dim ( const TBBox &  bbox ) const;

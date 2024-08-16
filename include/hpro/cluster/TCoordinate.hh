@@ -131,7 +131,7 @@ public:
     const std::vector< double * > &  bbmin () const { return _bbmin; }
     const std::vector< double * > &  bbmax () const { return _bbmax; }
 
-    //! return boundning box of coordinate set
+    //! return bounding box of coordinate set
     TBBox  bounding_box () const;
     
     //! set periodicity to \a p

@@ -8,10 +8,10 @@
 // Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hpro/base/types.hh"
-#include "hpro/cluster/TBBox.hh"
-#include "hpro/cluster/TBSphere.hh"
-#include "hpro/cluster/TCluster.hh"
+#include <hpro/base/types.hh>
+#include <hpro/cluster/TBBox.hh>
+#include <hpro/cluster/TBSphere.hh>
+#include <hpro/cluster/TCluster.hh>
 
 namespace Hpro
 {
@@ -21,7 +21,7 @@ namespace Hpro
 //
 DECLARE_TYPE( TGeomCluster );
 
-using  TBoundingVolume = TBSphere;
+using  TBoundingVolume = TBBox;
 
 //!
 //! \ingroup  Cluster_Module

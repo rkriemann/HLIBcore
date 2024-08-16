@@ -117,28 +117,8 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     // count number of empty intersections per axis (up to single point)
     //
 
-    const uint  dim     = rowcl->bbox().dim();
-    uint        n_empty = 0;
-    
-    // in 1D, different clusters share at most one vertex => admissible
-    if ( dim == 1 )
-        return true;
-    
-    if (( rowcl->bbox().max().dim() < dim ) ||
-        ( colcl->bbox().min().dim() < dim ) ||
-        ( colcl->bbox().max().dim() < dim ))
-        HERROR( ERR_ARG, "(TWeakStdGeomAdmCond) is_adm",
-               "dimension of vectors in rowcl and colcl differs" );
-
-    for ( uint i = 0; i < dim; i++ )
-    {
-        if (( rowcl->bbox().max()[i] <= colcl->bbox().min()[i] ) ||
-            ( colcl->bbox().max()[i] <= rowcl->bbox().min()[i] ))
-            n_empty++;
-    }// for
-
     // test real weak admissibility, i.e., no overlap
-    if ( n_empty == dim )
+    if ( rowcl->bvol().overlap_dim( colcl->bvol() ) == 0 )
         return true;
     
     //

@@ -88,8 +88,8 @@ protected:
     //! maximal level of tree (0: automatic choice)
     uint                   _max_lvl;
 
-    //! flag for adjusting bounding boxes of nodes
-    bool                   _adjust_bb;
+    //! flag for adjusting bounding volumes of nodes
+    bool                   _adjust_bvol;
 
     //! flag for sorting sub clusters w.r.t. size
     bool                   _sort_wrt_size;
@@ -118,7 +118,7 @@ public:
     std::unique_ptr< TGeomCluster >
     divide ( const TNodeSet &         dofs,
              const uint               lvl,
-             const TBBox &            bbox,
+             const TBoundingVolume &  bvol,
              const TOptClusterSize &  csize,
              const idx_t              index_ofs,
              data_t &                 data ) const = 0;
@@ -130,38 +130,46 @@ public:
     uint  n_min          () const { return _n_min;         }
     uint  min_leaf_lvl   () const { return _min_leaf_lvl;  }
     uint  max_lvl        () const { return _max_lvl;       }
-    bool  adjust_bb      () const { return _adjust_bb;     }
+    bool  adjust_bvol      () const { return _adjust_bvol;     }
     bool  sort_wrt_size  () const { return _sort_wrt_size; }
 
     //! set maximal leaf level
     void  set_max_lvl    ( const uint  l ) { _max_lvl = l; }
     
-    //! set flag for adjusting bounding box
-    void  adjust_bb      ( const bool  b ) { _adjust_bb = b; }
+    //! set flag for adjusting bounding volume
+    void  adjust_bvol      ( const bool  b ) { _adjust_bvol = b; }
 
     //! set flag for sorting son cluster wrt. size
     void  sort_wrt_size  ( const bool  b ) { _sort_wrt_size = b; }
     
 protected:
     //! create a leaf in a clustertree containing indices in \a dofs
-    virtual std::unique_ptr< TGeomCluster >  build_leaf ( const TNodeSet & dofs,
-                                                          const uint       lvl,
-                                                          const idx_t      index_ofs,
-                                                          const TBBox &    bbox,
-                                                          data_t &         data ) const;
+    virtual
+    std::unique_ptr< TGeomCluster >
+    build_leaf ( const TNodeSet &         dofs,
+                 const uint               lvl,
+                 const idx_t              index_ofs,
+                 const TBoundingVolume &  bvol,
+                 data_t &                 data ) const;
 
-    //! compute bounding box of index set defined by \a dofs
-    virtual TBBox  compute_bb   ( const TNodeSet & dofs,
-                                  const data_t &   data ) const;
+    //! compute bounding volume of index set defined by \a dofs
+    virtual
+    TBoundingVolume
+    compute_bvol   ( const TNodeSet &  dofs,
+                     const data_t &    data ) const;
 
-    //! update bounding box of index set defined by \a dofs
-    virtual void   update_bb    ( const TNodeSet & dofs,
-                                  TBBox &          bbox,
-                                  const data_t &   data ) const;
+    //! update bounding volume of index set defined by \a dofs
+    virtual
+    void
+    update_bvol    ( const TNodeSet &   dofs,
+                     TBoundingVolume &  bvol,
+                     const data_t &     data ) const;
 
-    //! check and update bbox in case of degenerate axis, e.g. very small length
-    virtual void   check_bb     ( TBBox &          bbox,
-                                  const data_t &   data ) const;
+    //! check and update bvol in case of degenerate axis, e.g. very small length
+    virtual
+    void
+    check_bvol     ( TBoundingVolume &  bvol,
+                     const data_t &     data ) const;
 };
 
 //!
@@ -199,7 +207,7 @@ public:
     std::unique_ptr< TGeomCluster >
     divide ( const TNodeSet &         dofs,
              const uint               lvl,
-             const TBBox &            bbox,
+             const TBoundingVolume &  bvol,
              const TOptClusterSize &  csize,
              const idx_t              index_ofs,
              data_t &                 data ) const;
@@ -277,7 +285,7 @@ public:
     std::unique_ptr< TGeomCluster >
     divide    ( const TNodeSet &         dofs,
                 const uint               lvl,
-                const TBBox &            bbox,
+                const TBoundingVolume &  bvol,
                 const TOptClusterSize &  csize,
                 const idx_t              index_ofs,
                 data_t &                 data ) const;
@@ -288,7 +296,7 @@ public:
     divide_if ( const TNodeSet &         dofs,
                 const uint               lvl,
                 const uint               max_lvl,
-                const TBBox &            bbox,
+                const TBoundingVolume &  bvol,
                 const TOptClusterSize &  csize,
                 const idx_t              index_ofs,
                 data_t &                 data ) const;
@@ -338,7 +346,7 @@ public:
     std::unique_ptr< TGeomCluster >
     divide ( const TNodeSet &         dofs,
              const uint               lvl,
-             const TBBox &            bbox,
+             const TBoundingVolume &  bvol,
              const TOptClusterSize &  csize,
              const idx_t              index_ofs,
              data_t &                 data ) const;
@@ -346,12 +354,12 @@ public:
     //! recursively build cluster tree for leaf-level partitioning in \a leaves
     virtual
     std::unique_ptr< TGeomCluster >
-    divide ( const std::list< TNodeSet > &  leaves,
-             const std::list< TBBox > &     leaf_bbox,
-             const TBBox &                  bbox,
-             const uint                     lvl,
-             const idx_t                    index_ofs,
-             data_t &                       data ) const;
+    divide ( const std::list< TNodeSet > &         leaves,
+             const std::list< TBoundingVolume > &  leaf_bvol,
+             const TBoundingVolume &               bvol,
+             const uint                            lvl,
+             const idx_t                           index_ofs,
+             data_t &                              data ) const;
 };
 
 //!
@@ -412,7 +420,7 @@ public:
     //! recursively build cluster tree for indices in \a dofs
     virtual std::unique_ptr< TGeomCluster >  divide ( const TNodeSet &         dofs,
                                                       const uint               lvl,
-                                                      const TBBox &            bbox,
+                                                      const TBoundingVolume &  bvol,
                                                       const TOptClusterSize &  csize,
                                                       const idx_t              index_ofs,
                                                       data_t &                 data ) const;
@@ -421,7 +429,7 @@ protected:
     //! split into <nsub> sub sets
     virtual
     std::pair< std::vector< TNodeSet >,
-               std::vector< TBBox > >
+               std::vector< TBoundingVolume > >
     split ( const uint        nsub,
             const TNodeSet &  dofs,
             data_t &          data ) const;

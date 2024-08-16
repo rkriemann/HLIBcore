@@ -170,7 +170,15 @@ TBBox::distance ( const TBBox & bbox, const TPoint & period ) const
 void
 TBBox::join ( const TBBox & bbox )
 {
-    if (( min().dim() != bbox.min().dim() ) || ( max().dim() != bbox.max().dim() ))
+    // if not initialised, use given box
+    if ( min().dim() == 0 )
+    {
+        *this = bbox;
+        return;
+    }// if
+
+    if (( min().dim() != bbox.min().dim() ) ||
+        ( max().dim() != bbox.max().dim() ))
         HERROR( ERR_ARG, "(TBBox) join", "argument has different spatial dimension" );
 
     const uint  mdim = min().dim(); // assuming that min and max have same dimension
@@ -215,24 +223,31 @@ uint
 TBBox::overlap_dim ( const TBBox &  bbox ) const
 {
     //
-    // count overlapping dimensions
+    // reduce dimension of overlap with every empty axis intersection
     //
 
-    //
-    // count number of empty intersections per axis (up to single point)
-    //
-
-    const uint  dim    = dim();
-    uint        n_over = 0;
+    const uint  d      = dim();
+    uint        n_over = d;
     
-    if (( bbox.dim() != dim )
-        HERROR( ERR_ARG, "(TBBox) overlap_dim",
-               "different dimension in given bbox" );
+    if ( bbox.dim() != d )
+        HERROR( ERR_ARG, "(TBBox) overlap_dim", "different dimension in given bbox" );
 
-    for ( uint i = 0; i < dim; i++ )
+    for ( uint  i = 0; i < d; i++ )
     {
-        // TODO
+        const auto  tmin = min()[i];  // τ
+        const auto  tmax = max()[i];
+            
+        const auto  smin = bbox.min()[i]; // σ
+        const auto  smax = bbox.max()[i];
+
+        if (( tmax <= smin ) ||   // ├── τ ──┤├── σ ──┤
+            ( smax <= tmin ))     // ├── σ ──┤├── τ ──┤
+        {
+            n_over--;
+        }// if
     }// for
+        
+    return  n_over;
 }
 
 ///////////////////////////////////////////////
