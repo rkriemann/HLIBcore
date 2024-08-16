@@ -41,14 +41,28 @@ public:
     //
 
     //! construct bytestream capable of holding \a s bytes
-    TByteStream ( const size_t  s = 0 )
-            : _data(NULL), _size(0), _pos(0), _extern(false)
+    TByteStream ()
+            : _data(NULL)
+            , _size(0)
+            , _pos(0)
+            , _extern(false)
+    {}
+
+    //! construct bytestream capable of holding \a s bytes
+    TByteStream ( const size_t  s )
+            : _data(NULL)
+            , _size(0)
+            , _pos(0)
+            , _extern(false)
     { set_size(s); }
 
     //! construct bytestream by given array (external storage)
     TByteStream ( const size_t  asize,
                   void *        adata )
-            : _data(NULL), _size(0), _pos(0), _extern(false)
+            : _data(NULL)
+            , _size(0)
+            , _pos(0)
+            , _extern(false)
     { set_stream( adata, asize ); }
 
     //! copy constructor
