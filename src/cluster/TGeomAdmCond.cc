@@ -1,15 +1,15 @@
 //
 // Project     : HLIBpro
-// File        : TStdGeomAdmCond.cc
-// Description : standard admissibility classes
+// File        : TGeomAdmCond.cc
+// Description : classes for geometric admissibility conditions
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2024. All Rights Reserved.
 //
 
-#include "hpro/base/error.hh"
-#include "hpro/cluster/TGeomCluster.hh"
+#include <hpro/base/error.hh>
+#include <hpro/cluster/TGeomCluster.hh>
 
-#include "hpro/cluster/TGeomAdmCond.hh"
+#include <hpro/cluster/TGeomAdmCond.hh>
 
 namespace Hpro
 {
@@ -117,7 +117,7 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     // count number of empty intersections per axis (up to single point)
     //
 
-    const uint  dim     = rowcl->bbox().min().dim();
+    const uint  dim     = rowcl->bbox().dim();
     uint        n_empty = 0;
     
     // in 1D, different clusters share at most one vertex => admissible
@@ -139,10 +139,6 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 
     // test real weak admissibility, i.e., no overlap
     if ( n_empty == dim )
-        return true;
-    
-    // if "small" use weak admissibility for lower dimension
-    if (( std::max( rowcl->size(), colcl->size() ) < 1000 ) && ( n_empty == dim-1 ))
         return true;
     
     //
