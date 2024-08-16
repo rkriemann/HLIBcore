@@ -18,12 +18,12 @@ namespace Hpro
 
 //!
 //! \ingroup  Cluster_Module
-//! \class    TStdGeomAdmCond
-//! \brief    Standard admissibility for FEM/BEM applications
-//!           normal :  adm  iff  min( diam(τ), diam(σ) ) ≤ η·dist(τ,σ)
-//!           use_max:  adm  iff  max( diam(τ), diam(σ) ) ≤ η·dist(τ,σ)
+//! \class    TStrongGeomAdmCond
+//! \brief    strong admissibility for FEM/BEM applications
+//!           normal :  min( diam(τ), diam(σ) ) ≤ η·dist(τ,σ)
+//!           use_max:  max( diam(τ), diam(σ) ) ≤ η·dist(τ,σ)
 //!
-class TStdGeomAdmCond : public TAdmCondition
+class TStrongGeomAdmCond : public TAdmCondition
 {
 protected:
     //! parameter for ratio between diameter and distance
@@ -42,23 +42,23 @@ public:
     //
 
     //! construct standard admissiblity 
-    TStdGeomAdmCond ( const double       eta       = 2.0,
-                      const diam_mode_t  diam_mode = use_min_diam )
+    TStrongGeomAdmCond ( const double       eta       = 2.0,
+                         const diam_mode_t  diam_mode = use_min_diam )
             : _eta(eta)
             , _diam_mode(diam_mode)
     {}
 
     //! construct standard admissiblity with periodic geometry
-    TStdGeomAdmCond ( const TPoint &     period,
-                      const double       eta       = 2.0,
-                      const diam_mode_t  diam_mode = use_min_diam )
+    TStrongGeomAdmCond ( const TPoint &     period,
+                         const double       eta       = 2.0,
+                         const diam_mode_t  diam_mode = use_min_diam )
             : _eta(eta)
             , _diam_mode(diam_mode)
             , _period(period)
     {}
 
     //! dtor
-    virtual ~TStdGeomAdmCond () {}
+    virtual ~TStrongGeomAdmCond () {}
 
     ///////////////////////////////////////////
     //
@@ -68,15 +68,18 @@ public:
     //! return true if cluster \a cl is admissible
     virtual bool is_adm ( const TBlockCluster * cl ) const;
 
-    DISABLE_COPY_OP( TStdGeomAdmCond );
+    DISABLE_COPY_OP( TStrongGeomAdmCond );
 };
+
+// strong admissibility = standard admissibility
+using TStdGeomAdmCond = TStrongGeomAdmCond;
 
 //!
 //! \ingroup  Cluster_Module
-//! \class    TWeakStdGeomAdmCond
-//! \brief    Combination of standard and weak (vertex) admissibility
+//! \class    TVertexGeomAdmCond
+//! \brief    vertex admissibility, i.e., overlap has codimension 0 (or strong adm.)
 //!
-class TWeakStdGeomAdmCond : public TStdGeomAdmCond
+class TVertexGeomAdmCond : public TStrongGeomAdmCond
 {
 public:
     ///////////////////////////////////////////
@@ -84,16 +87,16 @@ public:
     // constructor and destructor
     //
 
-    TWeakStdGeomAdmCond ( const double  eta = 2.0 )
-            : TStdGeomAdmCond( eta, use_min_diam )
+    TVertexGeomAdmCond ( const double  eta = 2.0 )
+            : TStrongGeomAdmCond( eta, use_min_diam )
     {}
 
-    TWeakStdGeomAdmCond ( const TPoint &  period,
-                          const double    eta = 2.0 )
-            : TStdGeomAdmCond( period, eta, use_min_diam )
+    TVertexGeomAdmCond ( const TPoint &  period,
+                             const double    eta = 2.0 )
+            : TStrongGeomAdmCond( period, eta, use_min_diam )
     {}
 
-    virtual ~TWeakStdGeomAdmCond () {}
+    virtual ~TVertexGeomAdmCond () {}
 
     ///////////////////////////////////////////
     //
@@ -103,6 +106,9 @@ public:
     //! return true if \a cl is either weakly or strongly admissible
     virtual bool is_adm ( const TBlockCluster * cl ) const;
 };
+
+// strong admissibility = standard admissibility
+using TWeakStdGeomAdmCond = TVertexGeomAdmCond;
 
 //!
 //! \ingroup  Cluster_Module

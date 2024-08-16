@@ -17,7 +17,7 @@ namespace Hpro
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //
-// TStdGeomAdmCond (implementation)
+// TStrongGeomAdmCond (implementation)
 //
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -32,17 +32,13 @@ namespace Hpro
 // min{ diam(t_1) , diam(t_2) } <= 2 eta dist(t_1, t_2)
 //
 bool
-TStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
+TStrongGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 {
-    const TGeomCluster  * rowcl, * colcl;
-
-    if ( ! IS_TYPE( c->rowcl(), TGeomCluster ) ||
-         ! IS_TYPE( c->colcl(), TGeomCluster ) )
-        HERROR( ERR_CT_TYPE, "(TStdGeomAdmCond) is_adm", 
-               c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
+    if ( ! ( is_geom_cluster( c->rowcl() ) && is_geom_cluster( c->colcl() ) ) )
+        HERROR( ERR_CT_TYPE, "(TStrongGeomAdmCond) is_adm", c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
     
-    rowcl = cptrcast( c->rowcl(), TGeomCluster );
-    colcl = cptrcast( c->colcl(), TGeomCluster );
+    auto  rowcl = cptrcast( c->rowcl(), TGeomCluster );
+    auto  colcl = cptrcast( c->colcl(), TGeomCluster );
 
     if ( rowcl == colcl )
         return false;
@@ -81,7 +77,7 @@ TStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //
-// TWeakStdGeomAdmCond (implementation)
+// TVertexGeomAdmCond (implementation)
 //
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -91,17 +87,13 @@ TStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 // standard admissibility for large clusters
 //
 bool
-TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
+TVertexGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 {
-    const TGeomCluster  * rowcl, * colcl;
-
-    if ( ! IS_TYPE( c->rowcl(), TGeomCluster ) ||
-         ! IS_TYPE( c->colcl(), TGeomCluster ) )
-        HERROR( ERR_CT_TYPE, "(TWeakStdGeomAdmCond) is_adm", 
-               c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
+    if ( ! ( is_geom_cluster( c->rowcl() ) && is_geom_cluster( c->colcl() ) ) )
+        HERROR( ERR_CT_TYPE, "(TVertexGeomAdmCond) is_adm", c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
     
-    rowcl = cptrcast( c->rowcl(), TGeomCluster );
-    colcl = cptrcast( c->colcl(), TGeomCluster );
+    auto  rowcl = cptrcast( c->rowcl(), TGeomCluster );
+    auto  colcl = cptrcast( c->colcl(), TGeomCluster );
 
     if ( rowcl == colcl )
         return false;
@@ -125,7 +117,7 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
     // test standard adm.
     //
     
-    return TStdGeomAdmCond::is_adm( c );
+    return TStrongGeomAdmCond::is_adm( c );
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -142,15 +134,11 @@ TWeakStdGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 bool
 TWeakGeomAdmCond::is_adm ( const TBlockCluster * c ) const
 {
-    const TGeomCluster  * rowcl, * colcl;
-
-    if ( ! IS_TYPE( c->rowcl(), TGeomCluster ) ||
-         ! IS_TYPE( c->colcl(), TGeomCluster ) )
-        HERROR( ERR_CT_TYPE, "(TWeakGeomAdmCond) is_adm", 
-               c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
+    if ( ! ( is_geom_cluster( c->rowcl() ) && is_geom_cluster( c->colcl() ) ) )
+        HERROR( ERR_CT_TYPE, "(TWeakGeomAdmCond) is_adm", c->rowcl()->typestr() + " x " + c->colcl()->typestr() );
     
-    rowcl = cptrcast( c->rowcl(), TGeomCluster );
-    colcl = cptrcast( c->colcl(), TGeomCluster );
+    auto  rowcl = cptrcast( c->rowcl(), TGeomCluster );
+    auto  colcl = cptrcast( c->colcl(), TGeomCluster );
 
     if ( rowcl == colcl )
         return false;
