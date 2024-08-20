@@ -10,9 +10,6 @@
 
 #include <hpro/cluster/TBoundingVolume.hh>
 
-#undef HPRO_USE_CGAL
-#define HPRO_USE_CGAL 0
-
 namespace Hpro
 {
 
