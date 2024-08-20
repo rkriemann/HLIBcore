@@ -8,11 +8,14 @@
 // Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hpro/base/types.hh"
-#include "hpro/base/TPoint.hh"
+#include <hpro/base/types.hh>
+#include <hpro/base/TPoint.hh>
 
 namespace Hpro
 {
+
+// forward decl. for ctor
+class TBSphere;
 
 /////////////////////////////////////////////////////////////////
 //
@@ -64,6 +67,9 @@ public:
         *this = box;
     }
     
+    //! convert bounding sphere to bounding box
+    TBBox ( const TBSphere &  bsphere );
+    
     ///////////////////////////////////////////////
     //
     // access local variables
@@ -93,33 +99,36 @@ public:
     //
 
     //! return true if point \a x is inside box
-    bool is_inside ( const TPoint & x ) const;
+    bool    is_inside   ( const TPoint & x ) const;
     
     //! return diameter of box
-    double diameter () const;
+    double  diameter    () const;
 
     //! return volume of box
-    double volume   () const;
+    double  volume      () const;
 
     //! return distance to \a box
-    double distance ( const TBBox & box ) const;
+    double  distance    ( const TBBox & box ) const;
 
     //! return distance to \a box but coordinates have
     //! periodicity defined by \a period
-    double distance ( const TBBox &   box,
-                      const TPoint &  period ) const;
+    double  distance    ( const TBBox &   box,
+                          const TPoint &  period ) const;
 
     //! join local bbox with \a box
-    void  join ( const TBBox & box );
+    void    join        ( const TBBox & box );
     
     //! extend local bbox by given point
-    void  extend ( const TPoint &  p );
+    void    extend      ( const TPoint &  p );
 
     //! extend local bbox by given bbox
-    void  extend ( const TBBox &  bbox ) { join( bbox ); }
+    void    extend      ( const TBBox &  bbox ) { join( bbox ); }
 
     //! return dimension of intersection with \a bbox
-    uint  overlap_dim ( const TBBox &  bbox ) const;
+    uint    overlap_dim ( const TBBox &  bbox ) const;
+    
+    //! check volume and adjust if degenerate
+    void    check       ();
     
     ///////////////////////////////////////////////
     //

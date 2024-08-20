@@ -152,24 +152,35 @@ protected:
                  const TBoundingVolume &  bvol,
                  data_t &                 data ) const;
 
+    //! compute bounding box of index set defined by \a dofs
+    virtual
+    TBBox
+    compute_bbox    ( const TNodeSet &  dofs,
+                      const data_t &    data ) const;
+
+    //! compute bounding sphere of index set defined by \a dofs
+    virtual
+    TBSphere
+    compute_bsphere ( const TNodeSet &  dofs,
+                      const data_t &    data ) const;
+
     //! compute bounding volume of index set defined by \a dofs
     virtual
     TBoundingVolume
-    compute_bvol   ( const TNodeSet &  dofs,
-                     const data_t &    data ) const;
+    compute_bvol    ( const TNodeSet &  dofs,
+                      const data_t &    data ) const;
 
     //! update bounding volume of index set defined by \a dofs
     virtual
     void
-    update_bvol    ( const TNodeSet &   dofs,
-                     TBoundingVolume &  bvol,
-                     const data_t &     data ) const;
+    update_bvol     ( const TNodeSet &   dofs,
+                      TBoundingVolume &  bvol,
+                      const data_t &     data ) const;
 
     //! check and update bvol in case of degenerate axis, e.g. very small length
     virtual
     void
-    check_bvol     ( TBoundingVolume &  bvol,
-                     const data_t &     data ) const;
+    check_bvol      ( TBoundingVolume &  bvol ) const;
 };
 
 //!

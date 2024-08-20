@@ -42,13 +42,13 @@ TGeomBSPPartStrat::TGeomBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TGeomBSPPartStrat::partition ( const TCoordinate * coord,
-                               const TNodeSet  &   dofs,
-                               TNodeSet &          left,
-                               TNodeSet &          right,
-                               const TBBox &       bbox,
-                               vector< TBBox > &   son_bbox,
-                               const uint          depth ) const
+TGeomBSPPartStrat::partition ( const TCoordinate *  coord,
+                               const TNodeSet  &    dofs,
+                               TNodeSet &           left,
+                               TNodeSet &           right,
+                               const TBBox &        bbox,
+                               vector< TBBox > &    son_bbox,
+                               const uint           depth ) const
 {
     if ( coord == nullptr )
         HERROR( ERR_ARG, "(TGeomBSPPartStrat) partition", "undefined (nullptr) coordinate set" );
@@ -249,13 +249,13 @@ TCardBSPPartStrat::TCardBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TCardBSPPartStrat::partition ( const TCoordinate * coord,
-                               const TNodeSet  &   dofs,
-                               TNodeSet &          left,
-                               TNodeSet &          right,
-                               const TBBox &       bbox,
-                               vector< TBBox > &   son_bbox,
-                               const uint          depth ) const
+TCardBSPPartStrat::partition ( const TCoordinate *  coord,
+                               const TNodeSet  &    dofs,
+                               TNodeSet &           left,
+                               TNodeSet &           right,
+                               const TBBox &        bbox,
+                               vector< TBBox > &    son_bbox,
+                               const uint           depth ) const
 {
     if ( coord == nullptr )
         HERROR( ERR_ARG, "(TCardBSPPartStrat) partition", "undefined (nullptr) coordinate set" );
@@ -490,8 +490,8 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 
         for ( auto  dof : dofs )
         {
-            const double * coo = coord->coord( dof );
-            TPoint         x( dim );
+            const auto  coo = coord->coord( dof );
+            TPoint      x( dim );
 
             for ( uint j = 0; j < dim; ++j )
                 x[j] = coo[j] - center[j];
@@ -514,12 +514,12 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 
             for ( auto  dof : dofs )
             {
-                const double * coo = coord->coord( dof );
+                const auto  coo = coord->coord( dof );
 
                 for ( uint j = 0; j < dim; ++j )
                     x[j] = coo[j] - center[j];
         
-                const double  d = dot( dir, x );
+                const auto  d = dot( dir, x );
 
                 if ( first )
                 {
@@ -541,7 +541,7 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
         
             for ( auto  dof : dofs )
             {
-                const double * coo = coord->coord( dof );
+                const auto  coo = coord->coord( dof );
 
                 for ( uint j = 0; j < dim; ++j )
                     x[j] = coo[j] - center[j];
@@ -558,7 +558,7 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 
             for ( auto  dof : dofs )
             {
-                const double * coo = coord->coord( dof );
+                const auto  coo = coord->coord( dof );
 
                 for ( uint j = 0; j < dim; ++j )
                     x[j] = coo[j] - center[j];
@@ -579,8 +579,8 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
             
             for ( auto  dof : dofs )
             {
-                const double * coo = coord->coord( dof );
-                TPoint         x( dim );
+                const auto  coo = coord->coord( dof );
+                TPoint      x( dim );
 
                 for ( uint j = 0; j < dim; ++j )
                     x[j] = coo[j] - center[j];
@@ -600,8 +600,8 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
         
     if (( nleft == 0 ) || ( nright == 0 ))
     {
-        vector< pair< idx_t, double > >  idx_angle( ndofs );
-        size_t                           pos = 0;
+        auto    idx_angle = std::vector< pair< idx_t, double > >( ndofs );
+        size_t  pos = 0;
    
         for ( auto  dof : dofs )
         {
@@ -609,7 +609,7 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
 
             coo.add( -1.0, center );
 
-            pair< idx_t, double >  data( dof, dot( dir, coo ) );
+            auto  data = std::pair< idx_t, double >( dof, dot( dir, coo ) );
 
             idx_angle[pos++] = data;
         }// for
@@ -664,12 +664,12 @@ TNDBSPPartStrat< value_t >::TNDBSPPartStrat ( const TSparseMatrix< value_t > *  
 //
 template < typename value_t >
 void
-TNDBSPPartStrat< value_t >::partition ( const TCoordinate * coord,
-                                        const TNodeSet  &   dofs,
-                                        TNodeSet &          left,
-                                        TNodeSet &          right,
-                                        const TBBox &       bbox,
-                                        vector< TBBox > &   son_bbox,
+TNDBSPPartStrat< value_t >::partition ( const TCoordinate *  coord,
+                                        const TNodeSet  &    dofs,
+                                        TNodeSet &           left,
+                                        TNodeSet &           right,
+                                        const TBBox &        bbox,
+                                        vector< TBBox > &    son_bbox,
                                         const uint ) const
 {
     using  idxmap_t = unordered_map< idx_t, idx_t >;
@@ -709,8 +709,8 @@ TNDBSPPartStrat< value_t >::partition ( const TCoordinate * coord,
         // sort indices wrt maximal dimension
         //
 
-        TIdxCompare     idxcmp( coord, dim );
-        uint            no = 0;
+        auto  idxcmp = TIdxCompare( coord, dim );
+        uint  no     = 0;
 
         for ( auto  dof : dofs )
             arr_dof[no++] = dof;
@@ -775,8 +775,8 @@ TNDBSPPartStrat< value_t >::partition ( const TCoordinate * coord,
         // sort indices wrt maximal dimension
         //
 
-        TIdxCompare  idxcmp( coord, min_ec_dim );
-        uint         no = 0;
+        auto  idxcmp = TIdxCompare( coord, min_ec_dim );
+        uint  no     = 0;
 
         for ( auto  dof : dofs )
             arr_dof[no++] = dof;
@@ -862,13 +862,13 @@ TAutoBSPPartStrat::TAutoBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TAutoBSPPartStrat::partition ( const TCoordinate * coord,
-                               const TNodeSet &    dofs,
-                               TNodeSet &          left,
-                               TNodeSet &          right,
-                               const TBBox &       bbox,
-                               vector< TBBox > &   son_bbox,
-                               const uint          depth ) const
+TAutoBSPPartStrat::partition ( const TCoordinate *  coord,
+                               const TNodeSet &     dofs,
+                               TNodeSet &           left,
+                               TNodeSet &           right,
+                               const TBBox &        bbox,
+                               vector< TBBox > &    son_bbox,
+                               const uint           depth ) const
 {
     _geom.partition( coord, dofs, left, right, bbox, son_bbox, depth );
 

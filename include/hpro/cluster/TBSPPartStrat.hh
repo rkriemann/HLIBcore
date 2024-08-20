@@ -12,7 +12,7 @@
 
 #include "hpro/cluster/types.hh"
 #include "hpro/cluster/TNodeSet.hh"
-#include "hpro/cluster/TBBox.hh"
+#include "hpro/cluster/TGeomCluster.hh"
 #include "hpro/cluster/TCoordinate.hh"
 
 #include "hpro/matrix/TSparseMatrix.hh"

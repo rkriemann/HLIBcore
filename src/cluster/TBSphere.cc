@@ -6,10 +6,24 @@
 // Copyright   : Max Planck Institute MIS 2004-2024. All Rights Reserved.
 //
 
-#include "hpro/cluster/TBSphere.hh"
+#include <hpro/cluster/TBBox.hh>
+
+#include <hpro/cluster/TBSphere.hh>
 
 namespace Hpro
 {
+
+//
+// ctor
+//
+TBSphere::TBSphere ( const TBBox &  bbox )
+{
+    auto  lb = bbox.min();
+    auto  ub = bbox.max();
+
+    _center = 0.5 * ( ub + lb );
+    _radius = 0.5 * ( ub - lb ).norm2();
+}
 
 ///////////////////////////////////////////////
 //
@@ -66,6 +80,16 @@ TBSphere::overlap_dim ( const TBSphere &  bsphere ) const
 
     if ( dist < 0 ) return dim();
     else            return 0;
+}
+
+//
+// check volume and adjust if degenerate
+//
+void
+TBSphere::check ()
+{
+    if ( _radius < 0.0 )
+        _radius = 0;
 }
 
 ///////////////////////////////////////////////

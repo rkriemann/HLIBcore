@@ -10,6 +10,16 @@
 #include <set>
 #include <unordered_map>
 
+#include <hpro/config.h>
+
+#if HPRO_USE_CGAL == 1
+#  include <CGAL/Simple_cartesian.h>
+#  include <CGAL/Cartesian.h>
+#  include <CGAL/Min_sphere_of_spheres_d.h>
+#  include <CGAL/Min_sphere_of_points_d_traits_2.h>
+#  include <CGAL/Min_sphere_of_points_d_traits_3.h>
+#endif
+
 #include "list.hh"
 #include "treealg.hh"
 
@@ -143,9 +153,8 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     for ( uint i = 0; i < max_dof; i++ )
         dofs.append( i );
 
-    // comput bounding volume of root cluster (only if not automatically adjusted)
-    if ( ! _adjust_bvol )
-        bvol = compute_bvol( dofs, data );
+    // compute bounding volume of root cluster
+    bvol = compute_bvol( dofs, data );
     
     // and start partitioning
     root = divide( dofs, 0, bvol, csize, index_ofs, data );
@@ -214,20 +223,20 @@ TGeomCTBuilder::build_leaf ( const TNodeSet &         dofs,
             (*data.perm)[ dof ] = ub++;
     }// for
 
-    auto  cl_bvol = TBoundingVolume( bvol );
+    // auto  cl_bvol = TBoundingVolume( bvol );
     
-    if ( _adjust_bvol )
-        cl_bvol = compute_bvol( dofs, data );
-    
-    update_bvol( dofs, cl_bvol, data );
+    // if ( _adjust_bvol )
+    //     cl_bvol = compute_bvol( dofs, data );
+    // else
+    //     update_bvol( dofs, cl_bvol, data );
 
-    if ( cl_bvol.dim() == 0 )
-        HERROR( ERR_DIM, "(TGeomCTBuilder) build_leaf", "no bvol" );
+    // if ( cl_bvol.dim() == 0 )
+    //     HERROR( ERR_DIM, "(TGeomCTBuilder) build_leaf", "no bvol" );
     
     if ( size_t( ub - lb ) != dofs.nnodes() )
         HERROR( ERR_CONSISTENCY, "(TGeomCTBuilder) build_leaf", "missing nodes" );
     
-    return make_unique< TGeomCluster >( lb, ub-1, cl_bvol );
+    return make_unique< TGeomCluster >( lb, ub-1, bvol );
 }
 
 namespace 
@@ -236,29 +245,110 @@ namespace
 //
 // return bvol of support of given node
 //
-TBoundingVolume
+TBBox
 support_size ( const node_t         node,
                const bool           only_idx,
                const TCoordinate *  coord )
 {
-    TBoundingVolume  bvol;
+    TBBox  bbox;
 
     if ( ! only_idx && coord->has_bbox() )
     {
         const auto  bsupp = TBBox( coord->bbmin( node ), coord->bbmax( node ) );
 
         // this (naturally) assumes that coordinate is _within_ bounding volume!
-        bvol.extend( bsupp );
+        bbox.extend( bsupp );
     }// if
     else
     {
-        bvol.extend( TPoint( coord->dim(), coord->coord( node ) ) );
+        bbox.extend( TPoint( coord->dim(), coord->coord( node ) ) );
     }// else
 
-    return bvol;
+    return bbox;
 }
 
 }// namespace anonymous
+
+//
+// compute bounding volume of a cluster
+//
+TBBox
+TGeomCTBuilder::compute_bbox ( const TNodeSet &  dofs,
+                               const data_t &    data ) const
+{
+    //
+    // compute bounding box
+    //
+    
+    auto  bbox = support_size( dofs[0], true, data.coord );
+
+    for ( auto  dof : dofs )
+        bbox.extend( support_size( dof, true, data.coord ) );
+
+    return bbox;
+}
+
+//
+// compute bounding volume of a cluster
+//
+TBSphere
+TGeomCTBuilder::compute_bsphere ( const TNodeSet &  dofs,
+                                  const data_t &    data ) const
+{
+    //
+    // compute bounding sphere
+    //
+        
+    using  K          = CGAL::Simple_cartesian<double>;
+    using  Traits     = CGAL::Min_sphere_of_points_d_traits_3< K, double >;
+    using  Min_circle = CGAL::Min_sphere_of_spheres_d< Traits >;
+    using  Point      = K::Point_3;
+            
+    double   radius = 0.0;
+    T3Point  center;
+    auto     coords = std::vector< Point >();
+            
+    if ( data.coord->has_bbox() )
+    {
+        coords.reserve( 2 * dofs.nnodes() );
+            
+        for ( auto  dof : dofs )
+        {
+            auto  bbmin = data.coord->bbmin( dof );
+            auto  bbmax = data.coord->bbmax( dof );
+                        
+            coords.push_back( Point( bbmin[0], bbmin[1], bbmin[2] ) );
+            coords.push_back( Point( bbmax[0], bbmax[1], bbmax[2] ) );
+        }// for
+    }// if
+    else
+    {
+        coords.reserve( dofs.nnodes() );
+            
+        for ( auto  dof : dofs )
+        {
+            auto  xyz = data.coord->coord( dof );
+                    
+            coords.push_back( Point( xyz[0], xyz[1], xyz[2] ) );
+        }// for
+    }// else
+
+    //
+    // compute minimal bounding
+    //
+    
+    auto  mc = Min_circle( coords.begin(), coords.end() );
+
+    radius = mc.radius();
+                
+    uint  i      = 0;
+    auto  ccie   = mc.center_cartesian_end();
+        
+    for( auto  ccib = mc.center_cartesian_begin(); ccib != ccie; ++ccib )
+        center[i++] = *ccib;
+            
+    return TBSphere( center, radius );
+}
 
 //
 // compute bounding volume of a cluster
@@ -267,12 +357,15 @@ TBoundingVolume
 TGeomCTBuilder::compute_bvol ( const TNodeSet &  dofs,
                                const data_t &    data ) const
 {
-    auto  bvol = support_size( dofs[0], true, data.coord );
+    auto  bbox    = compute_bbox( dofs, data );
+    auto  bsphere = compute_bsphere( dofs, data );
 
-    for ( auto  dof : dofs )
-        bvol.extend( support_size( dof, true, data.coord ) );
+    auto  bbmid   = 0.5 * ( bbox.max() + bbox.min() );
 
-    return bvol;
+    // std::cout << bsphere.to_string() << " / " << bsphere.diameter() << " / " << bsphere.volume() << std::endl
+    //           << bbmid.to_string() << " / " << bbox.to_string() << " / " << bbox.diameter() << " / " << bbox.volume() << std::endl;
+
+    return TBoundingVolume( bbox, bsphere );
 }
 
 //
@@ -290,40 +383,16 @@ TGeomCTBuilder::update_bvol ( const TNodeSet &   dofs,
     for ( auto  dof : dofs )
         bvol.extend( support_size( dof, false, data.coord ) );
 
-    check_bvol( bvol, data );
+    check_bvol( bvol );
 }
 
 //
 // check bvol for degenerate axis
 //
 void
-TGeomCTBuilder::check_bvol ( TBoundingVolume &  bvol,
-                             const data_t &     data ) const
+TGeomCTBuilder::check_bvol ( TBoundingVolume &  bvol ) const
 {
-    //
-    // check for degenerate axis and enhance volume if necessary,
-    // e.g. if axis-length is too small compared with diameter
-    //
-
-    const double  BVOL_EPS = 1e-5;
-    double        diam     = Math::square( bvol.min()[0] - bvol.max()[0] );
-    const uint    dim      = data.coord->dim();
-    
-    for ( uint i = 1; i < dim; i++ )
-        diam += Math::square( bvol.min()[i] - bvol.max()[i] );
-
-    diam = Math::sqrt( diam );
-
-    for ( uint i = 0; i < dim; i++ )
-    {
-        const double diff = bvol.max()[i] - bvol.min()[i];
-        
-        if ( diff < BVOL_EPS * diam )
-        {
-            bvol.min()[i] -= 0.5 * ( BVOL_EPS * diam - diff );
-            bvol.max()[i] += 0.5 * ( BVOL_EPS * diam - diff );
-        }// if
-    }// for
+    bvol.check();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -409,17 +478,33 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    TBoundingVolume            cl_bvol( bvol );
-    TNodeSet                   son_dofs[2];
-    vector< TBoundingVolume >  son_bvol( 2 );
+    auto             cl_bbox = bvol.bbox();
+    TNodeSet         son_dofs[2];
+    vector< TBBox >  son_bbox( 2 );
+
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+
+    HDEBUG( to_string( "(TBSPCTBuilder) divide : left = %d, right = %d", son_dofs[0].nnodes(), son_dofs[1].nnodes() ) );
+
+    //
+    // compute/adjust bounding volumes
+    //
+    
+    auto  son_bvol = std::vector< TBoundingVolume >( 2 );
 
     if ( _adjust_bvol )
-        cl_bvol = compute_bvol( dofs, data );
+    {
+        son_bvol[0] = compute_bvol( son_dofs[0], data );
+        son_bvol[1] = compute_bvol( son_dofs[1], data );
+    }// if
+    else
+    {
+        auto  bsph0 = compute_bsphere( son_dofs[0], data );
+        auto  bsph1 = compute_bsphere( son_dofs[1], data );
 
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
-    
-    HDEBUG( to_string( "(TBSPCTBuilder) divide : left = %d, right = %d",
-                       son_dofs[0].nnodes(), son_dofs[1].nnodes() ) );
+        son_bvol[0] = TBoundingVolume( son_bbox[0], bsph0 );
+        son_bvol[1] = TBoundingVolume( son_bbox[1], bsph1 );
+    }// else
     
     // if one of the subsets is empty => continue with this cluster
     if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bvol[1], csize.recurse(), index_ofs, data );
@@ -472,29 +557,15 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     sons[1] = build_soncl( son_dofs[1], son_bvol[1], right_ofs );
 
     //
-    // set bounding volume of cluster
+    // adjust bounding volume of cluster (to always include sons)
     //
 
-    if ( _adjust_bvol )
-    {
-        //
-        // as union of bb of sons
-        //
+    // auto  cl_bvol = bvol;
+    
+    // cl_bvol.extend( sons[0]->bvol() );
+    // cl_bvol.extend( sons[1]->bvol() );
 
-        cl_bvol = sons[0]->bvol();
-        cl_bvol.join( sons[1]->bvol() );
-    }// if
-    else
-    {
-        //
-        // as provided by argument and updated with son-bvoles
-        //
-        
-        cl_bvol.join( sons[0]->bvol() );
-        cl_bvol.join( sons[1]->bvol() );
-    }// else
-
-    check_bvol( cl_bvol, data );
+    // check_bvol( cl_bvol );
 
     //
     // finally build cluster
@@ -502,7 +573,7 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     
     auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
                                                  std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                 cl_bvol );
+                                                 bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );
@@ -682,7 +753,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
         }// while
         
         bvol = compute_bvol( dofs, data );
-        update_bvol(  dofs, bvol, data );
+        // update_bvol(  dofs, bvol, data ); ???
         
         auto  high_cl  = make_unique< TGeomCluster >( lb, ub-1 );
         auto  new_root = make_unique< TGeomCluster >( index_ofs, ub-1 );
@@ -762,15 +833,32 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    TBoundingVolume            cl_bvol( bvol );
-    TNodeSet                   son_dofs[2];
-    vector< TBoundingVolume >  son_bvol( 2 );
+    auto      cl_bbox  = bvol.bbox();
+    auto      son_bbox = std::vector< TBBox >( 2 );
+    TNodeSet  son_dofs[2];
+
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+
+    //
+    // adjust/compute bounding volume
+    //
+    
+    auto  son_bvol = std::vector< TBoundingVolume >( 2 );
 
     if ( _adjust_bvol )
-        cl_bvol = compute_bvol( dofs, data );
+    {
+        son_bvol[0] = compute_bvol( son_dofs[0], data );
+        son_bvol[1] = compute_bvol( son_dofs[1], data );
+    }// if
+    else
+    {
+        auto  bsph0 = compute_bsphere( son_dofs[0], data );
+        auto  bsph1 = compute_bsphere( son_dofs[1], data );
         
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
-    
+        son_bvol[0] = TBoundingVolume( son_bbox[0], bsph0 );
+        son_bvol[1] = TBoundingVolume( son_bbox[1], bsph1 );
+    }// else
+
     // if one of the subsets is empty => continue with this cluster
     if      ( son_dofs[0].nnodes() == 0 ) return divide( son_dofs[1], lvl+1, son_bvol[1], csize.recurse(), index_ofs, data );
     else if ( son_dofs[1].nnodes() == 0 ) return divide( son_dofs[0], lvl+1, son_bvol[0], csize.recurse(), index_ofs, data );
@@ -787,8 +875,8 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     // mark local nodes and choose set with most dofs first
     //
     
-    const uint                    max_son = ( son_dofs[0].nnodes() > son_dofs[1].nnodes() ? 0 : 1 );
-    unordered_map< idx_t, bool >  local;
+    const uint  max_son = ( son_dofs[0].nnodes() > son_dofs[1].nnodes() ? 0 : 1 );
+    auto        local   = std::unordered_map< idx_t, bool >();
 
     // mark local nodes
     for ( auto  dof : dofs ) local[ dof ] = true;
@@ -801,7 +889,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     // do this for both sets but start with larger one
     //
 
-    unordered_map< idx_t, char >  label;
+    auto  label = std::unordered_map< idx_t, char >();
 
     for ( auto  dof : son_dofs[0] ) label[ dof ] = LEFT;
     for ( auto  dof : son_dofs[1] ) label[ dof ] = RIGHT;
@@ -860,8 +948,8 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     }// for
 
     // recheck empty sons
-    if ( son_dofs[0].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bvol, data );
-    if ( son_dofs[1].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, cl_bvol, data );
+    if ( son_dofs[0].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, bvol, data );
+    if ( son_dofs[1].nnodes() == 0 ) return build_leaf( dofs, lvl, index_ofs, bvol, data );
 
     // consistency check
     if ( son_dofs[0].nnodes() + son_dofs[1].nnodes() + if_dofs.nnodes() != dofs.nnodes() )
@@ -910,7 +998,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     // build interface cluster
     //
     
-    unique_ptr< TGeomCluster >  if_son;
+    auto  if_son = std::unique_ptr< TGeomCluster >();
     
     if ( if_dofs.nnodes() > 0 )
     {
@@ -926,9 +1014,8 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                                    1.0 / avg_lvl );
 
         if_bvol = compute_bvol( if_dofs, data );
-        
-        if_son = divide_if( if_dofs, lvl+1, std::min( uint(lvl + 1 + avg_lvl), data.max_lvl ), if_bvol,
-                            TOptClusterSize( if_dofs.nnodes(), reduction ), if_ofs, data );
+        if_son  = divide_if( if_dofs, lvl+1, std::min( uint(lvl + 1 + avg_lvl), data.max_lvl ), if_bvol,
+                             TOptClusterSize( if_dofs.nnodes(), reduction ), if_ofs, data );
         
         if ( if_son == nullptr )
             HERROR( ERR_NULL, "(TBSPNDCTBuilder) divide", "interface cluster" );
@@ -938,37 +1025,19 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     sons[0]->set_domain( true );
     sons[1]->set_domain( true );
     
-    //
-    // set bounding volume of cluster
-    //
+    // //
+    // // set bounding volume of cluster
+    // //
 
-    if ( _adjust_bvol )
-    {
-        //
-        // as union of bb of sons
-        //
+    // auto  cl_bvol = bvol;
+    
+    // cl_bvol.extend( sons[0]->bvol() );
+    // cl_bvol.extend( sons[1]->bvol() );
 
-        cl_bvol = sons[0]->bvol();
+    // if ( if_son.get() != nullptr )
+    //     cl_bvol.extend( if_son->bvol() );
 
-        cl_bvol.join( sons[1]->bvol() );
-
-        if ( if_son.get() != nullptr )
-            cl_bvol.join( if_son->bvol() );
-    }// if
-    else
-    {
-        //
-        // as provided by argument and updated with son-bvoles
-        //
-        
-        cl_bvol.join( sons[0]->bvol() );
-        cl_bvol.join( sons[1]->bvol() );
-
-        if ( if_son.get() != nullptr )
-            cl_bvol.join( if_son->bvol() );
-    }// else
-
-    check_bvol( cl_bvol, data );
+    // check_bvol( cl_bvol );
     
     //
     // create indexset of cluster as union of son-iss
@@ -987,7 +1056,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                            std::max( std::max( sons[0]->last(),  sons[1]->last() ),  if_son->last()  ) );
     }// else
     
-    auto  cluster = make_unique< TGeomCluster >( is.first(), is.last(), cl_bvol );
+    auto  cluster = make_unique< TGeomCluster >( is.first(), is.last(), bvol );
 
     if ( if_son.get() != nullptr )
         cluster->set_nsons( 3 );
@@ -1050,14 +1119,31 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    TBoundingVolume           cl_bvol( bvol );
-    TNodeSet                  son_dofs[2];
-    vector< TBoundingVolume > son_bvol( 2 );
+    auto             cl_bbox = bvol.bbox();
+    TNodeSet         son_dofs[2];
+    vector< TBBox >  son_bbox( 2 );
+
+    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
+    
+    //
+    // compute/adjust bounding volumes
+    //
+    
+    auto  son_bvol = std::vector< TBoundingVolume >( 2 );
 
     if ( _adjust_bvol )
-        cl_bvol = compute_bvol( dofs, data );
-        
-    _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
+    {
+        son_bvol[0] = compute_bvol( son_dofs[0], data );
+        son_bvol[1] = compute_bvol( son_dofs[1], data );
+    }// if
+    else
+    {
+        auto  bsph0 = compute_bsphere( son_dofs[0], data );
+        auto  bsph1 = compute_bsphere( son_dofs[1], data );
+
+        son_bvol[0] = TBoundingVolume( son_bbox[0], bsph0 );
+        son_bvol[1] = TBoundingVolume( son_bbox[1], bsph1 );
+    }// else
     
     // if one of the subsets is empty => recurse
     if (( son_dofs[0].nnodes() == 0 ) || ( son_dofs[1].nnodes() == 0 ))
@@ -1065,10 +1151,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     
     // consistency check
     if ( son_dofs[0].nnodes() + son_dofs[1].nnodes() != dofs.nnodes() )
-    {
-        _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bvol, son_bvol, lvl );
         HERROR( ERR_CONSISTENCY, "(TBSPNDCTBuilder) divide_if", "lost nodes during divide" );
-    }// if
     
     //
     // recursive call for building clustertrees with sons
@@ -1106,26 +1189,26 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // set bounding volume of cluster
     //
 
-    if ( _adjust_bvol )
-    {
-        //
-        // as union of bb of sons
-        //
+    // if ( _adjust_bvol )
+    // {
+    //     //
+    //     // as union of bb of sons
+    //     //
         
-        cl_bvol = sons[0]->bvol();
-        cl_bvol.join( sons[1]->bvol() );
-    }// if
-    else
-    {
-        //
-        // as provided by argument and updated with son-bvoles
-        //
+    //     cl_bvol = sons[0]->bvol();
+    //     cl_bvol.extend( sons[1]->bvol() );
+    // }// if
+    // else
+    // {
+    //     //
+    //     // as provided by argument and updated with son volumes
+    //     //
         
-        cl_bvol.join( sons[0]->bvol() );
-        cl_bvol.join( sons[1]->bvol() );
-    }// else
+    //     cl_bvol.extend( sons[0]->bvol() );
+    //     cl_bvol.extend( sons[1]->bvol() );
+    // }// else
 
-    check_bvol( cl_bvol, data );
+    // check_bvol( cl_bvol );
     
     //
     // create indexset of cluster as union of son-iss
@@ -1133,7 +1216,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     
     auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
                                                  std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                 cl_bvol );
+                                                 bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );

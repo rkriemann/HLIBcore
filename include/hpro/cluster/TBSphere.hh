@@ -8,11 +8,14 @@
 // Copyright   : Max Planck Institute MIS 2004-2024. All Rights Reserved.
 //
 
-#include "hpro/base/types.hh"
-#include "hpro/base/TPoint.hh"
+#include <hpro/base/types.hh>
+#include <hpro/base/TPoint.hh>
 
 namespace Hpro
 {
+
+// forward decl. for ctor
+class TBBox;
 
 /////////////////////////////////////////////////////////////////
 //
@@ -71,6 +74,9 @@ public:
     {
         *this = bsphere;
     }
+
+    //! convert bounding box to bounding sphere
+    TBSphere ( const TBBox &  bbox );
     
     ///////////////////////////////////////////////
     //
@@ -107,8 +113,17 @@ public:
     double  distance  ( const TBSphere &  bsphere,
                         const TPoint &    /* period */ ) const { return distance( bsphere ); }
     
+    //! extend local bbox by given point
+    void    extend      ( const TPoint &  p );
+
+    //! extend local bbox by given bbox
+    void    extend      ( const TBSphere &  bsphere );
+
     //! return dimension of intersection with \a bsphere
-    uint  overlap_dim ( const TBSphere &  bsphere ) const;
+    uint    overlap_dim ( const TBSphere &  bsphere ) const;
+
+    //! check volume and adjust if degenerate
+    void    check       ();
     
     ///////////////////////////////////////////////
     //

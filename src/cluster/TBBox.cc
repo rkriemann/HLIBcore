@@ -6,10 +6,28 @@
 // Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
-#include "hpro/cluster/TBBox.hh"
+#include <hpro/cluster/TBSphere.hh>
+
+#include <hpro/cluster/TBBox.hh>
 
 namespace Hpro
 {
+
+//
+// ctor
+//
+TBBox::TBBox ( const TBSphere &  bsphere )
+{
+    auto  dim    = bsphere.dim();
+    auto  center = bsphere.center();
+    auto  radius = TPoint( dim );
+
+    for ( uint  i = 0; i < dim; ++i )
+        radius[i] = bsphere.radius();
+
+    _bb_min = center - radius;
+    _bb_max = center + radius;
+}
 
 ///////////////////////////////////////////////
 //
@@ -248,6 +266,27 @@ TBBox::overlap_dim ( const TBBox &  bbox ) const
     }// for
         
     return  n_over;
+}
+
+//
+// check volume and adjust if degenerate
+//
+void
+TBBox::check ()
+{
+    const double  BVOL_EPS = 1e-5;
+    const auto    diam     = diameter();
+    
+    for ( uint  i = 0; i < dim(); i++ )
+    {
+        const auto  diff = max()[i] - min()[i];
+        
+        if ( diff < BVOL_EPS * diam )
+        {
+            min()[i] -= 0.5 * ( BVOL_EPS * diam - diff );
+            max()[i] += 0.5 * ( BVOL_EPS * diam - diff );
+        }// if
+    }// for
 }
 
 ///////////////////////////////////////////////

@@ -9,8 +9,7 @@
 //
 
 #include <hpro/base/types.hh>
-#include <hpro/cluster/TBBox.hh>
-#include <hpro/cluster/TBSphere.hh>
+#include <hpro/cluster/TBoundingVolume.hh>
 #include <hpro/cluster/TCluster.hh>
 
 namespace Hpro
@@ -20,8 +19,6 @@ namespace Hpro
 // local type
 //
 DECLARE_TYPE( TGeomCluster );
-
-using  TBoundingVolume = TBBox;
 
 //!
 //! \ingroup  Cluster_Module
@@ -62,7 +59,7 @@ public:
     // access local variables
     //
 
-    //! return bounding box
+    //! return bounding volume
     TBoundingVolume &        bvol ()       { return _bvol; }
     const TBoundingVolume &  bvol () const { return _bvol; }
 
@@ -72,6 +69,9 @@ public:
         _bvol = abvol;
     }
     
+    //! return bounding box
+    const TBBox &  bbox () const { return _bvol.bbox(); }
+
     ///////////////////////////////////////////////
     //
     // geometrical cluster properties
