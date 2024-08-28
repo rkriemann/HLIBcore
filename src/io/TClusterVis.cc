@@ -63,8 +63,9 @@ const colour_t  BLOCKED_BG_COLOUR  = mix( Tango::Black,       0.1,  Tango::White
 // default ctor
 //
 T2DClusterVis::option_t::option_t ()
-        : tree( true ),
-          node_procs( false )
+        : tree( true )
+        , node_procs( false )
+        , id( true )
 {}
 
 //////////////////////////////////////////////////////////////
@@ -98,13 +99,24 @@ T2DClusterVis::node_procs  ( const bool  b )
 }
 
 //
+// turn on/off drawing of node IDs
+//
+T2DClusterVis &
+T2DClusterVis::id  ( const bool  b )
+{
+    _opt.id = b;
+
+    return *this;
+} 
+
+//
 // output of cluster trees
 //
 void
 T2DClusterVis::print ( const TCluster *  c,
                        const string &    name ) const
 {
-#define POS(node) (double(node->last() + node->first()) / 2.0)
+    #define POS(node) (double(node->last() + node->first()) / 2.0)
 
     if ( c == nullptr )
         HERROR( ERR_ARG, "(T2DClusterVis) write_ct", "argument is nullptr" );
@@ -138,7 +150,6 @@ T2DClusterVis::print ( const TCluster *  c,
     
     prn->begin();
     prn->scale( 500.0 / width, 250.0 / (lvl_pos) );
-    prn->set_font( "Helvetica", 4 );
     prn->set_line_width( 0.5 );
 
     //
@@ -194,6 +205,8 @@ T2DClusterVis::print ( const TCluster *  c,
     // now the cluster tree
     //
 
+    prn->set_font( "Helvetica", 8 );
+    
     lvl_pos    = 0.0;
     lvl_height = lvl_fac;
     
@@ -211,6 +224,11 @@ T2DClusterVis::print ( const TCluster *  c,
             {
                 node = behead( nodes );
 
+                if ( _opt.id )
+                {
+                    prn->draw_text( POS(node), lvl_pos, to_string( "%d", node->id() ), JUST_LEFT );
+                }// if
+                
                 //
                 // draw connection to sons
                 //
@@ -237,6 +255,9 @@ T2DClusterVis::print ( const TCluster *  c,
     // draw indices
     //
 
+    prn->save();
+    prn->set_font( "Helvetica", 4 );
+    
     uint  mod;
 
     if      ( c->size() <= 100  ) mod = 10;
@@ -257,6 +278,8 @@ T2DClusterVis::print ( const TCluster *  c,
     if (( c->last() % mod != 0 ) && ( c->last() % mod > (mod/2) ))
         prn->draw_text( double(c->last()), lvl_pos, to_string( "%d", c->last() ), JUST_CENTER );
         
+    prn->restore();
+    
     //
     // and finish
     //
@@ -366,6 +389,7 @@ T2DBlockClusterVis::option_t::option_t ()
         , all_nodes( true )
         , loc_is( false )
         , id( false )
+        , inner_id( false )
         , procs( false )
         , single_proc( false )
         , pid( 0 )
@@ -422,6 +446,14 @@ T2DBlockClusterVis &
 T2DBlockClusterVis::id ( const bool  b )
 {
     _opt.id = b;
+    
+    return *this;
+}
+        
+T2DBlockClusterVis &
+T2DBlockClusterVis::inner_id ( const bool  b )
+{
+    _opt.inner_id = b;
     
     return *this;
 }
@@ -646,7 +678,7 @@ print_rec ( const TBlockCluster *            cluster,
         }// if
     }// if
 
-    if ( opts.id && is_leaf )
+    if ( opts.id && ( opts.inner_id || is_leaf ))
     {
         const double  font_size = std::min( std::max( 2.0, double( std::min( cluster->rowcl()->size(),
                                                                              cluster->colcl()->size() ) ) / 4.0 ),
@@ -665,8 +697,8 @@ print_rec ( const TBlockCluster *            cluster,
 }// namespace anonymous
 
 void
-T2DBlockClusterVis::print ( const TBlockCluster * bct,
-                            const string        & name ) const
+T2DBlockClusterVis::print ( const TBlockCluster *  bct,
+                            const string &         name ) const
 {
     if ( bct == nullptr )
         HERROR( ERR_ARG, "(T2DBlockClusterVis) print", "argument is nullptr" );
@@ -719,165 +751,6 @@ T2DBlockClusterVis::print ( const TBlockCluster * bct,
     const uint                     max_level = bct->depth();
 
     print_rec( bct, prn.get(), 1, max_level, max_size, _opt, cmap, show_legend, fn_size );
-    // clusters.push_back( bct );
-
-    // while ( ! clusters.empty() )
-    // {
-    //     list< const TBlockCluster * >  sons;
-
-    //     prn->set_line_width( 5 * ( max_level - level + 1 ) * 1 );
-        
-    //     while ( ! clusters.empty() )
-    //     {
-    //         const TBlockCluster *  cluster = behead( clusters );
-    //         const TProcSet         cl_procs( cluster->procs() );
-    //         const size_t           max_cl_size( std::max( cluster->rowcl()->size(), cluster->colcl()->size() ) );
-    //         bool                   is_leaf = cluster->is_leaf();
-    //         const bool             omit    = ( double(max_size) / double(max_cl_size) > _opt.max_size_ratio );
-
-    //         // collect sons if ...
-    //         if ( ! is_leaf && ! omit &&  // still large enough and
-    //              ( _opt.all_nodes ||                                                                // should print all nodes or
-    //                ( _opt.single_proc && cl_procs.is_in( _opt.pid ) && ( cl_procs.size() > 1 )) ||  // should print single proc and is local or
-    //                ( _opt.procs && (( cl_procs.size() > 1 ) || ( cl_procs == PROCSET_INVALID )))))   // should print proc sets and shared
-    //         {
-    //             for ( uint  i = 0; i < cluster->nsons(); ++i )
-    //             {
-    //                 if ( cluster->son(i) != nullptr )
-    //                     sons.push_back( cluster->son(i) );
-    //             }// for
-    //         }// if
-    //         else
-    //         {
-    //             is_leaf = true;
-    //         }// if
-        
-    //         //
-    //         // print node if leaf or single processor detected (and not all nodes explicitly wanted);
-    //         // if exceeding size ratio, draw at least border
-    //         //
-        
-    //         const double  min0 = double(cluster->rowcl()->first());
-    //         const double  max0 = double(cluster->rowcl()->last() + 1);
-    //         const double  min1 = double(cluster->colcl()->first());
-    //         const double  max1 = double(cluster->colcl()->last() + 1);
-        
-    //         if ( ! cluster->is_leaf() && omit )
-    //         {
-    //             if ( _opt.background )
-    //             {
-    //                 prn->set_colour( OMIT_BG_COLOUR );
-    //                 prn->fill_rect( min1, min0, max1, max0 );
-    //             }// if
-    //             prn->set_colour( BORDER_COLOUR );
-    //             prn->draw_rect( min1, min0, max1, max0 );
-    //         }// if
-    //         else if (( cluster->is_leaf() || cluster->is_adm() ) || ( ! _opt.all_nodes && ( cl_procs.size() == 1 ) ))
-    //         {
-    //             colour_t  bg_col = gray( 255 );
-    //             colour_t  fg_col = gray( 0 );
-            
-    //             if ( _opt.single_proc )
-    //             {
-    //                 if ( cl_procs.is_in( _opt.pid ) )
-    //                 {
-    //                     bg_col = rgb( 192, 0, 0 );
-    //                     prn->set_colour( bg_col );
-    //                     prn->fill_rect( min1, min0, max1, max0 );
-    //                 }// if
-    //             }// if
-    //             else if ( _opt.procs )
-    //             {
-    //                 if (( cl_procs != PROCSET_INVALID ) && ( cl_procs.size() == 1 ))
-    //                     bg_col = cmap.ientry( cl_procs.first() );
-                
-    //                 if ( bg_col.luminance() < 112 ) fg_col = gray( 255 );
-    //                 else                            fg_col = gray( 0 );
-                
-    //                 prn->set_colour( bg_col );
-    //                 prn->fill_rect( min1, min0, max1, max0 );
-    //             }// if
-    //             else
-    //             {
-    //                 if ( cluster->is_leaf() && _opt.background )
-    //                 {
-    //                     if ( cluster->is_adm() )
-    //                         bg_col = ADM_BG_COLOUR;
-    //                     else
-    //                         bg_col = INADM_BG_COLOUR;
-                    
-    //                     prn->set_colour( bg_col );
-    //                     prn->fill_rect( min1, min0, max1, max0 );
-    //                 }// if
-    //             }// else
-            
-    //             if ( _opt.border )
-    //             {
-    //                 prn->set_colour( BORDER_COLOUR );
-    //                 prn->draw_rect( min1, min0, max1, max0 );
-    //             }// if
-
-    //             prn->set_colour( fg_col );
-            
-    //             // print processor number
-    //             if ( ! show_legend && ! _opt.single_proc && _opt.procs && ( cl_procs != PROCSET_INVALID ) && ( cl_procs.size() == 1 ))
-    //             {
-    //                 prn->save();
-    //                 prn->set_font( "Helvetica-Bold", 8.0 );
-    //                 prn->draw_text( min1 + ( 0.05 * (max1 - min1) ),
-    //                                 max0 - ( 0.05 * (max0 - min0) ),
-    //                                 to_string( "%d", cl_procs.first() ), JUST_LEFT );
-    //                 prn->restore();
-    //             }// if
-
-    //             // print block index set
-    //             if ( _opt.loc_is )
-    //             {
-    //                 prn->draw_text( double(max1 + min1) / 2.0,
-    //                                 double(max0 + min0) / 2.0 - fn_size,
-    //                                 cluster->rowcl()->to_string(), JUST_CENTER );
-    //                 prn->draw_text( double(max1 + min1) / 2.0,
-    //                                 double(max0 + min0) / 2.0,
-    //                                 "x", JUST_CENTER );
-    //                 prn->draw_text( double(max1 + min1) / 2.0,
-    //                                 double(max0 + min0) / 2.0 + fn_size,
-    //                                 cluster->colcl()->to_string(), JUST_CENTER );
-    //             }// if
-    //         }// if
-
-    //         // else // if ( is_leaf )
-    //         {
-    //             //
-    //             // considered as leaf: draw at least border if whished
-    //             //
-            
-    //             if ( _opt.border )
-    //             {
-    //                 prn->set_colour( BORDER_COLOUR );
-    //                 prn->draw_rect( min1, min0, max1, max0 );
-    //             }// if
-    //         }// if
-
-    //         if ( _opt.id && is_leaf )
-    //         {
-    //             const double  font_size = std::min( std::max( 2.0, double( std::min( cluster->rowcl()->size(),
-    //                                                                                  cluster->colcl()->size() ) ) / 4.0 ),
-    //                                                 200.0 );
-
-    //             prn->save();
-    //             prn->set_font( "Helvetica-Bold", font_size );
-    //             prn->draw_text( double(max1 - (font_size / 4.0) ),
-    //                             double(min0) + font_size,
-    //                             to_string( "%d", cluster->id() ),
-    //                             JUST_RIGHT );
-    //             prn->restore();
-    //         }// if
-    //     }// while
-
-    //     // proceed to next level
-    //     clusters = std::move( sons );
-    //     level++;
-    // }// while
 
     prn->restore();
     

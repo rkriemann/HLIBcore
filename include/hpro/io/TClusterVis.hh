@@ -101,6 +101,7 @@ public:
     {
         bool  tree;
         bool  node_procs;
+        bool  id;
 
         option_t ();
     };
@@ -131,6 +132,9 @@ public:
     
     //! turn on/off drawing of per-node processors
     T2DClusterVis &  node_procs  ( const bool  b );
+    
+    //! turn on/off drawing of node IDs
+    T2DClusterVis &  id          ( const bool  b );
     
     ///////////////////////////////////////////////
     //
@@ -190,6 +194,7 @@ public:
         bool    all_nodes;
         bool    loc_is;
         bool    id;
+        bool    inner_id;
         bool    procs;
         bool    single_proc;
         uint    pid;
@@ -237,6 +242,9 @@ public:
 
     //! turn on/off printing local cluster ID (default: off)
     T2DBlockClusterVis &  id          ( const bool  b );
+
+    //! turn on/off printing cluster ID for inner nodes (default: off)
+    T2DBlockClusterVis &  inner_id    ( const bool  b );
 
     //! turn on/off printing tree for one processor (default: off)
     T2DBlockClusterVis &  procs       ( const bool  b );
