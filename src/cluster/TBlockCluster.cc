@@ -7,12 +7,10 @@
 //
 
 #include <iostream>
-#include <mutex>
 
 #include "unordered_map.hh"
 
 #include "hpro/base/System.hh"
-#include "hpro/parallel/TMutex.hh"
 
 #include "treealg.hh"
 
@@ -24,37 +22,13 @@ namespace Hpro
 using std::list;
 using std::vector;
 
-namespace
-{
-
-//
-// return globally unique ID
-//
-int
-get_id ()
-{
-    static std::mutex  id_mutex;
-    static int         id_counter = 0;
-    int                ret_val    = 0;
-
-    {
-        std::lock_guard< std::mutex >  lock( id_mutex );
-
-        ret_val = id_counter++;
-    }
-
-    return ret_val;
-}
-
-}// namespace anonymous
-
 ////////////////////////////////////////////////////////
 //
 // constructor and destructor
 //
 
 TBlockCluster::TBlockCluster ( TBlockCluster *  aparent )
-        : _id( get_id() )
+        : _id( -1 )
         , _parent( aparent )
         , _rowcl( nullptr )
         , _colcl( nullptr )
@@ -68,7 +42,7 @@ TBlockCluster::TBlockCluster ( TBlockCluster *  aparent )
 TBlockCluster::TBlockCluster ( TBlockCluster *  aparent,
                                TCluster *       arow_ct,
                                TCluster *       acol_ct )
-        : _id( get_id() )
+        : _id( -1 )
         , _parent( aparent )
         , _rowcl( arow_ct )
         , _colcl( acol_ct )
@@ -643,6 +617,7 @@ TBlockCluster::copy  () const
                                                              const_cast< TCluster * >( rowcl() ),
                                                              const_cast< TCluster * >( colcl() ) ) );
 
+    bc->set_id( id() );
     bc->set_adm( is_adm() );
     bc->set_procs( procs() );
     

@@ -78,6 +78,9 @@ public:
     //! return ID
     int                    id           () const { return _id; }
 
+    //! set ID
+    void                   set_id       ( const uint  aid ) { _id = aid; }
+
     //! return parent cluster
     TBlockCluster *        parent       ()       { return _parent; }
     const TBlockCluster *  parent       () const { return _parent; }
@@ -178,8 +181,8 @@ public:
                                                  const size_t  j ) const;
 
     //! set son at position (\a i, \a j) to \a son
-    virtual void                   set_son     ( const size_t       i,
-                                                 const size_t       j,
+    virtual void                   set_son     ( const size_t     i,
+                                                 const size_t     j,
                                                  TBlockCluster *  son,
                                                  const bool       del_son = true );
 

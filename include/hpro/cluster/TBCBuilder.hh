@@ -8,6 +8,8 @@
 // Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
+#include <atomic>
+
 #include "hpro/cluster/types.hh"
 #include "hpro/cluster/TBlockCluster.hh"
 #include "hpro/cluster/TBlockClusterTree.hh"
@@ -72,7 +74,8 @@ protected:
     //! recusivly build a block cluster tree for \a rowcl × \a colcl
     virtual void  rec_build ( TBlockCluster *        bc,
                               const TAdmCondition *  ac,
-                              const uint             level ) const;
+                              const uint             level,
+                              std::atomic< int > &   id ) const;
 
     //! create new node in tree with father node \a parent
     virtual std::unique_ptr< TBlockCluster >  create_bc ( TBlockCluster *  parent ) const;
