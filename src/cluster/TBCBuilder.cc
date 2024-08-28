@@ -6,12 +6,38 @@
 // Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
 //
 
+#include <mutex>
+
 #include "hpro/parallel/NET.hh"
 
 #include "hpro/cluster/TBCBuilder.hh"
 
 namespace Hpro
 {
+
+// namespace
+// {
+
+// //
+// // return globally unique ID
+// //
+// int
+// get_id ()
+// {
+//     static std::mutex  id_mutex;
+//     static int         id_counter = 0;
+//     int                ret_val    = 0;
+
+//     {
+//         std::lock_guard< std::mutex >  lock( id_mutex );
+
+//         ret_val = id_counter++;
+//     }
+
+//     return ret_val;
+// }
+
+// }// namespace anonymous
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -67,11 +93,12 @@ TBCBuilder::build ( const TCluster *       rowcl,
     // call recursive procedure for building the tree
     //
 
+    auto  id   = std::atomic< int >( 0 );
     auto  root = create_bc( nullptr,
                             const_cast< TCluster * >( rowcl ),
                             const_cast< TCluster * >( colcl ) );
-
-    rec_build( root.get(), ac, 0 );
+    
+    rec_build( root.get(), ac, 0, id );
 
     return root;
 }
@@ -83,7 +110,8 @@ TBCBuilder::build ( const TCluster *       rowcl,
 void
 TBCBuilder::rec_build ( TBlockCluster *        bc,
                         const TAdmCondition *  ac,
-                        const uint             level ) const
+                        const uint             level,
+                        std::atomic< int > &   id ) const
 {
     auto  rowcl = bc->rowcl();
     auto  colcl = bc->colcl();
@@ -92,7 +120,7 @@ TBCBuilder::rec_build ( TBlockCluster *        bc,
         HERROR( ERR_NULL, "(TBCBuilder) rec_build", "block has NULL clusters" );
     
     //
-    // decide if blockcluster is a leaf
+    // decide if blockcluster is a leaf or if to refine
     //
 
     if ( ac->is_adm( bc ) && ( level >= _min_lvl ))
@@ -100,68 +128,62 @@ TBCBuilder::rec_build ( TBlockCluster *        bc,
         // mark as admissible
         bc->set_adm( true );
         bc->make_leaf();
-        
-        return;
     }// if
-
-    if (( rowcl != colcl ) && rowcl->is_domain() && colcl->is_domain() )
+    else if (( rowcl != colcl ) && rowcl->is_domain() && colcl->is_domain() )
     {
         // nested dissection case: offdiagonal domain-domain cluster
         bc->set_adm( true );
         bc->make_leaf();
-        
-        return;
     }// if
-        
-    if ( _same_cluster_level )
+    else if ( _same_cluster_level && ( rowcl->is_leaf() || colcl->is_leaf() ))
     {
         // stop if one of them is leaf
-        if ( rowcl->is_leaf() || colcl->is_leaf() )
-        {
-            bc->make_leaf();
-            return;
-        }// if
+        bc->make_leaf();
     }// if
-    else
+    else if ( rowcl->is_leaf() && colcl->is_leaf() ) 
     {
         // stop if both of them are leaves
-        if ( rowcl->is_leaf() && colcl->is_leaf() )
+        bc->make_leaf();
+    }// else
+    else
+    {
+        //
+        // refine block cluster
+        //
+
+        refine( bc );
+    
+        //
+        // recurse
+        //
+
+        if ( ! bc->is_leaf() )
         {
-            bc->make_leaf();
-            return;
+            const auto  n_rowcl = std::max< size_t >( rowcl->nsons(), 1 );
+            const auto  n_colcl = std::max< size_t >( colcl->nsons(), 1 );
+
+            bc->set_layout( n_rowcl, n_colcl );
+        
+            for ( size_t  i = 0; i < n_rowcl; ++i )
+            {
+                for ( size_t  j = 0; j < n_colcl; ++j )
+                {
+                    auto *  son_ij = bc->son( i, j );
+                
+                    if ( son_ij == nullptr )
+                        HERROR( ERR_NULL, "(TBCBuilder) rec_build", "son is nullptr" );
+                
+                    rec_build( son_ij, ac, level+1, id );
+                }// for
+            }// for
         }// if
     }// else
-    
-    //
-    // refine block cluster
-    //
 
-    refine( bc );
-
-    if ( bc->is_leaf() )
-        return;
-    
     //
-    // recurse
+    // finally set ID to ensure ID(parent) >= max(id(sons))
     //
 
-    const auto  n_rowcl = std::max< size_t >( rowcl->nsons(), 1 );
-    const auto  n_colcl = std::max< size_t >( colcl->nsons(), 1 );
-
-    bc->set_layout( n_rowcl, n_colcl );
-
-    for ( size_t  i = 0; i < n_rowcl; ++i )
-    {
-        for ( size_t  j = 0; j < n_colcl; ++j )
-        {
-            auto *  son_ij = bc->son( i, j );
-            
-            if ( son_ij == nullptr )
-                HERROR( ERR_NULL, "(TBCBuilder) rec_build", "son is nullptr" );
-            
-            rec_build( son_ij, ac, level+1 );
-        }// for
-    }// for
+    bc->set_id( id++ );
 }
                            
 //
@@ -189,14 +211,14 @@ TBCBuilder::refine ( TBlockCluster *  bc ) const
 
     for ( size_t  i = 0; i < n_rowcl; ++i )
     {
-        TCluster *  rowcl_i = (rowcl->is_leaf() ? rowcl : rowcl->son(i));
+        auto  rowcl_i = (rowcl->is_leaf() ? rowcl : rowcl->son(i));
 
         if ( rowcl_i == nullptr )
             HERROR( ERR_NULL, "(TBCBuilder) refine", "son of row-cluster is nullptr" );
             
         for ( size_t  j = 0; j < n_colcl; ++j )
         {
-            TCluster  * colcl_j = (colcl->is_leaf() ? colcl : colcl->son(j));
+            auto  colcl_j = (colcl->is_leaf() ? colcl : colcl->son(j));
                     
             if ( colcl_j == nullptr )
                 HERROR( ERR_NULL, "(TBCBuilder) refine", "son of column-cluster is nullptr" );
