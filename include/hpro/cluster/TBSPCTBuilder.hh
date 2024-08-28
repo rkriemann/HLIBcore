@@ -45,6 +45,7 @@ protected:
         const uint           nmin;         // minimale leaf size
         const uint           min_leaf_lvl; // minimal level where leaves might appear
         const uint           max_lvl;      // maximal level to reach in clustering
+        std::atomic< int >   id;           // unique cluster id
     };
 
     //!

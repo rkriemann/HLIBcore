@@ -137,6 +137,7 @@ TCluster::copy  () const
 {
     TCluster * c = create();
 
+    c->set_id( id() );
     c->set_first_last( first(), last() );
     c->set_nsons( nsons() );
     c->set_domain( is_domain() );

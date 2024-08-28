@@ -31,6 +31,9 @@ class TCluster : public TIndexSet, public TTypeInfo
 {
 protected:
     //!@cond
+
+    //! unique ID of cluster
+    int                        _id;
     
     //! son-clusters
     std::vector< TCluster * >  _sons;
@@ -48,12 +51,14 @@ public:
 
     //! construct node with empty index set
     TCluster ()
-            : _is_domain(false)
+            : _id(-1)
+            , _is_domain(false)
     {}
 
     //! construct node with index set \a is
     TCluster ( const TIndexSet &  is )
             : TIndexSet( is )
+            , _id(-1)
             , _is_domain(false)
     {}
 
@@ -61,6 +66,7 @@ public:
     TCluster ( const idx_t  first_idx,
                const idx_t  last_idx )
             : TIndexSet(first_idx,last_idx)
+            , _id(-1)
             , _is_domain(false)
     {}
 
@@ -72,11 +78,17 @@ public:
     // access internal data
     //
 
+    //! return ID
+    int   id         () const { return _id; }
+
+    //! set ID
+    void  set_id     ( const uint  aid ) { _id = aid; }
+
     //! return true if node is domain cluster
-    bool is_domain  () const         { return _is_domain; }
+    bool  is_domain  () const         { return _is_domain; }
 
     //! set domain status of node
-    void set_domain ( const bool b ) { _is_domain = b; }
+    void  set_domain ( const bool b ) { _is_domain = b; }
 
     ////////////////////////////////////////////////
     //

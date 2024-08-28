@@ -291,7 +291,7 @@ TMBLRCTBuilder::build ( const TCoordinate *  coord,
     // sort indices based on binary space partitioning
     //
     
-    data_t             data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
+    data_t             data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
     // TCardBSPPartStrat  part( adaptive_split_axis );
     list< idx_t >      sorted;
     auto               root_bvol = compute_bvol( dofs, data );

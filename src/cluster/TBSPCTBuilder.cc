@@ -145,7 +145,7 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     //
 
     unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
+    data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
     TNodeSet                   dofs( max_dof );
     TBoundingVolume            bvol;
     TOptClusterSize            csize;
@@ -187,12 +187,12 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     // finally put all together in a tree
     //
 
-    auto  permutation_e2i = make_unique< TPermutation >( perm_e2i );
-    auto  permutation_i2e = make_unique< TPermutation >( perm_e2i );
+    auto  permutation_e2i = std::make_unique< TPermutation >( perm_e2i );
+    auto  permutation_i2e = std::make_unique< TPermutation >( perm_e2i );
 
     permutation_i2e->invert();
     
-    auto  ct = make_unique< TClusterTree >( root.release(), permutation_e2i.release(), permutation_i2e.release() );
+    auto  ct = std::make_unique< TClusterTree >( root.release(), permutation_e2i.release(), permutation_i2e.release() );
 
     return ct;
 }
@@ -200,7 +200,7 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
 //
 // create a leaf in a clustertree
 //
-unique_ptr< TGeomCluster >
+std::unique_ptr< TGeomCluster >
 TGeomCTBuilder::build_leaf ( const TNodeSet &         dofs,
                              const uint               lvl,
                              const idx_t              index_ofs,
@@ -236,7 +236,11 @@ TGeomCTBuilder::build_leaf ( const TNodeSet &         dofs,
     if ( size_t( ub - lb ) != dofs.nnodes() )
         HERROR( ERR_CONSISTENCY, "(TGeomCTBuilder) build_leaf", "missing nodes" );
     
-    return make_unique< TGeomCluster >( lb, ub-1, bvol );
+    auto  cl = std::make_unique< TGeomCluster >( lb, ub-1, bvol );
+
+    cl->set_id( data.id++ );
+
+    return cl;
 }
 
 namespace 
@@ -466,10 +470,11 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
         if ( son.get() == nullptr )
             HERROR( ERR_NULL, "(TBSPCTBuilder) divide", "son cluster" );
 
-        auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
+        auto  cluster = std::make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
         
         cluster->set_nsons( 1 );
         cluster->set_son( 0, son.release() );
+        cluster->set_id( data.id++ );
 
         return cluster;
     }// if
@@ -571,13 +576,14 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     // finally build cluster
     //
     
-    auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
+    auto  cluster = std::make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
                                                  std::max( sons[0]->last(),  sons[1]->last()  ),
                                                  bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );
     cluster->set_son( 1, sons[1].release() );
+    cluster->set_id( data.id++ );
     
     return cluster;
 }
@@ -711,7 +717,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     //
 
     unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ) };
+    data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
     TNodeSet                   dofs( max_dof );
     TBoundingVolume            bvol;
     TOptClusterSize            csize;
@@ -755,14 +761,16 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
         bvol = compute_bvol( dofs, data );
         // update_bvol(  dofs, bvol, data ); ???
         
-        auto  high_cl  = make_unique< TGeomCluster >( lb, ub-1 );
-        auto  new_root = make_unique< TGeomCluster >( index_ofs, ub-1 );
+        auto  high_cl  = std::make_unique< TGeomCluster >( lb, ub-1 );
+        auto  new_root = std::make_unique< TGeomCluster >( index_ofs, ub-1 );
 
         high_cl->bvol() = bvol;
-        
+        high_cl->set_id( data.id++ );
+
         new_root->set_nsons( 2 );
         new_root->set_son( 0, root.release() );
         new_root->set_son( 1, high_cl.release() );
+        new_root->set_id( data.id++ );
 
         // assign new root
         root = std::move( new_root );
@@ -793,12 +801,12 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     // finally put all together in a tree
     //
 
-    auto  perm_e2i = make_unique< TPermutation >( perm );
-    auto  perm_i2e = make_unique< TPermutation >( perm );
+    auto  perm_e2i = std::make_unique< TPermutation >( perm );
+    auto  perm_i2e = std::make_unique< TPermutation >( perm );
 
     perm_i2e->invert();
     
-    return make_unique< TClusterTree >( root.release(), perm_e2i.release(), perm_i2e.release() );
+    return std::make_unique< TClusterTree >( root.release(), perm_e2i.release(), perm_i2e.release() );
 }
 
 //
@@ -1056,7 +1064,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                            std::max( std::max( sons[0]->last(),  sons[1]->last() ),  if_son->last()  ) );
     }// else
     
-    auto  cluster = make_unique< TGeomCluster >( is.first(), is.last(), bvol );
+    auto  cluster = std::make_unique< TGeomCluster >( is.first(), is.last(), bvol );
 
     if ( if_son.get() != nullptr )
         cluster->set_nsons( 3 );
@@ -1065,6 +1073,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     
     cluster->set_son( 0, sons[0].release() );
     cluster->set_son( 1, sons[1].release() );
+    cluster->set_id( data.id++ );
 
     if ( if_son.get() != nullptr )
         cluster->set_son( 2, if_son.release() );
@@ -1092,10 +1101,11 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
             if ( son.get() == nullptr )
                 HERROR( ERR_NULL, "(TBSPNDCTBuilder) divide_if", "son cluster" );
 
-            auto  cluster = make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
+            auto  cluster = std::make_unique< TGeomCluster >( son->first(), son->last(), son->bvol() );
 
             cluster->set_nsons( 1 );
             cluster->set_son( 0, son.release() );
+            cluster->set_id( data.id++ );
             
             return cluster;
         };
@@ -1214,13 +1224,14 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // create indexset of cluster as union of son-iss
     //
     
-    auto  cluster = make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
-                                                 std::max( sons[0]->last(),  sons[1]->last()  ),
-                                                 bvol );
+    auto  cluster = std::make_unique< TGeomCluster >( std::min( sons[0]->first(), sons[1]->first() ),
+                                                      std::max( sons[0]->last(),  sons[1]->last()  ),
+                                                      bvol );
 
     cluster->set_nsons( 2 );
     cluster->set_son( 0, sons[0].release() );
     cluster->set_son( 1, sons[1].release() );
+    cluster->set_id( data.id++ );
 
     return cluster;
 }
