@@ -302,11 +302,11 @@ vsx_env    = hlibpro_env.Clone()
 neon_env   = hlibpro_env.Clone()
 mic_env    = hlibpro_env.Clone()
 if has_cpuid :
-    if has_sse3   : sse3_env.Append(   CXXFLAGS = '-march=westmere -msse3' )
-    if has_avx    : avx_env.Append(    CXXFLAGS = '-march=sandybridge -mavx' )
-    if has_avx2   : avx2_env.Append(   CXXFLAGS = '-march=haswell -mavx2' )
-    if has_avx512 : avx512_env.Append( CXXFLAGS = '-march=skylake-avx512 -mavx512f -mavx512cd' )
-    if has_vsx    : vsx_env.Append(    CXXFLAGS = '-mvsx' )
+    if has_sse3   : sse3_env.Append(   CXXFLAGS = '-O2 -march=westmere -msse3' )
+    if has_avx    : avx_env.Append(    CXXFLAGS = '-O2 -march=sandybridge -mavx' )
+    if has_avx2   : avx2_env.Append(   CXXFLAGS = '-O2 -march=haswell -mavx2' )
+    if has_avx512 : avx512_env.Append( CXXFLAGS = '-O2 -march=skylake-avx512 -mavx512f -mavx512cd' )
+    if has_vsx    : vsx_env.Append(    CXXFLAGS = '-O2 -mvsx' )
 
 # export environments and additional options
 Export( 'opt_env' )
