@@ -146,6 +146,24 @@ void
 init ()
 {
     #if HPRO_USE_CUDA == 1
+
+    //
+    // first check number of devices
+    //
+    
+    int  ndev = 0;
+    
+    if ( cudaGetDeviceCount( & ndev ) != cudaSuccess )
+        return;
+
+    HINFO( to_string( "(CUDA) init : found %d CUDA device(s)", ndev ) );
+    
+    if ( ndev == 0 )
+        return;
+
+    //
+    // now try to set up streams
+    //
     
     bool  found_error = false;
     uint  error_index = 0;
