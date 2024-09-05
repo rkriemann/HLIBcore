@@ -1769,11 +1769,11 @@ qrp    ( T1 &                              A,
 //! \ingroup  BLAS_Module
 //! \brief compute eigenvalues and eigenvectors of matrix \a M
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen ( T1 &                              M,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec );
+template < typename value_t >
+void
+eigen ( Matrix< value_t > &  M,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1791,12 +1791,12 @@ eigen_herm ( Matrix< value_t > &                 M,
 //!        of the \b symmetric matrix \a M
 //!        - the lower half of \a M is accessed
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen ( T1 &                              M,
-        const Range &                     eig_range,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec );
+template < typename value_t >
+void
+eigen ( Matrix< value_t > &  M,
+        const Range &        eig_range,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1804,16 +1804,12 @@ eigen ( T1 &                              M,
 //!        of the \b symmetric, \b tridiagonal matrix defines by diagonal
 //!        coefficients in \a diag and off-diagonal coefficients \a subdiag
 //!
-template < typename T1,
-           typename T2 >
-std::enable_if_t< is_vector< T1 >::value &&
-                  is_vector< T2 >::value &&
-                  is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  void >
-eigen ( T1 &  diag,
-        T2 &  subdiag,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec );
+template < typename value_t >
+void
+eigen ( Vector< value_t > &  diag,
+        Vector< value_t > &  subdiag,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1821,11 +1817,11 @@ eigen ( T1 &  diag,
 //!        n×min(n,m) matrix U, min(n,m)×min(n,m) matrix S (diagonal)
 //!        and m×min(n,m) matrix V; \a A will be overwritten with U upon exit
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-svd    ( T1 &                                             A,
-         Vector< real_type_t< typename T1::value_t > > &  S,
-         Matrix< typename T1::value_t > &                 V );
+template < typename value_t >
+void
+svd    ( Matrix< value_t > &                 A,
+         Vector< real_type_t< value_t > > &  S,
+         Matrix< value_t > &                 V );
 
 //!
 //! \ingroup  BLAS_Module

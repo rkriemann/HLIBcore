@@ -83,6 +83,7 @@ sources = [ 'base/String.cc',
 
             'blas/Algebra.cc',
             'blas/Matrix.cc',
+            'blas/cuda.cc',
             'blas/wrapper.f',
 
             'cluster/TAlgAdmCond.cc',

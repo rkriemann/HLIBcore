@@ -13,11 +13,12 @@
 #include <tuple>
 #include <mutex>
 
-#include "hpro/base/config.hh"
+#include <hpro/base/config.hh>
+#include <hpro/blas/cuda.hh>
 
 #include "TRNG.hh"
 
-#include "hpro/blas/Algebra.hh"
+#include <hpro/blas/Algebra.hh>
 
 namespace Hpro
 {
@@ -1282,13 +1283,12 @@ qrp_trunc ( T &                              A,
 //
 // compute eigenvalues and eigenvectors of matrix \a M
 //
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen ( T1 &                              M,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec )
+template < typename value_t >
+void
+eigen ( Matrix< value_t > &  M,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec )
 {
-    using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
     
     //
@@ -1411,15 +1411,13 @@ eigen_herm ( Matrix< value_t > &                 M,
 //
 // compute eigenvalues and eigenvectors of matrix \a M
 //
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-eigen ( T1 &                              M,
-        const Range &                     eig_range,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec )
+template < typename value_t >
+void
+eigen ( Matrix< value_t > &  M,
+        const Range &        eig_range,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec )
 {
-    using  value_t = typename T1::value_t;
-
     const size_t  n          = M.nrows();
     blas_int_t    m          = 0;
     blas_int_t    info       = 0;
@@ -1473,19 +1471,13 @@ eigen ( T1 &                              M,
 //! of the \b symmetric, \b tridiagonal matrix defines by diagonal
 //! coefficients in \a diag and off-diagonal coefficients \a subdiag
 //!
-template < typename T1,
-           typename T2 >
-std::enable_if_t< is_vector< T1 >::value &&
-                  is_vector< T2 >::value &&
-                  is_same_type< typename T1::value_t, typename T2::value_t >::value,
-                  void >
-eigen ( T1 &  diag,
-        T2 &  subdiag,
-        Vector< typename T1::value_t > &  eig_val,
-        Matrix< typename T1::value_t > &  eig_vec )
+template < typename value_t >
+void
+eigen ( Vector< value_t > &  diag,
+        Vector< value_t > &  subdiag,
+        Vector< value_t > &  eig_val,
+        Matrix< value_t > &  eig_vec )
 {
-    using  value_t = typename T1::value_t;
-
     const size_t       n = diag.length();
     vector< value_t >  work( std::max<size_t>( 1, 2*n-2 ) );
     blas_int_t         info = 0;
@@ -2606,11 +2598,11 @@ svd_double ( Matrix< T > &                               U,
     #endif
 }
 
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-svd    ( T1 &                                                            U,
-         Vector< typename real_type< typename T1::value_t >::type_t > &  S,
-         Matrix< typename T1::value_t > &                                V )
+template < typename value_t >
+void
+svd    ( Matrix< value_t > &                                U,
+         Vector< typename real_type< value_t >::type_t > &  S,
+         Matrix< value_t > &                                V )
 {
     DO_CHECK_SMALL(   U );
     DO_CHECK_INF_NAN( U, "(BLAS) svd", "in input matrix" );
@@ -2619,20 +2611,64 @@ svd    ( T1 &                                                            U,
     // use double precision version to increase accuracy
     //
     
-    if ( CFG::BLAS::use_double_prec && is_single_prec< T1 >::value )
+    if ( CFG::BLAS::use_double_prec && is_single_prec< value_t >::value )
     {
         return svd_double( U, S, V );
     }// if
     
-    #if USE_ACASVD == 1
+    //
+    // try GPU
+    //
 
-    acasvd( U, S, V );
+    bool  use_cpu = true;
+        
+    if ( std::min( U.nrows(), U.ncols() ) >= CFG::Arith::gpu_svd_size )
+    {
+        const auto  handle = CUDA::request_handle();
 
-    #else  // USE_ACASVD == 0
+        if ( handle != CUDA::INVALID_HANDLE )
+        {
+            if ( U.nrows() < U.ncols() )
+            {
+                // only support nrows >= ncols, so transpose
+                if (( V.nrows() != U.ncols() ) || ( V.ncols() != U.nrows() ))
+                    V = Matrix< value_t >( U.ncols(), U.nrows() );
 
-    lasvd( U, S, V );
+                copy( adjoint( U ), V );
+
+                // LOG::print( "using GPU (adjoint)" );
+                
+                if ( CUDA::svd( handle, V, S, U ) )
+                    use_cpu = false;
+            }// if
+            else
+            {
+                // LOG::print( "using GPU" );
+
+                if ( CUDA::svd( handle, U, S, V ) )
+                    use_cpu = false;
+            }// else
+        }// if
+
+        CUDA::release_handle( handle );
+    }// if
+
+    //
+    // use (or fall back to) CPU
+    //
     
-    #endif
+    if ( use_cpu )
+    {
+        #if USE_ACASVD == 1
+
+        acasvd( U, S, V );
+        
+        #else  // USE_ACASVD == 0
+        
+        lasvd( U, S, V );
+        
+        #endif
+    }// if
 
     DO_CHECK_INF_NAN( U, "(BLAS) svd", "in output matrix" );
     DO_CHECK_INF_NAN( V, "(BLAS) svd", "in output matrix" );

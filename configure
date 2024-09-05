@@ -61,8 +61,8 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'CXX'          : 'c++',
              'FC'           : 'f77',
              
-             'USE_CPUFLAGS' : 'check',
-             'CPUFLAGS'     : 'bin/cpuflags',
+             # 'USE_CPUFLAGS' : 'check',
+             # 'CPUFLAGS'     : 'bin/cpuflags',
 
              'HAS_PKGCONFIG': 'check',
              'PKGCONFIG'    : 'pkg-config',
@@ -78,8 +78,8 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'FCFLAGS'      : '',
              'LFLAGS'       : '-lm',
              'ARCHFLAGS'    : '',
-             'DBGFLAGS'     : '-g',
-             'OPTFLAGS'     : '-O',
+             'DBGFLAGS'     : '-g -march=native',
+             'OPTFLAGS'     : '-O3 -fomit-frame-pointer -ffast-math -funroll-loops -march=native',
              'PROFLAGS'     : '-pg',
              
              #
@@ -163,6 +163,11 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'MKLLFLAGS'    : '-L@MKLDIR@/lib/intel64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lm',
              # 'MKLLFLAGS'    : '-L@MKLROOT@/lib/intel64 -lmkl_gf_lp64 -lmkl_tbb_thread -lmkl_core -lm -ltbb',
              'MKL_SEQ'      : 'check',
+
+             'CUDA'         : 'check',
+             'CUDADIR'      : '@CUDA_ROOT@',
+             'CUDACFLAGS'   : '-I@CUDADIR@/include',
+             'CUDALFLAGS'   : '-L@CUDADIR@/lib64 -lcudart -lcublasLt -lcublas -lcusolver',
 
              'VAMPIRTRACE'  : 'no',
              
@@ -362,11 +367,14 @@ def usage ( status ):
     print( '    --with-LIBRARY             use LIBRARY (or tool)' )
     print( '    --without-LIBRARY          do not use LIBRARY (or tool)' )
     print( '' )
-    print( '    --with-cpuflags[=path]     use cpuflags to determine CFLAGS/CXXFLAGS (default = off)' )
+    # print( '    --with-cpuflags[=path]     use cpuflags to determine CFLAGS/CXXFLAGS (default = off)' )
     print( '    --lapack=LFLAGS            linking flags for LAPACK' )
     print( '    --with-mkl=dir             set installation directory of Intel MKL' )
     print( '      --mkl-cflags             flags to compile with Intel MKL' )
     print( '      --mkl-lflags             flags to link with Intel MKL' )
+    print( '    --with-cuda=dir            set installation directory of NVidia CUDA' )
+    print( '      --cuda-cflags            flags to compile with NVidia CUDA' )
+    print( '      --cuda-lflags            flags to link with NVidia CUDA' )
     print( '    --with-boost=dir           set installation directory of Boost (default = none)' )
     print( '      --boost-cflags           flags to compile with boost' )
     print( '      --boost-lflags           flags to link with boost' )
@@ -452,8 +460,8 @@ def parse_cmdline ( args, env ):
                                  [ '--enable-ilp64',    'none',     None ],
                                  [ '--disable-ilp64',   'none',     None ],
 
-                                 [ '--with-cpuflags',    'optional', env['CPUFLAGS'] ],
-                                 [ '--without-cpuflags', 'none',     None ],
+                                 # [ '--with-cpuflags',    'optional', env['CPUFLAGS'] ],
+                                 # [ '--without-cpuflags', 'none',     None ],
 
                                  [ '--with-boost',      'required', env['BOOSTDIR'] ],
                                  [ '--boost-cflags',    'required', env['BOOSTCFLAGS'] ],
@@ -474,9 +482,9 @@ def parse_cmdline ( args, env ):
                                  [ '--scotch-cflags',   'required', env['SCOTCHCFLAGS'] ],
                                  [ '--scotch-lflags',   'required', env['SCOTCHLFLAGS'] ],
 
-                                 [ '--with-chaco',      'optional', env['CHACODIR'] ],
-                                 [ '--without-chaco',   'none',     None ],
-                                 [ '--chaco-lflags',    'required', env['CHACOLFLAGS'] ],
+                                 # [ '--with-chaco',      'optional', env['CHACODIR'] ],
+                                 # [ '--without-chaco',   'none',     None ],
+                                 # [ '--chaco-lflags',    'required', env['CHACOLFLAGS'] ],
 
                                  [ '--with-mongoose',      'optional', env['MONGOOSEDIR'] ],
                                  [ '--without-mongoose',   'none',     None ],
@@ -519,6 +527,11 @@ def parse_cmdline ( args, env ):
                                  [ '--without-mkl',     'none',     None ],
                                  [ '--mkl-cflags',      'required', env['MKLCFLAGS'] ],
                                  [ '--mkl-lflags',      'required', env['MKLLFLAGS'] ],
+
+                                 [ '--with-cuda',       'optional', env['CUDADIR'] ],
+                                 [ '--without-cuda',    'none',     None ],
+                                 [ '--cuda-cflags',     'required', env['CUDACFLAGS'] ],
+                                 [ '--cuda-lflags',     'required', env['CUDALFLAGS'] ],
 
                                  [ '--with-libmvec',    'none',     None ],
                                  [ '--without-libmvec', 'none',     None ],
@@ -582,11 +595,11 @@ def parse_cmdline ( args, env ):
             env['ILP64'] = 'no'
 
 
-        elif opt in ( '--with-cpuflags' ):
-            env['USE_CPUFLAGS'] = 'yes'
-            env['CPUFLAGS']     = arg
-        elif opt in ( '--without-cpuflags' ):
-            env['USE_CPUFLAGS'] = 'no'
+        # elif opt in ( '--with-cpuflags' ):
+        #     env['USE_CPUFLAGS'] = 'yes'
+        #     env['CPUFLAGS']     = arg
+        # elif opt in ( '--without-cpuflags' ):
+        #     env['USE_CPUFLAGS'] = 'no'
 
 
         elif opt in ( '--with-boost' ):
@@ -632,13 +645,13 @@ def parse_cmdline ( args, env ):
             env['SCOTCHLFLAGS'] = arg
 
 
-        elif opt in ( '--with-chaco' ):
-            env['CHACO']    = 'yes'
-            env['CHACODIR'] = arg
-        elif opt in ( '--without-chaco' ):
-            env['CHACO']    = 'no'
-        elif opt in ( '--chaco-lflags' ):
-            env['CHACOLFLAGS'] = arg
+        # elif opt in ( '--with-chaco' ):
+        #     env['CHACO']    = 'yes'
+        #     env['CHACODIR'] = arg
+        # elif opt in ( '--without-chaco' ):
+        #     env['CHACO']    = 'no'
+        # elif opt in ( '--chaco-lflags' ):
+        #     env['CHACOLFLAGS'] = arg
 
 
         elif opt in ( '--with-mongoose' ):
@@ -731,6 +744,17 @@ def parse_cmdline ( args, env ):
             env['MKLLFLAGS'] = arg
 
             
+        elif opt in ( '--with-cuda' ):
+            env['CUDADIR'] = arg
+            env['CUDA']    = 'check'
+        elif opt in ( '--without-cuda' ):
+            env['CUDA']    = 'no'
+        elif opt in ( '--cuda-cflags' ):
+            env['CUDACFLAGS'] = arg
+        elif opt in ( '--cuda-lflags' ):
+            env['CUDALFLAGS'] = arg
+
+            
         elif opt in ( '--with-libmvec' ):
             env['LIBMVEC'] = 'check'
         elif opt in ( '--without-libmvec' ):
@@ -770,14 +794,23 @@ def print_env ( env ):
     print_bold( 'OPTFLAGS', env['OPTFLAGS'] )
     print_bold( 'LFLAGS',   env['LFLAGS'] )
 
-    if env['USE_CPUFLAGS'] == 'yes':
-        print( '' )
-        print_bold( 'CPUFLAGS', env['CPUFLAGS'] )
+    # if env['USE_CPUFLAGS'] == 'yes':
+    #     print( '' )
+    #     print_bold( 'CPUFLAGS', env['CPUFLAGS'] )
 
     print( '' ) 
     print_bold( 'LAPACK', env['LAPACK_LIB'] )
     if env['ILP64'] == 'yes':
         print_bold( 'ILP64', 'yes' )
+
+    if env['CUDA'] == 'yes':
+        if verbose > 1:
+            print_bold( 'CUDA',       'yes' )
+            print_bold( 'CUDADIR',    env['CUDADIR'] )
+            print_bold( 'CUDACFLAGS', env['CUDACFLAGS'] )
+            print_bold( 'CUDALFLAGS', env['CUDALFLAGS'] )
+        else :
+            print_bold( 'CUDA', 'yes', env['CUDACFLAGS'] + ' ' + env['CUDALFLAGS'] )
 
     print( '' ) 
 
@@ -815,13 +848,13 @@ def print_env ( env ):
         else :
             print_bold( 'Scotch', 'yes', env['SCOTCHCFLAGS'] + ' ' + env['SCOTCHLFLAGS'] )
 
-    if env['CHACO'] == 'yes':
-        if verbose > 1:
-            print_bold( 'Chaco', 'yes' )
-            print_bold( 'CHACODIR',    env['CHACODIR'] )
-            print_bold( 'CHACOLFLAGS', env['CHACOLFLAGS'] )
-        else :
-            print_bold( 'Chaco', 'yes', env['CHACOLFLAGS'] )
+    # if env['CHACO'] == 'yes':
+    #     if verbose > 1:
+    #         print_bold( 'Chaco', 'yes' )
+    #         print_bold( 'CHACODIR',    env['CHACODIR'] )
+    #         print_bold( 'CHACOLFLAGS', env['CHACOLFLAGS'] )
+    #     else :
+    #         print_bold( 'Chaco', 'yes', env['CHACOLFLAGS'] )
 
     if env['MONGOOSE'] == 'yes':
         if verbose > 1:
@@ -1421,6 +1454,26 @@ def testsrc ( name ):
          int main () { 
            dgejsv_( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ); 
            sgejsv_( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ); 
+           return 0; }
+        """,
+
+        ########################################################################
+
+        'CUDA' :
+
+        """#include <cuda_runtime.h>
+         #include <cublas_v2.h>
+         #include <cusolverDn.h>
+         int main () {
+           cudaStream_t        stream;
+           cublasHandle_t      blas;
+           cusolverDnHandle_t  solver;
+           cusolverDnParams_t  params;
+           cudaStreamCreateWithFlags( & stream, cudaStreamNonBlocking );
+           cublasCreate( & blas );
+           cusolverDnCreate( & solver );
+           cusolverDnXgesvd( solver, params, 'O', 'S', 1, 1, CUDA_R_32F, nullptr, 1, CUDA_R_32F, nullptr, CUDA_R_32F, nullptr, 1,
+                             CUDA_R_32F, nullptr, 1, CUDA_R_32F, nullptr, 1, nullptr, 1, nullptr );
            return 0; }
         """,
 
@@ -2436,48 +2489,48 @@ def test_environment ( env ):
         print( 'No working Fortran compiler available !!!' )
         sys.exit( 1 )
 
-    if compenv['USE_CPUFLAGS'] == 'yes' or compenv['USE_CPUFLAGS'] == 'check':
-        print_test( 'Program', 'cpuflags' )
-        success = check_prog( 'cpuflags', compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '"', prn = False )
+    # if compenv['USE_CPUFLAGS'] == 'yes' or compenv['USE_CPUFLAGS'] == 'check':
+    #     print_test( 'Program', 'cpuflags' )
+    #     success = check_prog( 'cpuflags', compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '"', prn = False )
         
-        if not success :
-            print( tmsg['failed'] )
-            env['USE_CPUFLAGS'] = 'check'
-        else :
-            # add default compiler flags if cpuflags is present
-            flags = readln( compenv['CPUFLAGS'] + ' --warn=C++ --comp="' + compenv['CXX'] + '"' )
-            flags = re.sub( '\n', '', flags )
-            compenv['CXXFLAGS'] = compenv['CXXFLAGS'] + ' ' + flags
-            flags = readln( compenv['CPUFLAGS'] + ' --warn=C --comp="' + compenv['CC'] + '"' )
-            flags = re.sub( '\n', '', flags )
-            compenv['CFLAGS'] = compenv['CFLAGS'] + ' ' + flags
+    #     if not success :
+    #         print( tmsg['failed'] )
+    #         env['USE_CPUFLAGS'] = 'check'
+    #     else :
+    #         # add default compiler flags if cpuflags is present
+    #         flags = readln( compenv['CPUFLAGS'] + ' --warn=C++ --comp="' + compenv['CXX'] + '"' )
+    #         flags = re.sub( '\n', '', flags )
+    #         compenv['CXXFLAGS'] = compenv['CXXFLAGS'] + ' ' + flags
+    #         flags = readln( compenv['CPUFLAGS'] + ' --warn=C --comp="' + compenv['CC'] + '"' )
+    #         flags = re.sub( '\n', '', flags )
+    #         compenv['CFLAGS'] = compenv['CFLAGS'] + ' ' + flags
             
-            # and recheck, whether the flags really work
-            success = check_cc( 'C (cpuflags)', compenv['CC'], compenv['CFLAGS'], cconf, prn = False )
+    #         # and recheck, whether the flags really work
+    #         success = check_cc( 'C (cpuflags)', compenv['CC'], compenv['CFLAGS'], cconf, prn = False )
             
-            if not success :
-                print( tmsg['failure'] )
-                print( 'C compiler not compatible with cpuflags !!!' )
-                print( '(Used ' + bold( compenv['CC'] + ' ' + compenv['CFLAGS'] ) + ')' )
-                sys.exit( 1 )
+    #         if not success :
+    #             print( tmsg['failure'] )
+    #             print( 'C compiler not compatible with cpuflags !!!' )
+    #             print( '(Used ' + bold( compenv['CC'] + ' ' + compenv['CFLAGS'] ) + ')' )
+    #             sys.exit( 1 )
 
-            success = check_cc( 'C++ + cpuflags', compenv['CXX'], compenv['CXXFLAGS'], prn = False )
+    #         success = check_cc( 'C++ + cpuflags', compenv['CXX'], compenv['CXXFLAGS'], prn = False )
             
-            if not success :
-                print( tmsg['failure'] )
-                print( 'C++ compiler not compatible with cpuflags !!!' )
-                print( '(Used ' + bold( compenv['CXX'] + ' ' + compenv['CXXFLAGS'] ) + ')' )
-                sys.exit( 1 )
+    #         if not success :
+    #             print( tmsg['failure'] )
+    #             print( 'C++ compiler not compatible with cpuflags !!!' )
+    #             print( '(Used ' + bold( compenv['CXX'] + ' ' + compenv['CXXFLAGS'] ) + ')' )
+    #             sys.exit( 1 )
 
-            success = check_fc( 'Fortran (cpuflags)', compenv['FC'], compenv['FCFLAGS'], prn = False )
-            if not success :
-                print( tmsg['failure'] )
-                print( 'FORTRAN compiler not compatible with cpuflags !!!' )
-                print( '(Used ' + bold( compenv['FC'] + ' ' + compenv['FCFLAGS'] ) + ')' )
-                sys.exit( 1 )
+    #         success = check_fc( 'Fortran (cpuflags)', compenv['FC'], compenv['FCFLAGS'], prn = False )
+    #         if not success :
+    #             print( tmsg['failure'] )
+    #             print( 'FORTRAN compiler not compatible with cpuflags !!!' )
+    #             print( '(Used ' + bold( compenv['FC'] + ' ' + compenv['FCFLAGS'] ) + ')' )
+    #             sys.exit( 1 )
 
-            env['USE_CPUFLAGS'] = 'yes'
-            print( tmsg['success'] )
+    #         env['USE_CPUFLAGS'] = 'yes'
+    #         print( tmsg['success'] )
 
     if compenv['MKL'] == 'yes' or compenv['MKL'] == 'check' :
         if check_lib( 'MKL', compenv['CXX'],
@@ -2503,6 +2556,14 @@ def test_environment ( env ):
             print( 'or use ' + bold( '--download-lapack' ) + ' to download LAPACK.' )
             print( '(Used ' + bold( compenv['LFLAGS'] + ' ' + compenv['LAPACK_LIB'] ) + ')' )
             sys.exit( 1 )
+
+    if compenv['CUDA'] == 'yes' or compenv['CUDA'] == 'check' :
+        if check_lib( 'CUDA', compenv['CXX'],
+                      compenv['CXXFLAGS'] + ' ' + compenv['CUDACFLAGS'] + ' ' +
+                      compenv['LFLAGS']   + ' ' + compenv['CUDALFLAGS'] ):
+            env['CUDA'] = 'yes'
+        else :
+            env['CUDA'] = 'check'
 
     if not check_lib( 'Boost', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + 
                       compenv['BOOSTCFLAGS'] + ' ' + compenv['BOOSTLFLAGS'] ):
@@ -2536,14 +2597,14 @@ def test_environment ( env ):
         else:
             env['SCOTCH'] = 'yes'
 
-    if compenv['CHACO'] == 'yes' or compenv['CHACO'] == 'check':
-        if compenv['CHACODIR'] != '': lflags = '-L' + compenv['CHACODIR'] + ' ' + compenv['CHACOLFLAGS']
-        else :                        lflags = compenv['CHACOLFLAGS']
+    # if compenv['CHACO'] == 'yes' or compenv['CHACO'] == 'check':
+    #     if compenv['CHACODIR'] != '': lflags = '-L' + compenv['CHACODIR'] + ' ' + compenv['CHACOLFLAGS']
+    #     else :                        lflags = compenv['CHACOLFLAGS']
 
-        if not check_lib( 'Chaco', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + lflags ):
-            env['CHACO'] = 'check'
-        else:
-            env['CHACO'] = 'yes'
+    #     if not check_lib( 'Chaco', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + lflags ):
+    #         env['CHACO'] = 'check'
+    #     else:
+    #         env['CHACO'] = 'yes'
 
     if compenv['MONGOOSE'] == 'yes' or compenv['MONGOOSE'] == 'check':
         if not check_lib( 'MONGOOSE', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + compenv['MONGOOSECFLAGS'] + ' ' + compenv['MONGOOSELFLAGS'] ):
@@ -2849,19 +2910,19 @@ def main ( compenv ):
     cwarn_flags   = ''
     cxxwarn_flags = ''
 
-    if compenv['USE_CPUFLAGS'] == 'yes' :
-        flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '"' )
-        flags = re.sub( '\n', '', flags )
-        compenv['ARCHFLAGS'] = flags
-        flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '" --opt --nocflags' )
-        flags = re.sub( '\n', '', flags )
-        compenv['OPTFLAGS'] = flags
-        flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CC']  + '" --warn=C --nocflags' )
-        flags = re.sub( '\n', '', flags )
-        cwarn_flags = flags
-        flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '" --warn=C++ --nocflags' )
-        flags = re.sub( '\n', '', flags )
-        cxxwarn_flags = flags
+    # if compenv['USE_CPUFLAGS'] == 'yes' :
+    #     flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '"' )
+    #     flags = re.sub( '\n', '', flags )
+    #     compenv['ARCHFLAGS'] = flags
+    #     flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '" --opt --nocflags' )
+    #     flags = re.sub( '\n', '', flags )
+    #     compenv['OPTFLAGS'] = flags
+    #     flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CC']  + '" --warn=C --nocflags' )
+    #     flags = re.sub( '\n', '', flags )
+    #     cwarn_flags = flags
+    #     flags = readln( compenv['CPUFLAGS'] + ' --comp="' + compenv['CXX'] + '" --warn=C++ --nocflags' )
+    #     flags = re.sub( '\n', '', flags )
+    #     cxxwarn_flags = flags
 
     if compenv['CXXFLAGS'] == '' : compenv['CXXFLAGS'] = compenv['ARCHFLAGS'] + cxxwarn_flags
     if compenv['CFLAGS']   == '' : compenv['CFLAGS']   = compenv['ARCHFLAGS'] + cwarn_flags
@@ -2887,6 +2948,10 @@ def main ( compenv ):
 
     if compenv['MKL'] == 'yes' :
         compenv['CXXFLAGS'] += ' ' + compenv['MKLCFLAGS']
+
+    if compenv['CUDA'] == 'yes' :
+        compenv['CXXFLAGS'] += ' ' + compenv['CUDACFLAGS']
+        compenv['LFLAGS']   += ' ' + compenv['CUDALFLAGS']
 
     #
     # replace all @variables
@@ -2941,8 +3006,21 @@ def main ( compenv ):
     if compenv['HAS_CPUID'] == 'yes'  : compenv['HAS_CPUID'] = '1'
     else :                              compenv['HAS_CPUID'] = '0'
 
-    for feat in ( 'ZLIB', 'METIS', 'SCOTCH', 'CHACO', 'MONGOOSE', 'GSL', 'HDF5', 'NETCDF', 'CGAL',
-                  'SVML', 'LIBMVEC', 'AMDLIBM', 'ACML', 'MKL', 'MKL_SEQ',
+    for feat in ( 'ZLIB',
+                  'METIS',
+                  'MONGOOSE',
+                  'SCOTCH',
+                  'GSL',
+                  'HDF5',
+                  'NETCDF',
+                  'CGAL',
+                  'SVML',
+                  'LIBMVEC',
+                  'AMDLIBM',
+                  'ACML',
+                  'MKL',
+                  'MKL_SEQ',
+                  'CUDA',
                   'ILP64' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
@@ -2973,13 +3051,17 @@ def main ( compenv ):
     if compenv['MKL'] == 'yes' :
         compenv['CFGCFLAGS'] += ' ' + compenv['MKLCFLAGS']
 
+    if compenv['CUDA'] == 'yes' :
+        compenv['CFGCFLAGS'] += ' ' + compenv['CUDACFLAGS']
+        compenv['CFGLFLAGS'] += ' ' + compenv['CUDALFLAGS']
+
     if compenv['ZLIB']   == 'yes' :
         compenv['CFGLFLAGS'] += ' ' + compenv['ZLIBLFLAGS']
     if compenv['METIS']  == 'yes' : 
         compenv['CFGCFLAGS'] += ' ' + compenv['METISCFLAGS']
         compenv['CFGLFLAGS'] += ' ' + compenv['METISLFLAGS']
-    if compenv['CHACO']  == 'yes' :
-        compenv['CFGLFLAGS'] += ' ' + compenv['CHACOLFLAGS']
+    # if compenv['CHACO']  == 'yes' :
+    #     compenv['CFGLFLAGS'] += ' ' + compenv['CHACOLFLAGS']
     if compenv['SCOTCH'] == 'yes' :
         compenv['CFGCFLAGS'] += ' ' + compenv['SCOTCHCFLAGS'] 
         compenv['CFGLFLAGS'] += ' ' + compenv['SCOTCHLFLAGS']

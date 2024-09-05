@@ -288,6 +288,9 @@ extern bool            zero_sum_trunc;
 // algorithm for triangular vector solves (0: auto, 1: rec, 2: global, 3: dag)
 extern uint            vector_solve_method;
 
+// lower boundary of matrix size for switching to GPU computation
+extern size_t          gpu_svd_size;
+
 }// namespace Arith
 
 ////////////////////////////////////////////////

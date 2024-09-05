@@ -100,40 +100,33 @@ template void tsqr< Matrix< std::complex<double> > >( Matrix< std::complex<doubl
                                                      Matrix< std::complex<double> > &  R,
                                                      const size_t                 ntile );
 
-template void eigen< Matrix< float > >   ( Matrix< float > &            M,
-                                           Vector< float > &            eig_val,
-                                           Matrix< float > &            eig_vec );
-template void eigen< Matrix< double > >  ( Matrix< double > &           M,
-                                           Vector< double > &           eig_val,
-                                           Matrix< double > &           eig_vec );
+template void eigen< float >                   ( Matrix< float > &, Vector< float > &, Matrix< float > & );
+template void eigen< double >                  ( Matrix< double > &, Vector< double > &, Matrix< double > & );
+template void eigen< std::complex< float > >   ( Matrix< std::complex< float > > &, Vector< std::complex< float > > &, Matrix< std::complex< float > > & );
+template void eigen< std::complex< double > >  ( Matrix< std::complex< double > > &, Vector< std::complex< double > > &, Matrix< std::complex< double > > & );
 
-#define INST_EIGEN_HERM( type, real_t )                                 \
-    template void eigen_herm< type >   ( Matrix< type > &, Vector< real_t > &, Matrix< type > & )
+template void eigen_herm< float >                   ( Matrix< float > &, Vector< float > &, Matrix< float > & );
+template void eigen_herm< double >                  ( Matrix< double > &, Vector< double > &, Matrix< double > & );
+template void eigen_herm< std::complex< float > >   ( Matrix< std::complex< float > > &, Vector< float > &, Matrix< std::complex< float > > & );
+template void eigen_herm< std::complex< double > >  ( Matrix< std::complex< double > > &, Vector< double > &, Matrix< std::complex< double > > & );
 
-INST_EIGEN_HERM( float, float );
-INST_EIGEN_HERM( double, double );
-INST_EIGEN_HERM( std::complex< float >, float );
-INST_EIGEN_HERM( std::complex< double >, double );
+template void eigen< float >   ( Matrix< float > &            M,
+                                 const Range &                eig_range,
+                                 Vector< float > &            eig_val,
+                                 Matrix< float > &            eig_vec );
+template void eigen< double >  ( Matrix< double > &           M,
+                                 const Range &                eig_range,
+                                 Vector< double > &           eig_val,
+                                 Matrix< double > &           eig_vec );
 
-template void eigen< Matrix< float > >   ( Matrix< float > &            M,
-                                           const Range &                eig_range,
-                                           Vector< float > &            eig_val,
-                                           Matrix< float > &            eig_vec );
-template void eigen< Matrix< double > >  ( Matrix< double > &           M,
-                                           const Range &                eig_range,
-                                           Vector< double > &           eig_val,
-                                           Matrix< double > &           eig_vec );
-
-template void eigen< Vector< float >,
-                     Vector< float > >   ( Vector< float > &            diag,
-                                           Vector< float > &            subdiag,
-                                           Vector< float > &            eig_val,
-                                           Matrix< float > &            eig_vec );
-template void eigen< Vector< double >,
-                     Vector< double > >  ( Vector< double > &           diag,
-                                           Vector< double > &           subdiag,
-                                           Vector< double > &           eig_val,
-                                           Matrix< double > &           eig_vec );
+template void eigen< float >   ( Vector< float > &            diag,
+                                 Vector< float > &            subdiag,
+                                 Vector< float > &            eig_val,
+                                 Matrix< float > &            eig_vec );
+template void eigen< double >  ( Vector< double > &           diag,
+                                 Vector< double > &           subdiag,
+                                 Vector< double > &           eig_val,
+                                 Matrix< double > &           eig_vec );
 
 template void svd_double< double >          ( Matrix< double > &           U,
                                               Vector< double > &           S,
@@ -143,11 +136,11 @@ template void svd_double< std::complex<double> > ( Matrix< std::complex<double> 
                                               Matrix< std::complex<double> > &  V );
 
 
-#define INST_SVD( T )                                      \
-    template void                                          \
-    svd< Matrix< T > >  ( Matrix< T > &                 U, \
-                          Vector< real_type_t< T > > &  S, \
-                          Matrix< T > &                 V )
+#define INST_SVD( T )                                       \
+    template void                                           \
+    svd< T >  ( Matrix< T > &                 U,            \
+                Vector< real_type_t< T > > &  S,            \
+                Matrix< T > &                 V )
 INST_SVD( float );
 INST_SVD( double );
 INST_SVD( std::complex< float > );

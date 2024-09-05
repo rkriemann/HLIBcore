@@ -180,6 +180,7 @@ read_config ()
     EVAL_CFG( "Arith.symmetrise",        CFG::Arith::symmetrise );
     EVAL_CFG( "Arith.zero_sum_trunc",    CFG::Arith::zero_sum_trunc );
     EVAL_CFG( "Arith.vector_solve_method", CFG::Arith::vector_solve_method );
+    EVAL_CFG( "Arith.gpu_svd_size",        CFG::Arith::gpu_svd_size );
 
     EVAL_CFG( "Solver.max_iter",           CFG::Solver::max_iter );
     EVAL_CFG( "Solver.rel_res_red",        CFG::Solver::rel_res_red );
@@ -469,6 +470,7 @@ init ()
     EVAL_ENV( "HPRO_Arith_symmetrise",       Arith::dense_accu, bool );
     EVAL_ENV( "HPRO_Arith_zero_sum_trunc",   Arith::zero_sum_trunc, bool );
     EVAL_ENV( "HPRO_Arith_vector_solve_method", Arith::vector_solve_method, uint );
+    EVAL_ENV( "HPRO_Arith_gpu_svd_size",        Arith::gpu_svd_size, size_t );
 
     EVAL_ENV( "HPRO_Solver_max_iter",            Solver::max_iter,           uint   );
     EVAL_ENV( "HPRO_Solver_rel_res_red",         Solver::rel_res_red,        double );
@@ -570,6 +572,7 @@ init ()
     EVAL_ENV( "HLIB_Arith_symmetrise",       Arith::dense_accu, bool );
     EVAL_ENV( "HLIB_Arith_zero_sum_trunc",   Arith::zero_sum_trunc, bool );
     EVAL_ENV( "HLIB_Arith_vector_solve_method", Arith::vector_solve_method, uint );
+    EVAL_ENV( "HLIB_Arith_gpu_svd_size",        Arith::gpu_svd_size, size_t );
 
     EVAL_ENV( "HLIB_Solver_max_iter",            Solver::max_iter,           uint   );
     EVAL_ENV( "HLIB_Solver_rel_res_red",         Solver::rel_res_red,        double );
@@ -663,7 +666,8 @@ print_parameters ()
               << "HPRO_BLAS_trunc_method             = " << BLAS::trunc_method << std::endl
               << "HPRO_BLAS_power_steps              = " << BLAS::power_steps << std::endl
               << "HPRO_BLAS_sample_size              = " << BLAS::sample_size << std::endl
-              << "HPRO_BLAS_oversampling             = " << BLAS::oversampling << std::endl;
+              << "HPRO_BLAS_oversampling             = " << BLAS::oversampling << std::endl
+              << std::endl;
 
     std::cout << "HPRO_Cluster_nmin                  = " << Cluster::nmin << std::endl
               << "HPRO_Cluster_sort_wrt_size         = " << Cluster::sort_wrt_size << std::endl
@@ -671,7 +675,8 @@ print_parameters ()
               << "HPRO_Cluster_adjust_bvol           = " << Cluster::adjust_bvol << std::endl
               << "HPRO_Cluster_same_cluster_level    = " << (Cluster::cluster_level_mode != 0 ? true : false) << std::endl
               << "HPRO_Cluster_build_scc             = " << Cluster::build_scc << std::endl
-              << "HPRO_Cluster_METIS_random          = " << Cluster::METIS_random << std::endl;
+              << "HPRO_Cluster_METIS_random          = " << Cluster::METIS_random << std::endl
+              << std::endl;
 
     std::cout << "HPRO_Build_recompress              = " << Build::recompress << std::endl
               << "HPRO_Build_coarsen                 = " << Build::coarsen << std::endl
@@ -683,7 +688,8 @@ print_parameters ()
               << "HPRO_Build_use_ghostmat            = " << Build::use_ghostmat << std::endl
               << "HPRO_Build_check_cb_ret            = " << Build::check_cb_ret << std::endl
               << "HPRO_Build_symmetrise              = " << Build::symmetrise << std::endl
-              << "HPRO_Build_aca_max_ratio           = " << Build::aca_max_ratio << std::endl;
+              << "HPRO_Build_aca_max_ratio           = " << Build::aca_max_ratio << std::endl
+              << std::endl;
     
     std::cout << "HPRO_Arith_recompress              = " << Arith::recompress << std::endl
               << "HPRO_Arith_abs_eps                 = " << Arith::abs_eps << std::endl
@@ -706,7 +712,9 @@ print_parameters ()
               << "HPRO_Arith_dense_accu              = " << Arith::dense_accu << std::endl
               << "HPRO_Arith_symmetrise              = " << Arith::symmetrise << std::endl
               << "HPRO_Arith_zero_sum_trunc          = " << Arith::zero_sum_trunc << std::endl
-              << "HPRO_Arith_vector_solve_method     = " << Arith::vector_solve_method << std::endl;
+              << "HPRO_Arith_vector_solve_method     = " << Arith::vector_solve_method << std::endl
+              << "HPRO_Arith_gpu_svd_size            = " << Arith::gpu_svd_size << std::endl
+              << std::endl;
 
     std::cout << "HPRO_Solver_max_iter               = " << Solver::max_iter << std::endl
               << "HPRO_Solver_rel_res_red            = " << Solver::rel_res_red << std::endl
@@ -714,7 +722,8 @@ print_parameters ()
               << "HPRO_Solver_rel_res_growth         = " << Solver::rel_res_growth << std::endl
               << "HPRO_Solver_gmres_restart          = " << Solver::gmres_restart << std::endl
               << "HPRO_Solver_init_start_value       = " << Solver::init_start_value << std::endl
-              << "HPRO_Solver_use_exact_residual     = " << Solver::use_exact_residual << std::endl;
+              << "HPRO_Solver_use_exact_residual     = " << Solver::use_exact_residual << std::endl
+              << std::endl;
 
     std::cout << "HPRO_BEM_quad_order                = " << BEM::quad_order << std::endl
               << "HPRO_BEM_adaptive_quad_order       = " << BEM::adaptive_quad_order << std::endl
@@ -725,12 +734,14 @@ print_parameters ()
               << "HPRO_BEM_use_simd_mic              = " << BEM::use_simd_mic << std::endl
               << "HPRO_BEM_use_simd_avx512f          = " << BEM::use_simd_avx512f << std::endl
               << "HPRO_BEM_use_simd_vsx              = " << BEM::use_simd_vsx << std::endl
-              << "HPRO_BEM_use_simd_neon             = " << BEM::use_simd_neon << std::endl;
+              << "HPRO_BEM_use_simd_neon             = " << BEM::use_simd_neon << std::endl
+              << std::endl;
 
     std::cout << "HPRO_IO_use_matlab_syntax          = " << IO::use_matlab_syntax << std::endl
               << "HPRO_IO_color_mode                 = " << IO::color_mode << std::endl
               << "HPRO_IO_charset_mode               = " << IO::charset_mode << std::endl
-              << "HPRO_IO_permute_save               = " << IO::permute_save << std::endl;
+              << "HPRO_IO_permute_save               = " << IO::permute_save << std::endl
+              << std::endl;
 }
 
 ////////////////////////////////////////////////
@@ -941,6 +952,9 @@ bool            zero_sum_trunc      = true;
 
 // algorithm for triangular vector solves (0: auto, 1: rec, 2: global, 3: dag)
 uint            vector_solve_method = 0;
+
+// lower boundary of matrix size for switching to GPU computation
+size_t          gpu_svd_size        = 512;
 
 }// namespace Arith
 

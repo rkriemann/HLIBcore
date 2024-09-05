@@ -26,7 +26,7 @@
 #define HPRO_USE_ZLIB                 @USE_ZLIB@
 #define HPRO_USE_METIS                @USE_METIS@
 #define HPRO_USE_SCOTCH               @USE_SCOTCH@
-#define HPRO_USE_CHACO                @USE_CHACO@
+#define HPRO_USE_CHACO                0
 #define HPRO_USE_MONGOOSE             @USE_MONGOOSE@
 #define HPRO_USE_FFTW3                0
 #define HPRO_USE_GSL                  @USE_GSL@
@@ -39,6 +39,7 @@
 #define HPRO_USE_LIBMVEC              @USE_LIBMVEC@
 #define HPRO_USE_MKL                  @USE_MKL@
 #define HPRO_USE_MKL_SEQ              @USE_MKL_SEQ@
+#define HPRO_USE_CUDA                 @USE_CUDA@
 #define HPRO_USE_VAMPIRTRACE          0
 #define HPRO_USE_CGAL                 @USE_CGAL@
 
