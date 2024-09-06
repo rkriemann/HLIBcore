@@ -672,6 +672,7 @@ strerror ( const uint ec )
         case ERR_NETCDF          : return "error during NetCDF I/O";
         case ERR_NOCGAL          : return "no CGAL support compiled in";
         case ERR_CUDA            : return "error within CUDA function";
+        case ERR_HIP             : return "error within HIP function";
 
         case ERR_MPI             : return "error in call to MPI function";
 

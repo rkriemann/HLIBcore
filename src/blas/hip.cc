@@ -57,36 +57,57 @@ namespace Hpro { namespace HIP {
 //
 template < typename T > struct hip_traits
 {
-    using  hip_type = T;
+    using  hip_type  = T;
     using  ptr_type  = T *;
+    using  real_type = T;
 };
 
 template <>
 struct hip_traits< float >
 {
-    using  hip_type = float;
-    using  ptr_type = float *;
+    using  hip_type  = float;
+    using  ptr_type  = hip_type *;
+    using  real_type = float;
 };
 
 template <>
 struct hip_traits< double >
 {
-    using  hip_type = double;
-    using  ptr_type = double *;
+    using  hip_type  = double;
+    using  ptr_type  = hip_type *;
+    using  real_type = double;
 };
 
 template <>
 struct hip_traits< std::complex< float > >
 {
-    using  hip_type = cuFloatComplex;
-    using  ptr_type = cuFloatComplex *;
+    using  hip_type  = hipFloatComplex;
+    using  ptr_type  = hip_type *;
+    using  real_type = float;
 };
 
 template <>
 struct hip_traits< std::complex< double > >
 {
-    using  hip_type = cuDoubleComplex;
-    using  ptr_type = cuDoubleComplex *;
+    using  hip_type  = hipDoubleComplex;
+    using  ptr_type  = hip_type *;
+    using  real_type = double;
+};
+
+template <>
+struct hip_traits< hipFloatComplex >
+{
+    using  hip_type  = hipFloatComplex;
+    using  ptr_type  = hip_type *;
+    using  real_type = float;
+};
+
+template <>
+struct hip_traits< hipDoubleComplex >
+{
+    using  hip_type  = hipDoubleComplex;
+    using  ptr_type  = hip_type *;
+    using  real_type = double;
 };
 
 //
@@ -145,7 +166,8 @@ init ()
         return;
 
     // get number of compute units
-    int  dev_id = 0;
+    int   dev_id   = 0;
+    auto  dev_prop = hipDeviceProp_t();
     
     if ( hipGetDeviceProperties( & dev_prop, dev_id ) != hipSuccess )
         return;
@@ -159,7 +181,7 @@ init ()
 
     uint32_t  cu_num      = 4;
     uint32_t  cu_pattern  = 0b1111; // four CUs
-    uint32_t  cu_mask[ 8 ];         // place for 8 * 32 compute units
+    uint32_t  cu_mask[8]  = { 0, 0, 0, 0, 0, 0, 0, 0 }; // for 8 * 32 = 256 compute units
     uint32_t  cu_idx      = 0;      // start position for active CUs in mask
     bool      found_error = false;
     uint      error_index = 0;
@@ -172,7 +194,7 @@ init ()
         cu_mask[ arr_ofs ] = cu_pattern << bit_ofs;
         cu_idx            += cu_num;
         
-        if ( hipExtStreamCreateWithCUMask( & handle.stream, 8, cu_mask ) != hipSuccess )
+        if ( hipExtStreamCreateWithCUMask( & handles[i].stream, 8, cu_mask ) != hipSuccess )
         {
             HWARNING( "(HIP) init : error in hipExtStreamCreateWithCUMask; disabling HIP" );
             found_error = true;
@@ -182,8 +204,8 @@ init ()
 
         // after this, assumption is that HIP is present and working!!!
         
-        HPRO_HIPSOLVER_CHECK( hipsolverDnCreate,    ( & handles[i].solver ) );
-        HPRO_HIPSOLVER_CHECK( hipsolverDnSetStream, (   handles[i].solver, handles[i].stream ) );
+        HPRO_HIPSOLVER_CHECK( hipsolverCreate,    ( & handles[i].solver ) );
+        HPRO_HIPSOLVER_CHECK( hipsolverSetStream, (   handles[i].solver, handles[i].stream ) );
 
         handle_used[i] = false;
     }// for
@@ -193,9 +215,8 @@ init ()
         // clean up all initialized data
         for ( uint  i = 0; i < error_index; ++i )
         {
-            HPRO_HIPSOLVER_CHECK( hipsolverDnDestroy,  ( handles[i].solver ) );
-            HPRO_CUBLAS_CHECK(   cublasDestroy,      ( handles[i].blas ) );
-            HPRO_HIP_CHECK(     hipStreamDestroy,  ( handles[i].stream ) );
+            HPRO_HIPSOLVER_CHECK( hipsolverDestroy,  ( handles[i].solver ) );
+            HPRO_HIP_CHECK(       hipStreamDestroy,  ( handles[i].stream ) );
         }// for
     }// if
     else
@@ -224,9 +245,8 @@ done ()
         if ( handle_used[i] )
             HERROR( ERR_HIP, "(HIP) done", "handle still in use" );
         
-        HPRO_HIPSOLVER_CHECK( hipsolverDnDestroy,  ( handles[i].solver ) );
-        HPRO_CUBLAS_CHECK(   cublasDestroy,      ( handles[i].blas ) );
-        HPRO_HIP_CHECK(     hipStreamDestroy,  ( handles[i].stream ) );
+        HPRO_HIPSOLVER_CHECK( hipsolverDestroy,  ( handles[i].solver ) );
+        HPRO_HIP_CHECK(       hipStreamDestroy,  ( handles[i].stream ) );
     }// for
 
     #endif
@@ -296,14 +316,6 @@ namespace
 {
 
 //
-// local breakpoint
-//
-void
-hip_break ()
-{
-}
-
-//
 // allocate device memory
 //
 template < typename value_t >
@@ -315,7 +327,6 @@ device_alloc ( const size_t  n )
 
     if ( retval != hipSuccess )
     {
-        hip_break();
         HWARNING( "(HIP) device_alloc : error in \"hipMalloc\" : " + std::string( hipGetErrorString( retval ) ) );
         return nullptr;
     }// if
@@ -333,10 +344,7 @@ device_free ( value_t *  ptr )
     const auto  retval = hipFree( ptr );
 
     if ( retval != hipSuccess )
-    {
-        hip_break();
         HWARNING( "(HIP) device_alloc : error in \"hipFree\" : " + std::string( hipGetErrorString( retval ) ) );
-    }// if
 }
 
 //
@@ -344,16 +352,15 @@ device_free ( value_t *  ptr )
 //
 template < typename value_t >
 bool
-to_device ( handle_t                                   handle,
-            const BLAS::Matrix< value_t > &            M_host,
+to_device ( handle_t                                  handle,
+            const BLAS::Matrix< value_t > &           M_host,
             typename hip_traits< value_t >::ptr_type  M_dev )
 {
-    const auto  retval = hipMemcpyAsync( M_dev, M_host.data(), sizeof(value_t) * M_host.nrows() * M_host.ncols(), hipMemcpyHostToDevice, handle.stream );
+    const auto  retval = hipMemcpyWithStream( M_dev, M_host.data(), sizeof(value_t) * M_host.nrows() * M_host.ncols(), hipMemcpyHostToDevice, handle.stream );
     
     if ( retval != hipSuccess )
     {
-        hip_break();
-        HWARNING( to_string( "(HIP) from_device : error in \"cublasSetMatrixAsync\" (%d)", retval ) );
+        HWARNING( to_string( "(HIP) to_device : error in \"hipMemcpyWithStream\" (%d)", retval ) );
         return false;
     }// if
     else
@@ -365,16 +372,15 @@ to_device ( handle_t                                   handle,
 //
 template < typename value_t >
 bool
-from_device ( handle_t                                   handle,
+from_device ( handle_t                                  handle,
               typename hip_traits< value_t >::ptr_type  M_dev,
-              BLAS::Matrix< value_t > &                  M_host )
+              BLAS::Matrix< value_t > &                 M_host )
 {
-    const auto  retval = hipMemcpyAsync( M_host.data(), M_dev, sizeof(value_t) * M_host.nrows() * M_host.ncols(), hipMemcpyDeviceToHost, handle.stream );
+    const auto  retval = hipMemcpyWithStream( M_host.data(), M_dev, sizeof(value_t) * M_host.nrows() * M_host.ncols(), hipMemcpyDeviceToHost, handle.stream );
 
     if ( retval != hipSuccess )
     {
-        hip_break();
-        HWARNING( to_string( "(HIP) from_device : error in \"cublasGetMatrixAsync\" (%d)", retval ) );
+        HWARNING( to_string( "(HIP) from_device : error in \"hipMemcpyWithStream\" (%d)", retval ) );
         return false;
     }// if
     else
@@ -383,16 +389,15 @@ from_device ( handle_t                                   handle,
 
 template < typename value_t >
 bool
-from_device ( handle_t                                   handle,
+from_device ( handle_t                                  handle,
               typename hip_traits< value_t >::ptr_type  v_dev,
-              BLAS::Vector< value_t > &                  v_host )
+              BLAS::Vector< value_t > &                 v_host )
 {
-    const auto  retval = hipMemcpyAsync( v_host.data(), v_dev, sizeof(value_t) * v_host.length(), hipMemcpyDeviceToHost, handle.stream );
+    const auto  retval = hipMemcpyWithStream( v_host.data(), v_dev, sizeof(value_t) * v_host.length(), hipMemcpyDeviceToHost, handle.stream );
 
     if ( retval != hipSuccess )
     {
-        hip_break();
-        HWARNING( to_string( "(HIP) from_device : error in \"cublasGetVectorAsync\" (%d)", retval ) );
+        HWARNING( to_string( "(HIP) from_device : error in \"hipMemcpyWithStream\" (%d)", retval ) );
         return false;
     }// if
     else
@@ -401,18 +406,15 @@ from_device ( handle_t                                   handle,
 
 template < typename value_t >
 value_t
-from_device ( handle_t                                   handle,
+from_device ( handle_t                                  handle,
               typename hip_traits< value_t >::ptr_type  dev_data )
 {
     value_t  data;
 
-    const auto  retval = hipMemcpyAsync( & data, dev_data, sizeof(typename hip_traits< value_t >::hip_type), hipMemcpyDeviceToHost, handle.stream );
+    const auto  retval = hipMemcpyWithStream( & data, dev_data, sizeof(typename hip_traits< value_t >::hip_type), hipMemcpyDeviceToHost, handle.stream );
 
     if ( retval != hipSuccess )
-    {
-        hip_break();
-        HWARNING( to_string( "(HIP) from_device : error in \"hipMemcpAsync\" (%d)", retval ) );
-    }// if
+        HWARNING( to_string( "(HIP) from_device : error in \"hipMemcpyWithStream\" (%d)", retval ) );
     
     return data;
 }
@@ -426,6 +428,158 @@ from_device ( handle_t                                   handle,
 // SVD related functions
 //
 ////////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+
+//
+// wrapper for gesvd_buffersize and gesvd
+//
+template < typename value_t >
+hipsolverStatus_t
+gesvd_bufferSize ( handle_t     handle,
+                   signed char  jobu,
+                   signed char  jobv,
+                   int          nrows,
+                   int          ncols,
+                   int *        lwork );
+
+template <>
+hipsolverStatus_t
+gesvd_bufferSize< float > ( handle_t      handle,
+                            signed char   jobu,
+                            signed char   jobv,
+                            int           nrows,
+                            int           ncols,
+                            int *         lwork )
+{
+    return hipsolverSgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
+}
+
+template <>
+hipsolverStatus_t
+gesvd_bufferSize< double > ( handle_t     handle,
+                             signed char  jobu,
+                             signed char  jobv,
+                             int          nrows,
+                             int          ncols,
+                             int *        lwork )
+{
+    return hipsolverDgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
+}
+
+template <>
+hipsolverStatus_t
+gesvd_bufferSize< hipFloatComplex > ( handle_t      handle,
+                                      signed char   jobu,
+                                      signed char   jobv,
+                                      int           nrows,
+                                      int           ncols,
+                                      int *         lwork )
+{
+    return hipsolverCgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
+}
+
+template <>
+hipsolverStatus_t
+gesvd_bufferSize< hipDoubleComplex > ( handle_t     handle,
+                                       signed char  jobu,
+                                       signed char  jobv,
+                                       int          nrows,
+                                       int          ncols,
+                                       int *        lwork )
+{
+    return hipsolverZgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
+}
+
+template < typename value_t >
+hipsolverStatus_t
+gesvd ( handle_t     handle,
+        signed char  jobu,
+        signed char  jobv,
+        int          nrows,
+        int          ncols,
+        value_t *    A, int lda,
+        typename hip_traits< value_t >::real_type *  S,
+        value_t *    U, int ldu,
+        value_t *    V, int ldv,
+        value_t *    work, int lwork,
+        typename hip_traits< value_t >::real_type *  rwork,
+        int *        devInfo);
+
+template <>
+hipsolverStatus_t
+gesvd< float > ( handle_t     handle,
+                 signed char  jobu,
+                 signed char  jobv,
+                 int          nrows,
+                 int          ncols,
+                 float *      A, int lda,
+                 float *      S,
+                 float *      U, int ldu,
+                 float *      V, int ldv,
+                 float *      work, int lwork,
+                 float *      rwork,
+                 int *        info)
+{
+    return hipsolverSgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
+}
+
+template <>
+hipsolverStatus_t
+gesvd< double > ( handle_t     handle,
+                  signed char  jobu,
+                  signed char  jobv,
+                  int          nrows,
+                  int          ncols,
+                  double *     A, int lda,
+                  double *     S,
+                  double *     U, int ldu,
+                  double *     V, int ldv,
+                  double *     work, int lwork,
+                  double *     rwork,
+                  int *        info)
+{
+    return hipsolverDgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
+}
+
+template <>
+hipsolverStatus_t
+gesvd< hipFloatComplex > ( handle_t           handle,
+                           signed char        jobu,
+                           signed char        jobv,
+                           int                nrows,
+                           int                ncols,
+                           hipFloatComplex *  A, int lda,
+                           float *            S,
+                           hipFloatComplex *  U, int ldu,
+                           hipFloatComplex *  V, int ldv,
+                           hipFloatComplex *  work, int lwork,
+                           float *            rwork,
+                           int *              info)
+{
+    return hipsolverCgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
+}
+
+template <>
+hipsolverStatus_t
+gesvd< hipDoubleComplex > ( handle_t            handle,
+                            signed char         jobu,
+                            signed char         jobv,
+                            int                 nrows,
+                            int                 ncols,
+                            hipDoubleComplex *  A, int lda,
+                            double *            S,
+                            hipDoubleComplex *  U, int ldu,
+                            hipDoubleComplex *  V, int ldv,
+                            hipDoubleComplex *  work, int lwork,
+                            double *            rwork,
+                            int *               info)
+{
+    return hipsolverZgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
+}
+
+}// namespace anonymous
 
 //
 // compute SVD decomposition \f$ A = U·S·V^H \f$ of the nxm matrix \a A with
@@ -451,9 +605,9 @@ svd  ( const hip_handle_t                       handle_idx,
     if ( A.nrows() < A.ncols() )
         return false;
 
-    using  real_t       = real_type_t< value_t >;
+    using  real_t      = real_type_t< value_t >;
     using  hip_value_t = typename hip_traits< value_t >::hip_type;
-    using  hip_real_t  = typename hip_traits< real_t >::hip_type;
+    using  hip_real_t  = typename hip_traits< real_t >::real_type;
     
     auto        handle = handles[ handle_idx ];
     const auto  nrows  = A.nrows();
@@ -464,14 +618,12 @@ svd  ( const hip_handle_t                       handle_idx,
     // allocate data memory on device
     //
 
-    const auto  type_A = hip_traits< value_t >::blas_type;
-    const auto  type_S = hip_traits< real_t >::blas_type;
-    
-    auto  dev_A    = device_alloc< hip_value_t >( nrows * ncols );
-    auto  dev_U    = device_alloc< hip_value_t >( nrows * nrows );
-    auto  dev_S    = device_alloc< hip_real_t >( minnm );
-    auto  dev_VT   = device_alloc< hip_value_t >( ncols * ncols );
-    auto  dev_info = device_alloc< int >( 1 );
+    auto          dev_A     = device_alloc< hip_value_t >( nrows * ncols );
+    auto          dev_U     = device_alloc< hip_value_t >( nrows * nrows );
+    auto          dev_S     = device_alloc< hip_real_t >( minnm );
+    auto          dev_VT    = device_alloc< hip_value_t >( ncols * ncols );
+    auto          dev_info  = device_alloc< int >( 1 );
+    hip_real_t *  dev_rwork = nullptr;
 
     if (! (( dev_A    != nullptr ) &&
            ( dev_U    != nullptr ) &&
@@ -479,7 +631,6 @@ svd  ( const hip_handle_t                       handle_idx,
            ( dev_VT   != nullptr ) &&
            ( dev_info != nullptr )) )
     {
-        hip_break();
         HWARNING( "(HIP) svd : could not allocate memory on device" );
         
         device_free( dev_info );
@@ -493,45 +644,17 @@ svd  ( const hip_handle_t                       handle_idx,
         
     to_device( handle, A, dev_A );
 
-    hipsolverDnParams_t  params;
-
-    HPRO_HIPSOLVER_CHECK( hipsolverDnCreateParams, ( & params ) ); // TODO: make it global?
-    
-    size_t      lwork_dev = 0;
-    size_t      lwork_hst = 0;
+    int         lwork_dev = 0;
     const char  jobU      = 'S';
     const char  jobV      = 'S';
     
-    // double  pertubation_error;
-    
     {
-        // auto  retval = hipsolverDnXgesvdp_bufferSize( handle.solver, params,
-        //                                              HIPSOLVER_EIG_MODE_VECTOR,
-        //                                              1, // economy mode
-        //                                              nrows, ncols,
-        //                                              type_A, dev_A, nrows,
-        //                                              type_S, dev_S,
-        //                                              type_A, dev_U, nrows,
-        //                                              type_A, dev_VT, minnm,
-        //                                              type_A,
-        //                                              & lwork_dev, & lwork_hst );
-        
-        auto  retval = hipsolverDnXgesvd_bufferSize( handle.solver, params,
-                                                    jobU, jobV,
-                                                    nrows, ncols,
-                                                    type_A, dev_A, nrows,
-                                                    type_S, dev_S,
-                                                    type_A, dev_U, nrows,
-                                                    type_A, dev_VT, minnm,
-                                                    type_A,
-                                                    & lwork_dev, & lwork_hst );
+        auto  retval = gesvd_bufferSize< hip_value_t >( handle, jobU, jobV, nrows, ncols, & lwork_dev );
 
         if ( retval != HIPSOLVER_STATUS_SUCCESS )
         {
-            hip_break();
-            HWARNING( to_string( "(HIP) svd : error in \"hipsolverDnXgesvd*_bufferSize\" (code: %d)", retval ) );
+            HWARNING( to_string( "(HIP) svd : error in \"hipsolverXgesvd_bufferSize\" (code: %d)", retval ) );
             
-            hipsolverDnDestroyParams( params );
             device_free( dev_info );
             device_free( dev_VT );
             device_free( dev_S );
@@ -541,42 +664,25 @@ svd  ( const hip_handle_t                       handle_idx,
         }// if
     }
 
-    auto  hst_work = std::vector< value_t >( lwork_hst );
-    auto  dev_work = device_alloc< value_t >( lwork_dev );
+    auto  dev_work = device_alloc< hip_value_t >( lwork_dev );
         
     {
-        // auto  retval = hipsolverDnXgesvdp( handle.solver, params,
-        //                                   HIPSOLVER_EIG_MODE_VECTOR,
-        //                                   1, // economy mode
-        //                                   nrows, ncols,
-        //                                   type_A, dev_A, nrows,
-        //                                   type_S, dev_S,
-        //                                   type_A, dev_U, nrows,
-        //                                   type_A, dev_VT, minnm,
-        //                                   type_A,
-        //                                   dev_work, lwork_dev,
-        //                                   hst_work.data(), lwork_hst,
-        //                                   dev_info, & pertubation_error );
-
-        auto  retval = hipsolverDnXgesvd( handle.solver,
-                                         params,
-                                         jobU, jobV,
-                                         nrows, ncols,
-                                         type_A, dev_A, nrows,
-                                         type_S, dev_S,
-                                         type_A, dev_U, nrows,
-                                         type_A, dev_VT, minnm,
-                                         type_A,
-                                         dev_work, lwork_dev,
-                                         hst_work.data(), lwork_hst,
-                                         dev_info );
+        auto  retval = gesvd< hip_value_t >( handle,
+                                             jobU, jobV,
+                                             nrows, ncols,
+                                             dev_A, nrows,
+                                             dev_S,
+                                             dev_U, nrows,
+                                             dev_VT, minnm,
+                                             dev_work, lwork_dev,
+                                             dev_rwork,
+                                             dev_info );
 
         if ( retval != HIPSOLVER_STATUS_SUCCESS )
         {
-            hip_break();
-            HWARNING( to_string( "(HIP) svd : error in \"hipsolverDnXgesvd*\" (code: %d)", retval ) );
+            HWARNING( to_string( "(HIP) svd : error in \"hipsolverXgesvd\" (code: %d)", retval ) );
             
-            hipsolverDnDestroyParams( params );
+            device_free( dev_work );
             device_free( dev_info );
             device_free( dev_VT );
             device_free( dev_S );
@@ -586,19 +692,14 @@ svd  ( const hip_handle_t                       handle_idx,
         }// if
     }
 
-    // if ( hipStreamSynchronize( handle.stream ) != hipSuccess )
-    //     HWARNING( "(HIP) svd : error in cuStreamSynchronize %d" );
-        
     auto  info = from_device< int >( handle, dev_info );
 
     if ( info != 0 )
     {
-        hip_break();
         if ( info < 0 ) { HWARNING( "(HIP) svd : " + to_string( "error in argument %d", info ) ); }
         else            { HWARNING( "(HIP) svd : " + to_string( "no convergence during SVD: %d", info ) ); }
 
         device_free( dev_work );
-        hipsolverDnDestroyParams( params );
         device_free( dev_info );
         device_free( dev_VT );
         device_free( dev_S );
@@ -629,7 +730,6 @@ svd  ( const hip_handle_t                       handle_idx,
     
     BLAS::copy( BLAS::adjoint( VT ), V );
     
-    HPRO_HIPSOLVER_CHECK( hipsolverDnDestroyParams, ( params ) ); // TODO: make it global?
     device_free( dev_work );
     device_free( dev_info );
     device_free( dev_VT );
@@ -656,7 +756,7 @@ svd  ( const hip_handle_t                       ,
 
 #define INST_SVD( T )                                           \
     template bool                                               \
-    svd< T >  ( const hip_handle_t                 handle_idx, \
+    svd< T >  ( const hip_handle_t                  handle_idx, \
                 BLAS::Matrix< T > &                 U,          \
                 BLAS::Vector< real_type_t< T > > &  S,          \
                 BLAS::Matrix< T > &                 V )

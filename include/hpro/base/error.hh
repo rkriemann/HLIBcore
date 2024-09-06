@@ -314,6 +314,7 @@ enum { NO_ERROR            = 0,         // no error occured
        ERR_NETCDF          = 1312,      // error during NetCDF I/O
        ERR_NOCGAL          = 1313,      // no CGAL support available
        ERR_CUDA            = 1314,      // error within CUDA function
+       ERR_HIP             = 1315,      // error within HIP function
        
        ERR_MPI             = 1400,      // error in call to MPI function
        

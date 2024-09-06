@@ -169,6 +169,12 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'CUDACFLAGS'   : '-I@CUDADIR@/include',
              'CUDALFLAGS'   : '-L@CUDADIR@/lib64 -lcudart -lcublasLt -lcublas -lcusolver',
 
+             'HIP'         : 'check',
+             'HIPDIR'      : '/opt/rocm',
+             'HIPDEFINES'  : '-D__HIP_PLATFORM_AMD__', # for AMD GPUs
+             'HIPCFLAGS'   : '-I@HIPDIR@/include',
+             'HIPLFLAGS'   : '-L@HIPDIR@/lib -lhipsolver -lamdhip64',
+
              'VAMPIRTRACE'  : 'no',
              
              #
@@ -375,6 +381,9 @@ def usage ( status ):
     print( '    --with-cuda=dir            set installation directory of NVidia CUDA' )
     print( '      --cuda-cflags            flags to compile with NVidia CUDA' )
     print( '      --cuda-lflags            flags to link with NVidia CUDA' )
+    print( '    --with-hip=dir            set installation directory of HIP' )
+    print( '      --hip-cflags            flags to compile with HIP' )
+    print( '      --hip-lflags            flags to link with HIP' )
     print( '    --with-boost=dir           set installation directory of Boost (default = none)' )
     print( '      --boost-cflags           flags to compile with boost' )
     print( '      --boost-lflags           flags to link with boost' )
@@ -532,6 +541,11 @@ def parse_cmdline ( args, env ):
                                  [ '--without-cuda',    'none',     None ],
                                  [ '--cuda-cflags',     'required', env['CUDACFLAGS'] ],
                                  [ '--cuda-lflags',     'required', env['CUDALFLAGS'] ],
+
+                                 [ '--with-hip',        'optional', env['HIPDIR'] ],
+                                 [ '--without-hip',     'none',     None ],
+                                 [ '--hip-cflags',      'required', env['HIPCFLAGS'] ],
+                                 [ '--hip-lflags',      'required', env['HIPLFLAGS'] ],
 
                                  [ '--with-libmvec',    'none',     None ],
                                  [ '--without-libmvec', 'none',     None ],
@@ -755,6 +769,17 @@ def parse_cmdline ( args, env ):
             env['CUDALFLAGS'] = arg
 
             
+        elif opt in ( '--with-hip' ):
+            env['HIPDIR'] = arg
+            env['HIP']    = 'check'
+        elif opt in ( '--without-hip' ):
+            env['HIP']    = 'no'
+        elif opt in ( '--hip-cflags' ):
+            env['HIPCFLAGS'] = arg
+        elif opt in ( '--hip-lflags' ):
+            env['HIPLFLAGS'] = arg
+
+            
         elif opt in ( '--with-libmvec' ):
             env['LIBMVEC'] = 'check'
         elif opt in ( '--without-libmvec' ):
@@ -811,6 +836,15 @@ def print_env ( env ):
             print_bold( 'CUDALFLAGS', env['CUDALFLAGS'] )
         else :
             print_bold( 'CUDA', 'yes', env['CUDACFLAGS'] + ' ' + env['CUDALFLAGS'] )
+
+    if env['HIP'] == 'yes':
+        if verbose > 1:
+            print_bold( 'HIP',       'yes' )
+            print_bold( 'HIPDIR',    env['HIPDIR'] )
+            print_bold( 'HIPCFLAGS', env['HIPCFLAGS'] )
+            print_bold( 'HIPLFLAGS', env['HIPLFLAGS'] )
+        else :
+            print_bold( 'HIP', 'yes', env['HIPCFLAGS'] + ' ' + env['HIPLFLAGS'] )
 
     print( '' ) 
 
@@ -1474,6 +1508,22 @@ def testsrc ( name ):
            cusolverDnCreate( & solver );
            cusolverDnXgesvd( solver, params, 'O', 'S', 1, 1, CUDA_R_32F, nullptr, 1, CUDA_R_32F, nullptr, CUDA_R_32F, nullptr, 1,
                              CUDA_R_32F, nullptr, 1, CUDA_R_32F, nullptr, 1, nullptr, 1, nullptr );
+           return 0; }
+        """,
+
+        ########################################################################
+
+        'HIP' :
+
+        """#include <hipblas/hipblas.h>
+         #include <hipsolver/hipsolver.h>
+         int main () {
+           hipStream_t        stream;
+           hipsolverHandle_t  solver;
+           hipStreamCreate( & stream );
+           hipsolverCreate( & solver );
+           hipsolverSgesvd( solver, 'O', 'S', 1, 1, nullptr, 1, nullptr, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, nullptr );
+           hipsolverDgesvd( solver, 'O', 'S', 1, 1, nullptr, 1, nullptr, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, nullptr );
            return 0; }
         """,
 
@@ -2565,6 +2615,15 @@ def test_environment ( env ):
         else :
             env['CUDA'] = 'check'
 
+    if compenv['HIP'] == 'yes' or compenv['HIP'] == 'check' :
+        if check_lib( 'HIP', compenv['CXX'],
+                      compenv['HIPDEFINES'] + ' ' +
+                      compenv['CXXFLAGS'] + ' ' + compenv['HIPCFLAGS'] + ' ' +
+                      compenv['LFLAGS']   + ' ' + compenv['HIPLFLAGS'] ):
+            env['HIP'] = 'yes'
+        else :
+            env['HIP'] = 'check'
+
     if not check_lib( 'Boost', compenv['CXX'], compenv['CXXFLAGS'] + ' ' + 
                       compenv['BOOSTCFLAGS'] + ' ' + compenv['BOOSTLFLAGS'] ):
         print( 'No working Boost library found !!! Please check Boost directory.' )
@@ -2953,6 +3012,11 @@ def main ( compenv ):
         compenv['CXXFLAGS'] += ' ' + compenv['CUDACFLAGS']
         compenv['LFLAGS']   += ' ' + compenv['CUDALFLAGS']
 
+    if compenv['HIP'] == 'yes' :
+        compenv['DEFINES']  += ' ' + compenv['HIPDEFINES']
+        compenv['CXXFLAGS'] += ' ' + compenv['HIPCFLAGS']
+        compenv['LFLAGS']   += ' ' + compenv['HIPLFLAGS']
+
     #
     # replace all @variables
     #
@@ -3021,6 +3085,7 @@ def main ( compenv ):
                   'MKL',
                   'MKL_SEQ',
                   'CUDA',
+                  'HIP',
                   'ILP64' ):
         if compenv[feat] == 'yes' : compenv['USE_' + feat] = '1'
         else :                      compenv['USE_' + feat] = '0'
@@ -3054,6 +3119,10 @@ def main ( compenv ):
     if compenv['CUDA'] == 'yes' :
         compenv['CFGCFLAGS'] += ' ' + compenv['CUDACFLAGS']
         compenv['CFGLFLAGS'] += ' ' + compenv['CUDALFLAGS']
+
+    if compenv['HIP'] == 'yes' :
+        compenv['CFGCFLAGS'] += ' ' + compenv['HIPDEFINES'] + ' ' + compenv['HIPCFLAGS']
+        compenv['CFGLFLAGS'] += ' ' + compenv['HIPLFLAGS']
 
     if compenv['ZLIB']   == 'yes' :
         compenv['CFGLFLAGS'] += ' ' + compenv['ZLIBLFLAGS']
