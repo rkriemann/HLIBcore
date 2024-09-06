@@ -297,14 +297,6 @@ namespace
 {
 
 //
-// local breakpoint
-//
-void
-cuda_break ()
-{
-}
-
-//
 // allocate device memory
 //
 template < typename value_t >
@@ -316,7 +308,6 @@ device_alloc ( const size_t  n )
 
     if ( retval != cudaSuccess )
     {
-        cuda_break();
         HWARNING( "(CUDA) device_alloc : error in \"cudaMalloc\" : " + std::string( cudaGetErrorString( retval ) ) );
         return nullptr;
     }// if
@@ -334,10 +325,7 @@ device_free ( value_t *  ptr )
     const auto  retval = cudaFree( ptr );
 
     if ( retval != cudaSuccess )
-    {
-        cuda_break();
         HWARNING( "(CUDA) device_alloc : error in \"cudaFree\" : " + std::string( cudaGetErrorString( retval ) ) );
-    }// if
 }
 
 //
@@ -353,7 +341,6 @@ to_device ( handle_t                                   handle,
     
     if ( retval != cudaSuccess )
     {
-        cuda_break();
         HWARNING( to_string( "(CUDA) from_device : error in \"cublasSetMatrixAsync\" (%d)", retval ) );
         return false;
     }// if
@@ -374,7 +361,6 @@ from_device ( handle_t                                   handle,
 
     if ( retval != cudaSuccess )
     {
-        cuda_break();
         HWARNING( to_string( "(CUDA) from_device : error in \"cublasGetMatrixAsync\" (%d)", retval ) );
         return false;
     }// if
@@ -392,7 +378,6 @@ from_device ( handle_t                                   handle,
 
     if ( retval != cudaSuccess )
     {
-        cuda_break();
         HWARNING( to_string( "(CUDA) from_device : error in \"cublasGetVectorAsync\" (%d)", retval ) );
         return false;
     }// if
@@ -410,10 +395,7 @@ from_device ( handle_t                                   handle,
     const auto  retval = cudaMemcpyAsync( & data, dev_data, sizeof(typename cuda_traits< value_t >::cuda_type), cudaMemcpyDeviceToHost, handle.stream );
 
     if ( retval != cudaSuccess )
-    {
-        cuda_break();
         HWARNING( to_string( "(CUDA) from_device : error in \"cudaMemcpAsync\" (%d)", retval ) );
-    }// if
     
     return data;
 }
@@ -480,7 +462,6 @@ svd  ( const cuda_handle_t                       handle_idx,
            ( dev_VT   != nullptr ) &&
            ( dev_info != nullptr )) )
     {
-        cuda_break();
         HWARNING( "(CUDA) svd : could not allocate memory on device" );
         
         device_free( dev_info );
@@ -529,7 +510,6 @@ svd  ( const cuda_handle_t                       handle_idx,
 
         if ( retval != CUSOLVER_STATUS_SUCCESS )
         {
-            cuda_break();
             HWARNING( to_string( "(CUDA) svd : error in \"cusolverDnXgesvd*_bufferSize\" (code: %d)", retval ) );
             
             cusolverDnDestroyParams( params );
@@ -574,10 +554,10 @@ svd  ( const cuda_handle_t                       handle_idx,
 
         if ( retval != CUSOLVER_STATUS_SUCCESS )
         {
-            cuda_break();
             HWARNING( to_string( "(CUDA) svd : error in \"cusolverDnXgesvd*\" (code: %d)", retval ) );
             
             cusolverDnDestroyParams( params );
+            device_free( dev_work );
             device_free( dev_info );
             device_free( dev_VT );
             device_free( dev_S );
@@ -594,7 +574,6 @@ svd  ( const cuda_handle_t                       handle_idx,
 
     if ( info != 0 )
     {
-        cuda_break();
         if ( info < 0 ) { HWARNING( "(CUDA) svd : " + to_string( "error in argument %d", info ) ); }
         else            { HWARNING( "(CUDA) svd : " + to_string( "no convergence during SVD: %d", info ) ); }
 
