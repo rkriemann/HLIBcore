@@ -78,27 +78,40 @@ template void ldlh< Matrix< double > >             ( Matrix< double > &         
 template void ldlh< Matrix< std::complex<float> > >     ( Matrix< std::complex<float> > &   A );
 template void ldlh< Matrix< std::complex<double> > >    ( Matrix< std::complex<double> > &  A );
 
-template void qr< Matrix< float > >                ( Matrix< float > &            A,
-                                                     Matrix< float > &            R );
-template void qr< Matrix< double > >               ( Matrix< double > &           A,
-                                                     Matrix< double > &           R );
-template void qr< Matrix< std::complex<float> > >       ( Matrix< std::complex<float> > &   A,
-                                                     Matrix< std::complex<float> > &   R );
-template void qr< Matrix< std::complex<double> > >      ( Matrix< std::complex<double> > &  A,
-                                                     Matrix< std::complex<double> > &  R );
+template void qr< float >                 ( Matrix< float > &            A,
+                                            Matrix< float > &            R );
+template void qr< double >                ( Matrix< double > &           A,
+                                            Matrix< double > &           R );
+template void qr< std::complex<float> >   ( Matrix< std::complex<float> > &   A,
+                                            Matrix< std::complex<float> > &   R );
+template void qr< std::complex<double> >  ( Matrix< std::complex<double> > &  A,
+                                            Matrix< std::complex<double> > &  R );
 
-template void tsqr< Matrix< float > >              ( Matrix< float > &            A,
-                                                     Matrix< float > &            R,
-                                                     const size_t                 ntile );
-template void tsqr< Matrix< double > >             ( Matrix< double > &           A,
-                                                     Matrix< double > &           R,
-                                                     const size_t                 ntile );
-template void tsqr< Matrix< std::complex<float> > >( Matrix< std::complex<float> > &   A,
-                                                     Matrix< std::complex<float> > &   R,
-                                                     const size_t                 ntile );
-template void tsqr< Matrix< std::complex<double> > >( Matrix< std::complex<double> > &  A,
-                                                     Matrix< std::complex<double> > &  R,
-                                                     const size_t                 ntile );
+template void tsqr< float >               ( Matrix< float > &            A,
+                                            Matrix< float > &            R,
+                                            const size_t                 ntile );
+template void tsqr< double >              ( Matrix< double > &           A,
+                                            Matrix< double > &           R,
+                                            const size_t                 ntile );
+template void tsqr< std::complex<float> > ( Matrix< std::complex<float> > &   A,
+                                            Matrix< std::complex<float> > &   R,
+                                            const size_t                      ntile );
+template void tsqr< std::complex<double> >( Matrix< std::complex<double> > &  A,
+                                            Matrix< std::complex<double> > &  R,
+                                            const size_t                      ntile );
+
+template void qrp< float >                 ( Matrix< float > &            A,
+                                             Matrix< float > &            R,
+                                             std::vector< blas_int_t > &  P );
+template void qrp< double >                ( Matrix< double > &           A,
+                                             Matrix< double > &           R,
+                                             std::vector< blas_int_t > &  P );
+template void qrp< std::complex<float> >   ( Matrix< std::complex<float> > &   A,
+                                             Matrix< std::complex<float> > &   R,
+                                             std::vector< blas_int_t > &       P );
+template void qrp< std::complex<double> >  ( Matrix< std::complex<double> > &  A,
+                                             Matrix< std::complex<double> > &  R,
+                                             std::vector< blas_int_t > &       P );
 
 template void eigen< float >                   ( Matrix< float > &, Vector< float > &, Matrix< float > & );
 template void eigen< double >                  ( Matrix< double > &, Vector< double > &, Matrix< double > & );

@@ -9,6 +9,7 @@
 //
 
 #include <vector>
+#include <atomic>
 
 #include "hpro/cluster/types.hh"
 #include "hpro/cluster/TCluster.hh"
@@ -88,7 +89,8 @@ public:
               const idx_t                idx_ofs,
               const uint                 n_min,
               any_const_sparse_matrix_t  S,
-              const uint                 max_lvl ) const;
+              const uint                 max_lvl,
+              std::atomic< int > &       id ) const;
 
     //! compute graph bi-partitioning of \a graph and store result in \a left and \a right
     virtual void           partition     ( const TGraph &        graph,
@@ -102,9 +104,10 @@ protected:
                                            TNodeSet &            right ) const;
 
     //! build leaf node for indices in \a graph
-    virtual std::unique_ptr< TCluster >  build_leaf  ( const TGraph &  graph,
-                                                       const idx_t     idx_ofs,
-                                                       TPermutation &  perm ) const;
+    virtual std::unique_ptr< TCluster >  build_leaf  ( const TGraph &        graph,
+                                                       const idx_t           idx_ofs,
+                                                       TPermutation &        perm,
+                                                       std::atomic< int > &  id ) const;
     
     //! adjust n_min based on sparse matrix if default value of 0 was given in constructor
     virtual uint           adjust_n_min  ( any_const_sparse_matrix_t S ) const;
@@ -203,7 +206,8 @@ public:
               const idx_t                idx_ofs,
               const uint                 n_min,
               any_const_sparse_matrix_t  S,
-              const uint                 max_lvl ) const;
+              const uint                 max_lvl,
+              std::atomic< int > &       id ) const;
     
     //! partition graph using base algorithm
     virtual void
@@ -218,15 +222,16 @@ protected:
     
     //! divide vertex separator \a vtxsep using connectivity defined by \a graph
     std::unique_ptr< TCluster >
-    divide_if ( const TGraph &   graph,
-                const TNodeSet & surrounding,
-                const TNodeSet & vtxsep,
-                const uint       lvl,
-                const idx_t      idx_ofs,
-                TPermutation &   perm,
-                const uint       max_lvl,
-                const uint       n_min,
-                const TOptClusterSize &  csize ) const;
+    divide_if ( const TGraph &           graph,
+                const TNodeSet &         surrounding,
+                const TNodeSet &         vtxsep,
+                const uint               lvl,
+                const idx_t              idx_ofs,
+                TPermutation &           perm,
+                const uint               max_lvl,
+                const uint               n_min,
+                const TOptClusterSize &  csize,
+                std::atomic< int > &     id ) const;
 
     //! build cluster tree for vertex separator \a graph
     std::unique_ptr< TCluster >
@@ -237,14 +242,16 @@ protected:
                 const uint                 n_min,
                 any_const_sparse_matrix_t  S,
                 const uint                 max_lvl,
-                const TOptClusterSize &    csize ) const;
+                const TOptClusterSize &    csize,
+                std::atomic< int > &       id ) const;
     
     //! build leaf node for indices in \a nodes
     virtual std::unique_ptr< TCluster >
-    build_leaf ( const TGraph &   graph,
-                 const TNodeSet & nodes,
-                 const idx_t      idx_ofs,
-                 TPermutation &   perm ) const;
+    build_leaf ( const TGraph &        graph,
+                 const TNodeSet &      nodes,
+                 const idx_t           idx_ofs,
+                 TPermutation &        perm,
+                 std::atomic< int > &  id ) const;
     using TAlgCTBuilder::build_leaf;
     
     //! graph partitioning algorithm for vertex separators

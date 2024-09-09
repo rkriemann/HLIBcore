@@ -406,6 +406,143 @@ from_device ( handle_t                                   handle,
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// QR related functions
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template < typename value_t >
+bool
+qr  ( const cuda_handle_t        handle_idx,
+      BLAS::Matrix< value_t > &  M,
+      BLAS::Vector< value_t > &  tau )
+{
+    if ( ! has_cuda )
+        return false;
+
+    if ( handle_idx == INVALID_HANDLE )
+        return false;
+
+    using  cuda_value_t = typename cuda_traits< value_t >::cuda_type;
+
+    auto        handle = handles[ handle_idx ];
+    const auto  nrows  = M.nrows();
+    const auto  ncols  = M.ncols();
+    const auto  minnm  = std::min( nrows, ncols );
+
+    const auto  type_M = cuda_traits< value_t >::blas_type;
+
+    auto  dev_M   = device_alloc< cuda_value_t >( nrows * ncols );
+    auto  dev_tau = device_alloc< cuda_value_t >( minnm );
+    auto  dev_info = device_alloc< int >( 1 );
+
+    if (! (( dev_M    != nullptr ) &&
+           ( dev_tau  != nullptr ) &&
+           ( dev_info != nullptr )) )
+    {
+        HWARNING( "(CUDA) qr : could not allocate memory on device" );
+        
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_M );
+
+        return false;
+    }// if
+    
+    to_device( handle, M, dev_M );
+
+    cusolverDnParams_t  params;
+
+    HPRO_CUSOLVER_CHECK( cusolverDnCreateParams, ( & params ) ); // TODO: make it global?
+
+    //
+    // allocate work space
+    //
+    
+    size_t  lwork_dev = 0;
+    size_t  lwork_hst = 0;
+
+    {
+        auto  retval = cusolverDnXgeqrf_bufferSize( handle.solver, params,
+                                                    nrows, ncols,
+                                                    type_M, dev_M, nrows,
+                                                    type_M, dev_tau,
+                                                    type_M,
+                                                    & lwork_dev, & lwork_hst );
+
+        if ( retval != CUSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXgeqrf\" (code: %d)", retval ) );
+        
+            cusolverDnDestroyParams( params );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_M );
+
+            return false;
+        }// if
+    }
+
+    auto  hst_work = std::vector< value_t >( lwork_hst );
+    auto  dev_work = device_alloc< value_t >( lwork_dev );
+
+    {
+        auto  retval = cusolverDnXgeqrf( handle.solver, params,
+                                         nrows, ncols,
+                                         type_M, dev_M, nrows,
+                                         type_M, dev_tau,
+                                         type_M,
+                                         dev_work, lwork_dev,
+                                         hst_work.data(), lwork_hst,
+                                         dev_info );
+        
+        if ( retval != CUSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXgeqrf\" (code: %d)", retval ) );
+        
+            cusolverDnDestroyParams( params );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_M );
+
+            return false;
+        }// if
+    }
+
+    auto  info = from_device< int >( handle, dev_info );
+
+    if ( info != 0 )
+    {
+        if ( info < 0 )
+        { HWARNING( "(CUDA) qr : " + to_string( "error in argument %d", info ) ); }
+
+        device_free( dev_work );
+        cusolverDnDestroyParams( params );
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_M );
+
+        return false;
+    }// if
+
+    bool  retval = true;
+
+    if ( tau.length() != minnm )
+        tau = std::move( BLAS::Vector< value_t >( minnm ) );
+
+    if ( ! from_device( handle, dev_M,   M   ) ) retval = false;
+    if ( ! from_device( handle, dev_tau, tau ) ) retval = false;
+
+    HPRO_CUSOLVER_CHECK( cusolverDnDestroyParams, ( params ) );
+    device_free( dev_work );
+    device_free( dev_info );
+    device_free( dev_tau );
+    device_free( dev_M );
+
+    return retval;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // SVD related functions
 //
 ////////////////////////////////////////////////////////////////////////////////

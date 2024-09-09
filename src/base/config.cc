@@ -180,7 +180,11 @@ read_config ()
     EVAL_CFG( "Arith.symmetrise",        CFG::Arith::symmetrise );
     EVAL_CFG( "Arith.zero_sum_trunc",    CFG::Arith::zero_sum_trunc );
     EVAL_CFG( "Arith.vector_solve_method", CFG::Arith::vector_solve_method );
-    EVAL_CFG( "Arith.gpu_svd_size",        CFG::Arith::gpu_svd_size );
+
+    EVAL_CFG( "GPU.fp32_qr_size",          CFG::GPU::fp32_qr_size );
+    EVAL_CFG( "GPU.fp64_qr_size",          CFG::GPU::fp64_qr_size );
+    EVAL_CFG( "GPU.fp32_svd_size",         CFG::GPU::fp32_svd_size );
+    EVAL_CFG( "GPU.fp64_svd_size",         CFG::GPU::fp64_svd_size );
 
     EVAL_CFG( "Solver.max_iter",           CFG::Solver::max_iter );
     EVAL_CFG( "Solver.rel_res_red",        CFG::Solver::rel_res_red );
@@ -470,7 +474,11 @@ init ()
     EVAL_ENV( "HPRO_Arith_symmetrise",       Arith::dense_accu, bool );
     EVAL_ENV( "HPRO_Arith_zero_sum_trunc",   Arith::zero_sum_trunc, bool );
     EVAL_ENV( "HPRO_Arith_vector_solve_method", Arith::vector_solve_method, uint );
-    EVAL_ENV( "HPRO_Arith_gpu_svd_size",        Arith::gpu_svd_size, size_t );
+
+    EVAL_ENV( "HPRO_GPU_fp32_qr_size",          GPU::fp32_qr_size, size_t );
+    EVAL_ENV( "HPRO_GPU_fp64_qr_size",          GPU::fp64_qr_size, size_t );
+    EVAL_ENV( "HPRO_GPU_fp32_svd_size",         GPU::fp32_svd_size, size_t );
+    EVAL_ENV( "HPRO_GPU_fp64_svd_size",         GPU::fp64_svd_size, size_t );
 
     EVAL_ENV( "HPRO_Solver_max_iter",            Solver::max_iter,           uint   );
     EVAL_ENV( "HPRO_Solver_rel_res_red",         Solver::rel_res_red,        double );
@@ -572,7 +580,11 @@ init ()
     EVAL_ENV( "HLIB_Arith_symmetrise",       Arith::dense_accu, bool );
     EVAL_ENV( "HLIB_Arith_zero_sum_trunc",   Arith::zero_sum_trunc, bool );
     EVAL_ENV( "HLIB_Arith_vector_solve_method", Arith::vector_solve_method, uint );
-    EVAL_ENV( "HLIB_Arith_gpu_svd_size",        Arith::gpu_svd_size, size_t );
+
+    EVAL_ENV( "HLIB_GPU_fp32_qr_size",          GPU::fp32_qr_size, size_t );
+    EVAL_ENV( "HLIB_GPU_fp64_qr_size",          GPU::fp64_qr_size, size_t );
+    EVAL_ENV( "HLIB_GPU_fp32_svd_size",         GPU::fp32_svd_size, size_t );
+    EVAL_ENV( "HLIB_GPU_fp64_svd_size",         GPU::fp64_svd_size, size_t );
 
     EVAL_ENV( "HLIB_Solver_max_iter",            Solver::max_iter,           uint   );
     EVAL_ENV( "HLIB_Solver_rel_res_red",         Solver::rel_res_red,        double );
@@ -713,9 +725,14 @@ print_parameters ()
               << "HPRO_Arith_symmetrise              = " << Arith::symmetrise << std::endl
               << "HPRO_Arith_zero_sum_trunc          = " << Arith::zero_sum_trunc << std::endl
               << "HPRO_Arith_vector_solve_method     = " << Arith::vector_solve_method << std::endl
-              << "HPRO_Arith_gpu_svd_size            = " << Arith::gpu_svd_size << std::endl
               << std::endl;
 
+    std::cout << "HPRO_GPU_fp32_qr_size              = " << GPU::fp32_qr_size << std::endl
+              << "HPRO_GPU_fp64_qr_size              = " << GPU::fp64_qr_size << std::endl
+              << "HPRO_GPU_fp32_svd_size             = " << GPU::fp32_svd_size << std::endl
+              << "HPRO_GPU_fp64_svd_size             = " << GPU::fp64_svd_size << std::endl
+              << std::endl;
+        
     std::cout << "HPRO_Solver_max_iter               = " << Solver::max_iter << std::endl
               << "HPRO_Solver_rel_res_red            = " << Solver::rel_res_red << std::endl
               << "HPRO_Solver_abs_res_red            = " << Solver::abs_res_red << std::endl
@@ -953,10 +970,26 @@ bool            zero_sum_trunc      = true;
 // algorithm for triangular vector solves (0: auto, 1: rec, 2: global, 3: dag)
 uint            vector_solve_method = 0;
 
-// lower boundary of matrix size for switching to GPU computation
-size_t          gpu_svd_size        = 512;
-
 }// namespace Arith
+
+////////////////////////////////////////////////
+//
+// GPU parameters
+//
+////////////////////////////////////////////////
+
+namespace GPU
+{
+
+// lower boundary of matrix size for GPU based QR factorization
+size_t          fp32_qr_size  = 2048;
+size_t          fp64_qr_size  = 2048;
+
+// lower boundary of matrix size for GPU based SVD factorization
+size_t          fp32_svd_size = 512;
+size_t          fp64_svd_size = 512;
+
+}// namespace GPU
 
 ////////////////////////////////////////////////
 //

@@ -808,21 +808,101 @@ ldlh   ( T1 &  A )
     DO_CHECK_INF_NAN( A, "(BLAS) ldlh", "in output matrix" );
 }
 
+namespace
+{
+
+// template version of GPU::*_qr_size
+template < typename value_t >  size_t  gpu_qr_size ();
+template <>                    size_t  gpu_qr_size< float >                  () { return CFG::GPU::fp32_qr_size; }
+template <>                    size_t  gpu_qr_size< double >                 () { return CFG::GPU::fp64_qr_size; }
+template <>                    size_t  gpu_qr_size< std::complex< float > >  () { return CFG::GPU::fp32_qr_size; }
+template <>                    size_t  gpu_qr_size< std::complex< double > > () { return CFG::GPU::fp64_qr_size; }
+
+}// namespace anonymous
+
 //!
 //! compute QR factorisation of the n×m matrix \a A with
 //! n×m matrix Q and mxm matrix R (n >= m); \a A will be
 //! overwritten with Q upon exit
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-qr     ( T1 &                              A,
-         Matrix< typename T1::value_t > &  R )
+template < typename value_t >
+void
+qr     ( Matrix< value_t > &  A,
+         Matrix< value_t > &  R )
 {
     LOG_COUNTER( qr );
     LOG_TIC( qr );
-    
-    using  value_t = typename T1::value_t;
 
+    //
+    // try GPU if large enough
+    //
+    
+    if ( std::min( A.nrows(), A.ncols() ) >= gpu_qr_size< value_t >() )
+    {
+        const auto  handle = CUDA::request_handle();
+
+        if ( handle != CUDA::INVALID_HANDLE )
+        {
+            const auto  nrows = A.nrows();
+            const auto  ncols = A.ncols();
+            const auto  minrc = std::min( nrows, ncols );
+            auto        tau   = BLAS::Vector< value_t >( minrc );
+                
+            if ( CUDA::qr( handle, A, tau ) )
+            {
+                //
+                // copy upper triangular matrix to R
+                //
+
+                if (( blas_int_t( R.nrows() ) != ncols ) || ( blas_int_t( R.ncols() ) != ncols ))
+                    R = std::move( Matrix< value_t >( ncols, ncols ) );
+                else
+                    fill( value_t(0), R );
+    
+                for ( blas_int_t  i = 0; i < ncols; i++ )
+                {
+                    Vector< value_t >  colA( A, Range( 0, i ), i );
+                    Vector< value_t >  colR( R, Range( 0, i ), i );
+
+                    copy( colA, colR );
+                }// for
+
+                //
+                // compute Q
+                //
+
+                value_t  dummy      = value_t(0); // non-NULL workspace for Intel MKL
+                value_t  work_query = value_t(0);
+                auto     info       = blas_int_t(0);
+
+                orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
+    
+                if ( info < 0 )
+                    HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
+
+                // adjust work space size
+                auto  lwork = blas_int_t( std::real( work_query ) );
+                auto  work  = std::vector< value_t >( lwork );
+
+                MKL_SEQ_START;
+                
+                orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), tau.data(), work.data(), lwork, info );
+
+                MKL_SEQ_END;
+                
+                if ( info < 0 )
+                    HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
+
+                // do not fall back to CPU based computation
+                return;
+            }// if
+        }// if
+    }// if
+
+    //
+    // else use CPU
+    //
+    
     if ( std::min( A.nrows(), A.ncols() ) <= 32 )
     {
 
@@ -868,16 +948,14 @@ qr     ( T1 &                              A,
         value_t  dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
         value_t  work_query = value_t(0);
 
-        geqrf( n, m, A.data(), blas_int_t( A.col_stride() ), & dummy,
-               & work_query, LAPACK_WS_QUERY, info );
+        geqrf( n, m, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
 
         if ( info < 0 )
             HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::geqrf", -info ) );
     
         blas_int_t   lwork = blas_int_t( std::real( work_query ) );
 
-        orgqr( n, m, m, A.data(), blas_int_t( A.col_stride() ), & dummy,
-               & work_query, LAPACK_WS_QUERY, info );
+        orgqr( n, m, m, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
     
         if ( info < 0 )
             HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
@@ -917,11 +995,11 @@ qr     ( T1 &                              A,
             copy( colA, colR );
         }// for
 
-            //
-            // compute Q
-            //
+        //
+        // compute Q
+        //
     
-            orgqr( n, m, m, A.data(), blas_int_t( A.col_stride() ), tau, work, lwork, info );
+        orgqr( n, m, m, A.data(), blas_int_t( A.col_stride() ), tau, work, lwork, info );
 
         MKL_SEQ_END;
 
@@ -938,14 +1016,12 @@ qr     ( T1 &                              A,
 // with n×m matrix Q and mxm matrix R (n >= m); \a A will be overwritten
 // with Q upon exit
 //
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-tsqr  ( T1 &                              A,
-        Matrix< typename T1::value_t > &  R,
-        const size_t                      ntile2 )
+template < typename value_t >
+void
+tsqr  ( Matrix< value_t > &  A,
+        Matrix< value_t > &  R,
+        const size_t         ntile2 )
 {
-    using  value_t = typename T1::value_t;
-
     const size_t  nrows   = A.nrows();
     const size_t  ncols   = A.ncols();
     const bool    use_tbb = false;
@@ -1010,16 +1086,15 @@ tsqr  ( T1 &                              A,
 //
 // Compute QR factorisation with column pivoting of the matrix \a A.
 //
-template < typename T >
-std::enable_if_t< is_matrix< T >::value, void >
-qrp ( T &                              A,
-      Matrix< typename T::value_t > &  R,
-      std::vector< blas_int_t > &      P )
+template < typename value_t >
+void
+qrp ( Matrix< value_t > &          A,
+      Matrix< value_t > &          R,
+      std::vector< blas_int_t > &  P )
 {
     LOG_COUNTER( qr );
     LOG_TIC( qr );
     
-    using  value_t = typename T::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
     
     const blas_int_t  n     = blas_int_t( A.nrows() );
@@ -2598,6 +2673,19 @@ svd_double ( Matrix< T > &                               U,
     #endif
 }
 
+namespace
+{
+
+// template version of GPU::*_svd_size
+template < typename value_t >  size_t  gpu_svd_size ();
+template <>                    size_t  gpu_svd_size< float >                  () { return CFG::GPU::fp32_svd_size; }
+template <>                    size_t  gpu_svd_size< double >                 () { return CFG::GPU::fp64_svd_size; }
+template <>                    size_t  gpu_svd_size< std::complex< float > >  () { return CFG::GPU::fp32_svd_size; }
+template <>                    size_t  gpu_svd_size< std::complex< double > > () { return CFG::GPU::fp64_svd_size; }
+
+}// namespace anonymous
+
+
 template < typename value_t >
 void
 svd    ( Matrix< value_t > &                                U,
@@ -2622,7 +2710,7 @@ svd    ( Matrix< value_t > &                                U,
 
     bool  use_cpu = true;
         
-    if ( std::min( U.nrows(), U.ncols() ) >= CFG::Arith::gpu_svd_size )
+    if ( std::min( U.nrows(), U.ncols() ) >= gpu_svd_size< value_t >() )
     {
         const auto  handle = CUDA::request_handle();
 

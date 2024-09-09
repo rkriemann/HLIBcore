@@ -288,10 +288,26 @@ extern bool            zero_sum_trunc;
 // algorithm for triangular vector solves (0: auto, 1: rec, 2: global, 3: dag)
 extern uint            vector_solve_method;
 
-// lower boundary of matrix size for switching to GPU computation
-extern size_t          gpu_svd_size;
-
 }// namespace Arith
+
+////////////////////////////////////////////////
+//
+// GPU parameters
+//
+////////////////////////////////////////////////
+
+namespace GPU
+{
+
+// lower boundary of matrix size for GPU based QR factorization
+extern size_t          fp32_qr_size;
+extern size_t          fp64_qr_size;
+
+// lower boundary of matrix size for GPU based SVD factorization
+extern size_t          fp32_svd_size;
+extern size_t          fp64_svd_size;
+
+}// namespace GPU
 
 ////////////////////////////////////////////////
 //

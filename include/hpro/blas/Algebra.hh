@@ -1730,10 +1730,10 @@ ldlh   ( T1 &  A );
 //!        n×m matrix Q and mxm matrix R (n >= m); \a A will be
 //!        overwritten with Q upon exit
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-qr     ( T1 &                              A,
-         Matrix< typename T1::value_t > &  R );
+template < typename value_t >
+void
+qr     ( Matrix< value_t > &  A,
+         Matrix< value_t > &  R );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1744,11 +1744,11 @@ qr     ( T1 &                              A,
 //!        overwritten with Q upon exit
 //!        - ntile defines tile size (0: use internal default tile size)
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-tsqr   ( T1 &                              A,
-         Matrix< typename T1::value_t > &  R,
-         const size_t                      ntile = 0 );
+template < typename value_t >
+void
+tsqr   ( Matrix< value_t > &  A,
+         Matrix< value_t > &  R,
+         const size_t         ntile = 0 );
 
 //!
 //! \ingroup  BLAS_Module
@@ -1759,11 +1759,11 @@ tsqr   ( T1 &                              A,
 //!        \a P_i = j means, column i of AP was column j of A; \a A will be
 //!        overwritten with Q upon exit
 //!
-template < typename T1 >
-std::enable_if_t< is_matrix< T1 >::value, void >
-qrp    ( T1 &                              A,
-         Matrix< typename T1::value_t > &  R,
-         std::vector< blas_int_t > &       P );
+template < typename value_t >
+void
+qrp    ( Matrix< value_t > &          A,
+         Matrix< value_t > &          R,
+         std::vector< blas_int_t > &  P );
 
 //!
 //! \ingroup  BLAS_Module
