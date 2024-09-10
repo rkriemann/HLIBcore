@@ -429,6 +429,8 @@ from_device ( handle_t                                  handle,
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#if HPRO_USE_HIP == 1
+
 namespace
 {
 
@@ -580,6 +582,8 @@ gesvd< hipDoubleComplex > ( handle_t            handle,
 }
 
 }// namespace anonymous
+
+#endif
 
 //
 // compute SVD decomposition \f$ A = U·S·V^H \f$ of the nxm matrix \a A with

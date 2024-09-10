@@ -410,6 +410,8 @@ from_device ( handle_t                                   handle,
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#if HPRO_USE_CUDA == 1
+
 template < typename value_t >
 bool
 qr  ( const cuda_handle_t        handle_idx,
@@ -540,6 +542,32 @@ qr  ( const cuda_handle_t        handle_idx,
 
     return retval;
 }
+
+#else
+
+template < typename value_t >
+bool
+qr  ( const cuda_handle_t        ,
+      BLAS::Matrix< value_t > &  ,
+      BLAS::Vector< value_t > &   )
+{
+    return false;
+}
+
+#endif
+
+#define INST_QR( T )                            \
+    template bool                               \
+    qr< T >  ( const cuda_handle_t  handle_idx, \
+               BLAS::Matrix< T > &  M,          \
+               BLAS::Vector< T > &  tau )
+
+INST_QR( float );
+INST_QR( double );
+INST_QR( std::complex< float > );
+INST_QR( std::complex< double > );
+
+#undef INST_QR
 
 ////////////////////////////////////////////////////////////////////////////////
 //
