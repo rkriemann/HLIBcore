@@ -82,7 +82,7 @@ public:
     int   id         () const { return _id; }
 
     //! set ID
-    void  set_id     ( const uint  aid ) { _id = aid; }
+    void  set_id     ( const int  aid ) { _id = aid; }
 
     //! return true if node is domain cluster
     bool  is_domain  () const         { return _is_domain; }

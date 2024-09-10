@@ -79,7 +79,7 @@ public:
     int                    id           () const { return _id; }
 
     //! set ID
-    void                   set_id       ( const uint  aid ) { _id = aid; }
+    void                   set_id       ( const int  aid ) { _id = aid; }
 
     //! return parent cluster
     TBlockCluster *        parent       ()       { return _parent; }
