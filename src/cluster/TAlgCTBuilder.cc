@@ -19,11 +19,6 @@
 namespace Hpro
 {
 
-using std::vector;
-using std::list;
-using std::unique_ptr;
-using std::make_unique;
-
 namespace
 {
 
@@ -113,7 +108,7 @@ TAlgCTBuilder::set_edge_weights_mode ( const edge_weights_mode_t  edge_weights_m
 //
 // build tree out of sparse matrix
 //
-unique_ptr< TClusterTree >
+std::unique_ptr< TClusterTree >
 TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
                        const idx_t                idx_ofs ) const
 {
@@ -142,8 +137,8 @@ TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
     //
 
     const size_t    nnodes = nrows;
-    vector< bool >  node_mask;
-    list< node_t >  high_deg_nodes;
+    std::vector< bool >  node_mask;
+    std::list< node_t >  high_deg_nodes;
 
     if ( _high_deg_fac > 0 )
     {
@@ -175,19 +170,20 @@ TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
     // build graph (without masked nodes)
     //
     
-    unique_ptr< TGraph >  G( _edge_weights_mode == edge_weights_off
-                             ? std::make_unique< TGraph >( S, node_mask )
-                             : ( _edge_weights_mode == edge_weights_on
-                                 ? std::make_unique< TEWGraph >( S, node_mask, false )
-                                 : std::make_unique< TEWGraph >( S, node_mask, true ) )
-                             );
+    std::unique_ptr< TGraph >  G( _edge_weights_mode == edge_weights_off
+                                  ? std::make_unique< TGraph >( S, node_mask )
+                                  : ( _edge_weights_mode == edge_weights_on
+                                      ? std::make_unique< TEWGraph >( S, node_mask, false )
+                                      : std::make_unique< TEWGraph >( S, node_mask, true ) )
+                                  );
 
     ////////////////////////////////////////////////////////////////////
     //
     // compute clustertree
     //
 
-    auto  root = divide( *G, 0, perm, idx_ofs, n_min, S, uint(nnodes / 2) );
+    auto  id   = std::atomic< int >( 0 );
+    auto  root = divide( *G, 0, perm, idx_ofs, n_min, S, uint(nnodes / 2), id );
 
     if ( root.get() == nullptr )
         HERROR( ERR_NULL, "(TAlgCTBuilder) build", "root cluster is NULL" );
@@ -205,8 +201,8 @@ TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
         while ( ! high_deg_nodes.empty() )
             perm[ behead( high_deg_nodes ) ] = ub++;
         
-        auto  high_cl  = make_unique< TCluster >( lb, ub-1 );
-        auto  new_root = make_unique< TCluster >( idx_ofs, ub-1 );
+        auto  high_cl  = std::make_unique< TCluster >( lb, ub-1 );
+        auto  new_root = std::make_unique< TCluster >( idx_ofs, ub-1 );
 
         new_root->set_nsons( 2 );
         new_root->set_son( 0, root.release() );
@@ -243,25 +239,26 @@ TAlgCTBuilder::build ( any_const_sparse_matrix_t  S,
     // finally put all together in a tree
     //
 
-    auto  perm_e2i = make_unique< TPermutation >( perm );
-    auto  perm_i2e = make_unique< TPermutation >( perm );
+    auto  perm_e2i = std::make_unique< TPermutation >( perm );
+    auto  perm_i2e = std::make_unique< TPermutation >( perm );
 
     perm_i2e->invert();
     
-    return make_unique< TClusterTree >( root.release(), perm_e2i.release(), perm_i2e.release() );
+    return std::make_unique< TClusterTree >( root.release(), perm_e2i.release(), perm_i2e.release() );
 }
 
 //
 // divide a given graph and build corresponding cluster tree
 //
-unique_ptr< TCluster >
+std::unique_ptr< TCluster >
 TAlgCTBuilder::divide ( const TGraph &             graph,
                         const uint                 lvl,
                         TPermutation &             perm,
                         const idx_t                idx_ofs,
                         const uint                 n_min,
                         any_const_sparse_matrix_t  S,
-                        const uint                 max_lvl ) const
+                        const uint                 max_lvl,
+                        std::atomic< int > &       id ) const
 {
     PRINT graph.print( "graph.dot" );
     
@@ -270,12 +267,12 @@ TAlgCTBuilder::divide ( const TGraph &             graph,
     //
 
     if (( lvl >= _min_leaf_lvl ) && ( graph.nnodes() <= n_min ))
-        return build_leaf( graph, idx_ofs, perm );
+        return build_leaf( graph, idx_ofs, perm, id );
 
     if ( lvl > max_lvl )
     {
         HWARNING( to_string( "in (TAlgCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
-        return build_leaf( graph, idx_ofs, perm );
+        return build_leaf( graph, idx_ofs, perm, id );
     }// if
     
     ////////////////////////////////////////////////////////////////////
@@ -292,7 +289,7 @@ TAlgCTBuilder::divide ( const TGraph &             graph,
 
     PRINT
     {
-        vector< uint > label( graph.nnodes() );
+        std::vector< uint > label( graph.nnodes() );
 
         for ( auto  node : left  ) label[ node ] = LEFT;
         for ( auto  node : right ) label[ node ] = RIGHT;
@@ -305,8 +302,8 @@ TAlgCTBuilder::divide ( const TGraph &             graph,
     
     // if one of the subsets is empty we would apply partitioning to
     // the same set one level below, therefore we stop recursion here
-    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm );
-    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm );
+    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm, id );
+    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm, id );
 
     ////////////////////////////////////////////////////////////////////
     //
@@ -328,15 +325,15 @@ TAlgCTBuilder::divide ( const TGraph &             graph,
     // recursive call for both sublists
     //
 
-    unique_ptr< TCluster > son[2];
-    const idx_t            left_ofs  = idx_ofs;
-    const idx_t            right_ofs = left_ofs + idx_t(left_graph->nnodes());
+    std::unique_ptr< TCluster > son[2];
+    const idx_t                 left_ofs  = idx_ofs;
+    const idx_t                 right_ofs = left_ofs + idx_t(left_graph->nnodes());
 
     auto  build_soncl =
-        [this,lvl,n_min,S,max_lvl,&perm] ( const TGraph &  sgraph,
-                                           const idx_t     sofs ) -> unique_ptr< TCluster >
+        [this,lvl,n_min,S,max_lvl,&perm,&id] ( const TGraph &  sgraph,
+                                               const idx_t     sofs ) -> std::unique_ptr< TCluster >
         {
-            auto  cl = divide( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl );
+            auto  cl = divide( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl, id );
 
             if ( cl.get() == nullptr )
                 HERROR( ERR_NULL, "(TAlgCTBuilder) divide", "son cluster is NULL" );
@@ -352,9 +349,10 @@ TAlgCTBuilder::divide ( const TGraph &             graph,
     // finally create new cluster
     //
     
-    auto  cluster = make_unique< TCluster >( std::min( son[0]->first(), son[1]->first() ),
-                                             std::max( son[0]->last(),  son[1]->last()  ) );
+    auto  cluster = std::make_unique< TCluster >( std::min( son[0]->first(), son[1]->first() ),
+                                                  std::max( son[0]->last(),  son[1]->last()  ) );
 
+    cluster->set_id( id++ );
     cluster->set_nsons( 2 );
     cluster->set_son( 0, son[0].release() );
     cluster->set_son( 1, son[1].release() );
@@ -394,7 +392,7 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
     //
     
     const size_t      nnodes = graph.nnodes();
-    list< TNodeSet >  sccs;
+    std::list< TNodeSet >  sccs;
 
     left.resize( nnodes );
     right.resize( nnodes );
@@ -409,8 +407,8 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
         //
 
         TMFitSched        sched;
-        vector< int >     part;
-        vector< double >  costs( sccs.size(), 0.0 );
+        std::vector< int >     part;
+        std::vector< double >  costs( sccs.size(), 0.0 );
         uint              i = 0;
 
         for ( const auto &  scc : sccs )
@@ -439,8 +437,8 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
         // reorder SCCs by putting single node SCCs back
         //
 
-        size_t              nsingle = 0;
-        list< TNodeSet * >  scc_ptr;
+        size_t                   nsingle = 0;
+        std::list< TNodeSet * >  scc_ptr;
                 
         for ( const auto &  scc : sccs )
         {
@@ -468,8 +466,8 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
         //
 
         TMFitSched      sched;
-        vector< int >   part;
-        vector< real >  costs( scc.size(), 0.0 );
+        std::vector< int >   part;
+        std::vector< real >  costs( scc.size(), 0.0 );
         uint            i = 0;
 
         for ( auto  scc : scc_ptr )
@@ -503,10 +501,11 @@ TAlgCTBuilder::scc_partition ( const TGraph &  graph,
 //
 // build leaf in a cluster tree
 //
-unique_ptr< TCluster >
-TAlgCTBuilder::build_leaf ( const TGraph &  graph,
-                            const idx_t     idx_ofs,
-                            TPermutation &  perm ) const
+std::unique_ptr< TCluster >
+TAlgCTBuilder::build_leaf ( const TGraph &        graph,
+                            const idx_t           idx_ofs,
+                            TPermutation &        perm,
+                            std::atomic< int > &  id ) const
 {
     if ( graph.nnodes() == 0 )
         HERROR( ERR_ARG, "(TAlgCTBuilder) build_leaf", "empty indexset" );
@@ -517,7 +516,11 @@ TAlgCTBuilder::build_leaf ( const TGraph &  graph,
     for ( size_t  i = 0; i < graph.nnodes(); i++ )
         perm[ graph.global_name()[i] ] = ub++;
 
-    return make_unique< TCluster >( lb, ub-1 );
+    auto  cl = std::make_unique< TCluster >( lb, ub-1 );
+
+    cl->set_id( id++ );
+
+    return  cl;
 }
 
 //
@@ -586,7 +589,7 @@ TAlgCTBuilder::check_flow ( const TGraph &             graph,
     size_t         n_edgecut2    = 0;
     real_t         left_to_right = 0.0;
     real_t         right_to_left = 0.0;
-    vector< uint > label( graph.nnodes() );
+    std::vector< uint > label( graph.nnodes() );
     
     for ( auto  node : left  ) label[ node ] = LEFT;
     for ( auto  node : right ) label[ node ] = RIGHT;

@@ -17,11 +17,6 @@
 namespace Hpro
 {
 
-using std::vector;
-using std::list;
-using std::unique_ptr;
-using std::make_unique;
-
 // namespace abbr.
 namespace B = BLAS;
 
@@ -104,7 +99,7 @@ const size_t  MIN_PAR_SIZE = 250;
 ///////////////////////////////////////////////////////////////////////
 
 // construct a connected graph for the vertex spepator using the connectivity information of 'graph'
-unique_ptr< TGraph >
+std::unique_ptr< TGraph >
 build_vtxsep_graph  ( const TGraph &    graph,
                       const TNodeSet &  vtxsep );
 
@@ -150,14 +145,15 @@ TAlgNDCTBuilder::~TAlgNDCTBuilder ()
 //
 // divide for cluster tree with given partition <part>
 //
-unique_ptr< TCluster >
+std::unique_ptr< TCluster >
 TAlgNDCTBuilder::divide ( const TGraph &             graph,
                           const uint                 lvl,
                           TPermutation &             perm,
                           const idx_t                idx_ofs,
                           const uint                 n_min,
                           any_const_sparse_matrix_t  S,
-                          const uint                 max_lvl ) const
+                          const uint                 max_lvl,
+                          std::atomic< int > &       id ) const
 {
     PRINT graph.print( "graph.dot" );
 
@@ -166,12 +162,12 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
     //
 
     if (( lvl >= this->_min_leaf_lvl ) && ( graph.nnodes() <= n_min ))
-        return build_leaf( graph, idx_ofs, perm );
+        return build_leaf( graph, idx_ofs, perm, id );
 
     if ( lvl > max_lvl )
     {
         HWARNING( to_string( "in (TAlgNDCTBuilder) divide : maximal tree depth reached; depth = %d", lvl ) );
-        return build_leaf( graph, idx_ofs, perm );
+        return build_leaf( graph, idx_ofs, perm, id );
     }// if
 
     ////////////////////////////////////////////////////////////////////
@@ -188,7 +184,7 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
 
     PRINT
     {
-        vector< uint > label( graph.nnodes() );
+        std::vector< uint > label( graph.nnodes() );
 
         for ( auto  node : left  ) label[ node ] = LEFT;
         for ( auto  node : right ) label[ node ] = RIGHT;
@@ -198,8 +194,8 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
 
     // if one of the subsets is empty we would apply partitioning to
     // the same set one level below, therefore we stop recursion here
-    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm );
-    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm );
+    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm, id );
+    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm, id );
 
     ////////////////////////////////////////////////////////////////////
     //
@@ -219,7 +215,7 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
 
     PRINT
     {
-        vector< uint > label( graph.nnodes() );
+        std::vector< uint > label( graph.nnodes() );
 
         for ( auto  node : left  )  label[ node ] = LEFT;
         for ( auto  node : right )  label[ node ] = RIGHT;
@@ -236,15 +232,15 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
     // recheck for empty sons
     //
 
-    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm );
-    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm );
+    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm, id );
+    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm, id );
 
     ////////////////////////////////////////////////////////////////////
     //
     // restrict <graph> to left and right subset
     //
 
-    unique_ptr< TGraph >  son_graph[2];
+    std::unique_ptr< TGraph >  son_graph[2];
 
     son_graph[0] = graph.restrict( left  );
     son_graph[1] = graph.restrict( right );
@@ -254,16 +250,16 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
     // recursive call for both sublists (and interface)
     //
 
-    unique_ptr< TCluster >  son[2], if_son;
-    const idx_t             left_ofs  = idx_ofs;
-    const idx_t             right_ofs = left_ofs + idx_t( son_graph[0]->nnodes() );
+    std::unique_ptr< TCluster >  son[2], if_son;
+    const idx_t                  left_ofs  = idx_ofs;
+    const idx_t                  right_ofs = left_ofs + idx_t( son_graph[0]->nnodes() );
 
     auto  build_soncl = 
-        [this,lvl,n_min,S,max_lvl,&perm] ( const TGraph &  sgraph,
-                                           const idx_t     sofs ) -> unique_ptr< TCluster >
+        [this,lvl,n_min,S,max_lvl,&perm,&id] ( const TGraph &  sgraph,
+                                               const idx_t     sofs ) -> std::unique_ptr< TCluster >
         {
             // build first son
-            auto  cl = divide( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl );
+            auto  cl = divide( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl, id );
 
             if ( cl.get() == nullptr )
                 HERROR( ERR_NULL, "(TAlgNDCTBuilder) divide", "son cluster is NULL" );
@@ -309,7 +305,7 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
             surrounding.append( node_t(i) );
 
         if_son = divide_if( graph, surrounding, vtxsep, lvl+1, if_idx_ofs, perm, nd_max_lvl, n_min,
-                            TOptClusterSize( vtxsep.nnodes(), reduction ) );
+                            TOptClusterSize( vtxsep.nnodes(), reduction ), id );
 
 #else
 
@@ -317,7 +313,7 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
         auto  vtxsep_graph = build_vtxsep_graph( graph, vtxsep );
 
         if_son = divide_if( * vtxsep_graph.get(), lvl+1, perm, if_idx_ofs, n_min, S, nd_max_lvl,
-                            TOptClusterSize( vtxsep.nnodes(), reduction ) );
+                            TOptClusterSize( vtxsep.nnodes(), reduction ), id );
 
 #endif
 
@@ -333,8 +329,10 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
     // finally create new cluster
     //
 
-    auto  cluster = make_unique< TCluster >();
+    auto  cluster = std::make_unique< TCluster >();
 
+    cluster->set_id( id++ );
+    
     if ( if_son.get() != nullptr )
     {
         cluster->set_first_last( std::min( std::min( son[0]->first(), son[1]->first() ), if_son->first() ),
@@ -359,7 +357,7 @@ TAlgNDCTBuilder::divide ( const TGraph &             graph,
 //
 // divide a given graph of interface indices
 //
-unique_ptr< TCluster >
+std::unique_ptr< TCluster >
 TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
                              const TNodeSet &         surrounding,
                              const TNodeSet &         nodes,
@@ -368,7 +366,8 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
                              TPermutation &           perm,
                              const uint               max_lvl,
                              const uint               n_min,
-                             const TOptClusterSize &  csize ) const
+                             const TOptClusterSize &  csize,
+                             std::atomic< int > &     id ) const
 {
     //
     // check if number of indices in this cluster
@@ -376,7 +375,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
     //
 
     if ((( lvl >= this->_min_leaf_lvl ) && ( nodes.nnodes() <= n_min )) || ( lvl >= max_lvl ))
-        return build_leaf( graph, nodes, idx_ofs, perm );
+        return build_leaf( graph, nodes, idx_ofs, perm, id );
 
     //
     // if size of cluster is less then optimal size, do not split
@@ -384,12 +383,13 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
 
     if ( _sync_interface_depth && ! csize.is_optimal( nodes.nnodes() ) )
     {
-        auto  cluster = make_unique< TCluster >();
+        auto  cluster = std::make_unique< TCluster >();
 
+        cluster->set_id( id++ );
         cluster->set_nsons( 1 );
 
         auto  son = divide_if( graph, surrounding, nodes, lvl+1, idx_ofs, perm,
-                               max_lvl, n_min, csize.recurse() );
+                               max_lvl, n_min, csize.recurse(), id );
 
         if ( son == nullptr )
             HERROR( ERR_NULL, "(TAlgNDCTBuilder) divide_if", "son cluster is NULL" );
@@ -413,7 +413,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
 
 #if COMP_SCC == 1
     {
-        list< TNodeSet >  sccs;
+        std::list< TNodeSet >  sccs;
 
         build_scc( graph, surrounding, sccs );
 
@@ -423,8 +423,8 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
             // first sort out thise SCCs without interface nodes
             //
 
-            vector< char >      label( graph.nnodes(), NONE );
-            list< TNodeSet * >  nonempty_scc;
+            std::vector< char >      label( graph.nnodes(), NONE );
+            std::list< TNodeSet * >  nonempty_scc;
 
             for ( auto  node : nodes ) label[ node ] = LOCAL;
 
@@ -461,7 +461,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
 
                 if ( nsingle > 0 )
                 {
-                    list< TNodeSet * >  tmplist;
+                    std::list< TNodeSet * >  tmplist;
 
                     while ( ! nonempty_scc.empty() )
                     {
@@ -481,10 +481,10 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
                 // partition SCCs directly
                 //
 
-                TMFitSched        sched;
-                vector< int >     part;
-                vector< double >  costs( nonempty_scc.size(), 0.0 );
-                size_t            i = 0;
+                TMFitSched             sched;
+                std::vector< int >     part;
+                std::vector< double >  costs( nonempty_scc.size(), 0.0 );
+                size_t                 i = 0;
 
                 for ( auto  scc : nonempty_scc )
                     costs[i++] = double( scc->nnodes() );
@@ -532,7 +532,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
 
     PRINT
     {
-        vector< uint > label( graph.nnodes(), NONE );
+        std::vector< uint > label( graph.nnodes(), NONE );
 
         for ( auto  node : graph.nodes() ) label[ node ] = LOCAL;
         for ( auto  node : left          ) label[ node ] = LEFT;
@@ -545,23 +545,23 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
     // if one of the subsets is empty => stop recursion
     //
 
-    if ( left.nnodes()  == 0 ) return build_leaf( graph, nodes, idx_ofs, perm );
-    if ( right.nnodes() == 0 ) return build_leaf( graph, nodes, idx_ofs, perm );
+    if ( left.nnodes()  == 0 ) return build_leaf( graph, nodes, idx_ofs, perm, id );
+    if ( right.nnodes() == 0 ) return build_leaf( graph, nodes, idx_ofs, perm, id );
 
     ////////////////////////////////////////////////////////////////////
     //
     // recursive call for both sublists (and interface)
     //
 
-    unique_ptr< TCluster >  son[2];
-    const auto              left_ofs  = idx_ofs;
-    const auto              right_ofs = idx_t(left_ofs + left.nnodes());
+    std::unique_ptr< TCluster >  son[2];
+    const auto                   left_ofs  = idx_ofs;
+    const auto                   right_ofs = idx_t(left_ofs + left.nnodes());
 
     auto  build_soncl =
-        [this,lvl,max_lvl,n_min,&graph,&loc_sur,&perm,&csize] ( const TNodeSet &  snodes,
-                                                                const idx_t       sofs ) -> unique_ptr< TCluster >
+        [this,lvl,max_lvl,n_min,&graph,&loc_sur,&perm,&csize,&id] ( const TNodeSet &  snodes,
+                                                                    const idx_t       sofs ) -> std::unique_ptr< TCluster >
         {
-            auto  cl = divide_if( graph, loc_sur, snodes, lvl+1, sofs, perm, max_lvl, n_min, csize.recurse() );
+            auto  cl = divide_if( graph, loc_sur, snodes, lvl+1, sofs, perm, max_lvl, n_min, csize.recurse(), id );
             
             if ( cl.get() == nullptr )
                 HERROR( ERR_NULL, "(TAlgNDCTBuilder) divide_if", "son cluster is NULL" );
@@ -580,8 +580,9 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
     // finally create new cluster
     //
 
-    auto  cluster = make_unique< TCluster >();
+    auto  cluster = std::make_unique< TCluster >();
 
+    cluster->set_id( id++ );
     cluster->set_first_last( std::min( son[0]->first(), son[1]->first() ),
                              std::max( son[0]->last(),  son[1]->last()  ) );
     cluster->set_nsons( 2 );
@@ -594,7 +595,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &           graph,
 //
 // build cluster tree for vertex separator \a graph
 //
-unique_ptr< TCluster >
+std::unique_ptr< TCluster >
 TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
                              const uint                 lvl,
                              TPermutation &             perm,
@@ -602,7 +603,8 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
                              const uint                 n_min,
                              any_const_sparse_matrix_t  S,
                              const uint                 max_lvl,
-                             const TOptClusterSize &    csize ) const
+                             const TOptClusterSize &    csize,
+                             std::atomic< int > &       id ) const
 {
     PRINT graph.print( "graph.dot" );
 
@@ -612,7 +614,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
     //
 
     if ((( lvl >= this->_min_leaf_lvl ) && ( graph.nnodes() <= n_min )) || ( lvl >= max_lvl ))
-        return build_leaf( graph, idx_ofs, perm );
+        return build_leaf( graph, idx_ofs, perm, id );
 
     //
     // if size of cluster is less then optimal size, do not split
@@ -620,11 +622,11 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
 
     if ( _sync_interface_depth && ! csize.is_optimal( graph.nnodes() ) )
     {
-        auto  cluster = make_unique< TCluster >();
+        auto  cluster = std::make_unique< TCluster >();
 
         cluster->set_nsons( 1 );
 
-        auto  son = divide_if( graph, lvl+1, perm, idx_ofs, n_min, S, max_lvl, csize.recurse() );
+        auto  son = divide_if( graph, lvl+1, perm, idx_ofs, n_min, S, max_lvl, csize.recurse(), id );
 
         if ( son.get() == nullptr )
             HERROR( ERR_NULL, "(TAlgNDCTBuilder) divide_if", "son cluster is NULL" );
@@ -654,7 +656,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
 
     PRINT
     {
-        vector< uint > label( graph.nnodes() );
+        std::vector< uint > label( graph.nnodes() );
 
         for ( auto  node : left  ) label[ node ] = LEFT;
         for ( auto  node : right ) label[ node ] = RIGHT;
@@ -668,8 +670,8 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
 
     // if one of the subsets is empty we would apply partitioning to
     // the same set one level below, therefore we stop recursion here
-    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm );
-    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm );
+    if ( left.nnodes()  == 0 ) return build_leaf( graph, idx_ofs, perm, id );
+    if ( right.nnodes() == 0 ) return build_leaf( graph, idx_ofs, perm, id );
 
 
     ////////////////////////////////////////////////////////////////////
@@ -677,7 +679,7 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
     // restrict <graph> to left and right subset
     //
 
-    unique_ptr< TGraph >  son_graph[2];
+    std::unique_ptr< TGraph >  son_graph[2];
 
     son_graph[0] = graph.restrict( left  );
     son_graph[1] = graph.restrict( right );
@@ -687,15 +689,15 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
     // recursive call for both sublists
     //
 
-    unique_ptr< TCluster >  son[2];
-    const auto              left_ofs  = idx_ofs;
-    const auto              right_ofs = idx_t(left_ofs + left.nnodes());
+    std::unique_ptr< TCluster >  son[2];
+    const auto                   left_ofs  = idx_ofs;
+    const auto                   right_ofs = idx_t(left_ofs + left.nnodes());
 
     auto  build_soncl =
-        [this,lvl,n_min,max_lvl,S,&perm,&csize] ( const TGraph &  sgraph,
-                                                  const idx_t     sofs ) -> unique_ptr< TCluster >
+        [this,lvl,n_min,max_lvl,S,&perm,&csize,&id] ( const TGraph &  sgraph,
+                                                      const idx_t     sofs ) -> std::unique_ptr< TCluster >
         {
-            auto  cl = divide_if( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl, csize.recurse() );
+            auto  cl = divide_if( sgraph, lvl+1, perm, sofs, n_min, S, max_lvl, csize.recurse(), id );
 
             if ( cl.get() == nullptr )
                 HERROR( ERR_NULL, "(TAlgNDCTBuilder) divide_if", "son cluster is NULL" );
@@ -714,8 +716,9 @@ TAlgNDCTBuilder::divide_if ( const TGraph &             graph,
     // finally create new cluster
     //
 
-    auto  cluster = make_unique< TCluster >();
+    auto  cluster = std::make_unique< TCluster >();
 
+    cluster->set_id( id++ );
     cluster->set_first_last( std::min( son[0]->first(), son[1]->first() ),
                              std::max( son[0]->last(),  son[1]->last()  ) );
 
@@ -744,8 +747,8 @@ TAlgNDCTBuilder::partition ( const TGraph &    graph,
     // surrounding component
     //
 
-    const size_t    nnodes = surrounding.nnodes();
-    vector< char >  label( graph.nnodes(), NONE );
+    const size_t         nnodes = surrounding.nnodes();
+    std::vector< char >  label( graph.nnodes(), NONE );
 
     // mark all nodes in local subgraph
     for ( auto  node : surrounding ) label[ node ] = LOCAL;
@@ -755,7 +758,7 @@ TAlgNDCTBuilder::partition ( const TGraph &    graph,
 
     PRINT
     {
-        vector< uint > label2( graph.nnodes() );
+        std::vector< uint > label2( graph.nnodes() );
 
         for ( auto  node : surrounding ) label2[ node ] = LOCAL;
         for ( auto  node : nodes )       label2[ node ] = VERTEX_SEP;
@@ -768,8 +771,8 @@ TAlgNDCTBuilder::partition ( const TGraph &    graph,
     // distance to start with
     //
 
-    uint            max_depth = DEPTH_INF;
-    vector< bool >  visited( graph.nnodes(), true );  // marks _all_ nodes in graph visited
+    uint                 max_depth = DEPTH_INF;
+    std::vector< bool >  visited( graph.nnodes(), true );  // marks _all_ nodes in graph visited
 
     right.append( nodes[0] );
 
@@ -832,7 +835,7 @@ TAlgNDCTBuilder::partition ( const TGraph &    graph,
 
     PRINT
     {
-        vector< uint > label2( graph.nnodes(), NONE );
+        std::vector< uint >  label2( graph.nnodes(), NONE );
 
         for ( auto  node : loc_sur ) label2[ node ] = LOCAL;
         for ( auto  node : left )    label2[ node ] = LEFT;
@@ -930,11 +933,12 @@ TAlgNDCTBuilder::partition ( const TGraph &    graph,
 //
 // build leaf in a cluster tree defined by <nodes>
 //
-unique_ptr< TCluster >
-TAlgNDCTBuilder::build_leaf ( const TGraph &   graph,
-                              const TNodeSet & nodes,
-                              const idx_t      idx_ofs,
-                              TPermutation &   perm ) const
+std::unique_ptr< TCluster >
+TAlgNDCTBuilder::build_leaf ( const TGraph &        graph,
+                              const TNodeSet &      nodes,
+                              const idx_t           idx_ofs,
+                              TPermutation &        perm,
+                              std::atomic< int > &  id ) const
 {
     if ( nodes.nnodes() == 0 )
         HERROR( ERR_ARG, "(TAlgNDCTBuilder) build_leaf", "empty indexset" );
@@ -945,7 +949,11 @@ TAlgNDCTBuilder::build_leaf ( const TGraph &   graph,
     for ( auto  node : nodes )
         perm[ graph.global_name()[ node ] ] = ub++;
 
-    return make_unique< TCluster >( lb, ub-1 );
+    auto  cl = std::make_unique< TCluster >( lb, ub-1 );
+
+    cl->set_id( id++ );
+
+    return cl;
 }
 
 //
@@ -961,15 +969,15 @@ TAlgNDCTBuilder::build_vtx_sep ( const TGraph & graph,
     // mark nodes in left and right set
     //
 
-    const size_t    nnodes = graph.nnodes();
-    vector< char >  label( nnodes, NONE );
+    const size_t         nnodes = graph.nnodes();
+    std::vector< char >  label( nnodes, NONE );
 
     for ( auto  node : left  ) label[ node ] = LEFT;
     for ( auto  node : right ) label[ node ] = RIGHT;
 
     PRINT
     {
-        vector< uint >  tlabel( nnodes, NONE );
+        std::vector< uint >  tlabel( nnodes, NONE );
 
         for ( size_t  i = 0; i < nnodes; i++ )
             tlabel[i] = label[i];
@@ -1017,7 +1025,7 @@ TAlgNDCTBuilder::build_vtx_sep ( const TGraph & graph,
     // rebuild domain set
     //
 
-#if COMP_SCC == 1
+    #if COMP_SCC == 1
 
     {
         //
@@ -1043,18 +1051,18 @@ TAlgNDCTBuilder::build_vtx_sep ( const TGraph & graph,
                     (*domain).append( node_t(i) );
     }
 
-#else
+    #else
 
     //
     // do a BFS from one node of the left/right set to look for unreachable
     // nodes, which are now isolated by the interface
     //
 
-    TNodeSet        nodes( domain->nnodes() );
-    TNodeSet        succ( nnodes );
-    vector< bool >  visited( nnodes, false );
-    node_t          start      = node_t( nnodes );
-    char            domain_lbl = NONE;
+    TNodeSet             nodes( domain->nnodes() );
+    TNodeSet             succ( nnodes );
+    std::vector< bool >  visited( nnodes, false );
+    node_t               start      = node_t( nnodes );
+    char                 domain_lbl = NONE;
 
     for ( auto  node : (*domain) )
     {
@@ -1107,7 +1115,7 @@ TAlgNDCTBuilder::build_vtx_sep ( const TGraph & graph,
         nodes = succ;
     } while ( succ.nnodes() > 0 );
 
-#endif
+    #endif
 }
 
 //
@@ -1116,12 +1124,12 @@ TAlgNDCTBuilder::build_vtx_sep ( const TGraph & graph,
 // - visited == true is assumed for all nonlocal nodes
 //
 uint
-TAlgNDCTBuilder::bfs_vtxsep ( const TGraph &         graph,
-                              TNodeSet &             start,
-                              TNodeSet &             last,
-                              vector< bool > &       visited,
-                              const vector< char > & label,
-                              const uint             max_nnodes ) const
+TAlgNDCTBuilder::bfs_vtxsep ( const TGraph &              graph,
+                              TNodeSet &                  start,
+                              TNodeSet &                  last,
+                              std::vector< bool > &       visited,
+                              const std::vector< char > & label,
+                              const uint                  max_nnodes ) const
 {
     uint        depth     = 0;
     size_t      vis_nodes = 0;
@@ -1184,12 +1192,12 @@ TAlgNDCTBuilder::bfs_vtxsep ( const TGraph &         graph,
 // - search is restricted to nodes with label == <local>
 //
 void
-TAlgNDCTBuilder::bfs_step ( const TGraph &         graph,
-                            TNodeSet &             nodes,
-                            TNodeSet &             succ,
-                            vector< bool > &       visited,
-                            const vector< char > & label,
-                            const char             local  ) const
+TAlgNDCTBuilder::bfs_step ( const TGraph &               graph,
+                            TNodeSet &                   nodes,
+                            TNodeSet &                   succ,
+                            std::vector< bool > &        visited,
+                            const std::vector< char > &  label,
+                            const char                   local  ) const
 {
     succ.remove_all();
 
@@ -1214,8 +1222,8 @@ TAlgNDCTBuilder::bfs_step ( const TGraph &         graph,
 // restrict given node set to nodes in vertex separator
 //
 void
-TAlgNDCTBuilder::restrict_vtx ( TNodeSet &             nodes,
-                                const vector< char > & label ) const
+TAlgNDCTBuilder::restrict_vtx ( TNodeSet &                   nodes,
+                                const std::vector< char > &  label ) const
 {
     size_t  pos = 0;
 
@@ -1230,21 +1238,21 @@ TAlgNDCTBuilder::restrict_vtx ( TNodeSet &             nodes,
 // build SCCs of graph restricted to <surrounding>
 //
 void
-TAlgNDCTBuilder::build_scc ( const TGraph &      graph,
-                             const TNodeSet &    surrounding,
-                             list< TNodeSet > &  scc ) const
+TAlgNDCTBuilder::build_scc ( const TGraph &           graph,
+                             const TNodeSet &         surrounding,
+                             std::list< TNodeSet > &  scc ) const
 {
     //
     // do a BFS through all nodes and build a component
     // via reachability
     //
 
-    const size_t    nnodes  = surrounding.nnodes();
-    size_t          nvisited = 0;
-    TNodeSet        nodes( nnodes );
-    TNodeSet        succ(  nnodes );
-    vector< bool >  visited( graph.nnodes(), false );
-    vector< char >  label( graph.nnodes(), NONE );
+    const size_t         nnodes   = surrounding.nnodes();
+    size_t               nvisited = 0;
+    TNodeSet             nodes( nnodes );
+    TNodeSet             succ(  nnodes );
+    std::vector< bool >  visited( graph.nnodes(), false );
+    std::vector< char >  label( graph.nnodes(), NONE );
 
     // mark all nodes in local subgraph
     for ( auto  node : surrounding ) label[ node ] = LOCAL;
@@ -1314,9 +1322,9 @@ namespace
 bool
 matrix_connected ( const tensor2< char > &  edge_matrix )
 {
-    const size_t    nnodes                  = edge_matrix.dim0();
-    size_t          number_of_visited_nodes = 0;
-    vector< bool >  is_visited( nnodes );
+    const size_t         nnodes                  = edge_matrix.dim0();
+    size_t               number_of_visited_nodes = 0;
+    std::vector< bool >  is_visited( nnodes );
 
     //
     // do a BFS search starting at one node and check
@@ -1371,13 +1379,13 @@ matrix_connected ( const tensor2< char > &  edge_matrix )
 // construct a connected graph for the vertex spepator using the
 // connectivity information of 'graph'
 //
-unique_ptr< TGraph >
+std::unique_ptr< TGraph >
 build_vtxsep_graph ( const TGraph &    graph,
                      const TNodeSet &  vtxsep )
 {
-    unique_ptr< TGraph >  vtx_graph( graph.create() );
-    const size_t          nnodes        = graph.nnodes();
-    const size_t          nnodes_vtxsep = vtxsep.nnodes();
+    std::unique_ptr< TGraph >  vtx_graph( graph.create() );
+    const size_t               nnodes        = graph.nnodes();
+    const size_t               nnodes_vtxsep = vtxsep.nnodes();
 
     if ( nnodes_vtxsep == 0 )
         HERROR( ERR_CONSISTENCY, "build_vtxsep_graph", "vertex separator empty" );
@@ -1401,9 +1409,9 @@ build_vtxsep_graph ( const TGraph &    graph,
     //
     ///////////////////////////////////////////////////////////////////////
 
-    vector< node_t >  match_name( nnodes );
-    vector< bool >    is_matched( nnodes );
-    node_t            id1 = 0;
+    std::vector< node_t >  match_name( nnodes );
+    std::vector< bool >    is_matched( nnodes );
+    node_t                 id1 = 0;
 
     // initialise first matchings
     for ( auto  node : vtxsep )
@@ -1552,7 +1560,7 @@ build_vtxsep_graph ( const TGraph &    graph,
 double
 avg_dom_depth ( const TCluster *  node )
 {
-    using  cl_list_t = list< const TCluster * >;
+    using  cl_list_t = std::list< const TCluster * >;
 
     size_t     depth_sum = 0;  // sum of depth of all sub trees
     size_t     n_leafs   = 0;  // number of leafs
