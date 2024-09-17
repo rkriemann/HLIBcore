@@ -521,6 +521,7 @@ T2DBlockClusterVis::base_line_width  ( const double  lw )
 //
 namespace
 {
+
 void
 print_rec ( const TBlockCluster *            cluster,
             T2DPrinter *                     prn,

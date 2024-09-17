@@ -56,6 +56,7 @@ TCluster::set_son ( const size_t  i,
         delete _sons[i];
 
     _sons[i] = son_ct;
+    son_ct->set_parent( this );
 }
 
 void
@@ -88,6 +89,7 @@ TCluster::add_son ( TCluster *  son_ct,
         // create free slot
         _sons.resize( nsons() + 1 );
         _sons[ nsons() - 1 ] = son_ct;
+        son_ct->set_parent( this );
     }// if
     else
         HERROR( ERR_CONSISTENCY, "(TCluster) add_son", "no free slot" );
@@ -135,9 +137,10 @@ TCluster::collect_leaves ( list< TCluster * > &  leaves,
 TCluster *
 TCluster::copy  () const
 {
-    TCluster * c = create();
+    auto  c = create();
 
     c->set_id( id() );
+    c->set_parent( _parent );
     c->set_first_last( first(), last() );
     c->set_nsons( nsons() );
     c->set_domain( is_domain() );

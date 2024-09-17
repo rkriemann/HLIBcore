@@ -613,9 +613,7 @@ TBlockCluster::print ( const uint ofs ) const
 TBlockCluster *
 TBlockCluster::copy  () const
 {
-    std::unique_ptr< TBlockCluster >  bc( new TBlockCluster( const_cast< TBlockCluster * >( parent() ),
-                                                             const_cast< TCluster * >( rowcl() ),
-                                                             const_cast< TCluster * >( colcl() ) ) );
+    auto  bc = std::make_unique< TBlockCluster >( _parent, _rowcl, _colcl );
 
     bc->set_id( id() );
     bc->set_adm( is_adm() );

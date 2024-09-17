@@ -34,6 +34,9 @@ protected:
 
     //! unique ID of cluster
     int                        _id;
+
+    //! parent cluster
+    TCluster *                 _parent;
     
     //! son-clusters
     std::vector< TCluster * >  _sons;
@@ -52,6 +55,7 @@ public:
     //! construct node with empty index set
     TCluster ()
             : _id(-1)
+            , _parent(nullptr)
             , _is_domain(false)
     {}
 
@@ -59,6 +63,7 @@ public:
     TCluster ( const TIndexSet &  is )
             : TIndexSet( is )
             , _id(-1)
+            , _parent(nullptr)
             , _is_domain(false)
     {}
 
@@ -67,6 +72,7 @@ public:
                const idx_t  last_idx )
             : TIndexSet(first_idx,last_idx)
             , _id(-1)
+            , _parent(nullptr)
             , _is_domain(false)
     {}
 
@@ -79,16 +85,23 @@ public:
     //
 
     //! return ID
-    int   id         () const { return _id; }
+    int               id          () const           { return _id; }
 
     //! set ID
-    void  set_id     ( const int  aid ) { _id = aid; }
+    void              set_id      ( const int  aid ) { _id = aid; }
 
+    //! return parent cluster
+    TCluster *        parent      ()                 { return _parent; }
+    const TCluster *  parent      () const           { return _parent; }
+
+    //! set parent cluster
+    void              set_parent  ( TCluster *  cl ) { _parent = cl; }
+    
     //! return true if node is domain cluster
-    bool  is_domain  () const         { return _is_domain; }
+    bool              is_domain   () const           { return _is_domain; }
 
     //! set domain status of node
-    void  set_domain ( const bool b ) { _is_domain = b; }
+    void              set_domain  ( const bool  b )  { _is_domain = b; }
 
     ////////////////////////////////////////////////
     //
