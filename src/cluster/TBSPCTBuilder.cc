@@ -30,14 +30,6 @@
 namespace Hpro
 {
 
-using std::vector;
-using std::deque;
-using std::set;
-using std::unordered_map;
-using std::list;
-using std::unique_ptr;
-using std::make_unique;
-
 namespace
 {
 
@@ -121,8 +113,8 @@ TGeomCTBuilder::TGeomCTBuilder ( const uint  an_min,
 
 //
 // build tree out of point cloud
-//
-unique_ptr< TClusterTree >
+//g
+std::unique_ptr< TClusterTree >
 TGeomCTBuilder::build ( const TCoordinate *  coord,
                         const idx_t          index_ofs ) const
 {
@@ -144,11 +136,11 @@ TGeomCTBuilder::build ( const TCoordinate *  coord,
     // copy indices into local list and divide
     //
 
-    unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
-    TNodeSet                   dofs( max_dof );
-    TBoundingVolume            bvol;
-    TOptClusterSize            csize;
+    auto             root = std::unique_ptr< TGeomCluster >();
+    data_t           data = { coord, & perm_e2i, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
+    TNodeSet         dofs( max_dof );
+    TBoundingVolume  bvol;
+    TOptClusterSize  csize;
     
     for ( uint i = 0; i < max_dof; i++ )
         dofs.append( i );
@@ -299,6 +291,8 @@ TBSphere
 TGeomCTBuilder::compute_bsphere ( const TNodeSet &  dofs,
                                   const data_t &    data ) const
 {
+    #if HPRO_USE_CGAL == 1
+    
     //
     // compute bounding sphere
     //
@@ -352,6 +346,20 @@ TGeomCTBuilder::compute_bsphere ( const TNodeSet &  dofs,
         center[i++] = *ccib;
             
     return TBSphere( center, radius );
+
+    #else
+
+    //
+    // use bbox enclosing sphere
+    //
+
+    auto  bbox   = compute_bbox( dofs, data );
+    auto  center = 0.5 * ( bbox.max() + bbox.min() );
+    auto  diam   = ( bbox.max() - bbox.min() ).norm2();
+
+    return TBSphere( center, 0.5 * diam );
+    
+    #endif
 }
 
 //
@@ -434,7 +442,7 @@ TBSPCTBuilder::~TBSPCTBuilder ()
 //
 // divide given cluster into sons
 //
-unique_ptr< TGeomCluster >
+std::unique_ptr< TGeomCluster >
 TBSPCTBuilder::divide ( const TNodeSet &         dofs,
                         const uint               lvl,
                         const TBoundingVolume &  bvol,
@@ -483,9 +491,9 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    auto             cl_bbox = bvol.bbox();
-    TNodeSet         son_dofs[2];
-    vector< TBBox >  son_bbox( 2 );
+    auto      cl_bbox = bvol.bbox();
+    TNodeSet  son_dofs[2];
+    auto      son_bbox = std::vector< TBBox >( 2 );
 
     _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
 
@@ -537,15 +545,15 @@ TBSPCTBuilder::divide ( const TNodeSet &         dofs,
     // recursive call for building clustertrees with sons
     //
 
-    unique_ptr< TGeomCluster >  sons[2];
-    const idx_t                 left_ofs  = index_ofs;
-    const idx_t                 right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
+    std::unique_ptr< TGeomCluster >  sons[2];
+    const idx_t                      left_ofs  = index_ofs;
+    const idx_t                      right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
         
 
     auto  build_soncl =
         [this,lvl,&csize,&data] ( TNodeSet &               sdofs,
                                   const TBoundingVolume &  sbvol,
-                                  const idx_t              sofs ) -> unique_ptr< TGeomCluster >
+                                  const idx_t              sofs ) -> std::unique_ptr< TGeomCluster >
         {
             auto  cl = divide( sdofs, lvl+1, sbvol, csize.recurse(), sofs, data );
                 
@@ -631,14 +639,14 @@ TBSPNDCTBuilder::~TBSPNDCTBuilder ()
 // build tree out of point cloud with additional information
 // about connectivity provided by a sparse matrix
 //
-unique_ptr< TClusterTree >
+std::unique_ptr< TClusterTree >
 TBSPNDCTBuilder::build ( const TCoordinate * coord,
                          const idx_t         index_ofs ) const
 {
     return build( coord, _sparse_mat, index_ofs );
 }
 
-unique_ptr< TClusterTree >
+std::unique_ptr< TClusterTree >
 TBSPNDCTBuilder::build ( const TCoordinate *        coord,
                          any_const_sparse_matrix_t  S,
                          const idx_t                index_ofs ) const
@@ -666,9 +674,9 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     // count number of edges per node and total number of edges
     //
     
-    const size_t    nnodes = max_dof;
-    vector< uint >  nedges( nnodes, 0 );
-    size_t          nentries = 0;
+    const size_t  nnodes = max_dof;
+    auto          nedges = std::vector< uint >( nnodes, 0 );
+    size_t        nentries = 0;
     
     std::visit( [&,nnodes] ( auto && S_ptr )
     {
@@ -695,10 +703,10 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     // look for highly connected nodes and remove them
     //
     
-    const size_t    avg_degree = nentries / nnodes;
-    const size_t    max_degree = 5 * avg_degree;
-    list< node_t >  high_degree_nodes;
-    vector< bool >  node_del( nnodes, false );
+    const size_t  avg_degree        = nentries / nnodes;
+    const size_t  max_degree        = 5 * avg_degree;
+    auto          high_degree_nodes = std::list< node_t >();
+    auto          node_del          = std::vector< bool >( nnodes, false );
 
     for ( node_t  node = 0; node < node_t(nnodes); ++node )
     {
@@ -716,11 +724,11 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
     // copy indices into local list and divide
     //
 
-    unique_ptr< TGeomCluster > root;
-    data_t                     data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
-    TNodeSet                   dofs( max_dof );
-    TBoundingVolume            bvol;
-    TOptClusterSize            csize;
+    auto             root = std::unique_ptr< TGeomCluster >();
+    data_t           data = { coord, & perm, _n_min, _min_leaf_lvl, ( _max_lvl == 0 ? uint(max_dof / 2) : _max_lvl ), 0 };
+    TNodeSet         dofs( max_dof );
+    TBoundingVolume  bvol;
+    TOptClusterSize  csize;
 
     for ( size_t  i = 0; i < max_dof; i++ )
     {
@@ -812,7 +820,7 @@ TBSPNDCTBuilder::build ( const TCoordinate *        coord,
 //
 // divide given cluster into sons
 //
-unique_ptr< TGeomCluster >
+std::unique_ptr< TGeomCluster >
 TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
                           const uint               lvl,
                           const TBoundingVolume &  bvol,
@@ -967,16 +975,16 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
     // recursive call for building clustertrees with sons
     //
 
-    unique_ptr< TGeomCluster >  sons[2];
-    double                      son_lvl[2] = { 0, 0 };
-    const idx_t                 left_ofs  = index_ofs;
-    const idx_t                 right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
+    std::unique_ptr< TGeomCluster >  sons[2];
+    double                           son_lvl[2] = { 0, 0 };
+    const idx_t                      left_ofs  = index_ofs;
+    const idx_t                      right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
 
     auto  build_soncl =
         [this,lvl,&csize,&data] ( TNodeSet &               sdofs,
                                   const TBoundingVolume &  sbvol,
                                   const idx_t              sofs,
-                                  double &                 slvl ) -> unique_ptr< TGeomCluster >
+                                  double &                 slvl ) -> std::unique_ptr< TGeomCluster >
         {
             if ( sdofs.nnodes() > 0 )
             {
@@ -1084,7 +1092,7 @@ TBSPNDCTBuilder::divide ( const TNodeSet &         dofs,
 //
 // recursively build cluster for interfaces
 //
-unique_ptr< TGeomCluster >
+std::unique_ptr< TGeomCluster >
 TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
                              const uint               lvl,
                              const uint               max_lvl,
@@ -1094,7 +1102,7 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
                              data_t &                 data ) const
 {
     auto  recurse =
-        [this,lvl,max_lvl,index_ofs,&dofs,&bvol,&csize,&data] () -> unique_ptr< TGeomCluster >
+        [this,lvl,max_lvl,index_ofs,&dofs,&bvol,&csize,&data] () -> std::unique_ptr< TGeomCluster >
         {
             auto  son = divide_if( dofs, lvl+1, max_lvl, bvol, csize.recurse(), index_ofs, data );
 
@@ -1129,9 +1137,9 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // divide sons
     //
 
-    auto             cl_bbox = bvol.bbox();
-    TNodeSet         son_dofs[2];
-    vector< TBBox >  son_bbox( 2 );
+    auto      cl_bbox  = bvol.bbox();
+    TNodeSet  son_dofs[2];
+    auto      son_bbox = std::vector< TBBox >( 2 );
 
     _part_strat->partition( data.coord, dofs, son_dofs[0], son_dofs[1], cl_bbox, son_bbox, lvl );
     
@@ -1167,14 +1175,14 @@ TBSPNDCTBuilder::divide_if ( const TNodeSet &         dofs,
     // recursive call for building clustertrees with sons
     //
 
-    unique_ptr< TGeomCluster >  sons[2];
-    const idx_t                 left_ofs  = index_ofs;
-    const idx_t                 right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
+    std::unique_ptr< TGeomCluster >  sons[2];
+    const idx_t                      left_ofs  = index_ofs;
+    const idx_t                      right_ofs = index_ofs + idx_t( son_dofs[0].nnodes() );
 
     auto  build_soncl =
         [this,lvl,max_lvl,&csize,&data] ( TNodeSet &               sdofs,
                                           const TBoundingVolume &  sbvol,
-                                          const idx_t              sofs ) -> unique_ptr< TGeomCluster >
+                                          const idx_t              sofs ) -> std::unique_ptr< TGeomCluster >
         {
             if ( sdofs.nnodes() > 0 )
             {
@@ -1245,7 +1253,7 @@ namespace
 double
 avg_dom_depth ( const TCluster *  node )
 {
-    using  cl_list_t = list< const TCluster * >;
+    using  cl_list_t = std::list< const TCluster * >;
 
     size_t     depth_sum = 0;  // sum of depth of all sub trees
     size_t     n_leafs   = 0;  // number of leafs
