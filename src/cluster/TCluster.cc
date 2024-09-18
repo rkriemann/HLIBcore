@@ -178,7 +178,7 @@ TCluster::print ( const uint ofs ) const
 size_t
 TCluster::byte_size () const
 {
-    size_t count = ( TIndexSet::byte_size() + sizeof(_sons) + sizeof(TCluster*) * _sons.size() + sizeof(bool) );
+    size_t count = ( TIndexSet::byte_size() + sizeof(_id) + sizeof(_parent) + sizeof(_sons) + sizeof(TCluster*) * _sons.size() + sizeof(bool) );
     
     for ( size_t i = 0; i < nsons(); i++ )
     {
