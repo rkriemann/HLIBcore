@@ -44,13 +44,13 @@ public:
     {}
 
     tensor2 ( const tensor2 &  t )
-            : _data( t.data )
-            , _dim0( t.dim0 )
+            : _data( t._data )
+            , _dim0( t._dim0 )
     {}
 
     tensor2 ( tensor2 &&  t )
-            : _data( std::move( t.data ) )
-            , _dim0( t.dim0 )
+            : _data( std::move( t._data ) )
+            , _dim0( t._dim0 )
     {}
 
     tensor2 &
@@ -63,7 +63,7 @@ public:
     }
 
     size_type         dim0     () const { return _dim0; }
-    size_type         dim1     () const { return this->size() / _dim0; }
+    size_type         dim1     () const { return _data.size() / _dim0; }
     
     const value_type  operator ()  ( const size_type  i, const size_type  j ) const { return _data[ j*_dim0 + i ]; }
     value_type &      operator ()  ( const size_type  i, const size_type  j )       { return _data[ j*_dim0 + i ]; }
