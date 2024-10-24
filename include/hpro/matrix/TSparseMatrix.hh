@@ -113,10 +113,13 @@ public:
     size_t        n_non_zero   () const { return _colind.size(); }
 
     //! return row pointer array
-    const idx_t *  rowptr      () const { return _rowptr.data(); }
+    const idx_t *    rowptr    () const { return _rowptr.data(); }
     
     //! return column index array
-    const idx_t *  colind      () const { return _colind.data(); }
+    const idx_t *    colind    () const { return _colind.data(); }
+    
+    //! return column index array
+    const value_t *  coeffs    () const { return _coeff.data(); }
     
     /////////////////////////////////////////////////
     //
