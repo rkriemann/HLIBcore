@@ -35,7 +35,7 @@ public:
     TBoundingVolume ()
     {}
     
-    //! ctor for bbox [\a bbmin, \a bbmax ]
+    //! ctor with given bbox and bsphere
     TBoundingVolume ( const TBBox &     bbox,
                       const TBSphere &  bsphere )
             : _bbox( bbox )
@@ -45,6 +45,14 @@ public:
             HERROR( ERR_ARG, "(TBoundingVolume) ctor", "different spatial dimension in bbox/bsphere" );
     }
 
+    //! ctor for given bbox (bsphere based on bbox)
+    TBoundingVolume ( const TBBox &     bbox )
+            : _bbox( bbox )
+    {
+        _bsphere = TBSphere( ( _bbox.max() + _bbox.min() ) * 0.5,
+                             _bbox.diameter() * 0.5 );
+    }
+    
     //! copy ctor
     TBoundingVolume ( const TBoundingVolume & box )
     {
