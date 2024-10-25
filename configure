@@ -212,7 +212,7 @@ compenv  = { 'LIBNAME'      : 'hpro',
              'HAS_VSX'                 : 'check',
              'HAS_NEON'                : 'check',
 
-             'ILP64'                   : 'no',
+             'ILP64'                   : 'yes',
 
              'HAS_C99COMPLEX'          : 'check',
 
@@ -367,7 +367,7 @@ def usage ( status ):
     print( '    --profile-flags=FLAGS      define profile flags' )
     print( '' )
     print( '    --enable-debug             turn on additional debugging features' )
-    print( '    --enable-ilp64             use 64-bit integers for BLAS/LAPACK' )
+    print( '    --enable-ilp64             use 64-bit integers for BLAS/LAPACK (default)' )
     print( '' )
     print( '  Optional libraries and tools' )
     print( '    --with-LIBRARY             use LIBRARY (or tool)' )
