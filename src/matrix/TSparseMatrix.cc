@@ -1456,6 +1456,10 @@ INST_IMPORT_CRS( int64_t, float );
 INST_IMPORT_CRS( int64_t, double );
 INST_IMPORT_CRS( int64_t, std::complex< float > );
 INST_IMPORT_CRS( int64_t, std::complex< double > );
+INST_IMPORT_CRS( long long int, float );
+INST_IMPORT_CRS( long long int, double );
+INST_IMPORT_CRS( long long int, std::complex< float > );
+INST_IMPORT_CRS( long long int, std::complex< double > );
 
 #define INST_IMPORT_CCS( T_idx, T_val )                                 \
     template void                                                       \
@@ -1474,6 +1478,10 @@ INST_IMPORT_CCS( int64_t, float );
 INST_IMPORT_CCS( int64_t, double );
 INST_IMPORT_CCS( int64_t, std::complex< float > );
 INST_IMPORT_CCS( int64_t, std::complex< double > );
+INST_IMPORT_CCS( long long int, float );
+INST_IMPORT_CCS( long long int, double );
+INST_IMPORT_CCS( long long int, std::complex< float > );
+INST_IMPORT_CCS( long long int, std::complex< double > );
 
 #define INST_EXPORT_CCS( T_idx, T_val )                                 \
     template void                                                       \
@@ -1490,5 +1498,9 @@ INST_EXPORT_CCS( int64_t, float );
 INST_EXPORT_CCS( int64_t, double );
 INST_EXPORT_CCS( int64_t, std::complex< float > );
 INST_EXPORT_CCS( int64_t, std::complex< double > );
+INST_EXPORT_CCS( long long int, float );
+INST_EXPORT_CCS( long long int, double );
+INST_EXPORT_CCS( long long int, std::complex< float > );
+INST_EXPORT_CCS( long long int, std::complex< double > );
 
 }// namespace Hpro
