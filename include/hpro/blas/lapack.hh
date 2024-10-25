@@ -13,11 +13,8 @@
 
 #include "hpro/config.h"
 
-// prevents issues with Windows build environment and dot-wrappers
 #if HPRO_USE_MKL == 1
-namespace MKL {
 #include <mkl_cblas.h>
-}
 #endif
 
 #include "hpro/base/traits.hh"
@@ -2094,7 +2091,7 @@ dot ( const blas_int_t  n,
     
     #if HPRO_USE_MKL == 1
 
-    MKL::cblas_cdotc_sub( n, x, incx, y, incy, & res );
+    cblas_cdotc_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2117,7 +2114,7 @@ dot ( const blas_int_t  n,
     
     #if HPRO_USE_MKL == 1
 
-    MKL::cblas_zdotc_sub( n, x, incx, y, incy, & res );
+    cblas_zdotc_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2165,7 +2162,7 @@ dotu ( const blas_int_t  n,
     
     #if HPRO_USE_MKL == 1
 
-    MKL::cblas_cdotu_sub( n, x, incx, y, incy, & res );
+    cblas_cdotu_sub( n, x, incx, y, incy, & res );
     
     #else
     
@@ -2188,7 +2185,7 @@ dotu ( const blas_int_t  n,
     
     #if HPRO_USE_MKL == 1
 
-    MKL::cblas_zdotu_sub( n, x, incx, y, incy, & res );
+    cblas_zdotu_sub( n, x, incx, y, incy, & res );
     
     #else
     
