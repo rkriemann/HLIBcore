@@ -1447,9 +1447,11 @@ eigen_herm ( Matrix< value_t > &                 M,
              Matrix< value_t > &                 eig_vec )
 {
     using  real_t  = typename real_type< value_t >::type_t;
-    
-    const size_t  n = M.nrows();
-    blas_int_t    info = 0;
+
+    #if 0
+
+    const size_t  n          = M.nrows();
+    blas_int_t    info       = 0;
     value_t       work_query = value_t(0);
     real_t        rdummy     = 0;
 
@@ -1481,6 +1483,57 @@ eigen_herm ( Matrix< value_t > &                 M,
     
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
+
+    #else
+
+    const size_t  n           = M.nrows();
+    blas_int_t    info        = 0;
+    value_t       work_query  = value_t(0);
+    real_t        rwork_query = real_t(0);
+    blas_int_t    iwork_query = 0;
+    real_t        rdummy      = 0;
+
+    if (( eig_vec.nrows() != M.nrows() ) || ( eig_vec.ncols() != M.ncols() ))
+        eig_vec= std::move( Matrix< value_t >( M.nrows(), M.ncols() ) );
+        
+    // work space query
+    heevd( 'V', 'L', blas_int_t(n), eig_vec.data(), blas_int_t(eig_vec.col_stride()),
+           & rdummy,
+           & work_query,  LAPACK_WS_QUERY,
+           & rwork_query, LAPACK_WS_QUERY,
+           & iwork_query, LAPACK_WS_QUERY,
+           info );
+
+    if ( info < 0 )
+        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)evd", -info ) );
+        
+    if ( eig_val.length() != n )
+        eig_val = std::move( Vector< real_t >( n ) );
+    
+    const blas_int_t      lwork  = blas_int_t( std::real( work_query ) );
+    const blas_int_t      lrwork = blas_int_t( rwork_query );
+    const blas_int_t      liwork = iwork_query;
+    vector< value_t >     work( lwork );
+    vector< real_t >      rwork( rwork );
+    vector< blas_int_t >  iwork( iwork );
+    
+    copy( M, eig_vec );
+    
+    MKL_SEQ_START;
+    
+    heevd( 'V', 'L', blas_int_t(n), eig_vec.data(), blas_int_t(eig_vec.col_stride()),
+           eig_val.data(),
+           work.data(),  lwork,
+           rwork.data(), lrwork,
+           iwork.data(), liwork,
+           info );
+    
+    MKL_SEQ_END;
+    
+    if ( info < 0 )
+        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)evd", -info ) );
+
+    #endif
 }
 
 //

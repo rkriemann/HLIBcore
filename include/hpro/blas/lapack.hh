@@ -971,6 +971,20 @@ ssyev_   ( const char *         jobz,
            const blas_int_t *   lwork,
            blas_int_t *         info );
     
+CFUNCDECL
+void
+ssyevd_  ( const char *         jobz,
+           const char *         uplo,
+           const blas_int_t *   n,
+           float *              A,
+           const blas_int_t *   lda,
+           float *              w,
+           float *              work,
+           const blas_int_t *   lwork,
+           const blas_int_t *   iwork,
+           const blas_int_t *   liwork,
+           blas_int_t *         info );
+    
 // compute selected eigenvalues and eigenvectors of a symmetric matrix
 CFUNCDECL
 void ssyevx_ ( const char * jobz, const char * range, const char * uplo,
@@ -1238,6 +1252,20 @@ dsyev_   ( const char *         jobz,
            double *             w,
            double *             work,
            const blas_int_t *   lwork,
+           blas_int_t *         info );
+    
+CFUNCDECL
+void
+dsyevd_  ( const char *         jobz,
+           const char *         uplo,
+           const blas_int_t *   n,
+           double *             A,
+           const blas_int_t *   lda,
+           double *             w,
+           double *             work,
+           const blas_int_t *   lwork,
+           const blas_int_t *   iwork,
+           const blas_int_t *   liwork,
            blas_int_t *         info );
     
 // compute selected eigenvalues and eigenvectors of a symmetric matrix
@@ -1513,6 +1541,22 @@ cheev_   ( const char *                 jobz,
            float *                      rwork,
            blas_int_t *                 info );
     
+CFUNCDECL
+void
+cheevd_  ( const char *                 jobz,
+           const char *                 uplo,
+           const blas_int_t *           n,
+           std::complex<float> *        A,
+           const blas_int_t *           lda,
+           float *                      w,
+           std::complex<float> *        work,
+           const blas_int_t *           lwork,
+           float *                      rwork,
+           const blas_int_t *           lrwork,
+           const blas_int_t *           iwork,
+           const blas_int_t *           liwork,
+           blas_int_t *                 info );
+    
 // compute singular-value-decomposition
 CFUNCDECL
 void
@@ -1730,6 +1774,22 @@ zheev_   ( const char *                 jobz,
            std::complex<double> *       work,
            const blas_int_t *           lwork,
            double *                     rwork,
+           blas_int_t *                 info );
+    
+CFUNCDECL
+void
+zheevd_  ( const char *                 jobz,
+           const char *                 uplo,
+           const blas_int_t *           n,
+           std::complex<double> *       A,
+           const blas_int_t *           lda,
+           double *                     w,
+           std::complex<double> *       work,
+           const blas_int_t *           lwork,
+           double *                     rwork,
+           const blas_int_t *           lrwork,
+           const blas_int_t *           iwork,
+           const blas_int_t *           liwork,
            blas_int_t *                 info );
     
 // compute singular-value-decomposition
@@ -2693,6 +2753,53 @@ HPRO_HEEV_FUNC( std::complex< float >,  cheev_ )
 HPRO_HEEV_FUNC( std::complex< double >, zheev_ )
 
 #undef HPRO_HEEV_FUNC
+
+//
+// *syevd/*heevd
+//
+#define HPRO_HEEVD_FUNC( type, func )                                   \
+    inline void heevd ( const char            jobz,                     \
+                        const char            uplo,                     \
+                        const blas_int_t      n,                        \
+                        type *                A,                        \
+                        const blas_int_t      ldA,                      \
+                        real_type_t< type > * W,                        \
+                        type *                work,                     \
+                        const blas_int_t      lwork,                    \
+                        real_type_t< type > *,                          \
+                        const blas_int_t      ,                         \
+                        const blas_int_t *    iwork,                    \
+                        const blas_int_t      liwork,                   \
+                        blas_int_t &          info ) {                  \
+        info = 0;                                                       \
+        func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, iwork, & liwork, & info ); }
+
+HPRO_HEEVD_FUNC( float,  ssyevd_ )
+HPRO_HEEVD_FUNC( double, dsyevd_ )
+
+#undef HPRO_HEEVD_FUNC
+
+#define HPRO_HEEVD_FUNC( type, func )                                   \
+    inline void heevd ( const char            jobz,                     \
+                        const char            uplo,                     \
+                        const blas_int_t      n,                        \
+                        type *                A,                        \
+                        const blas_int_t      ldA,                      \
+                        real_type_t< type > * W,                        \
+                        type *                work,                     \
+                        const blas_int_t      lwork,                    \
+                        real_type_t< type > * rwork,                    \
+                        const blas_int_t      lrwork,                   \
+                        const blas_int_t *    iwork,                    \
+                        const blas_int_t      liwork,                   \
+                        blas_int_t & info ) {                           \
+        info = 0;                                                       \
+        func( & jobz, & uplo, & n, A, & ldA, W, work, & lwork, rwork, & lrwork, iwork, & liwork, & info ); }
+
+HPRO_HEEVD_FUNC( std::complex< float >,  cheevd_ )
+HPRO_HEEVD_FUNC( std::complex< double >, zheevd_ )
+
+#undef HPRO_HEEVD_FUNC
 
 //
 // *syevx/*heevx
