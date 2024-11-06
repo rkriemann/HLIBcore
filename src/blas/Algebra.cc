@@ -1514,8 +1514,8 @@ eigen_herm ( Matrix< value_t > &                 M,
     const blas_int_t      lrwork = blas_int_t( rwork_query );
     const blas_int_t      liwork = iwork_query;
     vector< value_t >     work( lwork );
-    vector< real_t >      rwork( rwork );
-    vector< blas_int_t >  iwork( iwork );
+    vector< real_t >      rwork( lrwork );
+    vector< blas_int_t >  iwork( liwork );
     
     copy( M, eig_vec );
     
