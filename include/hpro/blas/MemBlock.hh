@@ -12,7 +12,8 @@
 
 #include <atomic>
 
-#include "hpro/base/System.hh"
+#include <hpro/base/error.hh>
+#include <hpro/base/System.hh>
 
 namespace Hpro
 {
