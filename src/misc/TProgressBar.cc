@@ -397,52 +397,77 @@ TConsoleProgressBar::update ()
 
                 if ( _charset == unicode_charset )
                 {
-                    // height in (stretched) 1/8 steps
-                    const uint  height = Math::min( uint(16), uint(double(16) * percent / 100.0) );
+                    // height in (stretched) 1/9 steps
+                    const uint  height = std::floor( 10 * percent / 100.0 );
 
                     switch ( height )
                     {
                         case  0 : output += " "; break;
-                        case  1 :
-                        case  2 : output += "▁"; break;
-                        case  3 :
-                        case  4 : output += "▂"; break;
-                        case  5 :
-                        case  6 : output += "▃"; break;
-                        case  7 :
-                        case  8 : output += "▄"; break;
-                        case  9 :
-                        case 10 : output += "▅"; break;
-                        case 11 :
-                        case 12 : output += "▆"; break;
-                        case 13 :
-                        case 14 : output += "▇"; break;
-                        case 15 :
-                        case 16 : output += "█"; break;
+                        case  1 : output += "▁"; break;
+                        case  2 : output += "▂"; break;
+                        case  3 : output += "▃"; break;
+                        case  4 : output += "▄"; break;
+                        case  5 : output += "▅"; break;
+                        case  6 : output += "▆"; break;
+                        case  7 : output += "▇"; break;
+                        case  8 :
+                        default : output += "█"; break;
                     }// switch
-                
-                    len++;
                 }// if
                 else if ( _charset == ascii_charset )
                 {
-                    // height in (stretched) 1/4 steps
-                    const uint  height = Math::min( uint(8), uint(double(8) * percent / 100.0) );
+                    const uint  height = std::floor( 5 * percent / 100.0 );
                     
                     switch ( height )
                     {
-                        case  0 : output += " "; break;
-                        case  1 : 
-                        case  2 : output += "."; break;
-                        case  3 : 
-                        case  4 : output += "o"; break;
-                        case  5 : 
-                        case  6 : output += "O"; break;
-                        case  7 : 
-                        case  8 : output += "0"; break;
+                        case  0 : output += ' '; break;
+                        case  1 : output += '.'; break;
+                        case  2 : output += 'o'; break;
+                        case  3 : output += 'O'; break;
+                        case  4 :
+                        default : output += '0'; break;
                     }// switch
-                
-                    len++;
                 }// else
+
+                len++;
+            }// if
+            else if ( _format[i] == 'c' )
+            {
+                //
+                // insert single character bar
+                //
+
+                if ( _charset == unicode_charset )
+                {
+                    // split circle into 5 slices
+                    const uint  perc = std::floor( 5 * percent / 100.0 );
+
+                    switch ( perc )
+                    {
+                        case  0 : output += "○"; break;
+                        case  1 : output += "◔"; break;
+                        case  2 : output += "◑"; break;
+                        case  3 : output += "◕"; break;
+                        case  4 :
+                        default : output += "●"; break;
+                    }// switch
+                }// if
+                else if ( _charset == ascii_charset )
+                {
+                    const uint  perc = std::floor( 5 * percent / 100.0 );
+                    
+                    switch ( perc )
+                    {
+                        case  0 : output += ' '; break;
+                        case  1 : output += '.'; break;
+                        case  2 : output += 'o'; break;
+                        case  3 : output += 'O'; break;
+                        case  4 :
+                        default : output += '0'; break;
+                    }// switch
+                }// else
+                
+                len++;
             }// if
             else if ( _format[i] == 'i' )
             {
@@ -454,21 +479,25 @@ TConsoleProgressBar::update ()
                 {
                     switch ( _indicator_status )
                     {
-                        case 0 : output += "◐"; _indicator_status++; break;
-                        case 1 : output += "◓"; _indicator_status++; break;
-                        case 2 : output += "◑"; _indicator_status++; break;
-                        case 3 : output += "◒"; _indicator_status = 0; break;
+                        case 0 : output += "◑"; break;
+                        case 1 : output += "◒"; break;
+                        case 2 : output += "◐"; break;
+                        case 3 : output += "◓"; break;
                     }// switch
+
+                    _indicator_status = ( _indicator_status + 1 ) % 4;
                 }// if
                 else if ( _charset == ascii_charset )
                 {
                     switch ( _indicator_status )
                     {
-                        case 0 : output += "/";  _indicator_status++; break;
-                        case 1 : output += "-";  _indicator_status++; break;
-                        case 2 : output += "\\"; _indicator_status++; break;
-                        case 3 : output += "|";  _indicator_status = 0; break;
+                        case 0 : output += '/';  break;
+                        case 1 : output += '-';  break;
+                        case 2 : output += '\\'; break;
+                        case 3 : output += '|';  break;
                     }// switch
+
+                    _indicator_status = ( _indicator_status + 1 ) % 4;
                 }// else
 
                 len++;

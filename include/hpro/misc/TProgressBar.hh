@@ -113,7 +113,9 @@ protected:
 //! \class  TConsoleProgressBar
 //! \brief  class for a progress bar printing progress on standard console (or via IO streams)
 //!   - the format string follows printf style with
-//!     - %b : print bar with optional length, e.g. %30b for 30 characters
+//!     - %b : print horizontal percentage bar with optional length, e.g. %30b for 30 characters
+//!     - %B : print vertical percentage bar
+//!     - %c : print percentage circle
 //!     - %i : print progress indicator
 //!     - %p : print progress percentage
 //!     - %e : print time to finish (ETA)
