@@ -113,6 +113,15 @@ template void qrp< std::complex<double> >  ( Matrix< std::complex<double> > &  A
                                              Matrix< std::complex<double> > &  R,
                                              std::vector< blas_int_t > &       P );
 
+template void lq< float >                 ( Matrix< float > &            A,
+                                            Matrix< float > &            L );
+template void lq< double >                ( Matrix< double > &           A,
+                                            Matrix< double > &           L );
+template void lq< std::complex<float> >   ( Matrix< std::complex<float> > &   A,
+                                            Matrix< std::complex<float> > &   L );
+template void lq< std::complex<double> >  ( Matrix< std::complex<double> > &  A,
+                                            Matrix< std::complex<double> > &  L );
+
 template void eigen< float >                   ( Matrix< float > &, Vector< float > &, Matrix< float > & );
 template void eigen< double >                  ( Matrix< double > &, Vector< double > &, Matrix< double > & );
 template void eigen< std::complex< float > >   ( Matrix< std::complex< float > > &, Vector< std::complex< float > > &, Matrix< std::complex< float > > & );

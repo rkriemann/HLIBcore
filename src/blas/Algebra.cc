@@ -821,18 +821,167 @@ template <>                    size_t  gpu_qr_size< std::complex< double > > () 
 }// namespace anonymous
 
 //!
+//! compute LQ factorisation of the n×m matrix \a A with
+//! m×m matrix Q and nxm matrix L (n >= m); \a A will be
+//! overwritten with Q upon exit
+//!
+template < typename value_t >
+void
+lq ( Matrix< value_t > &  A,
+     Matrix< value_t > &  L )
+{
+    LOG_COUNTER( qr );
+    LOG_TIC( qr );
+
+    if ( false && ( std::min( A.nrows(), A.ncols() ) <= 32 ))
+    {
+        MKL_SEQ_START;
+
+        const auto              nrows = A.nrows();
+        const auto              ncols = A.ncols();
+        blas_int_t              info  = 0;
+        std::vector< value_t >  tau( ncols );
+        std::vector< value_t >  work( ncols );
+    
+        gelq2( nrows, ncols, A.data(), A.col_stride(), tau.data(), work.data(), info );
+
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::gelq2", -info ) );
+    
+        if (( L.nrows() != nrows ) || ( L.ncols() != ncols ))
+            L = std::move( Matrix< value_t >( nrows, ncols ) );
+    
+        for ( size_t  i = 0; i < nrows; ++i )
+            for ( size_t  j = 0; j <= std::min( i, ncols-1 ); ++j )
+                L(i,j) = A(i,j);
+
+        org2l( nrows, ncols, ncols, A.data(), A.col_stride(), tau.data(), work.data(), info );
+
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::org2l", -info ) );
+    
+        MKL_SEQ_END;
+    }// if
+    else
+    {
+        const auto  nrows = blas_int_t( A.nrows() );
+        const auto  ncols = blas_int_t( A.ncols() );
+        blas_int_t  info  = 0;
+
+        //
+        // workspace query
+        //
+
+        value_t  dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
+        value_t  work_query = value_t(0);
+
+        gelqf( nrows, ncols, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
+
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::gelqf", -info ) );
+    
+        auto   lwork = blas_int_t( std::real( work_query ) );
+
+        orglq( nrows, ncols, nrows, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
+    
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::orglq", -info ) );
+
+        // adjust work space size
+        lwork = std::max( lwork, blas_int_t( std::real( work_query ) ) );
+    
+        vector< value_t >  tmp_space( lwork + ncols );
+        value_t *          work  = tmp_space.data();
+        value_t *          tau   = work + lwork;
+
+        //
+        // compute Householder vectors and R
+        //
+
+        MKL_SEQ_START;
+
+        gelqf( nrows, ncols, A.data(), blas_int_t( A.col_stride() ), tau, work, lwork, info );
+    
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::gelqf", -info ) );
+
+        //
+        // copy lower triangular matrix to L
+        //
+
+        if (( blas_int_t( L.nrows() ) != nrows ) || ( blas_int_t( L.ncols() ) != ncols ))
+            L = std::move( Matrix< value_t >( nrows, ncols ) );
+        else
+            fill( value_t(0), L );
+    
+        for ( blas_int_t  i = 0; i < nrows; i++ )
+        {
+            Vector< value_t >  colA( A, i, Range( 0, std::min( i, ncols-1 ) ) );
+            Vector< value_t >  colL( L, i, Range( 0, std::min( i, ncols-1 ) ) );
+
+            copy( colA, colL );
+        }// for
+
+        //
+        // compute Q
+        //
+    
+        orglq( nrows, ncols, nrows, A.data(), blas_int_t( A.col_stride() ), tau, work, lwork, info );
+
+        MKL_SEQ_END;
+
+        if ( info < 0 )
+            HERROR( ERR_ARG, "(BLAS) lq", to_string( "argument %d to LAPACK::orglq", -info ) );
+    }
+    
+    LOG_TOC( qr );
+}
+
+//!
 //! compute QR factorisation of the n×m matrix \a A with
 //! n×m matrix Q and mxm matrix R (n >= m); \a A will be
 //! overwritten with Q upon exit
 //!
 template < typename value_t >
 void
-qr     ( Matrix< value_t > &  A,
-         Matrix< value_t > &  R )
+qr ( Matrix< value_t > &  A,
+     Matrix< value_t > &  R )
 {
     LOG_COUNTER( qr );
     LOG_TIC( qr );
 
+    //
+    // use LQ on A' if nrows(A) < ncols(A)
+    //
+    
+    if ( A.nrows() < A.ncols() )
+    {
+        auto  AT = Matrix< value_t >( A.ncols(), A.nrows() );
+        auto  L  = Matrix< value_t >();
+
+        DBG::write( A, "A.mat", "A" );
+        
+        copy( adjoint(A), AT );
+        DBG::write( AT, "AT.mat", "AT" );
+
+        lq( AT, L );
+
+        DBG::write( AT, "Q.mat", "Q" );
+        DBG::write( L, "L.mat", "L" );
+
+        if (( A.nrows() != AT.ncols() ) || ( A.ncols() != AT.nrows() ))
+            A = std::move( Matrix< value_t >( AT.ncols(), AT.nrows() ) );
+                           
+        copy( adjoint(AT), A );
+        
+        if (( R.nrows() != L.ncols() ) || ( R.ncols() != L.nrows() ))
+            R = std::move( Matrix< value_t >( L.ncols(), L.nrows() ) );
+                           
+        copy( adjoint(L), R );
+        
+        return;
+    }// if
+    
     //
     // try GPU if large enough
     //

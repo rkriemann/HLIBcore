@@ -1144,6 +1144,52 @@ sgeqp3trunc_  ( const blas_int_t *   m,
 
 #endif
 
+// compute LQ factorisation of given matrix A
+CFUNCDECL
+void
+sgelqf_  ( const blas_int_t *   m,
+           const blas_int_t *   n,
+           float *              A,
+           const blas_int_t *   lda,
+           float *              tau,
+           float *              work,
+           const blas_int_t *   lwork,
+           blas_int_t *         info );
+
+CFUNCDECL
+void
+sgelq2_ ( const blas_int_t *  nrows,
+          const blas_int_t *  ncols,
+          float *             A,
+          const blas_int_t *  lda,
+          float *             tau,
+          float *             work,
+          const blas_int_t *  info );
+
+CFUNCDECL
+void
+sorglq_  ( const blas_int_t *   m,
+           const blas_int_t *   n,
+           const blas_int_t *   k,
+           float *              A,
+           const blas_int_t *   lda,
+           const float *        tau,
+           float *              work,
+           const blas_int_t *   lwork,
+           blas_int_t *         info );
+
+CFUNCDECL
+void
+sorg2l_ ( const blas_int_t *        nrows,
+          const blas_int_t *        ncols,
+          const blas_int_t *        nref,
+          float *                   A,
+          const blas_int_t *        lda,
+          const float *             tau,
+          float *                   work,
+          const blas_int_t *        info );
+
+
 // compute LU factorisation of given matrix A
 CFUNCDECL
 void
@@ -1442,6 +1488,52 @@ dgeqp3trunc_  ( const blas_int_t *   m,
 
 #endif
 
+// compute LQ-factorisation
+CFUNCDECL
+void
+dgelqf_  ( const blas_int_t *   m,
+           const blas_int_t *   n,
+           double *             A,
+           const blas_int_t *   lda,
+           double *             tau,
+           double *             work,
+           const blas_int_t *   lwork,
+           blas_int_t *         info );
+
+CFUNCDECL
+void
+dgelq2_ ( const blas_int_t *  nrows,
+          const blas_int_t *  ncols,
+          double *            A,
+          const blas_int_t *  lda,
+          double *            tau,
+          double *            work,
+          const blas_int_t *  info );
+
+CFUNCDECL
+void
+dorglq_  ( const blas_int_t *   m,
+           const blas_int_t *   n,
+           const blas_int_t *   k,
+           double *             A,
+           const blas_int_t *   lda,
+           const double *       tau,
+           double *             work,
+           const blas_int_t *   lwork,
+           blas_int_t *         info );
+
+CFUNCDECL
+void
+dorg2l_ ( const blas_int_t *        nrows,
+          const blas_int_t *        ncols,
+          const blas_int_t *        nref,
+          double *                  A,
+          const blas_int_t *        lda,
+          const double *            tau,
+          double *                  work,
+          const blas_int_t *        info );
+
+
 // compute LU factorisation of given matrix A
 CFUNCDECL
 void
@@ -1691,6 +1783,51 @@ cgeqp3trunc_  ( const blas_int_t *     m,
 
 #endif
 
+// compute LQ-factorisation
+CFUNCDECL
+void
+cgelqf_  ( const blas_int_t *           m,
+           const blas_int_t *           n,
+           std::complex<float> *        A,
+           const blas_int_t *           lda,
+           std::complex<float> *        tau,
+           std::complex<float> *        work,
+           const blas_int_t *           lwork,
+           blas_int_t *                 info );
+
+CFUNCDECL
+void
+cgelq2_ ( const blas_int_t *        nrows,
+          const blas_int_t *        ncols,
+          std::complex< float > *   A,
+          const blas_int_t *        lda,
+          std::complex< float > *   tau,
+          std::complex< float > *   work,
+          const blas_int_t *        info );
+
+CFUNCDECL
+void
+cunglq_  ( const blas_int_t *           m,
+           const blas_int_t *           n,
+           const blas_int_t *           k,
+           std::complex<float> *        a,
+           const blas_int_t *           lda,
+           const std::complex<float> *  tau,
+           std::complex<float> *        work,
+           const blas_int_t *           lwork,
+           blas_int_t *                 info );
+
+CFUNCDECL
+void
+cung2l_ ( const blas_int_t *            nrows,
+          const blas_int_t *            ncols,
+          const blas_int_t *            nref,
+          std::complex< float > *       A,
+          const blas_int_t *            lda,
+          const std::complex< float > * tau,
+          std::complex< float > *       work,
+          const blas_int_t *            info );
+
 // compute LU factorisation of given matrix A
 CFUNCDECL
 void
@@ -1925,6 +2062,51 @@ zgeqp3trunc_  ( const blas_int_t *      m,
                 blas_int_t *            info );
 
 #endif
+
+// compute LQ-factorisation
+CFUNCDECL
+void
+zgelqf_  ( const blas_int_t *           m,
+           const blas_int_t *           n,
+           std::complex<double> *       A,
+           const blas_int_t *           lda,
+           std::complex<double> *       tau,
+           std::complex<double> *       work,
+           const blas_int_t *           lwork,
+           blas_int_t *                 info );
+
+CFUNCDECL
+void
+zgelq2_ ( const blas_int_t *        nrows,
+          const blas_int_t *        ncols,
+          std::complex< double > *  A,
+          const blas_int_t *        lda,
+          std::complex< double > *  tau,
+          std::complex< double > *  work,
+          const blas_int_t *        info );
+
+CFUNCDECL
+void
+zunglq_  ( const blas_int_t *           m,
+           const blas_int_t *           n,
+           const blas_int_t *           k,
+           std::complex<double> *       a,
+           const blas_int_t *           lda,
+           const std::complex<double> * tau,
+           std::complex<double> *       work,
+           const blas_int_t *           lwork,
+           blas_int_t *                 info );
+
+CFUNCDECL
+void
+zung2l_ ( const blas_int_t *              nrows,
+          const blas_int_t *              ncols,
+          const blas_int_t *              nref,
+          std::complex< double > *        A,
+          const blas_int_t *              lda,
+          const std::complex< double > *  tau,
+          std::complex< double > *        work,
+          const blas_int_t *              info );
 
 // compute LU factorisation of given matrix A
 CFUNCDECL
@@ -2712,6 +2894,98 @@ HPRO_GEQP3TRUNC_FUNC( std::complex< double >, zgeqp3trunc_ )
 #undef HPRO_GEQP3TRUNC_FUNC
 
 #endif
+
+//
+// *gelqf
+//
+#define HPRO_GELQF_FUNC( type, func, flops )                            \
+    inline void gelqf ( const blas_int_t  n,                            \
+                        const blas_int_t  m,                            \
+                        type *            A,                            \
+                        const blas_int_t  ldA,                          \
+                        type *            tau,                          \
+                        type *            work,                         \
+                        blas_int_t        lwork,                        \
+                        blas_int_t &      info ) {                      \
+        ADD_FLOPS( FLOPS_##flops( n, m ) );                             \
+        info = 0;                                                       \
+        func( & n, & m, A, & ldA, tau, work, & lwork, & info ); }
+
+HPRO_GELQF_FUNC( float,                  sgelqf_, SGELQF )
+HPRO_GELQF_FUNC( double,                 dgelqf_, CGELQF )
+HPRO_GELQF_FUNC( std::complex< float >,  cgelqf_, DGELQF )
+HPRO_GELQF_FUNC( std::complex< double >, zgelqf_, ZGELQF )
+
+#undef HPRO_GELQF_FUNC
+
+//
+// *gelq2
+//
+#define HPRO_GELQ2_FUNC( type, func, flops )                            \
+    inline void gelq2 ( const blas_int_t  n,                            \
+                        const blas_int_t  m,                            \
+                        type *            A,                            \
+                        const blas_int_t  ldA,                          \
+                        type *            tau,                          \
+                        type *            work,                         \
+                        blas_int_t &      info ) {                      \
+        ADD_FLOPS( FLOPS_##flops( n, m ) );                             \
+        info = 0;                                                       \
+        func( & n, & m, A, & ldA, tau, work, & info ); }
+
+HPRO_GELQ2_FUNC( float,                  sgelq2_, SGELQF )
+HPRO_GELQ2_FUNC( double,                 dgelq2_, CGELQF )
+HPRO_GELQ2_FUNC( std::complex< float >,  cgelq2_, DGELQF )
+HPRO_GELQ2_FUNC( std::complex< double >, zgelq2_, ZGELQF )
+
+#undef HPRO_GELQ2_FUNC
+
+//
+// *orglq
+//
+#define HPRO_ORGLQ_FUNC( type, func, flops )                            \
+    inline void orglq ( const blas_int_t  n,                            \
+                        const blas_int_t  m,                            \
+                        const blas_int_t  k,                            \
+                        type *            A,                            \
+                        const blas_int_t  ldA,                          \
+                        const type *      tau,                          \
+                        type *            work,                         \
+                        blas_int_t        lwork,                        \
+                        blas_int_t &      info ) {                      \
+        ADD_FLOPS( FLOPS_##flops( n, m, k ) );                          \
+        info = 0;                                                       \
+        func( & n, & m, & k, A, & ldA, tau, work, & lwork, & info ); }
+
+HPRO_ORGLQ_FUNC( float,             sorglq_, SORGLQ )
+HPRO_ORGLQ_FUNC( double,            dorglq_, DORGLQ )
+HPRO_ORGLQ_FUNC( std::complex< float >,  cunglq_, CUNGLQ )
+HPRO_ORGLQ_FUNC( std::complex< double >, zunglq_, ZUNGLQ )
+
+#undef HPRO_ORGLQ_FUNC
+
+//
+// *org2l
+//
+#define HPRO_ORG2L_FUNC( type, func, flops )                            \
+    inline void org2l ( const blas_int_t  n,                            \
+                        const blas_int_t  m,                            \
+                        const blas_int_t  k,                            \
+                        type *            A,                            \
+                        const blas_int_t  ldA,                          \
+                        const type *      tau,                          \
+                        type *            work,                         \
+                        blas_int_t &      info ) {                      \
+        ADD_FLOPS( FLOPS_##flops( n, m, k ) );                          \
+        info = 0;                                                       \
+        func( & n, & m, & k, A, & ldA, tau, work, & info ); }
+
+HPRO_ORG2L_FUNC( float,                  sorg2l_, SORGQL )
+HPRO_ORG2L_FUNC( double,                 dorg2l_, DORGQL )
+HPRO_ORG2L_FUNC( std::complex< float >,  cung2l_, CUNGQL )
+HPRO_ORG2L_FUNC( std::complex< double >, zung2l_, ZUNGQL )
+
+#undef HPRO_ORG2R_FUNC
 
 //
 // *syev/*heev

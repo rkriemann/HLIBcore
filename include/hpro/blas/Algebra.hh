@@ -1767,6 +1767,19 @@ qrp    ( Matrix< value_t > &          A,
 
 //!
 //! \ingroup  BLAS_Module
+//! \brief Compute lQ factorisation of the matrix \a A.
+//!
+//!        Compute LQ factorisation of the n×m matrix \a A with
+//!        m×m matrix Q and nxm matrix L (n >= m); \a A will be
+//!        overwritten with Q upon exit
+//!
+template < typename value_t >
+void
+lq     ( Matrix< value_t > &  A,
+         Matrix< value_t > &  L );
+
+//!
+//! \ingroup  BLAS_Module
 //! \brief compute eigenvalues and eigenvectors of matrix \a M
 //!
 template < typename value_t >
