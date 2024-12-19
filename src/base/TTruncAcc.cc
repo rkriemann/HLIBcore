@@ -136,16 +136,15 @@ TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
 
         // find smallest k such that √(Σ_k^n σ_i²) ≤ ε
         auto  rest = value_t(0);
-    
+
         for ( idx_t  i = k-1; i >= 0; --i )
         {
             rest += Math::square( sv(i) );
         
             if ( Math::sqrt( rest ) > eps )
-            {
-                k = std::min( idx_t( sv.length() ), i+1 );
                 break;
-            }// if
+
+            k--;
         }// for
 
         return k;
