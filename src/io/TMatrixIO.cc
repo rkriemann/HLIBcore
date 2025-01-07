@@ -27,6 +27,8 @@
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #  endif
 
+#define H5_USE_110_API // define to use classical API
+
 #include "H5Cpp.h"
 
 #  if (defined(__GNUC__) || defined(__clang__)) && !defined(__ICC)
@@ -1631,6 +1633,7 @@ h5_read_dense_c ( hid_t                file,
         HERROR( ERR_CONSISTENCY, "", "" );
 
     auto  data_name = std::string( "" );
+    
     auto  status    = H5Ovisit( file, H5_INDEX_NAME, H5_ITER_INC, visit_func, & data_name );
 
     if ( status != 0 )
