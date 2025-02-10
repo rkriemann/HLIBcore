@@ -14,6 +14,8 @@
 #include "hpro/base/config.hh"
 #include "hpro/base/error.hh"
 #include "hpro/base/types.hh"
+#include <hpro/blas/cuda.hh>
+#include <hpro/blas/hip.hh>
 #include "hpro/parallel/NET.hh"
 
 namespace Hpro
@@ -112,6 +114,17 @@ INIT ()
         RTTI::print_registered();
     
     HINFO( "(INIT) initial memory consumption: " + Mem::to_string() );
+    
+    //
+    // set up GPUs
+    //
+
+    CUDA::init();
+    HIP::init();
+
+    //
+    // all is ready
+    //
     
     hlib_is_init = true;
 }
