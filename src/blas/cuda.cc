@@ -412,11 +412,57 @@ from_device ( handle_t                                   handle,
 
 #if HPRO_USE_CUDA == 1
 
+namespace
+{
+
+#define HPRO_CUDA_ORGQR_BUFSIZE( vtype, func )                      \
+    cusolverStatus_t                                                \
+    orgqr_buffersize (                                              \
+        cusolverDnHandle_t  handle,                                 \
+        int                 nrows,                                  \
+        int                 ncols,                                  \
+        int                 nelem,                                  \
+        const vtype *       A,                                      \
+        int                 ldA,                                    \
+        const vtype *       tau,                                    \
+        int *               lwork)                                  \
+{ return func( handle, nrows, ncols, nelem, A, ldA, tau, lwork ); }
+
+HPRO_CUDA_ORGQR_BUFSIZE( float,           cusolverDnSorgqr_bufferSize )
+HPRO_CUDA_ORGQR_BUFSIZE( double,          cusolverDnDorgqr_bufferSize )
+HPRO_CUDA_ORGQR_BUFSIZE( cuComplex,       cusolverDnCungqr_bufferSize )
+HPRO_CUDA_ORGQR_BUFSIZE( cuDoubleComplex, cusolverDnZungqr_bufferSize )
+
+#undef HPRO_CUDA_ORGQR_BUFSIZE
+
+#define HPRO_CUDA_ORGQR( vtype, func )                                  \
+    cusolverStatus_t                                                    \
+    orgqr ( cusolverDnHandle_t  handle,                                 \
+            int                 nrows,                                  \
+            int                 ncols,                                  \
+            int                 nelem,                                  \
+            vtype *             A,                                      \
+            int                 ldA,                                    \
+            const vtype *       tau,                                    \
+            vtype *             work,                                   \
+            int                 lwork,                                  \
+            int *               devInfo)                                \
+    { return func( handle, nrows, ncols, nelem, A, ldA, tau, work, lwork, devInfo ); }
+
+HPRO_CUDA_ORGQR( float,           cusolverDnSorgqr )
+HPRO_CUDA_ORGQR( double,          cusolverDnDorgqr )
+HPRO_CUDA_ORGQR( cuComplex,       cusolverDnCungqr )
+HPRO_CUDA_ORGQR( cuDoubleComplex, cusolverDnZungqr )
+
+#undef HPRO_CUDA_ORGQR
+
+}// namespace anonymous
+
 template < typename value_t >
 bool
 qr  ( const cuda_handle_t        handle_idx,
       BLAS::Matrix< value_t > &  M,
-      BLAS::Vector< value_t > &  tau )
+      BLAS::Matrix< value_t > &  R )
 {
     if ( ! has_cuda )
         return false;
@@ -433,8 +479,8 @@ qr  ( const cuda_handle_t        handle_idx,
 
     const auto  type_M = cuda_traits< value_t >::blas_type;
 
-    auto  dev_M   = device_alloc< cuda_value_t >( nrows * ncols );
-    auto  dev_tau = device_alloc< cuda_value_t >( minnm );
+    auto  dev_M    = device_alloc< cuda_value_t >( nrows * ncols );
+    auto  dev_tau  = device_alloc< cuda_value_t >( minnm );
     auto  dev_info = device_alloc< int >( 1 );
 
     if (! (( dev_M    != nullptr ) &&
@@ -470,7 +516,7 @@ qr  ( const cuda_handle_t        handle_idx,
                                                     type_M, dev_tau,
                                                     type_M,
                                                     & lwork_dev, & lwork_hst );
-
+        
         if ( retval != CUSOLVER_STATUS_SUCCESS )
         {
             HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXgeqrf\" (code: %d)", retval ) );
@@ -484,8 +530,31 @@ qr  ( const cuda_handle_t        handle_idx,
         }// if
     }
 
+    {
+        int   lwork  = 0;
+        auto  retval = orgqr_buffersize( handle.solver,
+                                         nrows, ncols, minnm,
+                                         dev_M, nrows,
+                                         dev_tau,
+                                         & lwork );
+        
+        if ( retval != CUSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXorgqr_bufferSize\" (code: %d)", retval ) );
+        
+            cusolverDnDestroyParams( params );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_M );
+
+            return false;
+        }// if
+
+        lwork_dev = std::max< size_t >( lwork_dev, lwork );
+    }
+
     auto  hst_work = std::vector< value_t >( lwork_hst );
-    auto  dev_work = device_alloc< value_t >( lwork_dev );
+    auto  dev_work = device_alloc< cuda_value_t >( lwork_dev );
 
     {
         auto  retval = cusolverDnXgeqrf( handle.solver, params,
@@ -501,6 +570,7 @@ qr  ( const cuda_handle_t        handle_idx,
         {
             HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXgeqrf\" (code: %d)", retval ) );
         
+            device_free( dev_work );
             cusolverDnDestroyParams( params );
             device_free( dev_info );
             device_free( dev_tau );
@@ -526,13 +596,63 @@ qr  ( const cuda_handle_t        handle_idx,
         return false;
     }// if
 
+    //
+    // get R
+    //
+
+    if ( ! from_device( handle, dev_M,   M   ) )
+    {
+        device_free( dev_work );
+        cusolverDnDestroyParams( params );
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_M );
+
+        return false;
+    }// if
+
+    if (( blas_int_t( R.nrows() ) != ncols ) || ( blas_int_t( R.ncols() ) != ncols ))
+        R = std::move( BLAS::Matrix< value_t >( ncols, ncols ) );
+    else
+        fill( value_t(0), R );
+        
+    for ( blas_int_t  i = 0; i < ncols; i++ )
+    {
+        BLAS::Vector< value_t >  colM( M, BLAS::Range( 0, i ), i );
+        BLAS::Vector< value_t >  colR( R, BLAS::Range( 0, i ), i );
+            
+        copy( colM, colR );
+    }// for
+
+    //
+    // compute Q
+    //
+
+    {
+        auto  retval = orgqr( handle.solver,
+                              nrows, ncols, minnm,
+                              dev_M, nrows,
+                              dev_tau,
+                              dev_work, lwork_dev,
+                              dev_info );
+        
+        if ( retval != CUSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(CUDA) qr : error in \"cusolverDnXorgqr\" (code: %d)", retval ) );
+        
+            device_free( dev_work );
+            cusolverDnDestroyParams( params );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_M );
+
+            return false;
+        }// if
+    }
+
     bool  retval = true;
-
-    if ( tau.length() != minnm )
-        tau = std::move( BLAS::Vector< value_t >( minnm ) );
-
+    
     if ( ! from_device( handle, dev_M,   M   ) ) retval = false;
-    if ( ! from_device( handle, dev_tau, tau ) ) retval = false;
 
     HPRO_CUSOLVER_CHECK( cusolverDnDestroyParams, ( params ) );
     device_free( dev_work );
@@ -549,7 +669,7 @@ template < typename value_t >
 bool
 qr  ( const cuda_handle_t        ,
       BLAS::Matrix< value_t > &  ,
-      BLAS::Vector< value_t > &   )
+      BLAS::Matrix< value_t > &   )
 {
     return false;
 }
@@ -560,7 +680,7 @@ qr  ( const cuda_handle_t        ,
     template bool                               \
     qr< T >  ( const cuda_handle_t  handle_idx, \
                BLAS::Matrix< T > &  M,          \
-               BLAS::Vector< T > &  tau )
+               BLAS::Matrix< T > &  tau )
 
 INST_QR( float );
 INST_QR( double );

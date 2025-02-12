@@ -63,6 +63,19 @@ release_handle ( const hip_handle_t  handle );
 
 //!
 //! \ingroup  BLAS_Module
+//! \brief   Compute QR factorisation of the n×m matrix \a A.
+//!          On exit \a A contains R and, together with \a tau
+//!          elementary reflectors to be used with "orgqr".
+//! \return  \c true if QR was computed successfully and \c false otherwise
+//!
+template < typename value_t >
+bool
+qr  ( const hip_handle_t         handle,
+      BLAS::Matrix< value_t > &  A,
+      BLAS::Matrix< value_t > &  R );
+
+//!
+//! \ingroup  BLAS_Module
 //! \brief    compute SVD decomposition \f$ A = U·S·V^H \f$ of the nxm matrix \a A with
 //!           n×min(n,m) matrix U, min(n,m)×min(n,m) matrix S (diagonal)
 //!           and m×min(n,m) matrix V; \a A will be overwritten with U upon exit

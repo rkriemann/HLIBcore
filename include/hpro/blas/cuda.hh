@@ -64,15 +64,14 @@ release_handle ( const cuda_handle_t  handle );
 //!
 //! \ingroup  BLAS_Module
 //! \brief   Compute QR factorisation of the n×m matrix \a A.
-//!          On exit \a A contains R and, together with \a tau
-//!          elementary reflectors to be used with "orgqr".
+//!          On exit \a A contains Q
 //! \return  \c true if QR was computed successfully and \c false otherwise
 //!
 template < typename value_t >
 bool
 qr  ( const cuda_handle_t        handle,
       BLAS::Matrix< value_t > &  A,
-      BLAS::Vector< value_t > &  tau );
+      BLAS::Matrix< value_t > &  R );
 
 //!
 //! \ingroup  BLAS_Module

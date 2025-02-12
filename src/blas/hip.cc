@@ -425,6 +425,349 @@ from_device ( handle_t                                  handle,
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// QR related functions
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#if HPRO_USE_HIP == 1
+
+namespace
+{
+
+//
+// geqrf
+//
+
+#define HPRO_HIP_GEQRF_BUFSIZE( vtype, func )       \
+    hipsolverStatus_t                               \
+    geqrf_bufferSize ( hipsolverHandle_t  handle,   \
+                       int                nrows,    \
+                       int                ncols,    \
+                       vtype *            A,        \
+                       int                ldA,      \
+                       int *              lwork )   \
+    { return func( handle, nrows, ncols, A, ldA, lwork ); }
+
+HPRO_HIP_GEQRF_BUFSIZE( float,            hipsolverSgeqrf_bufferSize )
+HPRO_HIP_GEQRF_BUFSIZE( double,           hipsolverDgeqrf_bufferSize )
+HPRO_HIP_GEQRF_BUFSIZE( hipFloatComplex,  hipsolverCgeqrf_bufferSize )
+HPRO_HIP_GEQRF_BUFSIZE( hipDoubleComplex, hipsolverZgeqrf_bufferSize )
+
+#undef HPRO_HIP_GEQRF_BUFSIZE
+
+#define HPRO_HIP_GEQRF( vtype, func )                                   \
+    hipsolverStatus_t                                                   \
+    geqrf ( hipsolverHandle_t  handle,                                  \
+            int                nrows,                                   \
+            int                ncols,                                   \
+            vtype *            A,                                       \
+            int                ldA,                                     \
+            vtype *            tau,                                     \
+            vtype *            work,                                    \
+            int                lwork,                                   \
+            int *              devInfo )                                \
+    { return func( handle, nrows, ncols, A, ldA, tau, work, lwork, devInfo ); }
+
+HPRO_HIP_GEQRF( float,            hipsolverSgeqrf )
+HPRO_HIP_GEQRF( double,           hipsolverDgeqrf )
+HPRO_HIP_GEQRF( hipFloatComplex,  hipsolverCgeqrf )
+HPRO_HIP_GEQRF( hipDoubleComplex, hipsolverZgeqrf )
+
+#undef HPRO_HIP_GEQRF
+
+//
+// orgqr
+//
+
+#define HPRO_HIP_ORGQR_BUFSIZE( vtype, func )       \
+    hipsolverStatus_t                               \
+    orgqr_bufferSize ( hipsolverHandle_t  handle,   \
+                       int                nrows,    \
+                       int                ncols,    \
+                       int                nelem,    \
+                       vtype *            A,        \
+                       int                ldA,      \
+                       vtype *            tau,      \
+                       int *              lwork )   \
+    { return func( handle, nrows, ncols, nelem, A, ldA, tau, lwork ); }
+
+HPRO_HIP_ORGQR_BUFSIZE( float,            hipsolverSorgqr_bufferSize )
+HPRO_HIP_ORGQR_BUFSIZE( double,           hipsolverDorgqr_bufferSize )
+HPRO_HIP_ORGQR_BUFSIZE( hipFloatComplex,  hipsolverCungqr_bufferSize )
+HPRO_HIP_ORGQR_BUFSIZE( hipDoubleComplex, hipsolverZungqr_bufferSize )
+
+#undef HPRO_HIP_ORGQR_BUFSIZE
+
+#define HPRO_HIP_ORGQR( vtype, func )                                   \
+    hipsolverStatus_t                                                   \
+    orgqr ( hipsolverHandle_t  handle,                                  \
+            int                nrows,                                   \
+            int                ncols,                                   \
+            int                nelem,                                   \
+            vtype *            A,                                       \
+            int                ldA,                                     \
+            vtype *            tau,                                     \
+            vtype *            work,                                    \
+            int                lwork,                                   \
+            int *              devInfo )                                \
+    { return func( handle, nrows, ncols, nelem, A, ldA, tau, work, lwork, devInfo ); }
+
+HPRO_HIP_ORGQR( float,            hipsolverSorgqr )
+HPRO_HIP_ORGQR( double,           hipsolverDorgqr )
+HPRO_HIP_ORGQR( hipFloatComplex,  hipsolverCungqr )
+HPRO_HIP_ORGQR( hipDoubleComplex, hipsolverZungqr )
+
+#undef HPRO_HIP_ORGQR
+
+
+}// namespace anonymous
+
+template < typename value_t >
+bool
+qr ( const hip_handle_t         handle_idx,
+     BLAS::Matrix< value_t > &  A,
+     BLAS::Matrix< value_t > &  R )
+{
+    if ( ! has_hip )
+        return false;
+
+    if ( handle_idx == INVALID_HANDLE )
+        return false;
+
+    // only support for nrows >= ncols
+    if ( A.nrows() < A.ncols() )
+        return false;
+
+    using  real_t      = real_type_t< value_t >;
+    using  hip_value_t = typename hip_traits< value_t >::hip_type;
+    
+    auto        handle = handles[ handle_idx ];
+    const auto  nrows  = A.nrows();
+    const auto  ncols  = A.ncols();
+    const auto  mindim = std::min( nrows, ncols );
+
+    //
+    // allocate memory on device and copy data
+    //
+
+    auto  dev_A    = device_alloc< hip_value_t >( nrows * ncols );
+    auto  dev_tau  = device_alloc< hip_value_t >( mindim );
+    auto  dev_info = device_alloc< int >( 1 );
+
+    if (! (( dev_A    != nullptr ) &&
+           ( dev_tau  != nullptr ) &&
+           ( dev_info != nullptr )) )
+    {
+        HWARNING( "(HIP) qr : could not allocate memory on device" );
+        
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+
+        return false;
+    }// if
+        
+    if ( ! to_device( handle, A, dev_A ) )
+    {
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+
+        return false;
+    }// if
+
+    //
+    // determine size of and allocate work space
+    //
+    
+    int  lwork_dev = 0;
+    
+    {
+        int   work_geqrf = 0;
+        int   work_orgqr = 0;
+
+        {
+            auto  retval = geqrf_bufferSize( handle.solver, nrows, ncols, dev_A, nrows, & work_geqrf );
+
+            if ( retval != HIPSOLVER_STATUS_SUCCESS )
+            {
+                HWARNING( to_string( "(HIP) qr : error in \"hipsolverXgeqrf_bufferSize\" (code: %d)", retval ) );
+                
+                device_free( dev_info );
+                device_free( dev_tau );
+                device_free( dev_A );
+                return false;
+            }// if
+        }
+
+        {
+            auto  retval = orgqr_bufferSize( handle.solver, nrows, ncols, mindim, dev_A, nrows, dev_tau, & work_orgqr );
+
+            if ( retval != HIPSOLVER_STATUS_SUCCESS )
+            {
+                HWARNING( to_string( "(HIP) qr : error in \"hipsolverXorgqr_bufferSize\" (code: %d)", retval ) );
+                
+                device_free( dev_info );
+                device_free( dev_tau );
+                device_free( dev_A );
+                return false;
+            }// if
+        }
+
+        lwork_dev = std::max( work_geqrf, work_orgqr );
+    }
+
+    auto  dev_work = device_alloc< hip_value_t >( lwork_dev );
+
+    if ( dev_work == nullptr )
+    {
+        HWARNING( "(HIP) qr : could not allocate memory on device" );
+        
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+
+        return false;
+    }// if
+
+    //
+    // perform QR
+    //
+    
+    {
+        auto  retval = geqrf( handle.solver,
+                              nrows, ncols,
+                              dev_A, nrows,
+                              dev_tau,
+                              dev_work, lwork_dev,
+                              dev_info );
+
+        if ( retval != HIPSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(HIP) qr : error in \"hipsolverXgeqrf\" (code: %d)", retval ) );
+            
+            device_free( dev_work );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_A );
+            return false;
+        }// if
+    }
+
+    auto  info = from_device< int >( handle, dev_info );
+
+    if ( info != 0 )
+    {
+        if ( info < 0 ) { HWARNING( "(HIP) qr : " + to_string( "error in argument %d", info ) ); }
+        else            { HWARNING( "(HIP) qr : " + to_string( "no convergence during SVD: %d", info ) ); }
+
+        device_free( dev_work );
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+        return false;
+    }// if
+    
+    //
+    // copy upper triangular matrix to R
+    //
+
+    if ( ! from_device( handle, dev_A,  A ) )
+    {
+        HWARNING( "(HIP) qr : error in getting R from device" );
+            
+        device_free( dev_work );
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+        return false;
+    }// if
+    
+    
+    if (( blas_int_t( R.nrows() ) != ncols ) || ( blas_int_t( R.ncols() ) != ncols ))
+        R = std::move( BLAS::Matrix< value_t >( ncols, ncols ) );
+    else
+        fill( value_t(0), R );
+        
+    for ( blas_int_t  i = 0; i < ncols; i++ )
+    {
+        BLAS::Vector< value_t >  colA( A, BLAS::Range( 0, i ), i );
+        BLAS::Vector< value_t >  colR( R, BLAS::Range( 0, i ), i );
+            
+        copy( colA, colR );
+    }// for
+
+    //
+    // compute Q
+    //
+
+    {
+        auto  retval = orgqr( handle.solver,
+                              nrows, ncols, mindim,
+                              dev_A, nrows,
+                              dev_tau,
+                              dev_work, lwork_dev,
+                              dev_info );
+
+        if ( retval != HIPSOLVER_STATUS_SUCCESS )
+        {
+            HWARNING( to_string( "(HIP) qr : error in \"hipsolverXorgqr\" (code: %d)", retval ) );
+            
+            device_free( dev_work );
+            device_free( dev_info );
+            device_free( dev_tau );
+            device_free( dev_A );
+            return false;
+        }// if
+    }
+    
+    if ( ! from_device( handle, dev_A,  A ) )
+    {
+        HWARNING( "(HIP) qr : error in getting Q from device" );
+            
+        device_free( dev_work );
+        device_free( dev_info );
+        device_free( dev_tau );
+        device_free( dev_A );
+        return false;
+    }// if
+
+    device_free( dev_work );
+    device_free( dev_info );
+    device_free( dev_tau );
+    device_free( dev_A );
+
+    return true;
+}
+
+#else  // HPRO_USE_HIP
+
+template < typename value_t >
+bool
+qr ( const hip_handle_t         handle_idx,
+     BLAS::Matrix< value_t > &  A,
+     BLAS::Matrix< value_t > &  R )
+{
+    return false;
+}
+
+#endif // HPRO_USE_HIP
+
+#define HPRO_HIP_INST_QR( T )                   \
+    template bool                               \
+    qr< T >  ( const hip_handle_t   handle_idx, \
+               BLAS::Matrix< T > &  A,          \
+               BLAS::Matrix< T > &  R )
+
+HPRO_HIP_INST_QR( float );
+HPRO_HIP_INST_QR( double );
+HPRO_HIP_INST_QR( std::complex< float > );
+HPRO_HIP_INST_QR( std::complex< double > );
+
+#undef HPRO_HIP_INST_QR
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // SVD related functions
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -446,140 +789,46 @@ gesvd_bufferSize ( handle_t     handle,
                    int          ncols,
                    int *        lwork );
 
-template <>
-hipsolverStatus_t
-gesvd_bufferSize< float > ( handle_t      handle,
-                            signed char   jobu,
-                            signed char   jobv,
-                            int           nrows,
-                            int           ncols,
-                            int *         lwork )
-{
-    return hipsolverSgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
-}
+#define HPRO_HIP_GESVD_BUFSIZE( vtype, func )                           \
+    template <>                                                         \
+    hipsolverStatus_t                                                   \
+    gesvd_bufferSize< vtype > ( handle_t      handle,                   \
+                                signed char   jobu,                     \
+                                signed char   jobv,                     \
+                                int           nrows,                    \
+                                int           ncols,                    \
+                                int *         lwork )                   \
+    { return func( handle.solver, jobu, jobv, nrows, ncols, lwork ); }
 
-template <>
-hipsolverStatus_t
-gesvd_bufferSize< double > ( handle_t     handle,
-                             signed char  jobu,
-                             signed char  jobv,
-                             int          nrows,
-                             int          ncols,
-                             int *        lwork )
-{
-    return hipsolverDgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
-}
+HPRO_HIP_GESVD_BUFSIZE( float,            hipsolverSgesvd_bufferSize )
+HPRO_HIP_GESVD_BUFSIZE( double,           hipsolverDgesvd_bufferSize )
+HPRO_HIP_GESVD_BUFSIZE( hipFloatComplex,  hipsolverCgesvd_bufferSize )
+HPRO_HIP_GESVD_BUFSIZE( hipDoubleComplex, hipsolverZgesvd_bufferSize )
 
-template <>
-hipsolverStatus_t
-gesvd_bufferSize< hipFloatComplex > ( handle_t      handle,
-                                      signed char   jobu,
-                                      signed char   jobv,
-                                      int           nrows,
-                                      int           ncols,
-                                      int *         lwork )
-{
-    return hipsolverCgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
-}
+#undef HPRO_HIP_GESVD_BUFSIZE
 
-template <>
-hipsolverStatus_t
-gesvd_bufferSize< hipDoubleComplex > ( handle_t     handle,
-                                       signed char  jobu,
-                                       signed char  jobv,
-                                       int          nrows,
-                                       int          ncols,
-                                       int *        lwork )
-{
-    return hipsolverZgesvd_bufferSize( handle.solver, jobu, jobv, nrows, ncols, lwork );
-}
+#define HPRO_HIP_GESVD( vtype, rtype, func )    \
+    hipsolverStatus_t                           \
+    gesvd ( handle_t     handle,                \
+            signed char  jobu,                  \
+            signed char  jobv,                  \
+            int          nrows,                 \
+            int          ncols,                 \
+            vtype *      A, int lda,            \
+            rtype *      S,                     \
+            vtype *      U, int ldu,            \
+            vtype *      V, int ldv,            \
+            vtype *      work, int lwork,       \
+            rtype *      rwork,                 \
+            int *        info )                 \
+{ return func( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info ); }
 
-template < typename value_t >
-hipsolverStatus_t
-gesvd ( handle_t     handle,
-        signed char  jobu,
-        signed char  jobv,
-        int          nrows,
-        int          ncols,
-        value_t *    A, int lda,
-        typename hip_traits< value_t >::real_type *  S,
-        value_t *    U, int ldu,
-        value_t *    V, int ldv,
-        value_t *    work, int lwork,
-        typename hip_traits< value_t >::real_type *  rwork,
-        int *        devInfo);
+HPRO_HIP_GESVD(  float,  float, hipsolverSgesvd )
+HPRO_HIP_GESVD( double, double, hipsolverDgesvd )
+HPRO_HIP_GESVD(  hipFloatComplex,  float, hipsolverCgesvd )
+HPRO_HIP_GESVD( hipDoubleComplex, double, hipsolverZgesvd )
 
-template <>
-hipsolverStatus_t
-gesvd< float > ( handle_t     handle,
-                 signed char  jobu,
-                 signed char  jobv,
-                 int          nrows,
-                 int          ncols,
-                 float *      A, int lda,
-                 float *      S,
-                 float *      U, int ldu,
-                 float *      V, int ldv,
-                 float *      work, int lwork,
-                 float *      rwork,
-                 int *        info)
-{
-    return hipsolverSgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
-}
-
-template <>
-hipsolverStatus_t
-gesvd< double > ( handle_t     handle,
-                  signed char  jobu,
-                  signed char  jobv,
-                  int          nrows,
-                  int          ncols,
-                  double *     A, int lda,
-                  double *     S,
-                  double *     U, int ldu,
-                  double *     V, int ldv,
-                  double *     work, int lwork,
-                  double *     rwork,
-                  int *        info)
-{
-    return hipsolverDgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
-}
-
-template <>
-hipsolverStatus_t
-gesvd< hipFloatComplex > ( handle_t           handle,
-                           signed char        jobu,
-                           signed char        jobv,
-                           int                nrows,
-                           int                ncols,
-                           hipFloatComplex *  A, int lda,
-                           float *            S,
-                           hipFloatComplex *  U, int ldu,
-                           hipFloatComplex *  V, int ldv,
-                           hipFloatComplex *  work, int lwork,
-                           float *            rwork,
-                           int *              info)
-{
-    return hipsolverCgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
-}
-
-template <>
-hipsolverStatus_t
-gesvd< hipDoubleComplex > ( handle_t            handle,
-                            signed char         jobu,
-                            signed char         jobv,
-                            int                 nrows,
-                            int                 ncols,
-                            hipDoubleComplex *  A, int lda,
-                            double *            S,
-                            hipDoubleComplex *  U, int ldu,
-                            hipDoubleComplex *  V, int ldv,
-                            hipDoubleComplex *  work, int lwork,
-                            double *            rwork,
-                            int *               info)
-{
-    return hipsolverZgesvd( handle.solver, jobu, jobv, nrows, ncols, A, lda, S, U, ldu, V, ldv, work, lwork, rwork, info );
-}
+#undef HPRO_HIP_GESVD
 
 }// namespace anonymous
 
@@ -594,7 +843,7 @@ gesvd< hipDoubleComplex > ( handle_t            handle,
     
 template < typename value_t >
 bool
-svd  ( const hip_handle_t                       handle_idx,
+svd  ( const hip_handle_t                        handle_idx,
        BLAS::Matrix< value_t > &                 A,
        BLAS::Vector< real_type_t< value_t > > &  S,
        BLAS::Matrix< value_t > &                 V )
@@ -671,16 +920,16 @@ svd  ( const hip_handle_t                       handle_idx,
     auto  dev_work = device_alloc< hip_value_t >( lwork_dev );
         
     {
-        auto  retval = gesvd< hip_value_t >( handle,
-                                             jobU, jobV,
-                                             nrows, ncols,
-                                             dev_A, nrows,
-                                             dev_S,
-                                             dev_U, nrows,
-                                             dev_VT, minnm,
-                                             dev_work, lwork_dev,
-                                             dev_rwork,
-                                             dev_info );
+        auto  retval = gesvd( handle,
+                              jobU, jobV,
+                              nrows, ncols,
+                              dev_A, nrows,
+                              dev_S,
+                              dev_U, nrows,
+                              dev_VT, minnm,
+                              dev_work, lwork_dev,
+                              dev_rwork,
+                              dev_info );
 
         if ( retval != HIPSOLVER_STATUS_SUCCESS )
         {
@@ -758,18 +1007,18 @@ svd  ( const hip_handle_t                       ,
 
 #endif
 
-#define INST_SVD( T )                                           \
+#define HPRO_HIP_INST_SVD( T )                                  \
     template bool                                               \
     svd< T >  ( const hip_handle_t                  handle_idx, \
                 BLAS::Matrix< T > &                 U,          \
                 BLAS::Vector< real_type_t< T > > &  S,          \
                 BLAS::Matrix< T > &                 V )
 
-INST_SVD( float );
-INST_SVD( double );
-INST_SVD( std::complex< float > );
-INST_SVD( std::complex< double > );
+HPRO_HIP_INST_SVD( float );
+HPRO_HIP_INST_SVD( double );
+HPRO_HIP_INST_SVD( std::complex< float > );
+HPRO_HIP_INST_SVD( std::complex< double > );
 
-#undef INST_SVD
+#undef HPRO_HIP_INST_SVD
 
 }}// namespace Hpro::HIP

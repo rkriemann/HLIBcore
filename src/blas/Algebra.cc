@@ -14,7 +14,7 @@
 #include <mutex>
 
 #include <hpro/base/config.hh>
-#include <hpro/blas/cuda.hh>
+#include <hpro/blas/gpu.hh>
 
 #include "TRNG.hh"
 
@@ -959,15 +959,15 @@ qr ( Matrix< value_t > &  A,
         auto  AT = Matrix< value_t >( A.ncols(), A.nrows() );
         auto  L  = Matrix< value_t >();
 
-        DBG::write( A, "A.mat", "A" );
+        // DBG::write( A, "A.mat", "A" );
         
         copy( adjoint(A), AT );
-        DBG::write( AT, "AT.mat", "AT" );
+        // DBG::write( AT, "AT.mat", "AT" );
 
         lq( AT, L );
 
-        DBG::write( AT, "Q.mat", "Q" );
-        DBG::write( L, "L.mat", "L" );
+        // DBG::write( AT, "Q.mat", "Q" );
+        // DBG::write( L, "L.mat", "L" );
 
         if (( A.nrows() != AT.ncols() ) || ( A.ncols() != AT.nrows() ))
             A = std::move( Matrix< value_t >( AT.ncols(), AT.nrows() ) );
@@ -986,66 +986,80 @@ qr ( Matrix< value_t > &  A,
     // try GPU if large enough
     //
     
+    bool  use_cpu = true;
+
     if ( std::min( A.nrows(), A.ncols() ) >= gpu_qr_size< value_t >() )
     {
-        const auto  handle = CUDA::request_handle();
+        LOG_COUNTER( gpu );
+        LOG_TIC( gpu );
+        
+        const auto  handle = GPU::request_handle();
 
-        if ( handle != CUDA::INVALID_HANDLE )
+        if ( handle != GPU::INVALID_HANDLE )
         {
-            const auto  nrows = A.nrows();
-            const auto  ncols = A.ncols();
-            const auto  minrc = std::min( nrows, ncols );
-            auto        tau   = BLAS::Vector< value_t >( minrc );
-                
-            if ( CUDA::qr( handle, A, tau ) )
-            {
-                //
-                // copy upper triangular matrix to R
-                //
+            if ( GPU::qr( handle, A, R ) )
+                use_cpu = false;
 
-                if (( blas_int_t( R.nrows() ) != ncols ) || ( blas_int_t( R.ncols() ) != ncols ))
-                    R = std::move( Matrix< value_t >( ncols, ncols ) );
-                else
-                    fill( value_t(0), R );
+        //     const auto  nrows = A.nrows();
+        //     const auto  ncols = A.ncols();
+        //     const auto  minrc = std::min( nrows, ncols );
+        //     auto        tau   = BLAS::Vector< value_t >( minrc );
+                
+        //     if ( GPU::qr( handle, A, tau ) )
+        //     {
+        //         //
+        //         // copy upper triangular matrix to R
+        //         //
+
+        //         if (( blas_int_t( R.nrows() ) != ncols ) || ( blas_int_t( R.ncols() ) != ncols ))
+        //             R = std::move( Matrix< value_t >( ncols, ncols ) );
+        //         else
+        //             fill( value_t(0), R );
     
-                for ( blas_int_t  i = 0; i < ncols; i++ )
-                {
-                    Vector< value_t >  colA( A, Range( 0, i ), i );
-                    Vector< value_t >  colR( R, Range( 0, i ), i );
+        //         for ( blas_int_t  i = 0; i < ncols; i++ )
+        //         {
+        //             Vector< value_t >  colA( A, Range( 0, i ), i );
+        //             Vector< value_t >  colR( R, Range( 0, i ), i );
 
-                    copy( colA, colR );
-                }// for
+        //             copy( colA, colR );
+        //         }// for
 
-                //
-                // compute Q
-                //
+        //         //
+        //         // compute Q
+        //         //
 
-                value_t  dummy      = value_t(0); // non-NULL workspace for Intel MKL
-                value_t  work_query = value_t(0);
-                auto     info       = blas_int_t(0);
+        //         value_t  dummy      = value_t(0); // non-NULL workspace for Intel MKL
+        //         value_t  work_query = value_t(0);
+        //         auto     info       = blas_int_t(0);
 
-                orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
+        //         orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), & dummy, & work_query, LAPACK_WS_QUERY, info );
     
-                if ( info < 0 )
-                    HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
+        //         if ( info < 0 )
+        //             HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
 
-                // adjust work space size
-                auto  lwork = blas_int_t( std::real( work_query ) );
-                auto  work  = std::vector< value_t >( lwork );
+        //         // adjust work space size
+        //         auto  lwork = blas_int_t( std::real( work_query ) );
+        //         auto  work  = Hpro::vector< value_t >( lwork );
 
-                MKL_SEQ_START;
+        //         MKL_SEQ_START;
                 
-                orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), tau.data(), work.data(), lwork, info );
+        //         orgqr( nrows, ncols, ncols, A.data(), blas_int_t( A.col_stride() ), tau.data(), work.data(), lwork, info );
 
-                MKL_SEQ_END;
+        //         MKL_SEQ_END;
                 
-                if ( info < 0 )
-                    HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
+        //         if ( info < 0 )
+        //             HERROR( ERR_ARG, "(BLAS) qr", to_string( "argument %d to LAPACK::orgqr", -info ) );
 
-                // do not fall back to CPU based computation
-                return;
-            }// if
+        //         // do not fall back to CPU based computation
+        //         GPU::release_handle( handle );
+        //         LOG_TOC( gpu );
+        //         LOG_TOC( qr );
+        //         return;
+        //     }// if
         }// if
+
+        GPU::release_handle( handle );
+        LOG_TOC( gpu );
     }// if
 
     //
@@ -2914,9 +2928,9 @@ svd    ( Matrix< value_t > &                                U,
         
     if ( std::min( U.nrows(), U.ncols() ) >= gpu_svd_size< value_t >() )
     {
-        const auto  handle = CUDA::request_handle();
+        const auto  handle = GPU::request_handle();
 
-        if ( handle != CUDA::INVALID_HANDLE )
+        if ( handle != GPU::INVALID_HANDLE )
         {
             if ( U.nrows() < U.ncols() )
             {
@@ -2928,19 +2942,19 @@ svd    ( Matrix< value_t > &                                U,
 
                 // LOG::print( "using GPU (adjoint)" );
                 
-                if ( CUDA::svd( handle, V, S, U ) )
+                if ( GPU::svd( handle, V, S, U ) )
                     use_cpu = false;
             }// if
             else
             {
                 // LOG::print( "using GPU" );
 
-                if ( CUDA::svd( handle, U, S, V ) )
+                if ( GPU::svd( handle, U, S, V ) )
                     use_cpu = false;
             }// else
         }// if
 
-        CUDA::release_handle( handle );
+        GPU::release_handle( handle );
     }// if
 
     //

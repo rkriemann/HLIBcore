@@ -24,7 +24,7 @@
 #include <hpro/blas/Matrix.hh>
 #include <hpro/blas/Algebra.hh>
 #include <hpro/blas/Range.hh>
-#include <hpro/blas/cuda.hh>
+#include <hpro/blas/gpu.hh>
 #include <hpro/blas/matrix_view.hh>
 #include <hpro/blas/test.hh>
 
