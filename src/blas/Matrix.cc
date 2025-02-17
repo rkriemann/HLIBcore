@@ -238,6 +238,287 @@ random< std::complex< double > > ( const size_t  length );
     
 }// namespace BLAS
 
+///////////////////////////////////////////////////////////////////////////
+//
+// matrix permutation functions
+//
+///////////////////////////////////////////////////////////////////////////
+
+namespace BLAS
+{
+
+namespace
+{
+
+//
+// copy row/column <j> to row/column <i> in matrix M
+//
+template <typename value_t>
+void
+copy ( Matrix< value_t > &  M,
+       const bool           sort_rows,
+       const idx_t          i,
+       const idx_t          j )
+{
+    if ( sort_rows )
+    {
+        auto  row_i = M.row( i );
+        auto  row_j = M.row( j );
+            
+        copy( row_j, row_i );
+    }// if
+    else
+    {
+        auto  col_i = M.column( i );
+        auto  col_j = M.column( j );
+            
+        copy( col_j, col_i );
+    }// else
+}
+
+//
+// copy row/column <i> to vector <tmp>
+//
+template <typename T>
+void
+copy ( Matrix< T > &  M,
+       const bool     sort_rows,
+       const idx_t    i,
+       Vector< T > &  tmp )
+{
+    if ( sort_rows )
+    {
+        auto  row_i = M.row( i );
+            
+        copy( row_i, tmp );
+    }// if
+    else
+    {
+        auto  col_i = M.column( i );
+            
+        copy( col_i, tmp );
+    }// else
+}
+
+//
+// copy vector <tmp> to row/column <i>
+//
+template <typename T>
+void
+copy ( Vector< T > &  tmp,
+       const bool     sort_rows,
+       const idx_t    i,
+       Matrix< T > &  M )
+{
+    if ( sort_rows )
+    {
+        auto  row_i = M.row( i );
+            
+        copy( tmp, row_i );
+    }// if
+    else
+    {
+        auto  col_i = M.column( i );
+            
+        copy( tmp, col_i );
+    }// else
+}
+
+//
+// swap the rows/columns <i> and <j> in matrix M
+//
+template <typename T>
+void
+swap ( Matrix< T > &  M,
+       const bool     sort_rows,
+       const idx_t    i,
+       const idx_t    j,
+       Vector< T > &  tmp )
+{
+    if ( sort_rows )
+    {
+        auto  row_i = M.row( i );
+        auto  row_j = M.row( j );
+
+        copy( row_i, tmp );
+        copy( row_j, row_i );
+        copy( tmp,   row_j );
+    }// if
+    else
+    {
+        auto  col_i = M.column( i );
+        auto  col_j = M.column( j );
+
+        copy( col_i, tmp );
+        copy( col_j, col_i );
+        copy( tmp,   col_j );
+    }// else
+}
+
+//
+// sort rows/columns of matrix according to given permutation
+//
+template <typename T>
+void
+matrix_sort( Matrix< T > &   M,
+             const bool      sort_rows,
+             TPermutation &  perm,
+             const idx_t     lb,
+             const idx_t     ub,
+             Vector< T > &   tmp )
+{
+    if ( lb >= ub ) return;
+
+    if ( (ub - lb) < 20 )
+    {
+        //
+        // apply insertion sort for small ranges
+        //
+
+        for ( idx_t  i = lb+1; i <= ub; i++ )
+        {
+            const idx_t  v = perm[i];
+            idx_t        j = i-1;
+
+            copy( M, sort_rows, i, tmp );
+            
+            while (( j >= 0 ) && ( perm[j] > v ))
+            {
+                copy( M, sort_rows, j+1, j );
+                perm[j+1] = perm[j];
+                j--;
+            }// if
+
+            copy( tmp, sort_rows, j+1, M );
+            perm[j+1] = v;
+        }// for
+    }// if
+    else
+    {
+        //
+        // apply quick sort for standard ranges
+        //
+
+        idx_t        i         = lb;
+        idx_t        j         = ub;
+        const idx_t  mid       = (lb + ub) / 2;
+        idx_t        choice[3] = { perm[lb], perm[mid], perm[ub] };
+        idx_t        pivot;
+
+        // choose pivot (median-of-three)
+        if ( choice[0] > choice[1] ) std::swap( choice[0], choice[1] );
+        if ( choice[0] > choice[2] ) std::swap( choice[0], choice[2] );
+        if ( choice[1] > choice[2] ) std::swap( choice[1], choice[2] );
+        pivot = choice[1];
+
+        // partition
+        while ( i < j )
+        {
+            while ( perm[i] < pivot   ) i++;
+            while ( pivot   < perm[j] ) j--;
+
+            if ( i < j )
+            {
+                swap( M, sort_rows, i, j, tmp );
+                std::swap( perm[i], perm[j] );
+            }// if
+        }// while
+
+        // recursion
+        matrix_sort( M, sort_rows, perm, lb, i-1, tmp );
+        matrix_sort( M, sort_rows, perm, i+1, ub, tmp );
+    }// else
+}
+
+}// namespace anonymous
+
+//
+// permute rows/columns in matrix
+//
+template < typename value_t >
+void
+permute ( Matrix< value_t > &   M,
+          const TPermutation &  row_perm,
+          const TPermutation &  col_perm )
+{
+#if 1
+
+    //
+    // apply permutations by sorting the rows/columns
+    // simultaneously to sorting permutations, thereby
+    // reverting order
+    //
+    
+    TPermutation       perm;
+    Vector< value_t >  tmp;
+
+    {
+        tmp  = Vector< value_t >( M.ncols() );
+        perm = row_perm;
+        
+        matrix_sort( M, true, perm, 0, idx_t(M.nrows())-1, tmp );
+    }// if
+    
+    {
+        tmp  = Vector< value_t >( M.nrows() );
+        perm = col_perm;
+        
+        matrix_sort( M, false, perm, 0, idx_t(M.ncols())-1, tmp );
+    }// if
+        
+#else
+    
+    auto        T = copy( M );
+    const uint  n = T.nrows();
+    const uint  m = T.ncols();
+    
+    //
+    // apply row permutation first by copying the old rows
+    // to the new position defined by the permutation
+    //
+
+    {
+        for ( uint i = 0; i < n; i++ )
+        {
+            const uint  pi = row_perm.permute( i );
+            
+            auto  M_i  = M.row( i );
+            auto  T_pi = T.row( pi );
+            
+            copy( M_i, T_pi );
+        }// for
+
+        copy( T, M );
+    }// if
+
+    //
+    // now apply column permutation in the same way
+    //
+
+    {
+        for ( uint j = 0; j < m; j++ )
+        {
+            const uint  pj = col_perm.permute( j );
+
+            auto  M_j  = M.row( j );
+            auto  T_pj = T.row( pj );
+            
+            copy( M_j, T_pj );
+        }// for
+
+        copy( T, M );
+    }// if
+    
+#endif
+}
+
+template void permute< float >   ( BLAS::Matrix< float > &,  const TPermutation &,  const TPermutation & );
+template void permute< double >  ( BLAS::Matrix< double > &, const TPermutation &,  const TPermutation & );
+template void permute< std::complex< float > >   ( BLAS::Matrix< std::complex< float > > &,  const TPermutation &,  const TPermutation & );
+template void permute< std::complex< double > >  ( BLAS::Matrix< std::complex< double > > &, const TPermutation &,  const TPermutation & );
+
+}// namespace BLAS
+
 //////////////////////////////////////////////////////////
 //
 // debug helpers

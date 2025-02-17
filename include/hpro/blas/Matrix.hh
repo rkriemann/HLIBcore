@@ -17,6 +17,8 @@
 #include "hpro/blas/MatrixBase.hh"
 #include "hpro/blas/Vector.hh"
 
+#include "hpro/cluster/TPermutation.hh"
+
 namespace Hpro
 {
 
@@ -436,6 +438,15 @@ template < typename T >
 Matrix< T >
 random ( const size_t  nrows,
          const size_t  ncols );
+
+//
+// permute matrix
+//
+template < typename value_t >
+void
+permute ( Matrix< value_t > &   M,
+          const TPermutation &  row_perm,
+          const TPermutation &  col_perm );
 
 }// namespace BLAS
 

@@ -1066,78 +1066,80 @@ void
 TDenseMatrix< value_t >::permute ( const TPermutation *  row_perm,
                                    const TPermutation *  col_perm )
 {
-#if 1
-
-    //
-    // apply permutations by sorting the rows/columns
-    // simultaneously to sorting permutations, thereby
-    // reverting order
-    //
+    BLAS::permute( blas_mat(), *row_perm, *col_perm );
     
-    TPermutation   perm;
+// #if 1
 
-    B::Vector< value_t >  tmp;
-
-    if ( row_perm != nullptr )
-    {
-        tmp  = B::Vector< value_t >( cols() );
-        perm = * row_perm;
-        matrix_sort( blas_mat(), true, perm, 0, idx_t(rows())-1, tmp );
-    }// if
+//     //
+//     // apply permutations by sorting the rows/columns
+//     // simultaneously to sorting permutations, thereby
+//     // reverting order
+//     //
     
-    if ( col_perm != nullptr )
-    {
-        tmp  = B::Vector< value_t >( rows() );
-        perm = * col_perm;
-        matrix_sort( blas_mat(), false, perm, 0, idx_t(cols())-1, tmp );
-    }// if
+//     TPermutation   perm;
+
+//     B::Vector< value_t >  tmp;
+
+//     if ( row_perm != nullptr )
+//     {
+//         tmp  = B::Vector< value_t >( cols() );
+//         perm = * row_perm;
+//         matrix_sort( blas_mat(), true, perm, 0, idx_t(rows())-1, tmp );
+//     }// if
+    
+//     if ( col_perm != nullptr )
+//     {
+//         tmp  = B::Vector< value_t >( rows() );
+//         perm = * col_perm;
+//         matrix_sort( blas_mat(), false, perm, 0, idx_t(cols())-1, tmp );
+//     }// if
         
-#else
+// #else
     
-    unique_ptr< TDenseMatrix >  T( ptrcast( copy().release(), TDenseMatrix ) );
-    const uint                  n = rows();
-    const uint                  m = cols();
+//     unique_ptr< TDenseMatrix >  T( ptrcast( copy().release(), TDenseMatrix ) );
+//     const uint                  n = rows();
+//     const uint                  m = cols();
     
-    //
-    // apply row permutation first by copying the old rows
-    // to the new position defined by the permutation
-    //
+//     //
+//     // apply row permutation first by copying the old rows
+//     // to the new position defined by the permutation
+//     //
 
-    if ( row_perm != nullptr )
-    {
-        for ( uint i = 0; i < n; i++ )
-        {
-            const uint pi = row_perm->permute( i );
+//     if ( row_perm != nullptr )
+//     {
+//         for ( uint i = 0; i < n; i++ )
+//         {
+//             const uint pi = row_perm->permute( i );
             
-            B::Vector< value_t >  this_i( blas_mat().row( i ) );
-            B::Vector< value_t >  T_pi( T->blas_mat().row( pi ) );
+//             B::Vector< value_t >  this_i( blas_mat().row( i ) );
+//             B::Vector< value_t >  T_pi( T->blas_mat().row( pi ) );
             
-            B::copy( this_i, T_pi );
-        }// for
+//             B::copy( this_i, T_pi );
+//         }// for
 
-        B::copy( T->blas_mat(), blas_mat() );
-    }// if
+//         B::copy( T->blas_mat(), blas_mat() );
+//     }// if
 
-    //
-    // now apply column permutation in the same way
-    //
+//     //
+//     // now apply column permutation in the same way
+//     //
 
-    if ( col_perm != nullptr )
-    {
-        for ( uint j = 0; j < m; j++ )
-        {
-            const uint pj = col_perm->permute( j );
+//     if ( col_perm != nullptr )
+//     {
+//         for ( uint j = 0; j < m; j++ )
+//         {
+//             const uint pj = col_perm->permute( j );
 
-            B::Vector< value_t >  this_j( blas_mat().column( j ) );
-            B::Vector< value_t >  T_pj( T->blas_mat().column( pj ) );
+//             B::Vector< value_t >  this_j( blas_mat().column( j ) );
+//             B::Vector< value_t >  T_pj( T->blas_mat().column( pj ) );
             
-            B::copy( this_j, T_pj );
-        }// for
+//             B::copy( this_j, T_pj );
+//         }// for
 
-        B::copy( T->blas_mat(), blas_mat() );
-    }// if
+//         B::copy( T->blas_mat(), blas_mat() );
+//     }// if
     
-#endif
+// #endif
 }
 
 //
