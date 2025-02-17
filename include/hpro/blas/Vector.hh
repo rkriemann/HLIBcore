@@ -17,6 +17,8 @@
 #include "hpro/blas/MatrixBase.hh"
 #include "hpro/blas/MemBlock.hh"
 
+#include "hpro/cluster/TPermutation.hh"
+
 namespace Hpro
 {
 
@@ -380,9 +382,25 @@ convert ( const Vector< src_value_t > &  v )
 //
 // create random vector
 //
-template < typename T >
-Vector< T >
+template < typename value_t >
+Vector< value_t >
 random ( const size_t  length );
+
+//
+// permute given vector
+//
+template < typename value_t >
+void
+permute ( Vector< value_t > &   v,
+          const TPermutation &  perm );
+
+//
+// permute vector <v> by inverse of <P>
+//
+template < typename value_t >
+void
+permute_inv ( Vector< value_t > &   v,
+              const TPermutation &  perm );
 
 }// namespace BLAS
 

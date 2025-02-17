@@ -512,10 +512,42 @@ permute ( Matrix< value_t > &   M,
 #endif
 }
 
-template void permute< float >   ( BLAS::Matrix< float > &,  const TPermutation &,  const TPermutation & );
-template void permute< double >  ( BLAS::Matrix< double > &, const TPermutation &,  const TPermutation & );
-template void permute< std::complex< float > >   ( BLAS::Matrix< std::complex< float > > &,  const TPermutation &,  const TPermutation & );
-template void permute< std::complex< double > >  ( BLAS::Matrix< std::complex< double > > &, const TPermutation &,  const TPermutation & );
+template < typename value_t >
+void
+permute ( Vector< value_t > &   v,
+          const TPermutation &  perm )
+{
+    auto  t = v.copy();
+
+    for ( size_t  i = 0; i < v.length(); ++i )
+        v( perm[i] ) = t(i);
+}
+
+template < typename value_t >
+void
+permute_inv ( Vector< value_t > &   v,
+              const TPermutation &  perm )
+{
+    auto  t = v.copy();
+
+    for ( size_t  i = 0; i < v.length(); ++i )
+        v( i ) = t( perm[i] );
+}
+
+template void permute< float >                       ( BLAS::Matrix< float > &,                  const TPermutation &,  const TPermutation & );
+template void permute< double >                      ( BLAS::Matrix< double > &,                 const TPermutation &,  const TPermutation & );
+template void permute< std::complex< float > >       ( BLAS::Matrix< std::complex< float > > &,  const TPermutation &,  const TPermutation & );
+template void permute< std::complex< double > >      ( BLAS::Matrix< std::complex< double > > &, const TPermutation &,  const TPermutation & );
+
+template void permute< float >                       ( BLAS::Vector< float > &,                  const TPermutation & );
+template void permute< double >                      ( BLAS::Vector< double > &,                 const TPermutation & );
+template void permute< std::complex< float > >       ( BLAS::Vector< std::complex< float > > &,  const TPermutation & );
+template void permute< std::complex< double > >      ( BLAS::Vector< std::complex< double > > &, const TPermutation & );
+
+template void permute_inv< float >                   ( BLAS::Vector< float > &,                  const TPermutation & );
+template void permute_inv< double >                  ( BLAS::Vector< double > &,                 const TPermutation & );
+template void permute_inv< std::complex< float > >   ( BLAS::Vector< std::complex< float > > &,  const TPermutation & );
+template void permute_inv< std::complex< double > >  ( BLAS::Vector< std::complex< double > > &, const TPermutation & );
 
 }// namespace BLAS
 
