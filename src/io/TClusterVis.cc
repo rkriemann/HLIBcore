@@ -31,7 +31,6 @@ using std::string;
 using std::list;
 using std::ofstream;
 using std::ostringstream;
-using std::vector;
 
 namespace
 {
@@ -331,7 +330,7 @@ TVTKClusterVis::print ( const TCluster *      root,
     while ( ! clusters.empty() )
     {
         uint                      color = 1;
-        vector< uint >            label( ncoord, 0 );
+        std::vector< uint >       label( ncoord, 0 );
         list< const TCluster * >  sons;
 
         for ( auto  cl : clusters )

@@ -17,8 +17,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 ////////////////////////////////////////////////
 //
 // constructor and destructor
@@ -234,35 +232,35 @@ TSolverInfo::append ( const uint  it,
             if ( use_unicode )
             {
                 if ( _store_hist )
-                    cout << boost::format( "%|=6| │ %|=13| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
-                         << endl
-                         << "───────┼───────────────┼───────────────┼───────────────"
-                         << endl;
+                    std::cout << boost::format( "%|=6| │ %|=13| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
+                              << std::endl
+                              << "───────┼───────────────┼───────────────┼───────────────"
+                              << std::endl;
                 else
-                    cout << boost::format( "%|=6| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "rate"
-                         << endl
-                         << "───────┼───────────────┼───────────────"
-                         << endl;
+                    std::cout << boost::format( "%|=6| │ %|=13| │ %|=13|" ) % "step" % "|b-Ax|" % "rate"
+                              << std::endl
+                              << "───────┼───────────────┼───────────────"
+                              << std::endl;
             }// if
             else
             {
                 if ( _store_hist )
-                    cout << boost::format( "%|=6| | %|=13| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
-                         << endl
-                         << "-------+---------------+---------------+---------------"
-                         << endl;
+                    std::cout << boost::format( "%|=6| | %|=13| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "red." % "rate"
+                              << std::endl
+                              << "-------+---------------+---------------+---------------"
+                              << std::endl;
                 else
-                    cout << boost::format( "%|=6| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "rate"
-                         << endl
-                         << "-------+---------------+---------------"
-                         << endl;
+                    std::cout << boost::format( "%|=6| | %|=13| | %|=13|" ) % "step" % "|b-Ax|" % "rate"
+                              << std::endl
+                              << "-------+---------------+---------------"
+                              << std::endl;
             }// else
         }// if
         
         if ( use_unicode )
-            cout << boost::format( "%|6| │ %13.4e │ " ) % it % residual_norm;
+            std::cout << boost::format( "%|6| │ %13.4e │ " ) % it % residual_norm;
         else
-            cout << boost::format( "%|6| | %13.4e | " ) % it % residual_norm;
+            std::cout << boost::format( "%|6| | %13.4e | " ) % it % residual_norm;
 
         if ( it > 0 )
         {
@@ -271,23 +269,23 @@ TSolverInfo::append ( const uint  it,
                 if ( _store_hist )
                 {
                     if ( reduction <= 1 )
-                        cout << boost::format( "%13.4e " ) % reduction;
+                        std::cout << boost::format( "%13.4e " ) % reduction;
                     else
-                        cout << boost::format( "%13.4e " ) % reduction;
+                        std::cout << boost::format( "%13.4e " ) % reduction;
 
-                    cout << "│ ";
+                    std::cout << "│ ";
                     
                     if ( _conv_rate <= 1 )
-                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e " ) % _conv_rate;
                     else
-                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e " ) % _conv_rate;
                 }// if
                 else
                 {
                     if ( _conv_rate <= 1 )
-                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e " ) % _conv_rate;
                     else
-                        cout << boost::format( "%13.4e " ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e " ) % _conv_rate;
                 }// else
             }// if
             else
@@ -295,16 +293,16 @@ TSolverInfo::append ( const uint  it,
                 if ( use_unicode )
                 {
                     if ( _store_hist )
-                        cout << boost::format( "%13.4e │ %13.4e " ) % reduction % _conv_rate;
+                        std::cout << boost::format( "%13.4e │ %13.4e " ) % reduction % _conv_rate;
                     else
-                        cout << boost::format( "%13.4e" ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e" ) % _conv_rate;
                 }// if
                 else
                 {
                     if ( _store_hist )
-                        cout << boost::format( "%13.4e | %13.4e " ) % reduction % _conv_rate;
+                        std::cout << boost::format( "%13.4e | %13.4e " ) % reduction % _conv_rate;
                     else
-                        cout << boost::format( "%13.4e" ) % _conv_rate;
+                        std::cout << boost::format( "%13.4e" ) % _conv_rate;
                 }// else
             }// else
         }// if
@@ -312,12 +310,12 @@ TSolverInfo::append ( const uint  it,
         {
             if ( _store_hist )
             {
-                if ( use_unicode ) cout << "              │               ";
-                else               cout << "              |               ";
+                if ( use_unicode ) std::cout << "              │               ";
+                else               std::cout << "              |               ";
             }// if
         }// else
 
-        cout << endl;
+        std::cout << std::endl;
     }// if
 }
 
@@ -338,14 +336,14 @@ TSolverInfo::reset ()
 //
 // output
 //
-string
+std::string
 TSolverInfo::to_string () const
 {
     if ( ! has_data() )
         return "no convergence information defined";
     else
     {
-        ostringstream  str;
+        std::ostringstream  str;
 
         const bool  use_color   = false;
 

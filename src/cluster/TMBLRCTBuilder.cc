@@ -20,7 +20,6 @@ namespace Hpro
 {
 
 using std::list;
-using std::vector;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -96,9 +95,9 @@ split ( size_t               ndest,
     // sort indices wrt maximal dimension
     //
 
-    idxcoord_cmp_t    idxcmp( coord, split_dim );
-    vector< idx_t >   arr_dof( dofs.nnodes() );
-    uint              no = 0;
+    idxcoord_cmp_t         idxcmp( coord, split_dim );
+    std::vector< idx_t >   arr_dof( dofs.nnodes() );
+    uint                   no = 0;
 
     for ( auto  dof : dofs )
         arr_dof[no++] = dof;
@@ -176,8 +175,8 @@ spatial_sort ( const size_t             nmin,
     // split nodes
     //
 
-    TNodeSet         left, right;
-    vector< TBBox >  son_bbox;
+    TNodeSet              left, right;
+    std::vector< TBBox >  son_bbox;
     
     part.partition( &coord, dofs, left, right, bbox, son_bbox, lvl );
 

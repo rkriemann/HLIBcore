@@ -18,8 +18,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace B = BLAS;
 
 /////////////////////////////////////////////////////////////////////
@@ -42,7 +40,7 @@ namespace B = BLAS;
                              const value_t                                         ikappa, \
                              const T_ansatzsp *                                    ansatz_sp, \
                              const T_testsp *                                      test_sp, \
-                             vector< value_t > &                                   values )
+                             std::vector< value_t > &                              values )
 
 HELMHOLTZ_SLP( simd );
 HELMHOLTZ_SLP( re_simd );
@@ -62,7 +60,7 @@ HELMHOLTZ_SLP( im_simd );
                              const value_t                                         ikappa, \
                              const T_ansatzsp *                                    ansatz_sp, \
                              const T_testsp *                                      test_sp, \
-                             vector< value_t > &                                   values )
+                             std::vector< value_t > &                              values )
 
 HELMHOLTZ_DLP( simd );
 HELMHOLTZ_DLP( re_simd );
@@ -71,11 +69,11 @@ HELMHOLTZ_DLP( im_simd );
 #define  HELMHOLTZ_SLP_HCA( suffix )                                    \
     template < typename value_t, typename  T_packed >                   \
     void                                                                \
-    helmholtz_slp_eval_dx_##suffix ( const value_t &      ikappa,       \
+    helmholtz_slp_eval_dx_##suffix ( const value_t &           ikappa,  \
                                      const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule, \
-                                     const T3Point        x[3],         \
-                                     const T3Point &      y,            \
-                                     vector< value_t > &  values )
+                                     const T3Point             x[3],    \
+                                     const T3Point &           y,       \
+                                     std::vector< value_t > &  values )
 
 HELMHOLTZ_SLP_HCA( simd );
 HELMHOLTZ_SLP_HCA( re_simd );
@@ -84,12 +82,12 @@ HELMHOLTZ_SLP_HCA( im_simd );
 #define  HELMHOLTZ_DLP_HCA( suffix )                                    \
     template < typename value_t, typename  T_packed >                   \
     void                                                                \
-    helmholtz_dlp_eval_dy_##suffix ( const value_t &      ikappa, \
+    helmholtz_dlp_eval_dy_##suffix ( const value_t &           ikappa, \
                                      const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule, \
-                                     const T3Point &      x, \
-                                     const T3Point        y[3], \
-                                     const T3Point &      normal, \
-                                     vector< value_t > &  values )
+                                     const T3Point &           x, \
+                                     const T3Point             y[3], \
+                                     const T3Point &           normal, \
+                                     std::vector< value_t > &  values )
 
 HELMHOLTZ_DLP_HCA( simd );
 HELMHOLTZ_DLP_HCA( re_simd );
@@ -116,7 +114,7 @@ helmholtz_slp_flt ( const TGrid::triangle_t &                             tri0,
                     const value_t                                         ikappa,
                     const T_ansatzsp *                                    ansatz_sp,
                     const T_testsp *                                      test_sp,
-                    vector< value_t > &                                   values )
+                    std::vector< value_t > &                              values )
 {
     using real_t  = real_type_t< value_t >;
 
@@ -334,7 +332,7 @@ helmholtz_dlp_flt ( const idx_t                                           tri_id
                     const value_t                                         ikappa,
                     const T_ansatzsp *                                    ansatz_sp,
                     const T_testsp *                                      test_sp,
-                    vector< value_t > &                                   values )
+                    std::vector< value_t > &                              values )
 {
     using real_t  = real_type_t< value_t >;
 
@@ -567,7 +565,7 @@ helmholtz_slp_eval_dx_flt ( const value_t &                                   ik
                             const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
                             const T3Point                                     vx[3],
                             const T3Point &                                   vy,
-                            vector< value_t > &                               values )
+                            std::vector< value_t > &                          values )
 {
     using real_t  = real_type_t< value_t >;
 
@@ -605,7 +603,7 @@ helmholtz_dlp_eval_dy_flt ( const value_t &                                   ik
                             const T3Point &                                   vx,
                             const T3Point                                     vy[3],
                             const T3Point &                                   normal,
-                            vector< value_t > &                               values )
+                            std::vector< value_t > &                          values )
 {
     using real_t  = real_type_t< value_t >;
 
@@ -993,6 +991,6 @@ helmholtz_slp_flt< TConstEdgeFnSpace, TConstEdgeFnSpace, std::complex< double > 
     const std::complex< double >                                         ikappa,
     const TConstEdgeFnSpace *                                            ansatz_sp,
     const TConstEdgeFnSpace *                                            test_sp,
-    vector< std::complex< double > > &                                   values );
+    std::vector< std::complex< double > > &                              values );
 
 }// namespace Hpro

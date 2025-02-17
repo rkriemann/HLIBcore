@@ -20,8 +20,6 @@
 namespace Hpro
 {
 
-using std::vector;
-
 namespace
 {
 
@@ -188,13 +186,13 @@ template < typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-helmholtz_dlp_wo_normal_simd ( const TGrid::triangle_t &             tri0,
-                               const TGrid::triangle_t &             tri1,
-                               const tripair_quad_rule_t< double > * rule,
-                               const std::complex< double >          ikappa,
-                               const T_ansatzsp *                    ansatz_sp,
-                               const T_testsp *                      test_sp,
-                               vector< std::complex< double > > &    values )
+helmholtz_dlp_wo_normal_simd ( const TGrid::triangle_t &                tri0,
+                               const TGrid::triangle_t &                tri1,
+                               const tripair_quad_rule_t< double > *    rule,
+                               const std::complex< double >             ikappa,
+                               const T_ansatzsp *                       ansatz_sp,
+                               const T_testsp *                         test_sp,
+                               std::vector< std::complex< double > > &  values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -286,13 +284,13 @@ template < typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-helmholtz_dlp_wo_normal_re_simd ( const TGrid::triangle_t &             tri0,
-                                  const TGrid::triangle_t &             tri1,
-                                  const tripair_quad_rule_t< double > * rule,
-                                  const std::complex< double >          ikappa,
-                                  const T_ansatzsp *                    ansatz_sp,
-                                  const T_testsp *                      test_sp,
-                                  vector< std::complex< double > > &    values )
+helmholtz_dlp_wo_normal_re_simd ( const TGrid::triangle_t &                tri0,
+                                  const TGrid::triangle_t &                tri1,
+                                  const tripair_quad_rule_t< double > *    rule,
+                                  const std::complex< double >             ikappa,
+                                  const T_ansatzsp *                       ansatz_sp,
+                                  const T_testsp *                         test_sp,
+                                  std::vector< std::complex< double > > &  values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -377,13 +375,13 @@ template < typename T_ansatzsp,
            typename T_testsp,
            typename T_packed >
 void
-helmholtz_dlp_wo_normal_im_simd ( const TGrid::triangle_t &             tri0,
-                                  const TGrid::triangle_t &             tri1,
-                                  const tripair_quad_rule_t< double > * rule,
-                                  const std::complex< double >          ikappa,
-                                  const T_ansatzsp *                    ansatz_sp,
-                                  const T_testsp *                      test_sp,
-                                  vector< std::complex< double > > &    values )
+helmholtz_dlp_wo_normal_im_simd ( const TGrid::triangle_t &                tri0,
+                                  const TGrid::triangle_t &                tri1,
+                                  const tripair_quad_rule_t< double > *    rule,
+                                  const std::complex< double >             ikappa,
+                                  const T_ansatzsp *                       ansatz_sp,
+                                  const T_testsp *                         test_sp,
+                                  std::vector< std::complex< double > > &  values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -467,13 +465,13 @@ helmholtz_dlp_wo_normal_im_simd ( const TGrid::triangle_t &             tri0,
 #define  INST_HELMHOLTZ_DLP_WON_SIMD( T_ansatzsp, T_testsp, suffix )    \
     template void                                                       \
     helmholtz_dlp_wo_normal_##suffix< T_ansatzsp, T_testsp, packed< double, SIMD_ISA > > ( \
-        const TGrid::triangle_t &             tri0, \
-        const TGrid::triangle_t &             tri1, \
-        const tripair_quad_rule_t< double > * rule, \
-        const std::complex< double >          ikappa, \
-        const T_ansatzsp *                    ansatz_sp, \
-        const T_testsp *                      test_sp, \
-        vector< std::complex< double > > &    values )
+        const TGrid::triangle_t &                tri0,                  \
+        const TGrid::triangle_t &                tri1,                  \
+        const tripair_quad_rule_t< double > *    rule,                  \
+        const std::complex< double >             ikappa,                \
+        const T_ansatzsp *                       ansatz_sp,             \
+        const T_testsp *                         test_sp,               \
+        std::vector< std::complex< double > > &  values )
 
 INST_HELMHOLTZ_DLP_WON_SIMD( TConstEdgeFnSpace, TConstEdgeFnSpace, simd );
 INST_HELMHOLTZ_DLP_WON_SIMD( TConstEdgeFnSpace, TConstEdgeFnSpace, re_simd );

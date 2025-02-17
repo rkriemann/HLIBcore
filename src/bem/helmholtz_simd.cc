@@ -20,8 +20,6 @@
 namespace Hpro
 {
 
-using std::vector;
-
 namespace
 {
 
@@ -249,7 +247,7 @@ helmholtz_slp_simd ( const TGrid::triangle_t &                              tri0
                      const value_t                                          ikappa,
                      const T_ansatzsp *                                     ansatz_sp,
                      const T_testsp *                                       test_sp,
-                     vector< value_t > &                                    values )
+                     std::vector< value_t > &                               values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -332,7 +330,7 @@ helmholtz_slp_re_simd ( const TGrid::triangle_t &                            tri
                         const value_t                                        ikappa,
                         const T_ansatzsp *                                   ansatz_sp,
                         const T_testsp *                                     test_sp,
-                        vector< value_t > &                                  values )
+                        std::vector< value_t > &                             values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -413,7 +411,7 @@ helmholtz_slp_im_simd ( const TGrid::triangle_t &          tri0,
                         const value_t                      ikappa,
                         const T_ansatzsp *                 ansatz_sp,
                         const T_testsp *                   test_sp,
-                        vector< value_t > & values )
+                        std::vector< value_t > &           values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -487,7 +485,7 @@ helmholtz_dlp_simd ( const idx_t                        tri_id,
                      const value_t                      ikappa,
                      const T_ansatzsp *                 ansatz_sp,
                      const T_testsp *                   test_sp,
-                     vector< value_t > &                values )
+                     std::vector< value_t > &           values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -670,7 +668,7 @@ helmholtz_dlp_re_simd ( const idx_t                        tri_id,
                         const value_t                      ikappa,
                         const T_ansatzsp *                 ansatz_sp,
                         const T_testsp *                   test_sp,
-                        vector< value_t > &                values )
+                        std::vector< value_t > &           values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -838,7 +836,7 @@ helmholtz_dlp_im_simd ( const idx_t                        tri_id,
                         const value_t                      ikappa,
                         const T_ansatzsp *                 ansatz_sp,
                         const T_testsp *                   test_sp,
-                        vector< value_t > &                values )
+                        std::vector< value_t > &           values )
 {
     DEFINE_LOCAL_TYPE;
     LOAD_TRIANGLE_COORD;
@@ -995,11 +993,11 @@ helmholtz_dlp_im_simd ( const idx_t                        tri_id,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_slp_eval_dx_simd ( const value_t &     ikappa,
+helmholtz_slp_eval_dx_simd ( const value_t &           ikappa,
                              const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule,
-                             const T3Point       vx[3],
-                             const T3Point &     vy,
-                             vector< value_t > & values )
+                             const T3Point             vx[3],
+                             const T3Point &           vy,
+                             std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1074,11 +1072,11 @@ helmholtz_slp_eval_dx_simd ( const value_t &     ikappa,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_slp_eval_dx_re_simd ( const value_t &     ikappa,
+helmholtz_slp_eval_dx_re_simd ( const value_t &           ikappa,
                                 const tri_quad_rule_t< real_type_t< value_t > > &            quad_rule,
-                                const T3Point       vx[3],
-                                const T3Point &     vy,
-                                vector< value_t > & values )
+                                const T3Point             vx[3],
+                                const T3Point &           vy,
+                                std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1153,11 +1151,11 @@ helmholtz_slp_eval_dx_re_simd ( const value_t &     ikappa,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_slp_eval_dx_im_simd ( const value_t &     ikappa,
+helmholtz_slp_eval_dx_im_simd ( const value_t &           ikappa,
                                 const tri_quad_rule_t< real_type_t< value_t > > &  quad_rule,
-                                const T3Point       vx[3],
-                                const T3Point &     vy,
-                                vector< value_t > & values )
+                                const T3Point             vx[3],
+                                const T3Point &           vy,
+                                std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1224,12 +1222,12 @@ helmholtz_slp_eval_dx_im_simd ( const value_t &     ikappa,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_dlp_eval_dy_simd ( const value_t &      ikappa,
+helmholtz_dlp_eval_dy_simd ( const value_t &           ikappa,
                              const tri_quad_rule_t< real_type_t< value_t > > &            quad_rule,
-                             const T3Point &      vx,
-                             const T3Point        vy[3],
-                             const T3Point &      normal,
-                             vector< value_t > &  values )
+                             const T3Point &           vx,
+                             const T3Point             vy[3],
+                             const T3Point &           normal,
+                             std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1321,12 +1319,12 @@ helmholtz_dlp_eval_dy_simd ( const value_t &      ikappa,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_dlp_eval_dy_re_simd ( const value_t &      ikappa,
+helmholtz_dlp_eval_dy_re_simd ( const value_t &           ikappa,
                                 const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
-                                const T3Point &      vx,
-                                const T3Point        vy[3],
-                                const T3Point &      normal,
-                                vector< value_t > &  values )
+                                const T3Point &           vx,
+                                const T3Point             vy[3],
+                                const T3Point &           normal,
+                                std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1412,12 +1410,12 @@ helmholtz_dlp_eval_dy_re_simd ( const value_t &      ikappa,
 template < typename value_t,
            typename packed_t >
 void
-helmholtz_dlp_eval_dy_im_simd ( const value_t &      ikappa,
+helmholtz_dlp_eval_dy_im_simd ( const value_t &           ikappa,
                                 const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
-                                const T3Point &      vx,
-                                const T3Point        vy[3],
-                                const T3Point &      normal,
-                                vector< value_t > &  values )
+                                const T3Point &           vx,
+                                const T3Point             vy[3],
+                                const T3Point &           normal,
+                                std::vector< value_t > &  values )
 {
     DEFINE_LOCAL_TYPE;
 
@@ -1515,7 +1513,7 @@ helmholtz_dlp_eval_dy_im_simd ( const value_t &      ikappa,
         const value_t                       ikappa,                     \
         const ansatzsp_t *                  ansatz_sp,                  \
         const testsp_t *                    test_sp,                    \
-        vector< value_t > &                 values )
+        std::vector< value_t > &            values )
 
 #define  INST_SLP( type1, type2 )                                             \
     INST_HELMHOLTZ_SLP_SIMD( type1, TConstFnSpace< type2 >,     TConstFnSpace< type2 >,     simd ); \
@@ -1551,7 +1549,7 @@ INST_HELMHOLTZ_SLP_SIMD( std::complex< double >, TConstEdgeFnSpace, TConstEdgeFn
         const value_t                          ikappa, \
         const ansatzsp_t *                     ansatz_sp, \
         const testsp_t *                       test_sp, \
-        vector< value_t > &                    values )
+        std::vector< value_t > &               values )
 
 #define  INST_DLP( type1, type2 )                                             \
     INST_HELMHOLTZ_DLP_SIMD( type1, TConstFnSpace< type2 >,  TConstFnSpace< type2 >,  simd ); \
@@ -1575,11 +1573,11 @@ INST_DLP( std::complex< double >, double )
 #define  INST_HELMHOLTZ_SLP_HCA_SIMD( type, suffix )                    \
     template void                                                       \
     helmholtz_slp_eval_dx_##suffix< std::complex< type >, packed< type, SIMD_ISA > > ( \
-        const std::complex< type > &      ikappa,                       \
+        const std::complex< type > &           ikappa,                  \
         const tri_quad_rule_t< real_type_t< std::complex< type > > > &  quad_rule, \
-        const T3Point                     vx[3],                        \
-        const T3Point &                   vy,                           \
-        vector< std::complex< type > > &  values );
+        const T3Point                          vx[3],                   \
+        const T3Point &                        vy,                      \
+        std::vector< std::complex< type > > &  values );
 
 INST_HELMHOLTZ_SLP_HCA_SIMD( float, simd )
 INST_HELMHOLTZ_SLP_HCA_SIMD( float, re_simd )
@@ -1592,12 +1590,12 @@ INST_HELMHOLTZ_SLP_HCA_SIMD( double, im_simd )
 #define  INST_HELMHOLTZ_DLP_HCA_SIMD( type, suffix )                    \
     template void                                                       \
     helmholtz_dlp_eval_dy_##suffix< std::complex< type >, packed< type, SIMD_ISA > > ( \
-        const std::complex< type > &      ikappa,                       \
+        const std::complex< type > &           ikappa,                  \
         const tri_quad_rule_t< real_type_t< std::complex< type > > > &  quad_rule, \
-        const T3Point &                   vx,                           \
-        const T3Point                     vy[3],                        \
-        const T3Point &                   normal,                       \
-        vector< std::complex< type > > &  values )
+        const T3Point &                        vx,                      \
+        const T3Point                          vy[3],                   \
+        const T3Point &                        normal,                  \
+        std::vector< std::complex< type > > &  values )
 
 INST_HELMHOLTZ_DLP_HCA_SIMD( float, simd );
 INST_HELMHOLTZ_DLP_HCA_SIMD( float, re_simd );

@@ -18,8 +18,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace B = BLAS;
 
 ///////////////////////////////////////////////////////////////
@@ -59,7 +57,7 @@ void
 laplace_slp_eval_dx_simd  ( const tri_quad_rule_t< value_type_t< T_packed > > & quad_rule,
                             const T3Point                                       x[3],
                             const T3Point &                                     y,
-                            vector< value_type_t< T_packed > > &                values );
+                            std::vector< value_type_t< T_packed > > &           values );
 
 template < typename T_packed >
 void
@@ -67,7 +65,7 @@ laplace_dlp_eval_dy_simd  ( const tri_quad_rule_t< value_type_t< T_packed > > & 
                             const T3Point &                                     x,
                             const T3Point                                       y[3],
                             const T3Point &                                     normal,
-                            vector< value_type_t< T_packed > > &                values );
+                            std::vector< value_type_t< T_packed > > &           values );
 
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
@@ -505,7 +503,7 @@ void
 laplace_slp_eval_dx_flt ( const tri_quad_rule_t< value_t > & quad_rule,
                           const T3Point                      vx[3],
                           const T3Point &                    vy,
-                          vector< value_t > &                values )
+                          std::vector< value_t > &           values )
 {
     using real_t  = real_type_t< value_t >;
     
@@ -541,7 +539,7 @@ laplace_dlp_eval_dy_flt ( const tri_quad_rule_t< value_t > & quad_rule,
                           const T3Point &                    vx,
                           const T3Point                      vy[3],
                           const T3Point &                    normal,
-                          vector< value_t > &                values )
+                          std::vector< value_t > &           values )
 {
     using real_t  = real_type_t< value_t >;
     

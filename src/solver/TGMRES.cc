@@ -15,7 +15,6 @@
 namespace Hpro
 {
 
-using std::vector;
 using std::unique_ptr;
 
 // namespace abbr.

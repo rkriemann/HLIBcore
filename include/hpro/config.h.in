@@ -91,17 +91,17 @@
  */
 
 /* activate to enable additional debugging features */
-#define HPRO_DEBUG               @HPRO_DEBUG@
+#define HPRO_DEBUG                    @HPRO_DEBUG@
 
 /* activate argument tests in inline functions of BLAS module
  * (also activated by HPRO_DEBUG) */
-#define HPRO_BLAS_TESTS          0
+#define HPRO_BLAS_TESTS               0
 
 /* activate to enable flop counting */
-#define HPRO_COUNT_FLOPS         0
+#define HPRO_COUNT_FLOPS              0
 
 /* activate to enable old TBB functions */
-#define HPRO_HAS_TBB_DEPRECATED  0
+#define HPRO_HAS_TBB_DEPRECATED       0
 
 /*
  * define type of network environment
@@ -110,6 +110,15 @@
  *   3 : shared memory
  */
 
-#define HPRO_NET_TYPE            @NET_TYPE@
+#define HPRO_NET_TYPE                 @NET_TYPE@
+
+/*
+ * define internal HLIBpro allocator
+ *
+ *   default:     hpro_allocator< T >      (standard free/malloc)
+ *   alternative: tbb::tbb_allocator< T >
+ *
+ */
+#define HPRO_ALLOCATOR                hpro_allocator< T >
 
 #endif

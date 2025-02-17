@@ -17,8 +17,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 //
 // destructor
 //
@@ -117,9 +115,9 @@ TCluster::depth () const
 // collect leaves in given list
 //
 void
-TCluster::collect_leaves ( list< TCluster * > &  leaves,
-                           const int             tdepth,
-                           const int             level ) const
+TCluster::collect_leaves ( std::list< TCluster * > &  leaves,
+                           const int                  tdepth,
+                           const int                  level ) const
 {
     if ( is_leaf() || ((tdepth != -1) && (level == tdepth)))
         leaves.push_back( const_cast< TCluster * >( this ) );
@@ -161,9 +159,9 @@ void
 TCluster::print ( const uint ofs ) const
 {
     for ( uint i = 0; i < ofs; i++ )
-        cout << ' ';
+        std::cout << ' ';
 
-    cout << *this << endl;
+    std::cout << *this << std::endl;
 
     for ( size_t i = 0; i < nsons(); i++ )
     {

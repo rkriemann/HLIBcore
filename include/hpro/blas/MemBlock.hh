@@ -5,7 +5,7 @@
 // File        : MemBlock.hh
 // Description : class for a reference countable memory block
 // Author      : Ronald Kriemann
-// Copyright   : Max Planck Institute MIS 2004-2022. All Rights Reserved.
+// Copyright   : Max Planck Institute MIS 2004-2025. All Rights Reserved.
 //
 
 #include <cstdlib>
@@ -13,6 +13,7 @@
 #include <atomic>
 
 #include <hpro/base/error.hh>
+#include <hpro/base/alloc.hh>
 #include <hpro/base/System.hh>
 
 namespace Hpro
@@ -57,17 +58,20 @@ protected:
     //! @cond
 
     //! pointer of data
-    value_t *   _data;
+    value_t *             _data;
 
     //! indicates, this object is owner of memory block
-    bool        _is_owner;
+    bool                  _is_owner;
 
     #if HPRO_MEMBLOCK_REF_COUNT == 1
     //! for debugging: reference counter and owner of data
-    count_t     _nreferences;
-    MemBlock *  _owner;
+    count_t               _nreferences;
+    MemBlock *            _owner;
     #endif
 
+    //! memory allocation object
+    allocator< value_t >  _alloc;
+    
     //! @endcond
 
 public:
@@ -157,7 +161,7 @@ public:
             #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
-            delete[] _data;
+            _alloc.deallocate( _data, 0 );
             #endif
         }// if
     }
@@ -222,7 +226,7 @@ public:
             #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
-            delete[] _data;
+            _alloc.deallocate( _data, 0 );
             #endif
         }// if
 
@@ -266,7 +270,7 @@ public:
             #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
-            delete[] _data;
+            _alloc.deallocate( _data, 0 );
             #endif
         }// if
 
@@ -319,14 +323,14 @@ public:
             #if HPRO_DEBUG_MALLOC == 1
             Mem::free( _data );
             #else
-            delete[] _data;
+            _alloc.deallocate( _data, 0 );
             #endif
         }// if
         
         #if HPRO_DEBUG_MALLOC == 1
         _data     = static_cast< value_t * >( Mem::alloc( sizeof(value_t) * n ) );
         #else
-        _data     = new value_t[n];
+        _data     = _alloc.allocate( n );
         #endif
         _is_owner = true;
 

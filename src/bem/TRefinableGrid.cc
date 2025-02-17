@@ -9,13 +9,12 @@
 #include "hpro/bem/TRefinableGrid.hh"
 #include "hpro/io/TGridIO.hh"
 
-using std::vector;
-using std::unique_ptr;
-using std::make_unique;
-
 namespace Hpro
 {
     
+using std::unique_ptr;
+using std::make_unique;
+
 //
 // standard constructor with basic data for refinement
 //
@@ -75,12 +74,12 @@ TRefinableGrid::refine () const
     // first, loop through all edges, build midpoint and child edges
     //
 
-    const size_t            nedges     = _edges.size();
-    const size_t            nvertices  = _vertices.size();
-    const size_t            ntriangles = _triangles.size();
-    vector< T3Point >       child_vertices( nvertices + nedges );        // old vertices + midpoint on each edge
-    vector< edge_t >        child_edges( 2 * nedges + 3 * ntriangles );  // child edges plus inner triangle edges
-    vector< childedges_t >  edge_to_children( nedges );
+    const size_t                 nedges     = _edges.size();
+    const size_t                 nvertices  = _vertices.size();
+    const size_t                 ntriangles = _triangles.size();
+    std::vector< T3Point >       child_vertices( nvertices + nedges );        // old vertices + midpoint on each edge
+    std::vector< edge_t >        child_edges( 2 * nedges + 3 * ntriangles );  // child edges plus inner triangle edges
+    std::vector< childedges_t >  edge_to_children( nedges );
 
     // copy old vertices
     idx_t  vpos = 0;
@@ -125,9 +124,9 @@ TRefinableGrid::refine () const
     // - also create new edges defining inner triangle
     //
 
-    vector< triangle_t >        child_triangles( ntriangles * 4 );
-    vector< triangle_edges_t >  child_triangle_edges( ntriangles * 4 );
-    idx_t                       tpos = 0;
+    std::vector< triangle_t >        child_triangles( ntriangles * 4 );
+    std::vector< triangle_edges_t >  child_triangle_edges( ntriangles * 4 );
+    idx_t                            tpos = 0;
 
     for ( size_t  triangle = 0; triangle < ntriangles; ++triangle )
     {
@@ -288,7 +287,7 @@ make_sphere () -> std::unique_ptr< TRefinableGrid >
     // construct 6 vertices (base square plus two vertices at top and bottom)
     //
     
-    vector< T3Point >  vertices( 6 );
+    std::vector< T3Point >  vertices( 6 );
 
     vertices[0] = T3Point( -1, -1,  0 );
     vertices[1] = T3Point(  1, -1,  0 );
@@ -304,7 +303,7 @@ make_sphere () -> std::unique_ptr< TRefinableGrid >
     // define the 12 edges 
     //
 
-    vector< edge_t >  edges( 12 );
+    std::vector< edge_t >  edges( 12 );
     
     edges[0]  = edge_t{ 0, 1,  0, 4 };
     edges[1]  = edge_t{ 2, 1,  1, 5 };
@@ -325,7 +324,7 @@ make_sphere () -> std::unique_ptr< TRefinableGrid >
     // and finally the 8 triangles
     //
 
-    vector< triangle_t >  triangles( 8 );
+    std::vector< triangle_t >  triangles( 8 );
 
     triangles[0] = triangle_t{ 0, 4, 1 };
     triangles[1] = triangle_t{ 1, 4, 2 };
@@ -337,7 +336,7 @@ make_sphere () -> std::unique_ptr< TRefinableGrid >
     triangles[6] = triangle_t{ 2, 3, 5 };
     triangles[7] = triangle_t{ 3, 0, 5 };
 
-    vector< triangle_edges_t >   triangle_edges( 8 );
+    std::vector< triangle_edges_t >   triangle_edges( 8 );
     
     triangle_edges[0] = triangle_edges_t{ 0,  5,  4, true,  true,  true  };
     triangle_edges[1] = triangle_edges_t{ 1,  4,  6, false, false, false };
@@ -366,7 +365,7 @@ make_sphere2 () -> std::unique_ptr< TRefinableGrid >
     // construct 10 vertices
     //
     
-    vector< T3Point >  vertices( 10 );
+    std::vector< T3Point >  vertices( 10 );
 
     vertices[0] = T3Point( -1, -1, -0.63 );
     vertices[1] = T3Point(  1, -1, -0.63 );
@@ -387,7 +386,7 @@ make_sphere2 () -> std::unique_ptr< TRefinableGrid >
     // and 24 edges
     //
     
-    vector< edge_t >  edges( 24 );
+    std::vector< edge_t >  edges( 24 );
     
     edges[0]  = edge_t{ 0, 1,  -1, -1 };
     edges[1]  = edge_t{ 1, 3,  -1, -1 };
@@ -418,7 +417,7 @@ make_sphere2 () -> std::unique_ptr< TRefinableGrid >
     // and finally the 16 triangles
     //
     
-    vector< triangle_t >  triangles( 16 );
+    std::vector< triangle_t >  triangles( 16 );
 
     triangles[0]  = triangle_t{ 0, 1, 3 };
     triangles[1]  = triangle_t{ 2, 3, 1 };
@@ -438,7 +437,7 @@ make_sphere2 () -> std::unique_ptr< TRefinableGrid >
     triangles[14] = triangle_t{ 9, 5, 7 };
     triangles[15] = triangle_t{ 9, 7, 3 };
     
-    vector< triangle_edges_t >   triangle_edges( 16 );
+    std::vector< triangle_edges_t >   triangle_edges( 16 );
 
     triangle_edges[0]  = triangle_edges_t{  0,  1,  2, false, false, false };
     triangle_edges[1]  = triangle_edges_t{  4,  1,  3, false, true,  true  };
@@ -475,7 +474,7 @@ make_cube   () -> std::unique_ptr< TRefinableGrid >
     // construct 8 vertices
     //
     
-    vector< T3Point >  vertices( 8 );
+    std::vector< T3Point >  vertices( 8 );
 
     vertices[0] = T3Point( -1, -1, -1 );
     vertices[1] = T3Point(  1, -1, -1 );
@@ -490,7 +489,7 @@ make_cube   () -> std::unique_ptr< TRefinableGrid >
     // and 18 edges
     //
     
-    vector< edge_t >  edges( 18 );
+    std::vector< edge_t >  edges( 18 );
     
     edges[0]  = edge_t{ 0, 1,  -1, -1 };
     edges[1]  = edge_t{ 1, 5,  -1, -1 };
@@ -519,7 +518,7 @@ make_cube   () -> std::unique_ptr< TRefinableGrid >
     // and finally the 12 triangles
     //
     
-    vector< triangle_t >  triangles( 12 );
+    std::vector< triangle_t >  triangles( 12 );
 
     triangles[0]  = triangle_t{ 0, 1, 5 };
     triangles[1]  = triangle_t{ 0, 5, 4 };
@@ -539,7 +538,7 @@ make_cube   () -> std::unique_ptr< TRefinableGrid >
     triangles[10] = triangle_t{ 2, 1, 0 };
     triangles[11] = triangle_t{ 2, 0, 3 };
     
-    vector< triangle_edges_t >   triangle_edges( 12 );
+    std::vector< triangle_edges_t >   triangle_edges( 12 );
 
     triangle_edges[0]  = triangle_edges_t{  0,  1,  2, false, false, false };
     triangle_edges[1]  = triangle_edges_t{  2, 12, 10, true,  false, true  };
@@ -671,7 +670,7 @@ make_square  () -> std::unique_ptr< TRefinableGrid >
     // construct 4 vertices of square
     //
     
-    vector< T3Point >  vertices( 4 );
+    std::vector< T3Point >  vertices( 4 );
 
     vertices[0] = T3Point( 0, 0, 0 );
     vertices[1] = T3Point( 1, 0, 0 );
@@ -682,7 +681,7 @@ make_square  () -> std::unique_ptr< TRefinableGrid >
     // define the 5 edges 
     //
 
-    vector< edge_t >  edges( 5 );
+    std::vector< edge_t >  edges( 5 );
     
     edges[0]  = edge_t{ 0, 1,  0, -1 };
     edges[1]  = edge_t{ 1, 2,  0, -1 };
@@ -694,12 +693,12 @@ make_square  () -> std::unique_ptr< TRefinableGrid >
     // and finally the 2 triangles
     //
 
-    vector< triangle_t >  triangles( 2 );
+    std::vector< triangle_t >  triangles( 2 );
 
     triangles[0] = triangle_t{ 0, 1, 2 };
     triangles[1] = triangle_t{ 0, 2, 3 };
 
-    vector< triangle_edges_t >   triangle_edges( 2 );
+    std::vector< triangle_edges_t >   triangle_edges( 2 );
     
     triangle_edges[0] = triangle_edges_t{ 0,  1,  4, false, false, false };
     triangle_edges[1] = triangle_edges_t{ 4,  2,  3, true,  false, false };

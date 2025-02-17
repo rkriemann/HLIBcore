@@ -19,8 +19,6 @@ extern "C" {
 
 #include "hpro/cluster/TAlgPartStrat.hh"
 
-using namespace std;
-
 namespace Hpro
 {
 
@@ -43,8 +41,8 @@ TMutex  SCOTCH_mutex;
 // C++ call to Scotch
 //
 void
-partition_graph ( const TGraph &          graph,
-                  vector< SCOTCH_Num > &  part )
+partition_graph ( const TGraph &               graph,
+                  std::vector< SCOTCH_Num > &  part )
 {
     TScopedLock  lock( SCOTCH_mutex );
     
@@ -131,10 +129,10 @@ TScotchAlgPartStrat::partition ( const TGraph &  graph,
     // use Scotch to partition graph
     //
 
-    const size_t          nnodes   = graph.nnodes();
-    size_t                nleft    = 0;
-    size_t                nright   = 0;
-    vector< SCOTCH_Num >  part( nnodes, 0 );
+    const size_t               nnodes   = graph.nnodes();
+    size_t                     nleft    = 0;
+    size_t                     nright   = 0;
+    std::vector< SCOTCH_Num >  part( nnodes, 0 );
 
     partition_graph( graph, part );
 

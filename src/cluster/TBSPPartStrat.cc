@@ -17,7 +17,6 @@
 namespace Hpro
 {
 
-using std::vector;
 using std::set;
 using std::pair;
 using std::unordered_map;
@@ -42,13 +41,13 @@ TGeomBSPPartStrat::TGeomBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TGeomBSPPartStrat::partition ( const TCoordinate *  coord,
-                               const TNodeSet  &    dofs,
-                               TNodeSet &           left,
-                               TNodeSet &           right,
-                               const TBBox &        bbox,
-                               vector< TBBox > &    son_bbox,
-                               const uint           depth ) const
+TGeomBSPPartStrat::partition ( const TCoordinate *     coord,
+                               const TNodeSet  &       dofs,
+                               TNodeSet &              left,
+                               TNodeSet &              right,
+                               const TBBox &           bbox,
+                               std::vector< TBBox > &  son_bbox,
+                               const uint              depth ) const
 {
     if ( coord == nullptr )
         HERROR( ERR_ARG, "(TGeomBSPPartStrat) partition", "undefined (nullptr) coordinate set" );
@@ -140,20 +139,20 @@ namespace
 
 template < typename T_compare >
 void
-seq_sort ( vector< node_t > &  dofs,
-           const size_t        lb,
-           const size_t        ub,
-           const T_compare &   less )
+seq_sort ( std::vector< node_t > &  dofs,
+           const size_t             lb,
+           const size_t             ub,
+           const T_compare &        less )
 {
     std::sort( & dofs[lb], & dofs[ub], less );
 }
 
 template < typename T_compare >
 void
-par_sort ( vector< node_t > &  dofs,
-           const size_t        lb,
-           const size_t        ub,
-           const T_compare &   less )
+par_sort ( std::vector< node_t > &  dofs,
+           const size_t             lb,
+           const size_t             ub,
+           const T_compare &        less )
 {
     if ( ub - lb < 100000 )
     {
@@ -174,10 +173,10 @@ par_sort ( vector< node_t > &  dofs,
     if ( less( dofs[mid-1], dofs[mid] ) )
         return;
 
-    vector< node_t >  sdofs( ub - lb );
-    size_t            pos = 0;
-    auto              i1  = lb;
-    auto              i2  = mid; 
+    std::vector< node_t >  sdofs( ub - lb );
+    size_t                 pos = 0;
+    auto                   i1  = lb;
+    auto                   i2  = mid; 
   
     while (( i1 < mid ) && ( i2 < ub ))
     { 
@@ -249,13 +248,13 @@ TCardBSPPartStrat::TCardBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TCardBSPPartStrat::partition ( const TCoordinate *  coord,
-                               const TNodeSet  &    dofs,
-                               TNodeSet &           left,
-                               TNodeSet &           right,
-                               const TBBox &        bbox,
-                               vector< TBBox > &    son_bbox,
-                               const uint           depth ) const
+TCardBSPPartStrat::partition ( const TCoordinate *     coord,
+                               const TNodeSet  &       dofs,
+                               TNodeSet &              left,
+                               TNodeSet &              right,
+                               const TBBox &           bbox,
+                               std::vector< TBBox > &  son_bbox,
+                               const uint              depth ) const
 {
     if ( coord == nullptr )
         HERROR( ERR_ARG, "(TCardBSPPartStrat) partition", "undefined (nullptr) coordinate set" );
@@ -295,9 +294,9 @@ TCardBSPPartStrat::partition ( const TCoordinate *  coord,
     // sort indices wrt maximal dimension
     //
 
-    TIdxCompare       idxcmp( coord, max_dim );
-    vector< node_t >  arr_dof( dofs.nnodes() );
-    uint              no = 0;
+    TIdxCompare            idxcmp( coord, max_dim );
+    std::vector< node_t >  arr_dof( dofs.nnodes() );
+    uint                   no = 0;
 
     for ( auto  dof : dofs )
         arr_dof[no++] = dof;
@@ -388,7 +387,7 @@ TPCABSPPartStrat::partition ( const TCoordinate * coord,
                               TNodeSet &          left,
                               TNodeSet &          right,
                               const TBBox &,
-                              vector< TBBox > &,
+                              std::vector< TBBox > &,
                               const uint ) const
 {
     if ( coord == nullptr )
@@ -664,12 +663,12 @@ TNDBSPPartStrat< value_t >::TNDBSPPartStrat ( const TSparseMatrix< value_t > *  
 //
 template < typename value_t >
 void
-TNDBSPPartStrat< value_t >::partition ( const TCoordinate *  coord,
-                                        const TNodeSet  &    dofs,
-                                        TNodeSet &           left,
-                                        TNodeSet &           right,
-                                        const TBBox &        bbox,
-                                        vector< TBBox > &    son_bbox,
+TNDBSPPartStrat< value_t >::partition ( const TCoordinate *     coord,
+                                        const TNodeSet  &       dofs,
+                                        TNodeSet &              left,
+                                        TNodeSet &              right,
+                                        const TBBox &           bbox,
+                                        std::vector< TBBox > &  son_bbox,
                                         const uint ) const
 {
     using  idxmap_t = unordered_map< idx_t, idx_t >;
@@ -681,17 +680,17 @@ TNDBSPPartStrat< value_t >::partition ( const TCoordinate *  coord,
     // try each dimension and choose the one with minimal edgecut
     //
 
-    const size_t      ndofs       = dofs.nnodes();
-    const size_t      half        = ndofs / 2;
-    uint              min_ec_dim  = 0;
-    double            min_edgecut = Limits::max< double >();
-    vector< node_t >  arr_dof( dofs.nnodes() );
-    set< idx_t >      local;
-    vector< idx_t >   left_nodes( dofs.nnodes() );
-    vector< idx_t >   loc2glo( ndofs );
-    idxmap_t          glo2loc;
-    idx_t             pos = 0;
-    vector< uint >    part( ndofs );
+    const size_t           ndofs       = dofs.nnodes();
+    const size_t           half        = ndofs / 2;
+    uint                   min_ec_dim  = 0;
+    double                 min_edgecut = Limits::max< double >();
+    std::vector< node_t >  arr_dof( dofs.nnodes() );
+    std::set< idx_t >      local;
+    std::vector< idx_t >   left_nodes( dofs.nnodes() );
+    std::vector< idx_t >   loc2glo( ndofs );
+    idxmap_t               glo2loc;
+    idx_t                  pos = 0;
+    std::vector< uint >    part( ndofs );
 
     for ( auto  dof : dofs )
     {
@@ -862,13 +861,13 @@ TAutoBSPPartStrat::TAutoBSPPartStrat ( const split_axis_mode_t  split_axis_mode 
 // basic method to partition given indexset
 //
 void
-TAutoBSPPartStrat::partition ( const TCoordinate *  coord,
-                               const TNodeSet &     dofs,
-                               TNodeSet &           left,
-                               TNodeSet &           right,
-                               const TBBox &        bbox,
-                               vector< TBBox > &    son_bbox,
-                               const uint           depth ) const
+TAutoBSPPartStrat::partition ( const TCoordinate *     coord,
+                               const TNodeSet &        dofs,
+                               TNodeSet &              left,
+                               TNodeSet &              right,
+                               const TBBox &           bbox,
+                               std::vector< TBBox > &  son_bbox,
+                               const uint              depth ) const
 {
     _geom.partition( coord, dofs, left, right, bbox, son_bbox, depth );
 

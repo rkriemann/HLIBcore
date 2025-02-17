@@ -32,7 +32,6 @@ namespace Hpro
 namespace fs = boost::filesystem;
 
 using std::string;
-using std::vector;
 using std::list;
 using std::unique_ptr;
 using std::make_unique;
@@ -154,11 +153,11 @@ THproGridIO::read ( const string & filename ) const
     // read number of vertices, edges and faces
     //
 
-    string            line;
-    vector< string >  parts;
-    uint              n_vertices = 0;
-    uint              n_edges    = 0;
-    uint              n_faces    = 0;
+    string  line;
+    auto    parts      = std::vector< string >();
+    uint    n_vertices = 0;
+    uint    n_edges    = 0;
+    uint    n_faces    = 0;
 
     while ( in.good() )
     {
@@ -216,7 +215,7 @@ THproGridIO::read ( const string & filename ) const
     // read vertices
     //
 
-    vector< T3Point >  vertices( n_vertices );
+    std::vector< T3Point >  vertices( n_vertices );
 
     for ( uint i = 0; i < n_vertices; i++ )
     {
@@ -295,7 +294,7 @@ THproGridIO::read ( const string & filename ) const
     // read triangles
     //
 
-    vector< TGrid::triangle_t >  triangles( n_faces );
+    std::vector< TGrid::triangle_t >  triangles( n_faces );
     
     for ( uint i = 0; i < n_faces; i++ )
     {
@@ -492,7 +491,7 @@ TPlyGridIO::read ( const string & filename ) const
     //
 
     string             line;
-    vector< string >   parts;
+    auto               parts        = std::vector< string >();
     plyfmt_t           format       = PLY_ASCII;
     uint               nvertices    = 0;
     uint               nfaces       = 0;
@@ -664,9 +663,9 @@ TPlyGridIO::read ( const string & filename ) const
     // now read actual data according to order defined in header
     //
 
-    vector< T3Point >            vertices( nvertices );
-    vector< T3Point >            vtx_normal( nvertices );
-    vector< TGrid::triangle_t >  triangles( nfaces );
+    std::vector< T3Point >            vertices( nvertices );
+    std::vector< T3Point >            vtx_normal( nvertices );
+    std::vector< TGrid::triangle_t >  triangles( nfaces );
 
     while ( elements.size() > 0 )
     {
@@ -853,9 +852,9 @@ TSurfMeshGridIO::read ( const string & filename ) const
     // read vertices
     //
 
-    vector< string >   parts;
-    uint               n_vertices = 0;
-    vector< T3Point >  vertices;
+    std::vector< string >   parts;
+    uint                    n_vertices = 0;
+    std::vector< T3Point >  vertices;
 
     std::getline( in, line );
     n_vertices = str_to_int( line );
@@ -889,8 +888,8 @@ TSurfMeshGridIO::read ( const string & filename ) const
     // read faces
     //
 
-    vector< TGrid::triangle_t >  triangles;
-    uint                         n_faces = 0;
+    std::vector< TGrid::triangle_t >  triangles;
+    uint                              n_faces = 0;
     
     std::getline( in, line );
     n_faces = str_to_int( line );
@@ -973,8 +972,8 @@ TGMSHGridIO::read ( const string & filename ) const
     // file format
     //
 
-    string            line( size_t(1024), '\0' );
-    vector< string >  parts;
+    string                 line( size_t(1024), '\0' );
+    std::vector< string >  parts;
 
     std::getline( in, line );
     boost::trim_right( line );
@@ -1002,8 +1001,8 @@ TGMSHGridIO::read ( const string & filename ) const
     // read vertices
     //
 
-    size_t             nvertices = 0;
-    vector< T3Point >  vertices;
+    size_t                  nvertices = 0;
+    std::vector< T3Point >  vertices;
     
     std::getline( in, line );
     boost::trim_right( line );
@@ -1055,10 +1054,10 @@ TGMSHGridIO::read ( const string & filename ) const
     // read triangles
     //
 
-    size_t                       nfaces     = 0;
-    size_t                       ntriangles = 0;
-    vector< TGrid::triangle_t >  faces;
-    vector< bool >               vtx_used( nvertices, false );
+    size_t                            nfaces     = 0;
+    size_t                            ntriangles = 0;
+    std::vector< TGrid::triangle_t >  faces;
+    std::vector< bool >               vtx_used( nvertices, false );
     
     std::getline( in, line );
     boost::trim_right( line );
@@ -1136,8 +1135,8 @@ TGMSHGridIO::read ( const string & filename ) const
         // remove unused vertices
         //
         
-        size_t           n_used_vertices = 0;
-        vector< idx_t >  mapping( nvertices );
+        size_t                n_used_vertices = 0;
+        std::vector< idx_t >  mapping( nvertices );
 
         // remove unused vertices
         for ( size_t  i = 0; i < nvertices; ++i )

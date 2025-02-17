@@ -19,8 +19,6 @@
 namespace Hpro
 {
 
-using std::vector;
-
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 //
@@ -37,7 +35,7 @@ void
 exp_simd ( const TGrid::triangle_t &                             tri0,
            const TGrid::triangle_t &                             tri1,
            const tripair_quad_rule_t< real_type_t< value_t > > * rule,
-           vector< value_t > &                                   values,
+           std::vector< value_t > &                              values,
            const T_ansatzsp *                                    ansatz_sp,
            const T_testsp *                                      test_sp )
 {
@@ -143,7 +141,7 @@ void
 exp_eval_dx_simd ( const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
                    const T3Point                                     vx[3],
                    const T3Point &                                   vy,
-                   vector< value_t > &                               values )
+                   std::vector< value_t > &                          values )
 {
     using vpacked = T_packed;
 
@@ -208,7 +206,7 @@ exp_eval_dx_simd ( const tri_quad_rule_t< real_type_t< value_t > > & quad_rule,
         const TGrid::triangle_t &           tri0, \
         const TGrid::triangle_t &           tri1, \
         const tripair_quad_rule_t< real_type_t< type > > * rule, \
-        vector< type > &                    values, \
+        std::vector< type > &               values, \
         const T_ansatzsp *                  ansatz_sp, \
         const T_testsp *                    test_sp );
 
@@ -226,13 +224,13 @@ void
 exp_eval_dx_simd< float, packed< float, SIMD_ISA > > ( const tri_quad_rule_t< float > &  quad_rule,
                                                        const T3Point                     vx[3],
                                                        const T3Point &                   vy,
-                                                       vector< float > &                 values );
+                                                       std::vector< float > &            values );
 template
 void
 exp_eval_dx_simd< double, packed< double, SIMD_ISA > > ( const tri_quad_rule_t< double > &  quad_rule,
                                                          const T3Point                      vx[3],
                                                          const T3Point &                    vy,
-                                                         vector< double > &                 values );
+                                                         std::vector< double > &            values );
 
 }// namespace Hpro
 

@@ -40,7 +40,6 @@ namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 #endif
 
-using std::vector;
 using std::unique_ptr;
 using std::make_unique;
 
@@ -282,12 +281,12 @@ mat5_read_coeff ( std::istream &  in,
 //
 template < typename value_t >
 void
-mat5_read_sparse ( std::istream &         in,
-                   const bool             byteswap,
-                   const vector< uint > & dims,
-                   const uint             nonzero,
-                   TMatrix< value_t > **  M,
-                   TVector< value_t > **  v )
+mat5_read_sparse ( std::istream &               in,
+                   const bool                   byteswap,
+                   const std::vector< uint > &  dims,
+                   const uint                   nonzero,
+                   TMatrix< value_t > **        M,
+                   TVector< value_t > **        v )
 {
     using  real_t = real_type_t< value_t >;
     
@@ -309,10 +308,10 @@ mat5_read_sparse ( std::istream &         in,
     // read row indices
     //
 
-    matmi_t            type = matmi_t( 0 );
-    int32_t            size = 0;
-    size_t             nnz  = nonzero;
-    vector< int32_t >  rowptr( nnz );
+    matmi_t                 type = matmi_t( 0 );
+    int32_t                 size = 0;
+    size_t                  nnz  = nonzero;
+    std::vector< int32_t >  rowptr( nnz );
 
     mat5_readtag( in, type, size, byteswap );
 
@@ -339,7 +338,7 @@ mat5_read_sparse ( std::istream &         in,
     // read column indices
     //
 
-    vector< int32_t >  colind( dims[1]+1 );
+    std::vector< int32_t >  colind( dims[1]+1 );
 
     mat5_readtag( in, type, size, byteswap );
 
@@ -385,7 +384,7 @@ mat5_read_sparse ( std::istream &         in,
         // build row-wise numbering for sparse matrix
         //
         
-        vector< int32_t >  tmp( dims[0], 0 );
+        std::vector< int32_t >  tmp( dims[0], 0 );
         
         for ( uint j = 0; j < dims[1]; j++ )
         {
@@ -429,7 +428,7 @@ mat5_read_sparse ( std::istream &         in,
     }// if
     else
     {
-        vector< int32_t >  tmp( dims[0], 0 );
+        std::vector< int32_t >  tmp( dims[0], 0 );
         
         for ( uint col = 0; col < dims[1]; col++ )
         {
@@ -471,7 +470,7 @@ mat5_read_sparse ( std::istream &         in,
         }// if
         else
         {
-            vector< int32_t >  tmp( dims[0], 0 );
+            std::vector< int32_t >  tmp( dims[0], 0 );
         
             for ( uint col = 0; col < dims[1]; col++ )
             {
@@ -525,11 +524,11 @@ mat5_read_sparse ( std::istream &         in,
 //
 template < typename value_t >
 void
-mat5_read_dblarray ( std::istream &          in,
-                     const bool              byteswap,
-                     const vector< uint > &  dims,
-                     TMatrix< value_t > **   M,
-                     TVector< value_t > **   v )
+mat5_read_dblarray ( std::istream &               in,
+                     const bool                   byteswap,
+                     const std::vector< uint > &  dims,
+                     TMatrix< value_t > **        M,
+                     TVector< value_t > **        v )
 {
     using  real_t = real_type_t< value_t >;
     
@@ -804,10 +803,10 @@ mat5_read_element ( std::istream &         in,
     if ( type != MI_INT32 )
         HERROR( ERR_FMT_MATLAB, "mat5_read_dblarray", "expected INT32" );
 
-    const uint     ndims    = size / 4;
-    vector< uint > dims( ndims );
-    uint           nentries = 1;
-    bool           skip     = false;  // indicates skipping of data element
+    const uint           ndims    = size / 4;
+    std::vector< uint >  dims( ndims );
+    uint                 nentries = 1;
+    bool                 skip     = false;  // indicates skipping of data element
 
     for ( uint i = 0; i < ndims; i++ )
     {
@@ -875,8 +874,8 @@ mat5_read_element ( std::istream &         in,
             if ( type != MI_INT8 )
                 HERROR( ERR_FMT_MATLAB, "mat5_read_element", "expected INT8" );
 
-            const uint        fields = size / fnlen;
-            vector< std::string >  fieldnames( fields );
+            const uint                  fields = size / fnlen;
+            std::vector< std::string >  fieldnames( fields );
 
             for ( uint i = 0; i < fields; i++ )
             {
@@ -1047,10 +1046,10 @@ mat5_guess_type ( std::istream &         in,
     if ( type != MI_INT32 )
         HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT32" );
 
-    const uint     ndims    = size / 4;
-    vector< uint > dims( ndims );
-    uint           nentries = 1;
-    bool           skip     = false;  // indicates skipping of data element
+    const uint           ndims    = size / 4;
+    std::vector< uint >  dims( ndims );
+    uint                 nentries = 1;
+    bool                 skip     = false;  // indicates skipping of data element
 
     for ( uint i = 0; i < ndims; i++ )
     {
@@ -1104,8 +1103,8 @@ mat5_guess_type ( std::istream &         in,
             if ( type != MI_INT8 )
                 HERROR( ERR_FMT_MATLAB, "mat5_guess_type", "expected INT8" );
 
-            const uint             fields = size / fnlen;
-            vector< std::string >  fieldnames( fields );
+            const uint                  fields = size / fnlen;
+            std::vector< std::string >  fieldnames( fields );
 
             for ( uint i = 0; i < fields; i++ )
             {
@@ -1464,7 +1463,7 @@ write_sparse ( std::ostream &                    out,
     // build column-wise numbering for sparse matrix
     //
 
-    vector< int32_t >  tmp( S->cols(), 0 );
+    std::vector< int32_t >  tmp( S->cols(), 0 );
     
     for ( int i = 0; i < rows; i++ )
     {
@@ -1479,8 +1478,8 @@ write_sparse ( std::ostream &                    out,
     // build column indices in CCS format
     //
 
-    vector< int32_t >  ccs_colind( cols+1 );
-    int                pos = 0;
+    std::vector< int32_t >  ccs_colind( cols+1 );
+    int                     pos = 0;
     
     for ( int i = 0; i < cols; i++ )
     {
@@ -1494,7 +1493,7 @@ write_sparse ( std::ostream &                    out,
     // build row indices in CCS format
     //
 
-    vector< int32_t >  ccs_rowptr( nnz );
+    std::vector< int32_t >  ccs_rowptr( nnz );
 
     for ( int i = 0; i < cols; i++ )
         tmp[i] = 0;
@@ -1518,7 +1517,7 @@ write_sparse ( std::ostream &                    out,
     // build new coeff array in CCS format
     //
 
-    vector< double >  ccs_coeff( nnz );
+    std::vector< double >  ccs_coeff( nnz );
 
     for ( int i = 0; i < cols; i++ )
         tmp[i] = 0;

@@ -24,8 +24,6 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 
-using namespace std;
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -250,7 +248,7 @@ __autotimer_print ( const std::string &  format,
 std::string
 TDuration::to_string () const
 {
-    return str( boost::format( "%.2fs" ) % max( 0.0, seconds() ) );
+    return str( boost::format( "%.2fs" ) % std::max( 0.0, seconds() ) );
 }
 
 //
@@ -801,6 +799,8 @@ print_registered ()
 //
 /////////////////////////////////////////////////////////////////
 
+#include <hpro/base/alloc.hh>
+
 #ifdef LINUX
 #include <stdio.h>
 #include <unistd.h>
@@ -863,7 +863,8 @@ TMutex                                       mem_mutex;
 void *
 alloc ( const size_t  size )
 {
-    auto  p = ::malloc( size );
+    auto  alloc = allocator< uint8_t >();
+    auto  p     = alloc.allocate( size );
 
     {
         TScopedLock  lock( mem_mutex );
@@ -879,7 +880,8 @@ alloc ( const size_t  size )
 // wrapper around free for statistics
 //
 void
-free ( void *  ptr )
+free ( void *        ptr,
+       const size_t  size )
 {
     {
         TScopedLock  lock( mem_mutex );
@@ -890,7 +892,9 @@ free ( void *  ptr )
         mem_sizes[ ptr ] = 0;
     }
 
-    ::free( ptr );
+    auto  alloc = allocator< uint8_t >();
+    
+    alloc.deallocate( reinterpret_cast< uint8_t * >( ptr ), size );
 }
 
 //
@@ -913,19 +917,19 @@ usage ()
     bool  success = false;
             
     {
-        ostringstream  filename;
+        std::ostringstream  filename;
                 
         filename << "/proc/" << getpid() << "/smaps";
 
         if ( boost::filesystem::exists( filename.str() ) )
         {
-            ifstream  file( filename.str().c_str() );
+            std::ifstream  file( filename.str().c_str() );
                 
             if ( ! file )
                 HERROR( ERR_FOPEN, "(TMemory) used", filename.str().c_str() );
 
-            string  buf;
-            size_t  size = 0;
+            std::string  buf;
+            size_t       size = 0;
                     
             buf.reserve( 256 );
                     
@@ -935,8 +939,8 @@ usage ()
                         
                 if ( buf.substr( 0, 7 ) == "Private" )
                 {
-                    istringstream  iss( buf.substr( 16 ) );
-                    size_t         lsize = 0;
+                    std::istringstream  iss( buf.substr( 16 ) );
+                    size_t              lsize = 0;
                             
                     iss >> lsize;
                     size += lsize;
@@ -957,8 +961,8 @@ usage ()
 
     if ( ! success )
     {
-        ostringstream  filename;
-        ifstream       file;
+        std::ostringstream  filename;
+        std::ifstream       file;
                 
         filename << "/proc/" << getpid() << "/statm";
                 
@@ -1089,7 +1093,7 @@ usage ()
     static TMutex  mutex;
             
     mutex.lock();
-    max_mem_usage = max( max_mem_usage, mem_size );
+    max_mem_usage = std::max( max_mem_usage, mem_size );
     mutex.unlock();
             
     return mem_size;
@@ -1120,12 +1124,12 @@ std::string
 to_string ( const size_t byteval,
             const uint   base )
 {
-    ostringstream  str;
-    size_t         bytes     = byteval;
-    const char *   units10[] = { "B", "kB", "MB", "GB", "TB", "PB", "EB" };
-    const char *   units2[]  = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
-    const char **  units     = ( base == 10 ? units10 : units2 );
-    const size_t   mult      = ( base == 10 ? 1000 : 1024 );
+    std::ostringstream  str;
+    size_t              bytes     = byteval;
+    const char *        units10[] = { "B", "kB", "MB", "GB", "TB", "PB", "EB" };
+    const char *        units2[]  = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
+    const char **       units     = ( base == 10 ? units10 : units2 );
+    const size_t        mult      = ( base == 10 ? 1000 : 1024 );
     
     if ( bytes < mult )
         str << bytes << ' ' << units[0];

@@ -16,8 +16,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 //
@@ -35,19 +33,19 @@ using namespace std;
 namespace
 {
 
-vector< vector< T2Point > * >  cache_eq_pts1, cache_eq_pts2;
-vector< vector< double > >     cache_eq_wghts;
-vector< vector< T2Point > * >  cache_ed_pts1, cache_ed_pts2;
-vector< vector< double > >     cache_ed_wghts;
-vector< vector< T2Point > * >  cache_vt_pts1, cache_vt_pts2;
-vector< vector< double > >     cache_vt_wghts;
-vector< vector< T2Point > * >  cache_ne_pts1, cache_ne_pts2;
-vector< vector< double > >     cache_ne_wghts;
+std::vector< std::vector< T2Point > * >  cache_eq_pts1, cache_eq_pts2;
+std::vector< std::vector< double > >     cache_eq_wghts;
+std::vector< std::vector< T2Point > * >  cache_ed_pts1, cache_ed_pts2;
+std::vector< std::vector< double > >     cache_ed_wghts;
+std::vector< std::vector< T2Point > * >  cache_vt_pts1, cache_vt_pts2;
+std::vector< std::vector< double > >     cache_vt_wghts;
+std::vector< std::vector< T2Point > * >  cache_ne_pts1, cache_ne_pts2;
+std::vector< std::vector< double > >     cache_ne_wghts;
 
-TMutex                         cache_eq_mutex;
-TMutex                         cache_ed_mutex;
-TMutex                         cache_vt_mutex;
-TMutex                         cache_ne_mutex;
+TMutex  cache_eq_mutex;
+TMutex  cache_ed_mutex;
+TMutex  cache_vt_mutex;
+TMutex  cache_ne_mutex;
 
 }// namespace
 
@@ -78,11 +76,11 @@ TSauterTriQuad::~TSauterTriQuad ()
 // construct quadrature points and weights
 //
 void
-TSauterTriQuad::build ( const uint           ncommon,
-                        const uint           order,
-                        vector< T2Point > &  t1,
-                        vector< T2Point > &  t2,
-                        vector< double > &   w ) const
+TSauterTriQuad::build ( const uint                ncommon,
+                        const uint                order,
+                        std::vector< T2Point > &  t1,
+                        std::vector< T2Point > &  t2,
+                        std::vector< double > &   w ) const
 {
     switch ( ncommon )
     {
@@ -96,12 +94,12 @@ TSauterTriQuad::build ( const uint           ncommon,
 }
 
 void
-TSauterTriQuad::build ( const uint          ncommon,
-                        const uint          order,
-                        vector< rule_t > &  rule ) const
+TSauterTriQuad::build ( const uint               ncommon,
+                        const uint               order,
+                        std::vector< rule_t > &  rule ) const
 {
-    vector< T2Point >  tri1pts, tri2pts;
-    vector< double >   weights;
+    std::vector< T2Point >  tri1pts, tri2pts;
+    std::vector< double >   weights;
 
     build( ncommon, order, tri1pts, tri2pts, weights );
 
@@ -119,12 +117,12 @@ TSauterTriQuad::build ( const uint          ncommon,
 // return quadrature points for given triangle pair
 //
 uint
-TSauterTriQuad::points ( const uint                  order,
-                         const vector< double * > &  tri1,
-                         const vector< double * > &  tri2,
-                         vector< T3Point > &         tri1_pts,
-                         vector< T3Point > &         tri2_pts,
-                         vector< double > &          weights ) const
+TSauterTriQuad::points ( const uint                       order,
+                         const std::vector< double * > &  tri1,
+                         const std::vector< double * > &  tri2,
+                         std::vector< T3Point > &         tri1_pts,
+                         std::vector< T3Point > &         tri2_pts,
+                         std::vector< double > &          weights ) const
 {
     //
     // count number of common vertices and
@@ -185,8 +183,8 @@ TSauterTriQuad::points ( const uint                  order,
     // compute quadrature points based on detected situation
     //
 
-    vector< T2Point > * quad1_pts;
-    vector< T2Point > * quad2_pts;
+    std::vector< T2Point > * quad1_pts;
+    std::vector< T2Point > * quad2_pts;
     
     switch ( common_vertices )
     {
@@ -199,8 +197,8 @@ TSauterTriQuad::points ( const uint                  order,
         }// if
         else
         {
-            quad1_pts = new vector< T2Point >;
-            quad2_pts = new vector< T2Point >;
+            quad1_pts = new std::vector< T2Point >;
+            quad2_pts = new std::vector< T2Point >;
                 
             cache_eq_pts1.resize( order+1 );
             cache_eq_pts2.resize( order+1 );
@@ -229,8 +227,8 @@ TSauterTriQuad::points ( const uint                  order,
         }// if
         else
         {
-            quad1_pts = new vector< T2Point >;
-            quad2_pts = new vector< T2Point >;
+            quad1_pts = new std::vector< T2Point >;
+            quad2_pts = new std::vector< T2Point >;
                 
             cache_ed_pts1.resize( order+1 );
             cache_ed_pts2.resize( order+1 );
@@ -259,8 +257,8 @@ TSauterTriQuad::points ( const uint                  order,
         }// if
         else
         {
-            quad1_pts = new vector< T2Point >;
-            quad2_pts = new vector< T2Point >;
+            quad1_pts = new std::vector< T2Point >;
+            quad2_pts = new std::vector< T2Point >;
                 
             cache_vt_pts1.resize( order+1 );
             cache_vt_pts2.resize( order+1 );
@@ -290,8 +288,8 @@ TSauterTriQuad::points ( const uint                  order,
         }// if
         else
         {
-            quad1_pts = new vector< T2Point >;
-            quad2_pts = new vector< T2Point >;
+            quad1_pts = new std::vector< T2Point >;
+            quad2_pts = new std::vector< T2Point >;
                 
             cache_ne_pts1.resize( order+1 );
             cache_ne_pts2.resize( order+1 );
@@ -443,16 +441,16 @@ TSauterTriQuad::points ( const uint                  order,
 // - dist : triangles have positive distance
 //
 void
-TSauterTriQuad::quad_equ ( const uint           order,
-                           vector< T2Point > &  t1,
-                           vector< T2Point > &  t2,
-                           vector< double > &   w ) const
+TSauterTriQuad::quad_equ ( const uint                order,
+                           std::vector< T2Point > &  t1,
+                           std::vector< T2Point > &  t2,
+                           std::vector< double > &   w ) const
 {
-    uint              nn, q = 0;
-    const uint        loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
-    vector< double >  x1( order ), w1( order );
-    vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
-    TGaussQuad        quad;
+    uint                   nn, q = 0;
+    const uint             loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
+    std::vector< double >  x1( order ), w1( order );
+    std::vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
+    TGaussQuad             quad;
 
     quad.build( order, x1, w1 );
     quad.build( loc_order_xi, x1_xi, w1_xi );
@@ -547,16 +545,16 @@ TSauterTriQuad::quad_equ ( const uint           order,
 }
 
 void
-TSauterTriQuad::quad_edge ( const uint           order,
-                            vector< T2Point > &  t1,
-                            vector< T2Point > &  t2,
-                            vector< double > &   w ) const
+TSauterTriQuad::quad_edge ( const uint                order,
+                            std::vector< T2Point > &  t1,
+                            std::vector< T2Point > &  t2,
+                            std::vector< double > &   w ) const
 {
-    uint              nn, q = 0;
-    const uint        loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
-    vector< double >  x1( order ), w1( order );
-    vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
-    TGaussQuad        quad;
+    uint                   nn, q = 0;
+    const uint             loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
+    std::vector< double >  x1( order ), w1( order );
+    std::vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
+    TGaussQuad             quad;
 
     quad.build( order, x1, w1 );
     quad.build( loc_order_xi, x1_xi, w1_xi );
@@ -642,16 +640,16 @@ TSauterTriQuad::quad_edge ( const uint           order,
 }
 
 void
-TSauterTriQuad::quad_vtx ( const uint           order,
-                           vector< T2Point > &  t1,
-                           vector< T2Point > &  t2,
-                           vector< double > &   w ) const
+TSauterTriQuad::quad_vtx ( const uint                order,
+                           std::vector< T2Point > &  t1,
+                           std::vector< T2Point > &  t2,
+                           std::vector< double > &   w ) const
 {
-    uint              nn, q = 0;
-    const uint        loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
-    vector< double >  x1( order ), w1( order );
-    vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
-    TGaussQuad        quad;
+    uint                   nn, q = 0;
+    const uint             loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
+    std::vector< double >  x1( order ), w1( order );
+    std::vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
+    TGaussQuad             quad;
 
     quad.build( order, x1, w1 );
     quad.build( loc_order_xi, x1_xi, w1_xi );
@@ -710,16 +708,16 @@ TSauterTriQuad::quad_vtx ( const uint           order,
 }
 
 void
-TSauterTriQuad::quad_dist ( const uint           order,
-                            vector< T2Point > &  t1,
-                            vector< T2Point > &  t2,
-                            vector< double > &   w ) const
+TSauterTriQuad::quad_dist ( const uint                order,
+                            std::vector< T2Point > &  t1,
+                            std::vector< T2Point > &  t2,
+                            std::vector< double > &   w ) const
 {
-    uint              nn, q = 0;
-    const uint        loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
-    vector< double >  x1( order ), w1( order );
-    vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
-    TGaussQuad        quad;
+    uint                   nn, q = 0;
+    const uint             loc_order_xi = ( _order_xi == 0 ? order : Math::min( _order_xi, order ) );
+    std::vector< double >  x1( order ), w1( order );
+    std::vector< double >  x1_xi( loc_order_xi ), w1_xi( loc_order_xi );
+    TGaussQuad             quad;
 
     quad.build( order, x1, w1 );
     quad.build( loc_order_xi, x1_xi, w1_xi );

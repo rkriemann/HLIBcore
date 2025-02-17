@@ -16,8 +16,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace
 {
 
@@ -28,11 +26,11 @@ template < typename T >
 class TRevPermComp
 {
 private:
-    const vector< T > &  _data;
+    const std::vector< T > &  _data;
     
 public:
 
-    TRevPermComp ( const vector< T > &  data )
+    TRevPermComp ( const std::vector< T > &  data )
             : _data( data )
     {}
     
@@ -54,9 +52,9 @@ public:
 // multifit algorithm
 //
 bool
-TMFitSched::schedule ( const uint                p,
-                       vector< int > &           sched,
-                       const vector< double > &  costs ) const
+TMFitSched::schedule ( const uint                     p,
+                       std::vector< int > &           sched,
+                       const std::vector< double > &  costs ) const
 {
     //
     // handle special case
@@ -78,7 +76,7 @@ TMFitSched::schedule ( const uint                p,
     // sort costs (higher first)
     //
     
-    vector< size_t >        perm( n );
+    std::vector< size_t >   perm( n );
     TRevPermComp< double >  cmp( costs );
 
     for ( size_t  i = 0; i < n; ++i )
@@ -88,7 +86,7 @@ TMFitSched::schedule ( const uint                p,
     std::sort( perm.begin(), perm.end(), cmp );
 
     // apply permutation to costs array
-    vector< double >  tmp_costs( costs );
+    std::vector< double >  tmp_costs( costs );
 
     for ( size_t  i = 0; i < n; ++i )
         tmp_costs[i] = costs[ perm[i] ];
@@ -97,24 +95,24 @@ TMFitSched::schedule ( const uint                p,
     // do binary search
     //
 
-    vector< int >  best_sched( n );
-    bool           found_valid = false;
-    uint           proc;
-    double         c, cmin, cmax;
-    uint           depth = 0;
+    std::vector< int >  best_sched( n );
+    bool                found_valid = false;
+    uint                proc;
+    double              c, cmin, cmax;
+    uint                depth = 0;
 
     // determine search interval
     cmax = c = 0;
     for ( size_t  i = 0; i < n; i++ )
     {
         c   += tmp_costs[i];
-        cmax = max( cmax, tmp_costs[i] );
+        cmax = std::max( cmax, tmp_costs[i] );
     }// for
 
     c /= double(p);
 
-    cmin = max( c, cmax );
-    cmax = max( 2*c, cmax );
+    cmin = std::max( c, cmax );
+    cmax = std::max( 2*c, cmax );
 
     while ( depth < _search_depth )
     {
@@ -158,14 +156,14 @@ TMFitSched::schedule ( const uint                p,
 // bin-packing "first fit decreasing" (FFD) algorithm
 //
 uint
-TMFitSched::ffd ( double                   cmax,
-                  uint                   p,
-                  const vector< double > & costs,
-                  vector< int >        & sched ) const
+TMFitSched::ffd ( double                         cmax,
+                  uint                           p,
+                  const std::vector< double > &  costs,
+                  std::vector< int > &           sched ) const
 {
-    vector< double >  bins( p );
-    size_t            n = costs.size();
-    uint              last_bin = 0;
+    std::vector< double >  bins( p );
+    size_t                 n = costs.size();
+    uint                   last_bin = 0;
 
     //
     // we asume that the costs are ordered

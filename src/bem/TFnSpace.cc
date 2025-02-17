@@ -13,7 +13,6 @@
 namespace Hpro
 {
 
-using std::vector;
 using std::unique_ptr;
 using std::make_unique;
 
@@ -55,12 +54,12 @@ template < typename value_t >
 unique_ptr< TCoordinate >
 TFnSpace< value_t >::build_coord ( const bool  with_bbox ) const
 {
-    const size_t       nindices = _indices.size();
-    vector< T3Point >  coord( nindices );
+    const size_t            nindices = _indices.size();
+    std::vector< T3Point >  coord( nindices );
 
     if ( with_bbox )
     {
-        vector< TBBox >  bbox( nindices );
+        std::vector< TBBox >  bbox( nindices );
 
         for ( size_t  i = 0; i < nindices; ++i )
         {
@@ -269,8 +268,8 @@ TLinearFnSpace< value_t >::construct ()
     // built start-end-array of positions in the support-list array
     //
 
-    const size_t    n_triangles = this->_grid->n_triangles();
-    vector< uint >  count( n_vertices, 0 );
+    const size_t         n_triangles = this->_grid->n_triangles();
+    std::vector< uint >  count( n_vertices, 0 );
     
     for ( idx_t  i = 0; i < idx_t( n_triangles ); ++i )
     {

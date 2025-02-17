@@ -18,8 +18,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace B = BLAS;
 
 /////////////////////////////////////////////////////////////////////
@@ -145,16 +143,16 @@ TInvarBasisQuadBEMBF< T_ansatzsp, T_testsp, T_value >::compute_basis_func ()
 //
 template < typename ansatzsp_t, typename testsp_t, typename value_t >
 void
-TInvarBasisQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx_t > &    row_ind,
-                                                               const vector< idx_t > &    col_ind,
-                                                               BLAS::Matrix< value_t > &  values ) const
+TInvarBasisQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const std::vector< idx_t > &  row_ind,
+                                                               const std::vector< idx_t > &  col_ind,
+                                                               BLAS::Matrix< value_t > &     values ) const
 {
     //
     // local types for storing triangle sets and for
     // mapping indices to position in \a values
     //
     
-    using  tri_set_t = set< idx_t >;
+    using  tri_set_t = std::set< idx_t >;
     using  val_map_t = std::unordered_map< idx_t, idx_t >;
 
     //
@@ -205,7 +203,7 @@ TInvarBasisQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx
     // and integrate kernel function
     //
 
-    vector< value_t >  kernel_values;
+    std::vector< value_t >  kernel_values;
 
     B::fill( value_t(0), values );
 
@@ -290,9 +288,9 @@ TInvarBasisQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx
 //
 template <>
 void
-TInvarBasisQuadBEMBF< TConstFnSpace< float >, TConstFnSpace< float >, float >::eval  ( const vector< idx_t > &  row_ind,
-                                                                                       const vector< idx_t > &  col_ind,
-                                                                                       BLAS::Matrix< float > &  values ) const
+TInvarBasisQuadBEMBF< TConstFnSpace< float >, TConstFnSpace< float >, float >::eval  ( const std::vector< idx_t > &  row_ind,
+                                                                                       const std::vector< idx_t > &  col_ind,
+                                                                                       BLAS::Matrix< float > &       values ) const
 {
     const size_t        nrows     = row_ind.size();
     const size_t        ncols     = col_ind.size();
@@ -364,7 +362,7 @@ TInvarBasisQuadBEMBF< TConstFnSpace< float >, TConstFnSpace< float >, float >::e
     }// if
     else
     {
-        vector< value_t >  kernel_values;
+        std::vector< value_t >  kernel_values;
     
         for ( size_t  col = 0; col < ncols; col++ )
         {
@@ -423,8 +421,8 @@ template <>
 void
 TInvarBasisQuadBEMBF< TConstFnSpace< float >,
                       TConstFnSpace< float >,
-                      std::complex< float > >::eval  ( const vector< idx_t > &                  row_ind,
-                                                       const vector< idx_t > &                  col_ind,
+                      std::complex< float > >::eval  ( const std::vector< idx_t > &             row_ind,
+                                                       const std::vector< idx_t > &             col_ind,
                                                        BLAS::Matrix< std::complex< float > > &  values ) const
 {
     const size_t        nrows     = row_ind.size();
@@ -497,7 +495,7 @@ TInvarBasisQuadBEMBF< TConstFnSpace< float >,
     }// if
     else
     {
-        vector< value_t >  kernel_values;
+        std::vector< value_t >  kernel_values;
     
         for ( size_t  col = 0; col < ncols; col++ )
         {
@@ -554,9 +552,9 @@ TInvarBasisQuadBEMBF< TConstFnSpace< float >,
 
 template <>
 void
-TInvarBasisQuadBEMBF< TConstFnSpace< double >, TConstFnSpace< double >, double >::eval  ( const vector< idx_t > &   row_ind,
-                                                                                          const vector< idx_t > &   col_ind,
-                                                                                          BLAS::Matrix< double > &  values ) const
+TInvarBasisQuadBEMBF< TConstFnSpace< double >, TConstFnSpace< double >, double >::eval  ( const std::vector< idx_t > &  row_ind,
+                                                                                          const std::vector< idx_t > &  col_ind,
+                                                                                          BLAS::Matrix< double > &      values ) const
 {
     const size_t        nrows     = row_ind.size();
     const size_t        ncols     = col_ind.size();
@@ -628,7 +626,7 @@ TInvarBasisQuadBEMBF< TConstFnSpace< double >, TConstFnSpace< double >, double >
     }// if
     else
     {
-        vector< value_t >  kernel_values;
+        std::vector< value_t >  kernel_values;
     
         for ( size_t  col = 0; col < ncols; col++ )
         {
@@ -687,8 +685,8 @@ template <>
 void
 TInvarBasisQuadBEMBF< TConstFnSpace< double >,
                       TConstFnSpace< double >,
-                      std::complex< double > >::eval  ( const vector< idx_t > &                   row_ind,
-                                                        const vector< idx_t > &                   col_ind,
+                      std::complex< double > >::eval  ( const std::vector< idx_t > &              row_ind,
+                                                        const std::vector< idx_t > &              col_ind,
                                                         BLAS::Matrix< std::complex< double > > &  values ) const
 {
     const size_t        nrows     = row_ind.size();
@@ -761,7 +759,7 @@ TInvarBasisQuadBEMBF< TConstFnSpace< double >,
     }// if
     else
     {
-        vector< value_t >  kernel_values;
+        std::vector< value_t >  kernel_values;
     
         for ( size_t  col = 0; col < ncols; col++ )
         {

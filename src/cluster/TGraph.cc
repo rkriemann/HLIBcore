@@ -17,7 +17,6 @@
 namespace Hpro
 {
 
-using std::vector;
 using std::list;
 using std::set;
 using std::map;
@@ -142,11 +141,11 @@ TGraph::TGraph ( any_const_sparse_matrix_t    S,
             // build mapping from masked nodes to original names
             //
 
-            const size_t      n_nodes   = S_ptr->nrows();
-            const bool        has_mask  = ( node_mask.size() == n_nodes );
-            vector< node_t >  name_map( n_nodes );
-            node_t            node_name = 0;
-            size_t            nexcluded = 0;
+            const size_t           n_nodes   = S_ptr->nrows();
+            const bool             has_mask  = ( node_mask.size() == n_nodes );
+            std::vector< node_t >  name_map( n_nodes );
+            node_t                 node_name = 0;
+            size_t                 nexcluded = 0;
 
             for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
             {
@@ -160,8 +159,8 @@ TGraph::TGraph ( any_const_sparse_matrix_t    S,
             // compute edge information, with masked nodes removed
             //
 
-            vector< size_t >  degrees( n_nodes );
-            size_t            n_edges = 0;
+            std::vector< size_t >  degrees( n_nodes );
+            size_t                 n_edges = 0;
 
             for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
             {
@@ -316,11 +315,11 @@ TGraph::max_degree_node () const
 void
 TGraph::build_scc ( list< TNodeSet > &  scc ) const
 {
-    const size_t    n_nodes  = nnodes();
-    size_t          nvisited = 0;
-    TNodeSet        curr_nodes( n_nodes );
-    TNodeSet        succ_nodes(  n_nodes );
-    vector< bool >  visited( n_nodes, false );
+    const size_t         n_nodes  = nnodes();
+    size_t               nvisited = 0;
+    TNodeSet             curr_nodes( n_nodes );
+    TNodeSet             succ_nodes(  n_nodes );
+    std::vector< bool >  visited( n_nodes, false );
     
     for ( auto  start_node : nodes() )
     {
@@ -365,20 +364,20 @@ TGraph::build_scc ( list< TNodeSet > &  scc ) const
 // w.r.t. marked nodes
 //
 void
-TGraph::build_scc ( list< TNodeSet > &      scc,
-                    const vector< uint > &  label,
-                    const uint              mark ) const
+TGraph::build_scc ( list< TNodeSet > &           scc,
+                    const std::vector< uint > &  label,
+                    const uint                   mark ) const
 {
     //
     // do a BFS through all nodes and build a component
     // via reachability
     //
 
-    const size_t    n_nodes  = nnodes();
-    size_t          nvisited = 0;
-    TNodeSet        curr_nodes( n_nodes );
-    TNodeSet        succ_nodes(  n_nodes );
-    vector< bool >  visited( n_nodes, false );
+    const size_t         n_nodes  = nnodes();
+    size_t               nvisited = 0;
+    TNodeSet             curr_nodes( n_nodes );
+    TNodeSet             succ_nodes(  n_nodes );
+    std::vector< bool >  visited( n_nodes, false );
     
     for ( auto  start_node : nodes() )
     {
@@ -434,7 +433,7 @@ TGraph::restrict ( const TNodeSet &  anodes ) const
         // mark local nodes
         //
 
-        vector< bool >  local( nnodes(), false );
+        std::vector< bool >  local( nnodes(), false );
 
         for ( auto  node : anodes )
             local[ node ] = true;
@@ -443,9 +442,9 @@ TGraph::restrict ( const TNodeSet &  anodes ) const
         // count edge number and map node names
         //
 
-        size_t            n_edges = 0;
-        vector< node_t >  namemap( nnodes(), 0 );
-        node_t            id     = 0;
+        size_t                 n_edges = 0;
+        std::vector< node_t >  namemap( nnodes(), 0 );
+        node_t                 id     = 0;
     
         for ( auto  node : anodes )
         {
@@ -546,11 +545,11 @@ TGraph::restrict ( const TNodeSet &  anodes ) const
 // (defined by <label>) and put nodes into interface
 //
 void
-TGraph::vertex_separator ( vector< uint > &  label,
-                           const TNodeSet &  left,
-                           const TNodeSet &  right,
-                           TNodeSet &        vertex_sep,
-                           const uint        if_label ) const
+TGraph::vertex_separator ( std::vector< uint > &  label,
+                           const TNodeSet &       left,
+                           const TNodeSet &       right,
+                           TNodeSet &             vertex_sep,
+                           const uint             if_label ) const
 {
 #if 0
     //
@@ -563,8 +562,8 @@ TGraph::vertex_separator ( vector< uint > &  label,
     // endpoints, if they differ, the edge is part of sep.
     //
 
-    const uint      n_nodes = n_nodes();
-    vector< uint >  edge_del( nedges(), false );
+    const uint           n_nodes = n_nodes();
+    std::vector< uint >  edge_del( nedges(), false );
 
     vertex_sep.resize( n_nodes );
     
@@ -740,7 +739,7 @@ TGraph::print ( const std::string &          filename,
     // label nodes
     //
 
-    vector< string >  colours( 7 );
+    std::vector< string >  colours( 7 );
 
     colours[1] = "red";
     colours[2] = "steelblue";
@@ -865,11 +864,11 @@ TEWGraph::TEWGraph ( any_const_sparse_matrix_t    S,
             // build mapping from masked nodes to original names
             //
 
-            const size_t      n_nodes    = S_ptr->rows();
-            const bool        has_mask   = ( node_mask.size() == n_nodes );
-            vector< node_t >  name_map( n_nodes );
-            node_t            node_name  = 0;
-            size_t            nexcluded  = 0;
+            const size_t           n_nodes    = S_ptr->rows();
+            const bool             has_mask   = ( node_mask.size() == n_nodes );
+            std::vector< node_t >  name_map( n_nodes );
+            node_t                 node_name  = 0;
+            size_t                 nexcluded  = 0;
 
             for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
             {
@@ -885,9 +884,9 @@ TEWGraph::TEWGraph ( any_const_sparse_matrix_t    S,
             // for edge weights
             //
 
-            vector< size_t >  degrees( n_nodes );
-            size_t            n_edges = 0;
-            real_t            min_val = real_t(0);
+            std::vector< size_t >  degrees( n_nodes );
+            size_t                 n_edges = 0;
+            real_t                 min_val = real_t(0);
     
             for ( node_t  node = 0; node < node_t( n_nodes ); node++ )
             {

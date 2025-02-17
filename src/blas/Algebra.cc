@@ -23,9 +23,6 @@
 namespace Hpro
 {
 
-using std::vector;
-using std::list;
-
 namespace BLAS
 {
 
@@ -365,8 +362,8 @@ invert ( T1 &  A )
     if ( A.nrows() != A.ncols() )
         HERROR( ERR_MAT_SIZE, "(BLAS) invert", "matrix is not square" );
     
-    blas_int_t            info = 0;
-    vector< blas_int_t >  ipiv( A.nrows() );
+    blas_int_t                  info = 0;
+    Hpro::vector< blas_int_t >  ipiv( A.nrows() );
     
     DO_CHECK_INF_NAN( A, "(BLAS) invert", "in input matrix" );
 
@@ -394,8 +391,8 @@ invert ( T1 &  A )
     if ( info < 0 ) HERROR( ERR_ARG, "(BLAS) invert",
                             to_string( "argument %d LAPACK::getri", -info ) );
     
-    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >  work( lwork, value_t(0) );
+    const blas_int_t         lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >  work( lwork, value_t(0) );
     
     getri( blas_int_t( A.nrows() ), A.data(), blas_int_t( A.col_stride() ),
            ipiv.data(), work.data(), lwork, info );
@@ -837,11 +834,11 @@ lq ( Matrix< value_t > &  A,
     {
         MKL_SEQ_START;
 
-        const auto              nrows = A.nrows();
-        const auto              ncols = A.ncols();
-        blas_int_t              info  = 0;
-        std::vector< value_t >  tau( ncols );
-        std::vector< value_t >  work( ncols );
+        const auto               nrows = A.nrows();
+        const auto               ncols = A.ncols();
+        blas_int_t               info  = 0;
+        Hpro::vector< value_t >  tau( ncols );
+        Hpro::vector< value_t >  work( ncols );
     
         gelq2( nrows, ncols, A.data(), A.col_stride(), tau.data(), work.data(), info );
 
@@ -890,9 +887,9 @@ lq ( Matrix< value_t > &  A,
         // adjust work space size
         lwork = std::max( lwork, blas_int_t( std::real( work_query ) ) );
     
-        vector< value_t >  tmp_space( lwork + ncols );
-        value_t *          work  = tmp_space.data();
-        value_t *          tau   = work + lwork;
+        Hpro::vector< value_t >  tmp_space( lwork + ncols );
+        value_t *                work = tmp_space.data();
+        value_t *                tau  = work + lwork;
 
         //
         // compute Householder vectors and R
@@ -1071,12 +1068,12 @@ qr ( Matrix< value_t > &  A,
 
         MKL_SEQ_START;
 
-        const auto              nrows = A.nrows();
-        const auto              ncols = A.ncols();
-        const auto              minrc = std::min( nrows, ncols );
-        blas_int_t              info  = 0;
-        std::vector< value_t >  tau( ncols );
-        std::vector< value_t >  work( ncols );
+        const auto               nrows = A.nrows();
+        const auto               ncols = A.ncols();
+        const auto               minrc = std::min( nrows, ncols );
+        blas_int_t               info  = 0;
+        Hpro::vector< value_t >  tau( ncols );
+        Hpro::vector< value_t >  work( ncols );
     
         geqr2( nrows, ncols, A.data(), nrows, tau.data(), work.data(), info );
 
@@ -1126,9 +1123,9 @@ qr ( Matrix< value_t > &  A,
         // adjust work space size
         lwork = std::max( lwork, blas_int_t( std::real( work_query ) ) );
     
-        vector< value_t >  tmp_space( lwork + m );
-        value_t *          work  = tmp_space.data();
-        value_t *          tau   = work + lwork;
+        Hpro::vector< value_t >  tmp_space( lwork + m );
+        value_t *                work  = tmp_space.data();
+        value_t *                tau   = work + lwork;
 
         //
         // compute Householder vectors and R
@@ -1272,9 +1269,9 @@ qrp ( Matrix< value_t > &          A,
     // workspace query
     //
 
-    value_t           dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
-    value_t           work_query = value_t(0);
-    vector< real_t >  rwork( 2*m );
+    value_t                 dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
+    value_t                 work_query = value_t(0);
+    Hpro::vector< real_t >  rwork( 2*m );
 
     geqp3( n, m, A.data(), blas_int_t( A.col_stride() ), P.data(),
            & dummy, & work_query, LAPACK_WS_QUERY, rwork.data(), info );
@@ -1293,9 +1290,9 @@ qrp ( Matrix< value_t > &          A,
     // adjust work space size
     lwork = std::max( lwork, blas_int_t( std::real( work_query ) ) );
     
-    vector< value_t >  tmp_space( lwork + m );
-    value_t *          work  = tmp_space.data();
-    value_t *          tau   = work + lwork;
+    Hpro::vector< value_t >  tmp_space( lwork + m );
+    value_t *                work  = tmp_space.data();
+    value_t *                tau   = work + lwork;
 
     //
     // compute Householder vectors and R
@@ -1394,12 +1391,12 @@ qrp_trunc ( T &                              A,
     // workspace query
     //
 
-    blas_int_t        ntrunc     = ( acc.is_fixed_rank() ? acc.rank() : std::min( n, m ) );
-    real_t            atrunc     = acc.abs_eps();
-    real_t            rtrunc     = ( acc.is_fixed_rank() ? real_t(0)  : acc.rel_eps() );
-    value_t           dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
-    value_t           work_query = value_t(0);
-    vector< real_t >  rwork( 2*m );
+    blas_int_t              ntrunc     = ( acc.is_fixed_rank() ? acc.rank() : std::min( n, m ) );
+    real_t                  atrunc     = acc.abs_eps();
+    real_t                  rtrunc     = ( acc.is_fixed_rank() ? real_t(0)  : acc.rel_eps() );
+    value_t                 dummy      = value_t(0); // non-NULL workspace for latest Intel MKL
+    value_t                 work_query = value_t(0);
+    Hpro::vector< real_t >  rwork( 2*m );
 
     geqp3trunc( n, m, A.data(), blas_int_t( A.col_stride() ), P.data(), & dummy,
                 ntrunc, atrunc, rtrunc,
@@ -1419,9 +1416,9 @@ qrp_trunc ( T &                              A,
     // adjust work space size
     lwork = std::max( lwork, blas_int_t( std::real( work_query ) ) );
     
-    vector< value_t >  tmp_space( lwork + m );
-    value_t *          work  = tmp_space.data();
-    value_t *          tau   = work + lwork;
+    Hpro::vector< value_t >  tmp_space( lwork + m );
+    value_t *                work  = tmp_space.data();
+    value_t *                tau   = work + lwork;
 
     //
     // compute Householder vectors and R
@@ -1571,10 +1568,10 @@ eigen ( Matrix< value_t > &  M,
         if ( info < 0 )
             HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
         
-        const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-        Vector< real_t >   seig_val( n );
-        vector< value_t >  work( lwork );
-        vector< real_t >   rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
+        const blas_int_t        lwork = blas_int_t( std::real( work_query ) );
+        Vector< real_t >        seig_val( n );
+        vector< value_t >       work( lwork );
+        Hpro::vector< real_t >  rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
 
         copy( M, eig_vec );
 
@@ -1631,9 +1628,9 @@ eigen_herm ( Matrix< value_t > &                 M,
     if ( eig_val.length() != n )
         eig_val = std::move( Vector< real_t >( n ) );
     
-    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >  work( lwork );
-    vector< real_t >   rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
+    const blas_int_t         lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >  work( lwork );
+    Hpro::vector< real_t >   rwork( is_complex_type< value_t >::value ? 3*n-2 : 0 );
     
     copy( M, eig_vec );
     
@@ -1673,12 +1670,12 @@ eigen_herm ( Matrix< value_t > &                 M,
     if ( eig_val.length() != n )
         eig_val = std::move( Vector< real_t >( n ) );
     
-    const blas_int_t      lwork  = blas_int_t( std::real( work_query ) );
-    const blas_int_t      lrwork = blas_int_t( rwork_query );
-    const blas_int_t      liwork = iwork_query;
-    vector< value_t >     work( lwork );
-    vector< real_t >      rwork( lrwork );
-    vector< blas_int_t >  iwork( liwork );
+    const blas_int_t            lwork  = blas_int_t( std::real( work_query ) );
+    const blas_int_t            lrwork = blas_int_t( rwork_query );
+    const blas_int_t            liwork = iwork_query;
+    Hpro::vector< value_t >     work( lwork );
+    Hpro::vector< real_t >      rwork( lrwork );
+    Hpro::vector< blas_int_t >  iwork( liwork );
     
     copy( M, eig_vec );
     
@@ -1732,9 +1729,9 @@ eigen ( Matrix< value_t > &  M,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)evx", -info ) );
         
-    const blas_int_t      lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >     work( lwork );
-    vector< blas_int_t >  iwork( 5*n );
+    const blas_int_t            lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >     work( lwork );
+    Hpro::vector< blas_int_t >  iwork( 5*n );
     
     MKL_SEQ_START;
         
@@ -1769,9 +1766,9 @@ eigen ( Vector< value_t > &  diag,
         Vector< value_t > &  eig_val,
         Matrix< value_t > &  eig_vec )
 {
-    const size_t       n = diag.length();
-    vector< value_t >  work( std::max<size_t>( 1, 2*n-2 ) );
-    blas_int_t         info = 0;
+    const size_t             n = diag.length();
+    Hpro::vector< value_t >  work( std::max<size_t>( 1, 2*n-2 ) );
+    blas_int_t               info = 0;
 
     if ( subdiag.length() != n-1 )
         HERROR( ERR_VEC_SIZE, "(BLAS) eigen", "sub diagonal has wrong dimension" );
@@ -1849,9 +1846,9 @@ gesvd    ( T1 &   A,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) gesvd", to_string( "argument %d to LAPACK::gesvd", -info ) );
         
-    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >  work( lwork );
-    vector< real_t >   rwork( 5 * min_nm );
+    const blas_int_t         lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >  work( lwork );
+    Hpro::vector< real_t >   rwork( 5 * min_nm );
     
     /////////////////////////////////////////////////////////////////
     #if CHECK_GESVD == 1
@@ -1958,9 +1955,9 @@ gesvd ( T1 &        A,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) gesvd", to_string( "argument %d to LAPACK::gesvd", -info ) );
         
-    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >  work( lwork );
-    vector< real_t >   rwork( 5 * min_nm );
+    const blas_int_t         lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >  work( lwork );
+    Hpro::vector< real_t >   rwork( 5 * min_nm );
 
     MKL_SEQ_START;
     
@@ -2035,9 +2032,9 @@ gesvd ( T1 &        A,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) gesvd", to_string( "argument %d to LAPACK::gesvd", -info ) );
         
-    const blas_int_t   lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >  work( lwork );
-    vector< real_t >   rwork( 5 * min_nm );
+    const blas_int_t         lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >  work( lwork );
+    Hpro::vector< real_t >   rwork( 5 * min_nm );
 
     MKL_SEQ_START;
     
@@ -2119,11 +2116,11 @@ gesdd    ( T1 &  A,
     if ( info < 0 )
         HERROR( ERR_ARG, "(BLAS) gesdd", to_string( "argument %d to LAPACK::gesdd", -info ) );
         
-    const blas_int_t      lwork = blas_int_t( std::real( work_query ) );
-    vector< value_t >     work( lwork );
-    vector< blas_int_t >  iwork( 8 * min_nm );
-    vector< real_t >      rwork( min_nm*std::max(5*min_nm+7,2*std::max(n,m)+2*min_nm+1) );
-    Matrix< value_t >     U(  A.nrows(), min_nm );
+    const blas_int_t            lwork = blas_int_t( std::real( work_query ) );
+    Hpro::vector< value_t >     work( lwork );
+    Hpro::vector< blas_int_t >  iwork( 8 * min_nm );
+    Hpro::vector< real_t >      rwork( min_nm*std::max(5*min_nm+7,2*std::max(n,m)+2*min_nm+1) );
+    Matrix< value_t >           U(  A.nrows(), min_nm );
     
     /////////////////////////////////////////////////////////////////
     #if CHECK_GESVD == 1
@@ -2216,9 +2213,9 @@ gesvj    ( T1 &   A,
     if (( V.nrows() != A.ncols() ) || ( blas_int_t(V.ncols()) != min_nm ))
         V = std::move( Matrix< value_t >( A.ncols(), min_nm ) );
     
-    const blas_int_t   lwork = std::max< blas_int_t >( 6, n + m );
-    vector< value_t >  cwork( lwork );
-    vector< real_t >   rwork( lwork );
+    const blas_int_t         lwork = std::max< blas_int_t >( 6, n + m );
+    Hpro::vector< value_t >  cwork( lwork );
+    Hpro::vector< real_t >   rwork( lwork );
 
     // TODO: accuracy based on TTruncAcc
     cwork[0] = 1e8;
@@ -2468,12 +2465,12 @@ lasvd ( T1 &                                                            U,
     using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
 
-    const idx_t      n  = idx_t( U.nrows() );
-    const idx_t      m  = idx_t( U.ncols() );
-    idx_t            ln = n;
-    idx_t            lm = m;
-    vector< idx_t >  row_pos;
-    vector< idx_t >  col_pos;
+    const idx_t            n  = idx_t( U.nrows() );
+    const idx_t            m  = idx_t( U.ncols() );
+    idx_t                  ln = n;
+    idx_t                  lm = m;
+    Hpro::vector< idx_t >  row_pos;
+    Hpro::vector< idx_t >  col_pos;
 
     if ( CFG::BLAS::check_zeroes )
     {
@@ -2643,12 +2640,12 @@ lasvd ( T1 &                                                            U,
     using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
 
-    const idx_t      n  = idx_t( U.nrows() );
-    const idx_t      m  = idx_t( U.ncols() );
-    idx_t            ln = n;
-    idx_t            lm = m;
-    vector< idx_t >  row_pos;
-    vector< idx_t >  col_pos;
+    const idx_t            n  = idx_t( U.nrows() );
+    const idx_t            m  = idx_t( U.ncols() );
+    idx_t                  ln = n;
+    idx_t                  lm = m;
+    Hpro::vector< idx_t >  row_pos;
+    Hpro::vector< idx_t >  col_pos;
 
     if ( CFG::BLAS::check_zeroes )
     {
@@ -2774,12 +2771,12 @@ lasvd ( T1 &                                                            U,
     using  value_t = typename T1::value_t;
     using  real_t  = typename real_type< value_t >::type_t;
 
-    const idx_t      n  = idx_t( U.nrows() );
-    const idx_t      m  = idx_t( U.ncols() );
-    idx_t            ln = n;
-    idx_t            lm = m;
-    vector< idx_t >  row_pos;
-    vector< idx_t >  col_pos;
+    const idx_t            n  = idx_t( U.nrows() );
+    const idx_t            m  = idx_t( U.ncols() );
+    idx_t                  ln = n;
+    idx_t                  lm = m;
+    Hpro::vector< idx_t >  row_pos;
+    Hpro::vector< idx_t >  col_pos;
 
     if ( CFG::BLAS::check_zeroes )
     {
@@ -3291,10 +3288,10 @@ approx_rrqr ( T1 &                              M,
     // perform column pivoted QR of M
     //
 
-    const idx_t           mrc = std::min(n,m);
-    Matrix< value_t >     R( mrc, m );
-    vector< blas_int_t >  P( m, 0 );
-    const auto            k = qrp_trunc( M, R, P, acc );
+    const idx_t                mrc = std::min(n,m);
+    Matrix< value_t >          R( mrc, m );
+    std::vector< blas_int_t >  P( m, 0 );
+    const auto                 k = qrp_trunc( M, R, P, acc );
 
     //
     // restrict first k columns
@@ -3373,16 +3370,16 @@ column_basis ( const Matrix< value_t > &  M,
     }// if
     else
     {
-        Matrix< value_t >          A( M, copy_value );
-        auto                       norm_M  = normF( M );
-        const auto                 rel_eps = acc.rel_eps();
-        const auto                 abs_eps = acc.abs_eps();
-        const uint                 bsize   = std::min< uint >( std::max< uint >( CFG::BLAS::sample_size, 1 ),
-                                                               std::min< uint >( n, m ) );
-        const uint                 nblocks = std::min< uint >( n, m ) / bsize;
-        list< Matrix< value_t > >  Qs;
-        Matrix< value_t >          T_i( m, bsize );
-        TRNG                       rng;
+        Matrix< value_t >  A( M, copy_value );
+        auto               norm_M  = normF( M );
+        const auto         rel_eps = acc.rel_eps();
+        const auto         abs_eps = acc.abs_eps();
+        const uint         bsize   = std::min< uint >( std::max< uint >( CFG::BLAS::sample_size, 1 ),
+                                                       std::min< uint >( n, m ) );
+        const uint         nblocks = std::min< uint >( n, m ) / bsize;
+        auto               Qs = std::list< Matrix< value_t > >();
+        Matrix< value_t >  T_i( m, bsize );
+        TRNG               rng;
 
         #if 1
         using  real_t  = typename real_type< value_t >::type_t;
@@ -3607,18 +3604,18 @@ column_basis ( const Matrix< value_t > &  IA,
     }// if
     else
     {
-        Matrix< value_t >          A( IA, copy_value );
-        Matrix< value_t >          B( IB, copy_value );
-        const auto                 norm_0  = lr_normF( A, B );
-        const auto                 rel_eps = acc.rel_eps();
-        const auto                 abs_eps = acc.abs_eps();
-        const uint                 bsize   = std::min< uint >( std::max< uint >( CFG::BLAS::sample_size, 1 ),
-                                                               std::min< uint >( n, m ) );
-        const uint                 nblocks = std::min( n, m ) / bsize;
-        list< Matrix< value_t > >  Qs;
-        Matrix< value_t >          T_i( m, bsize );
-        Matrix< value_t >          BAtQ( m, bsize );
-        TRNG                       rng;
+        Matrix< value_t >  A( IA, copy_value );
+        Matrix< value_t >  B( IB, copy_value );
+        const auto         norm_0  = lr_normF( A, B );
+        const auto         rel_eps = acc.rel_eps();
+        const auto         abs_eps = acc.abs_eps();
+        const uint         bsize   = std::min< uint >( std::max< uint >( CFG::BLAS::sample_size, 1 ),
+                                                       std::min< uint >( n, m ) );
+        const uint         nblocks = std::min( n, m ) / bsize;
+        auto               Qs = std::list< Matrix< value_t > >();
+        Matrix< value_t >  T_i( m, bsize );
+        Matrix< value_t >  BAtQ( m, bsize );
+        TRNG               rng;
 
         // auto  test_ortho = [&Qs,bsize] ()
         // {
@@ -4268,11 +4265,11 @@ swap ( Matrix< T > &  M,
 //
 template <typename T>
 void
-matrix_sort( Matrix< T > &           M,
-             vector< blas_int_t > &  P,
-             const idx_t             lb,
-             const idx_t             ub,
-             Vector< T > &           tmp )
+matrix_sort( Matrix< T > &                M,
+             std::vector< blas_int_t > &  P,
+             const idx_t                  lb,
+             const idx_t                  ub,
+             Vector< T > &                tmp )
 {
     if ( lb >= ub ) return;
 
@@ -4344,11 +4341,11 @@ matrix_sort( Matrix< T > &           M,
 //
 template <typename T>
 void
-permute_col ( Matrix< T > &           M,
-              vector< blas_int_t > &  P )
+permute_col ( Matrix< T > &                M,
+              std::vector< blas_int_t > &  P )
 {
-    Vector< T >           tmp( M.nrows() );
-    vector< blas_int_t >  Pt( P.size() );
+    Vector< T >                 tmp( M.nrows() );
+    Hpro::vector< blas_int_t >  Pt( P.size() );
         
     for ( size_t  i = 0; i < P.size(); ++i )
         Pt[ P[i] ] = i;
@@ -4457,8 +4454,8 @@ truncate_rrqr ( Matrix< T > &      A,
         // compute column-pivoted QR of A
         //
 
-        Matrix< value_t >     RA( k_old, k_old );
-        vector< blas_int_t >  P( k_old, 0 );
+        Matrix< value_t >          RA( k_old, k_old );
+        std::vector< blas_int_t >  P( k_old, 0 );
 
         //
         // do partial QRP based on given accuracy

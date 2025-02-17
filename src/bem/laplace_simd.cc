@@ -19,8 +19,6 @@
 namespace Hpro
 {
 
-using std::vector;
-
 namespace
 {
 
@@ -84,7 +82,7 @@ void
 laplace_slp_simd ( const TGrid::triangle_t &                               tri0,
                    const TGrid::triangle_t &                               tri1,
                    const tripair_quad_rule_t< value_type_t< T_packed > > * rule,
-                   vector< value_type_t< T_packed > > &                    values,
+                   std::vector< value_type_t< T_packed > > &               values,
                    const T_ansatzsp *                                      ansatz_sp,
                    const T_testsp *                                        test_sp )
 {
@@ -190,7 +188,7 @@ laplace_dlp_simd ( const idx_t                                             tri_i
                    const TGrid::triangle_t &                               tri0,
                    const TGrid::triangle_t &                               tri1,
                    const tripair_quad_rule_t< value_type_t< T_packed > > * rule,
-                   vector< value_type_t< T_packed > > &                    values,
+                   std::vector< value_type_t< T_packed > > &               values,
                    const T_ansatzsp *                                      ansatz_sp,
                    const T_testsp *                                        test_sp )
 {
@@ -331,7 +329,7 @@ void
 laplace_slp_eval_dx_simd ( const tri_quad_rule_t< value_type_t< T_packed > > & quad_rule,
                            const T3Point                                       vx[3],
                            const T3Point &                                     vy,
-                           vector< value_type_t< T_packed > > &                values )
+                           std::vector< value_type_t< T_packed > > &           values )
 {
     using vpacked = T_packed;
     using value_t = value_type_t< T_packed >;
@@ -393,7 +391,7 @@ laplace_dlp_eval_dy_simd ( const tri_quad_rule_t< value_type_t< T_packed > > & q
                            const T3Point &                                     vx,
                            const T3Point                                       vy[3],
                            const T3Point &                                     normal,
-                           vector< value_type_t< T_packed > > &                values )
+                           std::vector< value_type_t< T_packed > > &           values )
 {
     using vpacked = T_packed;
     using value_t = value_type_t< T_packed >;
@@ -474,7 +472,7 @@ laplace_dlp_eval_dy_simd ( const tri_quad_rule_t< value_type_t< T_packed > > & q
         const TGrid::triangle_t &           tri0, \
         const TGrid::triangle_t &           tri1, \
         const tripair_quad_rule_t< type > * rule, \
-        vector< type > &                    values, \
+        std::vector< type > &               values, \
         const T_ansatzsp *                  ansatz_sp, \
         const T_testsp *                    test_sp );
 
@@ -495,7 +493,7 @@ INST_LAPLACE_SLP_SIMD( double, TLinearFnSpace< double >, TLinearFnSpace< double 
         const TGrid::triangle_t &           tri0, \
         const TGrid::triangle_t &           tri1, \
         const tripair_quad_rule_t< type > * rule, \
-        vector< type > &                    values, \
+        std::vector< type > &               values, \
         const T_ansatzsp *                  ansatz_sp, \
         const T_testsp *                    test_sp );
 
@@ -513,27 +511,27 @@ void
 laplace_slp_eval_dx_simd< packed< float, SIMD_ISA > >  ( const tri_quad_rule_t< float > &   quad_rule,
                                                          const T3Point                      vx[3],
                                                          const T3Point &                    vy,
-                                                         vector< float > &                  values );
+                                                         std::vector< float > &             values );
 template
 void
 laplace_slp_eval_dx_simd< packed< double, SIMD_ISA > >  ( const tri_quad_rule_t< double > & quad_rule,
                                                           const T3Point                     vx[3],
                                                           const T3Point &                   vy,
-                                                          vector< double > &                values );
+                                                          std::vector< double > &           values );
 template
 void
 laplace_dlp_eval_dy_simd< packed< float, SIMD_ISA > >  ( const tri_quad_rule_t< float > &   quad_rule,
                                                          const T3Point &                    vx,
                                                          const T3Point                      vy[3],
                                                          const T3Point &                    normal,
-                                                         vector< float > &                  values );
+                                                         std::vector< float > &             values );
 template
 void
 laplace_dlp_eval_dy_simd< packed< double, SIMD_ISA > >  ( const tri_quad_rule_t< double > &  quad_rule,
                                                           const T3Point &                    vx,
                                                           const T3Point                      vy[3],
                                                           const T3Point &                    normal,
-                                                          vector< double > &                 values );
+                                                          std::vector< double > &            values );
 
 }// namespace Hpro
 

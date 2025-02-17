@@ -24,7 +24,6 @@ namespace Hpro
 using std::unique_ptr;
 using std::string;
 using std::ostream;
-using std::vector;
 
 namespace
 {
@@ -340,9 +339,9 @@ TVTKCoordVis::print ( const TCoordinate * coord,
 // must begin with 0
 //
 void
-TVTKCoordVis::print ( const TCoordinate *     coord,
-                      const vector< uint > &  label,
-                      const string &          filename ) const
+TVTKCoordVis::print ( const TCoordinate *          coord,
+                      const std::vector< uint > &  label,
+                      const string &               filename ) const
 {
     unique_ptr< std::ostream >  out_ptr( open_write( add_extension( filename, "vtk" ) ) );
     std::ostream &              out = * out_ptr.get();

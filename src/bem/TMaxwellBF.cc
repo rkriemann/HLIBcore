@@ -21,8 +21,6 @@
 namespace Hpro
 {
 
-using std::vector;
-
 namespace B = BLAS;
 
 /////////////////////////////////////////////////////////////////////
@@ -46,7 +44,7 @@ helmholtz_slp_flt ( const TGrid::triangle_t &                             tri0,
                     const value_t                                         ikappa,
                     const T_ansatzsp *                                    ansatz_sp,
                     const T_testsp *                                      test_sp,
-                    vector< value_t > &                                   values );
+                    std::vector< value_t > &                              values );
 
 #define  HELMHOLTZ_SLP( suffix )                                        \
     template < typename  value_t,                                       \
@@ -60,7 +58,7 @@ helmholtz_slp_flt ( const TGrid::triangle_t &                             tri0,
                              const value_t                                         ikappa, \
                              const T_ansatzsp *                                    ansatz_sp, \
                              const T_testsp *                                      test_sp, \
-                             vector< value_t > &                                   values )
+                             std::vector< value_t > &                              values )
 
 HELMHOLTZ_SLP( simd );
 HELMHOLTZ_SLP( re_simd );
@@ -74,13 +72,13 @@ HELMHOLTZ_SLP( im_simd );
                typename  T_testsp,                                      \
                typename  T_packed >                                     \
     void                                                                \
-    helmholtz_dlp_wo_normal_##suffix ( const TGrid::triangle_t &             tri0, \
-                                       const TGrid::triangle_t &             tri1, \
-                                       const tripair_quad_rule_t< double > * rule, \
-                                       const std::complex< double >          ikappa, \
-                                       const T_ansatzsp *                    ansatz_sp, \
-                                       const T_testsp *                      test_sp, \
-                                       vector< std::complex< double > > &    values )
+    helmholtz_dlp_wo_normal_##suffix ( const TGrid::triangle_t &                tri0, \
+                                       const TGrid::triangle_t &                tri1, \
+                                       const tripair_quad_rule_t< double > *    rule, \
+                                       const std::complex< double >             ikappa, \
+                                       const T_ansatzsp *                       ansatz_sp, \
+                                       const T_testsp *                         test_sp, \
+                                       std::vector< std::complex< double > > &  values )
 
 HELMHOLTZ_DLP_SIMD( simd );
 HELMHOLTZ_DLP_SIMD( re_simd );
@@ -258,9 +256,9 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::format () const
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_ind,
-                                                const vector< idx_t > &    col_ind,
-                                                BLAS::Matrix< value_t > &  values ) const
+TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const std::vector< idx_t > &  row_ind,
+                                                const std::vector< idx_t > &  col_ind,
+                                                BLAS::Matrix< value_t > &     values ) const
 {
     //
     // local types for storing triangle sets and for
@@ -318,9 +316,9 @@ TMaxwellEFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
     // and integrate kernel function
     //
 
-    vector< value_t >  kernel_values;
-    vector< T3Point >  phi0_values;
-    vector< T3Point >  phi1_values;
+    std::vector< value_t >  kernel_values;
+    std::vector< T3Point >  phi0_values;
+    std::vector< T3Point >  phi1_values;
 
     B::fill( value_t(0), values );
 
@@ -489,13 +487,13 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
             // integrate over test space
             //
 
-            auto                value     = value_t(0);
-            const auto          ansatz_sp = this->ansatz_space();
-            const auto          test_sp   = this->test_space();
-            auto                support_i = ansatz_sp->support(i);
-            auto                support_j = test_sp->support(j);
-            vector< T3Point >   phi0_values;
-            vector< T3Point >   phi1_values;
+            auto                    value     = value_t(0);
+            const auto              ansatz_sp = this->ansatz_space();
+            const auto              test_sp   = this->test_space();
+            auto                    support_i = ansatz_sp->support(i);
+            auto                    support_j = test_sp->support(j);
+            std::vector< T3Point >  phi0_values;
+            std::vector< T3Point >  phi1_values;
 
             if ( ansatz_sp->grid() != test_sp->grid() )
                 HERROR( ERR_NOT_IMPL, "(TMaxwellEFIEMassBF) eval", "unequal grids not supported" );
@@ -577,13 +575,13 @@ TMaxwellEFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &              tri0,
-                              const TGrid::triangle_t &              tri1,
-                              const tripair_quad_rule_t< double > *  rule,
-                              const std::complex< double >           ikappa,
-                              const T_ansatzsp *                     ansatz_sp,
-                              const T_testsp *                       test_sp,
-                              vector< std::complex< double > > &     values )
+helmholtz_dlp_wo_normal_flt ( const TGrid::triangle_t &                tri0,
+                              const TGrid::triangle_t &                tri1,
+                              const tripair_quad_rule_t< double > *    rule,
+                              const std::complex< double >             ikappa,
+                              const T_ansatzsp *                       ansatz_sp,
+                              const T_testsp *                         test_sp,
+                              std::vector< std::complex< double > > &  values )
 {
     using real_t = double;
     
@@ -763,9 +761,9 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::format () const
 template < typename  T_ansatzsp,
            typename  T_testsp >
 void
-TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_ind,
-                                                const vector< idx_t > &    col_ind,
-                                                BLAS::Matrix< value_t > &  values ) const
+TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const std::vector< idx_t > &  row_ind,
+                                                const std::vector< idx_t > &  col_ind,
+                                                BLAS::Matrix< value_t > &     values ) const
 {
     //
     // local types for storing triangle sets and for
@@ -823,11 +821,11 @@ TMaxwellMFIEBF< T_ansatzsp, T_testsp >::eval  ( const vector< idx_t > &    row_i
     // and integrate kernel function
     //
 
-    vector< value_t >  kernel_values;
-    vector< T3Point >  phi0_values;
-    vector< T3Point >  phi1_values;
-    vector< T3Point >  quad_points0;
-    vector< T3Point >  quad_points1;
+    std::vector< value_t >  kernel_values;
+    std::vector< T3Point >  phi0_values;
+    std::vector< T3Point >  phi1_values;
+    std::vector< T3Point >  quad_points0;
+    std::vector< T3Point >  quad_points1;
 
     B::fill( value_t(0), values );
 
@@ -1004,13 +1002,13 @@ TMaxwellMFIEMassBF< T_ansatzsp, T_testsp >::eval ( const std::vector< idx_t > & 
             // integrate over test space
             //
 
-            auto                value     = value_t(0);
-            auto                ansatz_sp = this->ansatz_space();
-            auto                test_sp   = this->test_space();
-            auto                support_i = ansatz_sp->support(i);
-            auto                support_j = test_sp->support(j);
-            vector< T3Point >   phi0_values;
-            vector< T3Point >   phi1_values;
+            auto                    value     = value_t(0);
+            auto                    ansatz_sp = this->ansatz_space();
+            auto                    test_sp   = this->test_space();
+            auto                    support_i = ansatz_sp->support(i);
+            auto                    support_j = test_sp->support(j);
+            std::vector< T3Point >  phi0_values;
+            std::vector< T3Point >  phi1_values;
 
             if ( ansatz_sp->grid() != test_sp->grid() )
                 HERROR( ERR_NOT_IMPL, "(TMaxwellMFIEMassBF) eval", "unequal grids not supported" );

@@ -17,8 +17,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace
 {
 
@@ -26,7 +24,7 @@ namespace
 // local types
 //
 
-using  tri_set_t = set< idx_t >;
+using  tri_set_t = std::set< idx_t >;
 using  val_map_t = std::unordered_map< idx_t, idx_t >;
 
 }// namespace anonymous
@@ -66,7 +64,7 @@ TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::TQuadHCAGenFn ( const ansatzsp_t
     
     for ( uint  n = 1 ; n <= quad_order; ++n )
     {
-        vector< double >  pts_1d, wghts_1d;
+        std::vector< double >  pts_1d, wghts_1d;
 
         gauss.build( n, pts_1d, wghts_1d );
 
@@ -114,9 +112,9 @@ template < typename  ansatzsp_t,
            typename  testsp_t,
            typename  value_t >
 void
-TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
-                                                                     const vector< T3Point > &  pts,
-                                                                     BLAS::Matrix< value_t > &  matrix ) const
+TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const std::vector< idx_t > &    idxs,
+                                                                     const std::vector< T3Point > &  pts,
+                                                                     BLAS::Matrix< value_t > &       matrix ) const
 {
     const auto  quad_rule = this->get_quad_rule();
     const auto  npts      = quad_rule->npts;
@@ -127,7 +125,7 @@ TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const vecto
     // go over all points and indices and compute integral
     //
     
-    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    std::vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -180,9 +178,9 @@ template < typename  ansatzsp_t,
            typename  testsp_t,
            typename  value_t >
 void
-TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
-                                                                     const vector< T3Point > &  pts,
-                                                                     BLAS::Matrix< value_t > &  matrix ) const
+TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const std::vector< idx_t > &    idxs,
+                                                                     const std::vector< T3Point > &  pts,
+                                                                     BLAS::Matrix< value_t > &       matrix ) const
 {
     const auto  quad_rule = this->get_quad_rule();
     const auto  npts      = quad_rule->npts;
@@ -193,7 +191,7 @@ TQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const vecto
     // go over all points and indices and compute integral
     //
 
-    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    std::vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -333,9 +331,9 @@ template < typename  ansatzsp_t,
            typename  testsp_t,
            typename  value_t >
 void
-TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const vector< idx_t > &    idxs,
-                                                                               const vector< T3Point > &  pts,
-                                                                               BLAS::Matrix< value_t > &  matrix ) const
+TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( const std::vector< idx_t > &    idxs,
+                                                                               const std::vector< T3Point > &  pts,
+                                                                               BLAS::Matrix< value_t > &       matrix ) const
 {
     //
     // store position of all indices for indirect access of <matrix>
@@ -365,9 +363,9 @@ TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( c
     // loop over each triangle in function space and integrate function
     //
 
-    const auto         quad_rule = this->get_quad_rule();
-    const size_t       npts      = quad_rule->npts;
-    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    const auto              quad_rule = this->get_quad_rule();
+    const size_t            npts      = quad_rule->npts;
+    std::vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -395,8 +393,8 @@ TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dx_perm  ( c
                 if ( is_map.find( idx ) == is_map.end() )
                     continue;
 
-                const idx_t                       idx_i      = is_map[ idx ];
-                const vector< ansatz_value_t > *  basis_vals = ansatz_val( idx, tri, this->_quad_order );
+                const idx_t                            idx_i      = is_map[ idx ];
+                const std::vector< ansatz_value_t > *  basis_vals = ansatz_val( idx, tri, this->_quad_order );
 
                 //
                 // combine quadrature values and basis function values
@@ -422,9 +420,9 @@ template < typename  ansatzsp_t,
            typename  testsp_t,
            typename  value_t >
 void
-TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const vector< idx_t > &    idxs,
-                                                                               const vector< T3Point > &  pts,
-                                                                               BLAS::Matrix< value_t > &  matrix ) const
+TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( const std::vector< idx_t > &    idxs,
+                                                                               const std::vector< T3Point > &  pts,
+                                                                               BLAS::Matrix< value_t > &       matrix ) const
 {
     //
     // store position of all indices for indirect access of <matrix>
@@ -454,9 +452,9 @@ TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( c
     // loop over each triangle in function space and integrate function
     //
 
-    const auto         quad_rule = this->get_quad_rule();
-    const size_t       npts      = quad_rule->npts;
-    vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
+    const auto              quad_rule = this->get_quad_rule();
+    const size_t            npts      = quad_rule->npts;
+    std::vector< value_t >  quad_vals( CFG::Mach::simd_padded_size< value_t >( npts ) );
     
     for ( size_t  pts_i = 0; pts_i < pts.size(); pts_i++ )
     {
@@ -484,8 +482,8 @@ TInvarBasisQuadHCAGenFn< ansatzsp_t, testsp_t, value_t >::integrate_dy_perm  ( c
                 if ( is_map.find( idx ) == is_map.end() )
                     continue;
 
-                const idx_t                     idx_i      = is_map[ idx ];
-                const vector< test_value_t > *  basis_vals = test_val( idx, tri, this->_quad_order );
+                const idx_t                          idx_i      = is_map[ idx ];
+                const std::vector< test_value_t > *  basis_vals = test_val( idx, tri, this->_quad_order );
 
                 //
                 // combine quadrature values and basis function values

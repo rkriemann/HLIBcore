@@ -15,8 +15,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace B = BLAS;
 
 //////////////////////////////////////////////////////////////////////
@@ -33,9 +31,9 @@ namespace B = BLAS;
 // in [0,1]
 //
 void
-TGaussQuad::build ( const uint          order,
-                    vector< double > &  pos,
-                    vector< double > &  wght ) const
+TGaussQuad::build ( const uint               order,
+                    std::vector< double > &  pos,
+                    std::vector< double > &  wght ) const
 {
     pos.resize( order );
     wght.resize( order );
@@ -77,9 +75,9 @@ TGaussQuad::build ( const uint          order,
 namespace
 {
 
-vector< vector< T2Point > * >  cache_points;
-vector< vector< double > >     cache_weights;
-TMutex                         cache_mutex;
+std::vector< std::vector< T2Point > * >  cache_points;
+std::vector< std::vector< double > >     cache_weights;
+TMutex                                   cache_mutex;
 
 }// namespace anonymous
 
@@ -91,8 +89,8 @@ TTriGaussQuad::build ( const uint                order,
                        std::vector< T2Point > &  pts,
                        std::vector< double > &   wghts ) const
 {
-    TGaussQuad        gauss1d;
-    vector< double >  x1d, w1d;
+    TGaussQuad             gauss1d;
+    std::vector< double >  x1d, w1d;
 
     gauss1d.build( order, x1d, w1d );
         
@@ -116,17 +114,17 @@ TTriGaussQuad::build ( const uint                order,
 // order <order>
 //
 void
-TTriGaussQuad::build ( const uint                 order,
-                       const vector< T3Point > &  tri,
-                       vector< T3Point > &        x,
-                       vector< double > &         w ) const
+TTriGaussQuad::build ( const uint                      order,
+                       const std::vector< T3Point > &  tri,
+                       std::vector< T3Point > &        x,
+                       std::vector< double > &         w ) const
 {
     //
     // compute or just copy quadrature points
     //
 
-    TScopedLock          lock( cache_mutex );
-    vector< T2Point > *  points;
+    TScopedLock               lock( cache_mutex );
+    std::vector< T2Point > *  points;
     
     if (( cache_points.size() > order ) && ( cache_points[order]->size() > 0 ))
     {
@@ -135,7 +133,7 @@ TTriGaussQuad::build ( const uint                 order,
     }// if
     else
     {
-        points = new vector< T2Point >( order * order );
+        points = new std::vector< T2Point >( order * order );
         w.resize( order * order );
 
         build( order, * points, w );

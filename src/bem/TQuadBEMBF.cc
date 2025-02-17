@@ -20,8 +20,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 namespace B = BLAS;
 
 //
@@ -121,8 +119,8 @@ template < typename ansatzsp_t,
            typename testsp_t,
            typename value_t >
 void
-TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const vector< idx_t > &,
-                                                     const vector< idx_t > &,
+TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::eval  ( const std::vector< idx_t > &,
+                                                     const std::vector< idx_t > &,
                                                      BLAS::Matrix< value_t > & ) const
 {
     HERROR( ERR_NOT_IMPL, "", "" );
@@ -151,8 +149,8 @@ TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::reorder_common ( idx_t *  vtx0idxs,
         {
             if ( vtx0idxs[i] == vtx1idxs[j] )
             {
-                swap( vtx0idxs[ncommon], vtx0idxs[i] );
-                swap( vtx1idxs[ncommon], vtx1idxs[j] );
+                std::swap( vtx0idxs[ncommon], vtx0idxs[i] );
+                std::swap( vtx1idxs[ncommon], vtx1idxs[j] );
                 ncommon++;
                 break;
             }// if
@@ -193,10 +191,10 @@ TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::adjust_order ( const idx_t *  vtx0i
     {
         for ( uint  i = 0; i < 3; i++ )
         {
-            bbmin0[i] = min( bbmin0[i], ansatz_grid->vertex( vtx0idxs[j] )[i] );
-            bbmax0[i] = max( bbmax0[i], ansatz_grid->vertex( vtx0idxs[j] )[i] );
-            bbmin1[i] = min( bbmin1[i], test_grid->vertex( vtx1idxs[j] )[i] );
-            bbmax1[i] = max( bbmax1[i], test_grid->vertex( vtx1idxs[j] )[i] );
+            bbmin0[i] = std::min( bbmin0[i], ansatz_grid->vertex( vtx0idxs[j] )[i] );
+            bbmax0[i] = std::max( bbmax0[i], ansatz_grid->vertex( vtx0idxs[j] )[i] );
+            bbmin1[i] = std::min( bbmin1[i], test_grid->vertex( vtx1idxs[j] )[i] );
+            bbmax1[i] = std::max( bbmax1[i], test_grid->vertex( vtx1idxs[j] )[i] );
         }// for
     }// for
     
@@ -239,7 +237,7 @@ TQuadBEMBF< ansatzsp_t, testsp_t, value_t >::adjust_order ( const idx_t *  vtx0i
     // large compared to diameter
     //
     
-    double  diam   = 5.0 * max( diam_t0, diam_t1 );
+    double  diam   = 5.0 * std::max( diam_t0, diam_t1 );
     uint    torder = order;
     
     while (( dist > diam ) && ( torder > 1 ))

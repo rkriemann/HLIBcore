@@ -16,8 +16,6 @@
 namespace Hpro
 {
 
-using namespace std;
-
 //////////////////////////////////////////////
 //
 // Chaco declaration and wrapper
@@ -113,10 +111,10 @@ TChacoAlgPartStrat::partition ( const TGraph &  graph,
     // use Chaco to partition graph
     //
 
-    const size_t     nnodes   = graph.nnodes();
-    size_t           nleft    = 0;
-    size_t           nright   = 0;
-    vector< idx_t >  part( nnodes, 0 );
+    const size_t          nnodes   = graph.nnodes();
+    size_t                nleft    = 0;
+    size_t                nright   = 0;
+    std::vector< idx_t >  part( nnodes, 0 );
 
 #if HPRO_USE_CHACO == 1
     partition_graph( nnodes, graph.adj_list_ptr(), graph.adj_nodes(), part );

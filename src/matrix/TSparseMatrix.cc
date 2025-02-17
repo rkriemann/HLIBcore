@@ -13,7 +13,6 @@
 namespace Hpro
 {
 
-using std::vector;
 using std::unique_ptr;
 using std::make_unique;
 
@@ -363,7 +362,7 @@ TSparseMatrix< value_t >::import_ccs ( const size_t     nrows,
                 "given number of non-zeroes differs from counted number" );
 
     // set up rowind and coeff arrays
-    vector< idx_t >   rowpos( nrows );
+    std::vector< idx_t >   rowpos( nrows );
 
     for ( idx_t  col = 0; col < idx_t(ncols); ++col )
     {
@@ -389,10 +388,10 @@ TSparseMatrix< value_t >::import_ccs ( const size_t     nrows,
 template < typename value_t >
 template < typename T_idx >
 void
-TSparseMatrix< value_t >::export_ccs  ( vector< T_idx > &    colptr,
-                                        vector< T_idx > &    rowind,
-                                        vector< value_t > &  acoeffs,
-                                        const bool           use_sym ) const
+TSparseMatrix< value_t >::export_ccs  ( std::vector< T_idx > &    colptr,
+                                        std::vector< T_idx > &    rowind,
+                                        std::vector< value_t > &  acoeffs,
+                                        const bool                use_sym ) const
 {
     const size_t  nrows  = rows();
     const size_t  ncols  = cols();
@@ -436,7 +435,7 @@ TSparseMatrix< value_t >::export_ccs  ( vector< T_idx > &    colptr,
     colptr[ncols] = T_idx(pos);
 
     // set up rowind and coeff arrays
-    vector< idx_t >   colpos( ncols );
+    std::vector< idx_t >   colpos( ncols );
 
     rowind.resize( nnz );
     acoeffs.resize( nnz );
@@ -491,9 +490,9 @@ TSparseMatrix< value_t >::permute ( const TPermutation &  rowperm,
 
     inv_rowperm.invert();
 
-    vector< idx_t >    new_rowptr;
-    vector< idx_t >    new_colind;
-    vector< value_t >  new_coeff;
+    std::vector< idx_t >    new_rowptr;
+    std::vector< idx_t >    new_colind;
+    std::vector< value_t >  new_coeff;
 
     new_coeff.resize(  _coeff.size() );
     new_colind.resize( _colind.size() );
@@ -1004,9 +1003,9 @@ TSparseMatrix< value_t >::write ( TByteStream & s ) const
     const size_t  nnz  = _colind.size();
         
     s.put( & nnz, sizeof(nnz) );
-    s.put( const_cast< vector< idx_t > & >(_rowptr).data(), sizeof(size_t) * _rowptr.size() );
-    s.put( const_cast< vector< idx_t > & >(_colind).data(), sizeof(size_t) * _colind.size() );
-    s.put( const_cast< vector< value_t > & >(_coeff).data(), sizeof(value_t) * _coeff.size() );
+    s.put( const_cast< std::vector< idx_t > & >(_rowptr).data(), sizeof(size_t) * _rowptr.size() );
+    s.put( const_cast< std::vector< idx_t > & >(_colind).data(), sizeof(size_t) * _colind.size() );
+    s.put( const_cast< std::vector< value_t > & >(_coeff).data(), sizeof(value_t) * _coeff.size() );
 }
 
 //
@@ -1077,8 +1076,8 @@ TSparseMatrix< value_t >::restrict ( const TIndexSet &  rowis,
     // determine total number of nonzeroes and number per row in subblock
     //
 
-    size_t           sub_nnzero = 0;
-    vector< idx_t >  sub_rowptr( rowis.size()+1 );
+    size_t                sub_nnzero = 0;
+    std::vector< idx_t >  sub_rowptr( rowis.size()+1 );
 
     for ( auto  row : rowis )
     {
@@ -1152,8 +1151,8 @@ TSparseMatrix< value_t >::restrict ( const TIndexSet &     rowis,
     // determine total number of nonzeroes and number per row in subblock
     //
 
-    size_t           sub_nnzero = 0;
-    vector< idx_t >  sub_rowptr( rowis.size()+1 );
+    size_t                sub_nnzero = 0;
+    std::vector< idx_t >  sub_rowptr( rowis.size()+1 );
 
     for ( auto  row : rowis )
     {
@@ -1406,8 +1405,8 @@ TSparseMatrix< value_t >::print_pattern_hist ( std::ostream & os ) const
     // compute histogram
     //
     
-    const size_t      max_deg = max_entries_per_row();
-    vector< size_t >  hist( max_deg + 1 );
+    const size_t           max_deg = max_entries_per_row();
+    std::vector< size_t >  hist( max_deg + 1 );
 
     for ( idx_t  i = 0; i < idx_t( rows() ); ++i )
     {

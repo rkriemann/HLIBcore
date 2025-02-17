@@ -24,8 +24,6 @@ namespace Hpro
 // namespace abbr.
 namespace B = BLAS;
 
-using namespace std;
-
 ///////////////////////////////////////////
 //
 // constructor and destructor
@@ -72,7 +70,7 @@ TBlockMatrix< value_t >::set_block_struct ( const uint bn, const uint bm )
     if (( n != 0 ) && ( m == 0 )) m = 1;
     
     std::vector< TMatrix< value_t > * >  tmp( n * m );
-    const uint                           mrc = min(_block_rows*_block_cols, n*m);
+    const uint                           mrc = std::min(_block_rows*_block_cols, n*m);
 
     for ( uint i = 0; i < mrc; i++ )
         tmp[i] = _blocks[i];
@@ -98,7 +96,7 @@ TBlockMatrix< value_t >::set_form ( const matform_t  f )
     TMatrix< value_t >::set_form( f );
 
     // also change for diagonal sub blocks
-    for ( uint i = 0; i < min( block_rows(), block_cols() ); ++i )
+    for ( uint i = 0; i < std::min( block_rows(), block_cols() ); ++i )
     {
         if ( block( i, i ) != nullptr )
             block( i, i )->set_form( f );
@@ -175,7 +173,7 @@ TBlockMatrix< value_t >::entry ( const idx_t  row,
 
     if ( ! this->is_nonsym() && ( srow < scol ))
     {
-        swap( srow, scol );
+        std::swap( srow, scol );
         swap_idx = true;
     }// if
 
@@ -921,7 +919,7 @@ TBlockMatrix< value_t >::transpose ()
         // pointer matrix
         //
 
-        vector< TMatrix< value_t > * >  T( block_cols() * block_rows() );
+        std::vector< TMatrix< value_t > * >  T( block_cols() * block_rows() );
 
         for ( uint  j = 0; j < block_cols(); ++j )
             for ( uint  i = 0; i < block_rows(); ++i )
@@ -935,8 +933,8 @@ TBlockMatrix< value_t >::transpose ()
         for ( uint  i = 0; i < block_cols() * block_rows(); ++i )
             _blocks[ i ] = T[ i ];
 
-        swap( _block_rows, _block_cols );
-        swap( _rows, _cols );
+        std::swap( _block_rows, _block_cols );
+        std::swap( _rows, _cols );
     }// else
 
     TMatrix< value_t >::transpose();
@@ -972,14 +970,14 @@ void
 TBlockMatrix< value_t >::print ( const uint ofs ) const
 {
     for ( uint i = 0; i < ofs; i++ )
-        cout << ' ';
+        std::cout << ' ';
 
-    cout << this->typestr()
-         << " ( " << rows() << " x " << cols()
-         << ", +" << this->row_ofs() << "+" << this->col_ofs()
-         << ", " << block_rows() << " x " << block_cols()
-         << " )"
-         << endl;
+    std::cout << this->typestr()
+              << " ( " << rows() << " x " << cols()
+              << ", +" << this->row_ofs() << "+" << this->col_ofs()
+              << ", " << block_rows() << " x " << block_cols()
+              << " )"
+              << std::endl;
     
     for ( uint i = 0; i < block_rows(); i++ )
         for ( uint j = 0; j < block_cols(); j++ )
@@ -987,7 +985,7 @@ TBlockMatrix< value_t >::print ( const uint ofs ) const
             {
                 block(i,j)->print( ofs + 4 );
                 if (( i < block_rows()-1 ) || ( j < block_cols()-1 ))
-                    cout << endl;
+                    std::cout << std::endl;
             }// if
 }
 
@@ -1054,7 +1052,7 @@ TBlockMatrix< value_t >::copy ( const TTruncAcc & acc, const bool coarsen ) cons
             }// if
             else
             {
-                unique_ptr< TMatrix< value_t > >  T_ij( M_ij->copy( acc( M_ij ), coarsen ) );
+                std::unique_ptr< TMatrix< value_t > >  T_ij( M_ij->copy( acc( M_ij ), coarsen ) );
 
                 // if ( coarsen )
                 // {
@@ -1305,7 +1303,7 @@ TBlockMatrix< value_t >::read ( TByteStream & s )
     if (( _block_rows != bn ) || ( _block_cols != bm ))
         HERROR( ERR_MAT_STRUCT, "(TBlockMatrix) read", "wrong block-structure in stream" );
 
-    vector< char >  present( _block_rows * _block_cols );
+    std::vector< char >  present( _block_rows * _block_cols );
     
     s.get( present.data(), _block_rows * _block_cols * sizeof(char) );
     
@@ -1351,8 +1349,8 @@ TBlockMatrix< value_t >::build ( TByteStream & s )
     // build submatrices
     //
 
-    vector< char >  present( _block_rows * _block_cols );
-    TBSHMBuilder    builder;
+    std::vector< char >  present( _block_rows * _block_cols );
+    TBSHMBuilder         builder;
     
     s.get( present.data(), _block_rows * _block_cols * sizeof(char) );
     
@@ -1385,7 +1383,7 @@ TBlockMatrix< value_t >::write ( TByteStream & s ) const
     s.put( _block_cols );
 
     // write boolean array indicating non-nullptr submatrices
-    vector< char >  present( _block_rows * _block_cols );
+    std::vector< char >  present( _block_rows * _block_cols );
     
     for ( uint i = 0; i < _block_rows*_block_cols; i++ )
     {

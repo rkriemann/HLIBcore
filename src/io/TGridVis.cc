@@ -28,7 +28,6 @@ namespace Hpro
 
 using std::unique_ptr;
 using std::string;
-using std::vector;
 using std::ofstream;
 
 namespace fs = boost::filesystem;
@@ -533,10 +532,10 @@ print ( const T2DGridVis &          vis,
     // determine visible triangles and sort them back to front
     //
 
-    const bool      do_backface_culling = false;
-    const size_t    n_triangles         = grid->n_triangles();
-    vector< uint >  vis_triangles( n_triangles );
-    uint            n_vis = 0;
+    const bool    do_backface_culling = false;
+    const size_t  n_triangles         = grid->n_triangles();
+    auto          vis_triangles       = std::vector< uint >( n_triangles );
+    uint          n_vis               = 0;
 
     if ( do_backface_culling )
     {
