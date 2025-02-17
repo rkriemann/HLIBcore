@@ -37,6 +37,37 @@ using HIP::release_handle;
 using HIP::qr;
 using HIP::svd;
 
+#else
+
+constexpr int  INVALID_HANDLE = -1;
+
+using gpu_handle_t = int;
+
+inline void init () {}
+inline void done () {}
+
+inline gpu_handle_t request_handle () { return INVALID_HANDLE; }
+inline void         release_handle ( const gpu_handle_t ) {}
+
+template < typename value_t >
+bool
+qr  ( const gpu_handle_t         ,
+      BLAS::Matrix< value_t > &  ,
+      BLAS::Matrix< value_t > &   )
+{
+    return false;
+}
+
+template < typename value_t >
+bool
+svd  ( const gpu_handle_t                        ,
+       BLAS::Matrix< value_t > &                 ,
+       BLAS::Vector< real_type_t< value_t > > &  ,
+       BLAS::Matrix< value_t > &                  )
+{
+    return false;
+}
+
 #endif
 
 }}// namespace Hpro::GPU
