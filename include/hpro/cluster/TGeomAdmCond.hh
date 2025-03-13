@@ -76,55 +76,37 @@ using TStdGeomAdmCond = TStrongGeomAdmCond;
 
 //!
 //! \ingroup  Cluster_Module
-//! \class    TVertexGeomAdmCond
-//! \brief    vertex admissibility, i.e., overlap has codimension 0 (or strong adm.)
-//!
-class TVertexGeomAdmCond : public TStrongGeomAdmCond
-{
-public:
-    ///////////////////////////////////////////
-    //
-    // constructor and destructor
-    //
-
-    TVertexGeomAdmCond ( const double  eta = 2.0 )
-            : TStrongGeomAdmCond( eta, use_min_diam )
-    {}
-
-    TVertexGeomAdmCond ( const TPoint &  period,
-                             const double    eta = 2.0 )
-            : TStrongGeomAdmCond( period, eta, use_min_diam )
-    {}
-
-    virtual ~TVertexGeomAdmCond () {}
-
-    ///////////////////////////////////////////
-    //
-    // check block-cluster if admissible
-    //
-
-    //! return true if \a cl is either weakly or strongly admissible
-    virtual bool is_adm ( const TBlockCluster * cl ) const;
-};
-
-// strong admissibility = standard admissibility
-using TWeakStdGeomAdmCond = TVertexGeomAdmCond;
-
-//!
-//! \ingroup  Cluster_Module
 //! \class    TWeakGeomAdmCond
-//! \brief    blocks are admissible if clusters have positive distance
+//! \brief    blocks are admissible if the number of dimensions with overlap of clusters is limited
 //!
 class TWeakGeomAdmCond : public TAdmCondition
 {
+private:
+    // required number of dimensions without cluster overlap (default: 0)
+    // 1D: 0 = full overlap, 1 = shared vertex
+    // 2D: 0 = full overlap, 1 = shared edge, 2 = shared vertex
+    // 3D: 0 = full overlap, 1 = shared face, 2 = shared edge, 3: shared vertex
+    const uint    _noverlap;
+
+    // permitted absolute cluster overlap per dimension (default: 0)
+    const double  _hoverlap;
+    
+    // parameter for standard admissibility (default: 2)
+    const double  _eta;
+
 public:
     ///////////////////////////////////////////
     //
     // constructor and destructor
     //
 
-    TWeakGeomAdmCond ()
+    TWeakGeomAdmCond ( const uint    noverlap = 0,
+                       const double  hoverlap = 0.0,
+                       const double  eta      = 2.0 )
             : TAdmCondition()
+            , _noverlap( noverlap )
+            , _hoverlap( hoverlap )
+            , _eta( eta )
     {}
 
     virtual ~TWeakGeomAdmCond () {}
@@ -137,6 +119,9 @@ public:
     //! return true if \a cl is either weakly or strongly admissible
     virtual bool is_adm ( const TBlockCluster * cl ) const;
 };
+
+// strong admissibility = standard admissibility
+using TWeakStdGeomAdmCond = TWeakGeomAdmCond;
 
 //!
 //! \ingroup  Cluster_Module
