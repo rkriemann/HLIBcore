@@ -138,8 +138,8 @@ public:
 
     //! return truncation rank based on internal strategy
     //! and given singular values \a sv
-    template <typename T>
-    size_t  trunc_rank ( const BLAS::Vector< T > &  sv ) const;
+    virtual size_t  trunc_rank  ( const BLAS::Vector< float > &   sv ) const;
+    virtual size_t  trunc_rank  ( const BLAS::Vector< double > &  sv ) const;
     
     /////////////////////////////////////////////////
     //

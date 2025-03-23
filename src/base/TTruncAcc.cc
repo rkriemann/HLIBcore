@@ -44,47 +44,47 @@ svd_eps ()
 //
 //////////////////////////////////////////////////////////////////
 
-//
-// return truncation rank based on internal strategy
-// and given singular values \a sv
-//
+namespace
+{
+
 template < typename value_t >
 size_t
-TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
+truncation_rank ( const BLAS::Vector< value_t > &  sv,
+                  const TTruncAcc &                acc )
 {
     // in case of empty matrix
     if ( sv.length() > 0 && ( sv(0) == value_t(0) ))
         return 0;
         
-    if ( _norm_mode == spectral_norm )
+    if ( acc.norm_mode() == spectral_norm )
     {
         //
         // with fixed precision: find k such that σ_(k+1) ≤ β
-        // with β = σ_0 · ε for relative error and
-        //      β = ε       for absolute error
+        // with β = σ₀ · ε for relative error and
+        //      β = ε      for absolute error
         //
         
         auto   eps = value_t(0);
         idx_t  k   = idx_t( sv.length() );
 
         // initialise with either fixed rank or fixed accuracy
-        if ( is_fixed_rank() )
+        if ( acc.is_fixed_rank() )
         {
             eps = svd_eps< value_t >() * Math::abs( sv(0) );
-            k   = idx_t( std::min( sv.length(), rank() ) );
+            k   = idx_t( std::min( sv.length(), acc.rank() ) );
         }// if
         else
         {
-            eps = value_t( rel_eps() ) * Math::abs( sv(0) );
+            eps = value_t( acc.rel_eps() ) * Math::abs( sv(0) );
             k   = idx_t( sv.length() );
         }// else
 
         // apply absolute lower limit for singular values
-        eps = std::max( eps, value_t( abs_eps() ) );
+        eps = std::max( eps, value_t( acc.abs_eps() ) );
 
         // apply maximal rank
-        if ( has_max_rank() )
-            k = std::min( k, idx_t( max_rank() ) );
+        if ( acc.has_max_rank() )
+            k = std::min( k, idx_t( acc.max_rank() ) );
 
         // compare singular values and stop, if truncation rank was reached
         for ( idx_t  i = 0; i < k; ++i )
@@ -116,23 +116,23 @@ TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
         norm = Math::sqrt( norm );
             
         // initialise with either fixed rank or fixed accuracy
-        if ( is_fixed_rank() )
+        if ( acc.is_fixed_rank() )
         {
             eps = svd_eps< value_t >() * norm;
-            k   = idx_t( std::min( sv.length(), rank() ) );
+            k   = idx_t( std::min( sv.length(), acc.rank() ) );
         }// if
         else
         {
-            eps = value_t( rel_eps() ) * norm;
+            eps = value_t( acc.rel_eps() ) * norm;
             k   = idx_t( sv.length() );
         }// else
 
         // apply absolute lower limit for singular values
-        eps = std::max( eps, value_t( abs_eps() ) );
+        eps = std::max( eps, value_t( acc.abs_eps() ) );
 
         // apply maximal rank
-        if ( has_max_rank() )
-            k = std::min( k, idx_t( max_rank() ) );
+        if ( acc.has_max_rank() )
+            k = std::min( k, idx_t( acc.max_rank() ) );
 
         // find smallest k such that √(Σ_k^n σ_i²) ≤ ε
         auto  rest = value_t(0);
@@ -151,9 +151,27 @@ TTruncAcc::trunc_rank ( const BLAS::Vector< value_t > &  sv ) const
     }// else
 }
 
+}// namespace anonymous
+
+//
+// return truncation rank based on internal strategy
+// and given singular values \a sv
+//
+size_t
+TTruncAcc::trunc_rank  ( const BLAS::Vector< float > &   sv ) const
+{
+    return truncation_rank< float >(  sv, *this );
+}
+
+size_t
+TTruncAcc::trunc_rank  ( const BLAS::Vector< double > &  sv ) const
+{
+    return truncation_rank< double >( sv, *this );
+}
+
 // instantiate the above method
-template size_t TTruncAcc::trunc_rank< float >  ( const BLAS::Vector< float > &   sv ) const;
-template size_t TTruncAcc::trunc_rank< double > ( const BLAS::Vector< double > &  sv ) const;
+// template size_t TTruncAcc::trunc_rank< float >  ( const BLAS::Vector< float > &   sv ) const;
+// template size_t TTruncAcc::trunc_rank< double > ( const BLAS::Vector< double > &  sv ) const;
 
 //
 // convert to string
