@@ -106,11 +106,11 @@ TWeakGeomAdmCond::is_adm ( const TBlockCluster *  bcl ) const
         return true;
 
     //
-    // compute number of axes without overlap
+    // compute number of axes with overlap
     //
 
-    const uint  dim        = rowcl->bbox().min().dim();
-    uint        nnooverlap = 0;
+    const uint  dim      = rowcl->bbox().min().dim();
+    uint        noverlap = 0;
     
     const auto  rbox = rowcl->bbox();
     const auto  cbox = colcl->bbox();
@@ -135,7 +135,7 @@ TWeakGeomAdmCond::is_adm ( const TBlockCluster *  bcl ) const
         if (( rmax <= cmin ) ||   // ├── τ ──┤├── σ ──┤
             ( cmax <= rmin ))     // ├── σ ──┤├── τ ──┤
         {
-            nnooverlap++;
+            // no overlap
         }// if
         else if ( _hoverlap > 0 )
         {
@@ -143,40 +143,23 @@ TWeakGeomAdmCond::is_adm ( const TBlockCluster *  bcl ) const
             // test relative overlap size
             //
 
-            // test ├── τ ──┼h┼── σ ──┤
-            if (( rmax >= cmin ) && ( rmax <= cmax ) && (( rmax - cmin ) < _hoverlap ))
-                nnooverlap++;
+            //              ├h┤
+            // test ├─── τ ───┤
+            //              ├─── σ ───┤
+            if ( ! (( rmax >= cmin ) && ( rmax <= cmax ) && (( rmax - cmin ) < _hoverlap )))
+                noverlap++;
                     
-            // test ├── σ ──┼h┼── τ ──┤
-            else if (( cmax >= rmin ) && ( cmax <= rmax ) && (( cmax - rmin ) < _hoverlap ))
-                nnooverlap++;
+            //              ├h┤
+            // test ├─── σ ───┤
+            //              ├─── τ ──┤
+            else if ( ! (( cmax >= rmin ) && ( cmax <= rmax ) && (( cmax - rmin ) < _hoverlap )))
+                noverlap++;
         }// if
+        else
+            noverlap++;
     }// for
 
-    // auto  inter = intersection( rbox, cbox );
-    // auto  l0    = inter.max()[0] - inter.min()[0];
-    // auto  l1    = inter.max()[1] - inter.min()[1];
-    // auto  l2    = 0; // inter.max()[2] - inter.min()[2];
-    // double  ol  = 1e10;
-
-    // for ( uint  i = 0; i < 2; ++i )
-    //     if ( inter.max()[i] - inter.min()[i] > 0 )
-    //         ol = std::min( ol, inter.max()[i] - inter.min()[i] );
-        
-    // if ( nnooverlap <= 1 )
-    //     std::cout << rbox.to_string() << " x " << cbox.to_string() << " : "
-    //               << term::bold() << nnooverlap << ", " << ol << term::reset()
-    //               << " / " << l0 << " / " << l1 << " / " << l2 << std::endl;
-    // else if ( nnooverlap == 2 )
-    //     std::cout << term::red() << rbox.to_string() << " x " << cbox.to_string() << " : "
-    //               << term::bold() << nnooverlap << ", " << ol << term::reset()
-    //               << " / " << l0 << " / " << l1 << " / " << l2 << std::endl;
-    // else if ( nnooverlap == 3 )
-    //     std::cout << term::green() << rbox.to_string() << " x " << cbox.to_string() << " : "
-    //               << term::bold() << nnooverlap << ", " << ol << term::reset()
-    //               << " / " << l0 << " / " << l1 << " / " << l2 << std::endl;
-        
-    if ( nnooverlap >= _noverlap )
+    if ( noverlap <= _noverlap )
         return true;
     
     //

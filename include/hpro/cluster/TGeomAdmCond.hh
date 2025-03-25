@@ -82,10 +82,11 @@ using TStdGeomAdmCond = TStrongGeomAdmCond;
 class TWeakGeomAdmCond : public TAdmCondition
 {
 private:
-    // required number of dimensions without cluster overlap (default: 0)
-    // 1D: 0 = full overlap, 1 = shared vertex
-    // 2D: 0 = full overlap, 1 = shared edge, 2 = shared vertex
-    // 3D: 0 = full overlap, 1 = shared face, 2 = shared edge, 3: shared vertex
+    // permitted number of dimensions with cluster overlap (default: 0)
+    //   0 = shared vertex
+    //   1 = shared edge
+    //   2 = shared face  (full overlap in 2D)
+    //   3 = shared cube  (full overlap in 3D)
     const uint    _noverlap;
 
     // permitted absolute cluster overlap per dimension (default: 0)
