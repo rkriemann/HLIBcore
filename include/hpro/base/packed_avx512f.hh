@@ -72,9 +72,9 @@ struct simd_traits< float, ISA_AVX512F >
     static packed_t  zero ()                   { return _mm512_setzero_ps(); }
     static packed_t  fill ( const value_t  f ) { return _mm512_set1_ps( f ); }
            
-    static packed_t  load  ( const value_t *  f ) { return _mm512_load_ps( f ); }
+    static packed_t  load  ( const value_t *  f ) { return _mm512_loadu_ps( f ); }
     static void      store ( const packed_t   a,
-                             value_t *        f ) { _mm512_store_ps( f, a ); }
+                             value_t *        f ) { _mm512_storeu_ps( f, a ); }
            
     static packed_t  add   ( const packed_t  x,
                              const packed_t  y ) { return _mm512_add_ps( x, y ); }
