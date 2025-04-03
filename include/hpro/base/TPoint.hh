@@ -46,13 +46,35 @@ public:
         for ( uint  i = 0; i < adim; i++ )
             (*this)[i] = coord[i];
     }
-
-    TPoint ( const double x, const double y )
-            : std::vector< double >{ x, y }
+    
+    TPoint ( const double x0 )
+            : std::vector< double >{ x0 }
     {}
     
-    TPoint ( const double x, const double y, const double z )
-            : std::vector< double >{ x, y, z }
+    TPoint ( const double x0,
+             const double x1 )
+            : std::vector< double >{ x0, x1 }
+    {}
+    
+    TPoint ( const double x0,
+             const double x1,
+             const double x2 )
+            : std::vector< double >{ x0, x1, x2 }
+    {}
+    
+    TPoint ( const double x0,
+             const double x1,
+             const double x2,
+             const double x3 )
+            : std::vector< double >{ x0, x1, x2, x3 }
+    {}
+    
+    TPoint ( const double x0,
+             const double x1,
+             const double x2,
+             const double x3,
+             const double x4 )
+            : std::vector< double >{ x0, x1, x2, x3, x4 }
     {}
     
     TPoint ( const TPoint & v )
