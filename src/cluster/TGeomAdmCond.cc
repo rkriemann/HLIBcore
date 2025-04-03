@@ -128,10 +128,6 @@ TWeakGeomAdmCond::is_adm ( const TBlockCluster *  bcl ) const
         const auto  cmin   = cbox.min()[i];
         const auto  cmax   = cbox.max()[i];
             
-        const auto  rlen   = rmax - rmin;
-        const auto  clen   = cmax - cmin;
-        const auto  minlen = std::min( rlen, clen );
-            
         if (( rmax <= cmin ) ||   // ├── τ ──┤├── σ ──┤
             ( cmax <= rmin ))     // ├── σ ──┤├── τ ──┤
         {
