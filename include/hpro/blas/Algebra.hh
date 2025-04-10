@@ -1669,6 +1669,14 @@ invert ( T1 &               A,
 
 //!
 //! \ingroup  BLAS_Module
+//! \brief    compute pseudo inverse of matrix \a A
+//!
+template <typename T>
+void
+pseudo_invert ( Matrix< T > &  A );
+
+//!
+//! \ingroup  BLAS_Module
 //! \brief    compute pseudo inverse of matrix \a A with precision \a acc
 //!
 //! \detail   Compute pseudo inverse B of matrix \a A up to precision \a acc,

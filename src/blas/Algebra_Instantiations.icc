@@ -44,14 +44,19 @@ template void  invert ( Matrix< std::complex< double > > & M,
                         const diag_type_t             diag_type );
 
 
-template void pseudo_invert< float >            ( Matrix< float > &            A,
-                                                  const TTruncAcc &            acc );
-template void pseudo_invert< double >           ( Matrix< double > &           A,
-                                                  const TTruncAcc &            acc );
+template void pseudo_invert< float >                 ( Matrix< float > &            A );
+template void pseudo_invert< double >                ( Matrix< double > &           A );
+template void pseudo_invert< std::complex<float> >   ( Matrix< std::complex<float> > &   A );
+template void pseudo_invert< std::complex<double> >  ( Matrix< std::complex<double> > &  A );
+
+template void pseudo_invert< float >                 ( Matrix< float > &            A,
+                                                       const TTruncAcc &            acc );
+template void pseudo_invert< double >                ( Matrix< double > &           A,
+                                                       const TTruncAcc &            acc );
 template void pseudo_invert< std::complex<float> >   ( Matrix< std::complex<float> > &   A,
-                                                  const TTruncAcc &            acc );
+                                                       const TTruncAcc &                 acc );
 template void pseudo_invert< std::complex<double> >  ( Matrix< std::complex<double> > &  A,
-                                                  const TTruncAcc &            acc );
+                                                       const TTruncAcc &                 acc );
 
 template void lu< Matrix< float > >                ( Matrix< float > &            A );
 template void lu< Matrix< double > >               ( Matrix< double > &           A );

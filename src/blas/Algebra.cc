@@ -448,6 +448,48 @@ invert ( T1 &               A,
 //!
 template <typename T>
 void
+pseudo_invert ( Matrix< T > &  A )
+{
+    using  value_t = T;
+    using  real_t  = typename real_type< value_t >::type_t;
+
+    DO_CHECK_INF_NAN( A, "(BLAS) pseudo_invert", "in input matrix" );
+
+    const auto         n = idx_t(A.nrows());
+    const auto         m = idx_t(A.ncols());
+    const auto         min_nm = std::min( n, m );
+    Matrix< value_t >  U( n, m );
+    Matrix< value_t >  V( m, min_nm );
+    Vector< real_t >   S( min_nm );
+            
+    copy( A, U );
+    svd( U, S, V );
+
+    for ( idx_t  i = 0; i < min_nm; ++i )
+    {
+        if ( S(i) != real_t(0) )
+            S(i) = real_t(1) / S(i);
+    }// for
+    
+    prod_diag( V, S, min_nm );
+
+    if ( n != m )
+        A = std::move( Matrix< value_t >( m, n ) );
+    
+    prod( value_t(1), V, adjoint(U), value_t(0), A );
+
+    DO_CHECK_INF_NAN( A, "(BLAS) pseudo_invert", "in output matrix" );
+}
+
+//!
+//! \ingroup  BLAS_Module
+//! \brief    compute pseudo inverse of matrix \a A with precision \a acc
+//!
+//! \detail   Compute pseudo inverse B of matrix \a A up to precision \a acc,
+//!           e.g. \f$\|A-B\|\le \epsilon\f$ with \f$\epsilon\f$ defined by \a acc.
+//!
+template <typename T>
+void
 pseudo_invert ( Matrix< T > &      A,
                 const TTruncAcc &  acc )
 {
