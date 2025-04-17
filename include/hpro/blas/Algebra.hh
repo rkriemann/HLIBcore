@@ -443,6 +443,24 @@ norm_2 ( const T1 &  x )
     return norm2( x );
 }
 
+//!
+//! \ingroup  BLAS_Module
+//! \brief compute ∥x∥_∞ = max_i |x_i|
+//!
+template < typename T1 >
+typename std::enable_if< is_vector< T1 >::value,
+                         real_type_t< typename T1::value_t > >::type
+norm_inf ( const T1 &  x )
+{
+    MKL_SEQ_START;
+
+    auto  n = std::abs( x( max_idx( x ) ) );
+
+    MKL_SEQ_END;
+
+    return n;
+}
+
 //! \}
 
 ////////////////////////////////////////////////////////////////
