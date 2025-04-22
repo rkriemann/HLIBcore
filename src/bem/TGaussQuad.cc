@@ -52,7 +52,7 @@ TGaussQuad::build ( const uint               order,
     for( uint i = 0; i < order-1; i++ )
         e(i) = (double(i) + 1.0) / Math::sqrt( (2.0 * double(i) + 1.0) * (2.0 * double(i) + 3.0) );
 
-    B::eigen( d, e, eval, evec );
+    B::eigen_tri( d, e, eval, evec );
     
     for( uint i = 0; i < order; i++ )
     {
