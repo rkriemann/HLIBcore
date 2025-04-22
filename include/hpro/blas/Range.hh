@@ -39,9 +39,9 @@ public:
     {
     }
 
-    //! create index set { \a pos }
-    Range ( const idx_t  pos ) noexcept
-            : TIndexSet( pos, pos )
+    //! create index set { 0, \a size-1 }
+    Range ( const idx_t  size ) noexcept
+            : TIndexSet( 0, size-1 )
     {}
 
     //! copy constructor for TIndexSet objects
