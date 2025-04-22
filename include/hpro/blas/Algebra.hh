@@ -1832,23 +1832,23 @@ eigen_herm ( Matrix< value_t > &                 M,
 //!
 template < typename value_t >
 void
-eigen ( Matrix< value_t > &  M,
-        const Range &        eig_range,
-        Vector< value_t > &  eig_val,
-        Matrix< value_t > &  eig_vec );
+eigen_herm ( Matrix< value_t > &  M,
+             const Range &        eig_range,
+             Vector< value_t > &  eig_val,
+             Matrix< value_t > &  eig_vec );
 
 //!
 //! \ingroup  BLAS_Module
 //! \brief compute eigenvalues and eigenvectors 
-//!        of the \b symmetric, \b tridiagonal matrix defines by diagonal
+//!        of the \b symmetric, \b tridiagonal matrix defined by diagonal
 //!        coefficients in \a diag and off-diagonal coefficients \a subdiag
 //!
 template < typename value_t >
 void
-eigen ( Vector< value_t > &  diag,
-        Vector< value_t > &  subdiag,
-        Vector< value_t > &  eig_val,
-        Matrix< value_t > &  eig_vec );
+eigen_tri ( Vector< value_t > &  diag,
+            Vector< value_t > &  subdiag,
+            Vector< value_t > &  eig_val,
+            Matrix< value_t > &  eig_vec );
 
 //!
 //! \ingroup  BLAS_Module

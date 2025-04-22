@@ -137,23 +137,23 @@ template void eigen_herm< double >                  ( Matrix< double > &, Vector
 template void eigen_herm< std::complex< float > >   ( Matrix< std::complex< float > > &, Vector< float > &, Matrix< std::complex< float > > & );
 template void eigen_herm< std::complex< double > >  ( Matrix< std::complex< double > > &, Vector< double > &, Matrix< std::complex< double > > & );
 
-template void eigen< float >   ( Matrix< float > &            M,
-                                 const Range &                eig_range,
-                                 Vector< float > &            eig_val,
-                                 Matrix< float > &            eig_vec );
-template void eigen< double >  ( Matrix< double > &           M,
-                                 const Range &                eig_range,
-                                 Vector< double > &           eig_val,
-                                 Matrix< double > &           eig_vec );
+template void eigen_herm< float >   ( Matrix< float > &           M,
+                                      const Range &               eig_range,
+                                      Vector< float > &           eig_val,
+                                      Matrix< float > &           eig_vec );
+template void eigen_herm< double >  ( Matrix< double > &          M,
+                                      const Range &               eig_range,
+                                      Vector< double > &          eig_val,
+                                      Matrix< double > &          eig_vec );
 
-template void eigen< float >   ( Vector< float > &            diag,
-                                 Vector< float > &            subdiag,
-                                 Vector< float > &            eig_val,
-                                 Matrix< float > &            eig_vec );
-template void eigen< double >  ( Vector< double > &           diag,
-                                 Vector< double > &           subdiag,
-                                 Vector< double > &           eig_val,
-                                 Matrix< double > &           eig_vec );
+template void eigen_tri< float >   ( Vector< float > &            diag,
+                                     Vector< float > &            subdiag,
+                                     Vector< float > &            eig_val,
+                                     Matrix< float > &            eig_vec );
+template void eigen_tri< double >  ( Vector< double > &           diag,
+                                     Vector< double > &           subdiag,
+                                     Vector< double > &           eig_val,
+                                     Matrix< double > &           eig_vec );
 
 template void svd_double< double >          ( Matrix< double > &           U,
                                               Vector< double > &           S,

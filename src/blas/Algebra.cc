@@ -1665,7 +1665,7 @@ eigen_herm ( Matrix< value_t > &                 M,
           & rdummy, & work_query, LAPACK_WS_QUERY, & rdummy, info );
 
     if ( info < 0 )
-        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
+        HERROR( ERR_ARG, "(BLAS) eigen_herm", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
         
     if ( eig_val.length() != n )
         eig_val = std::move( Vector< real_t >( n ) );
@@ -1684,7 +1684,7 @@ eigen_herm ( Matrix< value_t > &                 M,
     MKL_SEQ_END;
     
     if ( info < 0 )
-        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
+        HERROR( ERR_ARG, "(BLAS) eigen_herm", to_string( "argument %d to LAPACK::*(sy|he)ev", -info ) );
 
     #else
 
@@ -1743,10 +1743,10 @@ eigen_herm ( Matrix< value_t > &                 M,
 //
 template < typename value_t >
 void
-eigen ( Matrix< value_t > &  M,
-        const Range &        eig_range,
-        Vector< value_t > &  eig_val,
-        Matrix< value_t > &  eig_vec )
+eigen_herm ( Matrix< value_t > &  M,
+             const Range &        eig_range,
+             Vector< value_t > &  eig_val,
+             Matrix< value_t > &  eig_vec )
 {
     const size_t  n          = M.nrows();
     blas_int_t    m          = 0;
@@ -1803,17 +1803,17 @@ eigen ( Matrix< value_t > &  M,
 //!
 template < typename value_t >
 void
-eigen ( Vector< value_t > &  diag,
-        Vector< value_t > &  subdiag,
-        Vector< value_t > &  eig_val,
-        Matrix< value_t > &  eig_vec )
+eigen_tri ( Vector< value_t > &  diag,
+            Vector< value_t > &  subdiag,
+            Vector< value_t > &  eig_val,
+            Matrix< value_t > &  eig_vec )
 {
     const size_t             n = diag.length();
     Hpro::vector< value_t >  work( std::max<size_t>( 1, 2*n-2 ) );
     blas_int_t               info = 0;
 
     if ( subdiag.length() != n-1 )
-        HERROR( ERR_VEC_SIZE, "(BLAS) eigen", "sub diagonal has wrong dimension" );
+        HERROR( ERR_VEC_SIZE, "(BLAS) eigen_tri", "sub diagonal has wrong dimension" );
 
     if (( eig_vec.nrows() != n ) || ( eig_vec.ncols() != n ))
         eig_vec = std::move( Matrix< value_t >( n, n ) );
@@ -1832,7 +1832,7 @@ eigen ( Vector< value_t > &  diag,
     MKL_SEQ_END;
 
     if ( info < 0 )
-        HERROR( ERR_ARG, "(BLAS) eigen", to_string( "argument %d to LAPACK::*stev", -info ) );
+        HERROR( ERR_ARG, "(BLAS) eigen_tri", to_string( "argument %d to LAPACK::*stev", -info ) );
 }
 
 //
