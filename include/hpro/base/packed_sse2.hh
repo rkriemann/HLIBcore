@@ -480,10 +480,11 @@ struct packed< double, ISA_SSE2 >
 
     // ctors
     packed ()                   : x( simd_traits< double, ISA_SSE2 >::zero() )   {}
-    packed ( packed_t       y ) : x( y )          {}
-    packed ( const value_t  f ) : x( simd_traits< double, ISA_SSE2 >::fill( f ) ) {}
-    packed ( const value_t  a,
-             const value_t  b ) : x( _mm_setr_pd( a, b ) ) {}
+    packed ( packed_t         y ) : x( y )          {}
+    packed ( const value_t    f ) : x( simd_traits< double, ISA_SSE2 >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b ) : x( _mm_setr_pd( a, b ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_SSE2 >::load( v ) ) {}
 };
 
 //

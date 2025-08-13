@@ -163,9 +163,10 @@ struct packed< float, ISA_NEON >
     packed_t   x;
 
     // ctors
-    packed ()                   : x( simd_traits< float, ISA_NEON >::zero() )    {}
-    packed ( packed_t       y ) : x( y )                                         {}
-    packed ( const value_t  f ) : x( simd_traits< float, ISA_NEON >::fill( f ) ) {}
+    packed ()                     : x( simd_traits< float, ISA_NEON >::zero() )    {}
+    packed ( packed_t         y ) : x( y )                                         {}
+    packed ( const value_t    f ) : x( simd_traits< float, ISA_NEON >::fill( f ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< float, ISA_NEON >::load( v ) ) {}
 };
 
 }// namespace Hpro

@@ -244,40 +244,6 @@ struct simd_traits< float, ISA_AVX2 >
 };
 
 template <>
-struct packed< float, ISA_AVX2 >
-{
-    // SIMD base type
-    using  value_t  = typename simd_traits< float, ISA_AVX2 >::value_t;
-
-    // SIMD vector type
-    using  packed_t = typename simd_traits< float, ISA_AVX2 >::packed_t;
-
-    // SIMD vector size
-    enum { isa = simd_traits< float, ISA_AVX2 >::isa };
-
-    // SIMD vector size
-    enum { vector_size = simd_traits< float, ISA_AVX2 >::vector_size };
-
-    // SIMD data
-    packed_t   x;
-
-    // ctors
-    packed ()                    : x( simd_traits< float, ISA_AVX2 >::zero() )    {}
-    packed ( const packed_t  y ) : x( y )                                         {}
-    packed ( const value_t   f ) : x( simd_traits< float, ISA_AVX2 >::fill( f ) ) {}
-    packed ( const value_t   a,
-             const value_t   b,
-             const value_t   c,
-             const value_t   d,
-             const value_t   e,
-             const value_t   f,
-             const value_t   g,
-             const value_t   h ) : x( _mm256_setr_ps( a, b, c, d, e, f, g, h ) ) {}
-};
-
-
-
-template <>
 struct simd_traits< double, ISA_AVX2 >
 {
     // SIMD base type
@@ -479,13 +445,47 @@ struct packed< double, ISA_AVX2 >
     packed_t   x;
 
     // ctors
-    packed ()                    : x( simd_traits< double, ISA_AVX2 >::zero() )    {}
-    packed ( const packed_t  y ) : x( y )                                          {}
-    packed ( const value_t   f ) : x( simd_traits< double, ISA_AVX2 >::fill( f ) ) {}
-    packed ( const value_t   a,
-             const value_t   b,
-             const value_t   c,
-             const value_t   d ) : x( _mm256_setr_pd( a, b, c, d ) ) {}
+    packed ()                     : x( simd_traits< double, ISA_AVX2 >::zero() )    {}
+    packed ( const packed_t   y ) : x( y )                                          {}
+    packed ( const value_t    f ) : x( simd_traits< double, ISA_AVX2 >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b,
+             const value_t    c,
+             const value_t    d ) : x( _mm256_setr_pd( a, b, c, d ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_AVX2 >::load( v ) ) {}
+};
+
+template <>
+struct packed< float, ISA_AVX2 >
+{
+    // SIMD base type
+    using  value_t  = typename simd_traits< float, ISA_AVX2 >::value_t;
+
+    // SIMD vector type
+    using  packed_t = typename simd_traits< float, ISA_AVX2 >::packed_t;
+
+    // SIMD vector size
+    enum { isa = simd_traits< float, ISA_AVX2 >::isa };
+
+    // SIMD vector size
+    enum { vector_size = simd_traits< float, ISA_AVX2 >::vector_size };
+
+    // SIMD data
+    packed_t   x;
+
+    // ctors
+    packed ()                     : x( simd_traits< float, ISA_AVX2 >::zero() )    {}
+    packed ( const packed_t   y ) : x( y )                                         {}
+    packed ( const value_t    f ) : x( simd_traits< float, ISA_AVX2 >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b,
+             const value_t    c,
+             const value_t    d,
+             const value_t    e,
+             const value_t    f,
+             const value_t    g,
+             const value_t    h ) : x( _mm256_setr_ps( a, b, c, d, e, f, g, h ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< float, ISA_AVX2 >::load( v ) ) {}
 };
 
 }// namespace Hpro

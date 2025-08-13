@@ -475,11 +475,12 @@ struct packed< double, ISA_SSE3 >
     packed_t   x;
 
     // ctors
-    packed ()                   : x( simd_traits< double, ISA_SSE3 >::zero() )   {}
-    packed ( packed_t       y ) : x( y )          {}
-    packed ( const value_t  f ) : x( simd_traits< double, ISA_SSE3 >::fill( f ) ) {}
-    packed ( const value_t  a,
-             const value_t  b ) : x( _mm_setr_pd( a, b ) ) {}
+    packed ()                     : x( simd_traits< double, ISA_SSE3 >::zero() )   {}
+    packed ( packed_t         y ) : x( y )          {}
+    packed ( const value_t    f ) : x( simd_traits< double, ISA_SSE3 >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b ) : x( _mm_setr_pd( a, b ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_SSE3 >::load( v ) ) {}
 };
 
 //

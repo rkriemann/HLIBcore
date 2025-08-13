@@ -486,6 +486,7 @@ struct packed< double, ISA_AVX >
              const value_t   b,
              const value_t   c,
              const value_t   d ) : x( _mm256_setr_pd( a, b, c, d ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_AVX >::load( v ) ) {}
 };
 
 }// namespace Hpro

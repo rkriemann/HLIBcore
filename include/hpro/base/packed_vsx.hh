@@ -178,11 +178,12 @@ struct packed< double, ISA_VSX >
     packed_t   x;
 
     // ctors
-    packed ()                   : x( simd_traits< double, ISA_VSX >::zero() )   {}
-    packed ( packed_t       y ) : x( y )          {}
-    packed ( const value_t  f ) : x( simd_traits< double, ISA_VSX >::fill( f ) ) {}
-    packed ( const value_t  a,
-             const value_t  b ) : x{ a, b } {}
+    packed ()                     : x( simd_traits< double, ISA_VSX >::zero() )   {}
+    packed ( packed_t         y ) : x( y )          {}
+    packed ( const value_t    f ) : x( simd_traits< double, ISA_VSX >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b ) : x{ a, b } {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_VSX >::load( v ) ) {}
 };
 
 //

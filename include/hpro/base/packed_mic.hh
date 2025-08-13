@@ -100,17 +100,18 @@ struct packed< double, ISA_MIC >
     packed_t   x;
 
     // ctors
-    packed ()                    : x( simd_traits< double, ISA_MIC >::zero() )    {}
-    packed ( const packed_t  y ) : x( y )                                         {}
-    packed ( const value_t   f ) : x( simd_traits< double, ISA_MIC >::fill( f ) ) {}
-    packed ( const value_t   a,
-             const value_t   b,
-             const value_t   c,
-             const value_t   d,
-             const value_t   e,
-             const value_t   f,
-             const value_t   g,
-             const value_t   h ) : x( _mm512_setr_pd( a, b, c, d, e, f, g, h ) ) {}
+    packed ()                     : x( simd_traits< double, ISA_MIC >::zero() )    {}
+    packed ( const packed_t   y ) : x( y )                                         {}
+    packed ( const value_t    f ) : x( simd_traits< double, ISA_MIC >::fill( f ) ) {}
+    packed ( const value_t    a,
+             const value_t    b,
+             const value_t    c,
+             const value_t    d,
+             const value_t    e,
+             const value_t    f,
+             const value_t    g,
+             const value_t    h ) : x( _mm512_setr_pd( a, b, c, d, e, f, g, h ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_MIC >::load( v ) ) {}
 };
 
 }// namespace Hpro
