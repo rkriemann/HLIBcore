@@ -291,9 +291,9 @@ struct simd_traits< double, ISA_AVX512F >
     static packed_t  zero ()                   { return _mm512_setzero_pd(); }
     static packed_t  fill ( const value_t  f ) { return _mm512_set1_pd( f ); }
            
-    static packed_t  load  ( const value_t *  f ) { return _mm512_load_pd( f ); }
+    static packed_t  load  ( const value_t *  f ) { return _mm512_loadu_pd( f ); }
     static void      store ( const packed_t   a,
-                             value_t *        f ) { _mm512_store_pd( f, a ); }
+                             value_t *        f ) { _mm512_storeu_pd( f, a ); }
            
     static packed_t  add   ( const packed_t  x,
                              const packed_t  y ) { return _mm512_add_pd( x, y ); }
@@ -508,6 +508,7 @@ struct packed< double, ISA_AVX512F >
              const value_t   f,
              const value_t   g,
              const value_t   h ) : x( _mm512_setr_pd( a, b, c, d, e, f, g, h ) ) {}
+    packed ( const value_t *  v ) : x( simd_traits< double, ISA_AVX512F >::load( v ) ) {}
 };
 
 }// namespace Hpro
