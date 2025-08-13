@@ -145,7 +145,7 @@ laplace_slp_simd ( const TGrid::triangle_t &                               tri0,
         // compute |x-y|²
         //
 
-        vpacked  dot( 0 );
+        vpacked  dot( value_t(0) );
         vpacked  tmp1;
 
         // u0-v0
